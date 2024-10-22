@@ -13,58 +13,87 @@ const navigationItems = {
   productIntelligence: {
     title: "Product Intelligence",
     items: [
-      "Product Launches",
-      "Roadmap Changes",
-      "Feature Releases",
-      "Integration Highlights"
+      { name: "Product Launches", href: "/product/launches" },
+      { name: "Roadmap Changes", href: "/product/roadmap" },
+      { name: "Feature Releases", href: "/product/features" },
+      { name: "Integration Highlights", href: "/product/integrations" }
     ]
   },
   mediaIntelligence: {
     title: "Media Intelligence",
     items: [
-      "Press Release Tracking",
-      "Funding Rounds",
-      "Acquisitions and Mergers",
-      "Leadership Changes"
+      { name: "Press Release Tracking", href: "/media/press" },
+      { name: "Funding Rounds", href: "/media/funding" },
+      { name: "Acquisitions and Mergers", href: "/media/acquisitions" },
+      { name: "Leadership Changes", href: "/media/leadership" }
     ]
   },
   competitiveIntelligence: {
     title: "Competitive Intelligence",
     items: [
-      "Price Monitoring",
-      "Partnership Briefings",
-      "Positioning Changes",
-      "Promotional Offers"
+      { name: "Price Monitoring", href: "/competitive/pricing" },
+      { name: "Partnership Briefings", href: "/competitive/partnerships" },
+      { name: "Positioning Changes", href: "/competitive/positioning" },
+      { name: "Promotional Offers", href: "/competitive/promotions" }
     ]
   },
   customerIntelligence: {
     title: "Customer Intelligence",
     items: [
-      "Sentiment Overview",
-      "Review Highlights",
-      "Testimonial Changes"
+      { name: "Sentiment Overview", href: "/customer/sentiment" },
+      { name: "Review Highlights", href: "/customer/reviews" },
+      { name: "Testimonial Changes", href: "/customer/testimonials" }
     ]
   },
   integrations: {
     title: "Integrations",
     items: [
-      "Slack",
-      "Notion",
-      "Google Workspace",
+      { name: "Slack", href: "/integrations/slack" },
+      { name: "Notion", href: "/integrations/notion" },
+      { name: "Google Workspace", href: "/integrations/google" }
     ]
   },
   socialIntelligence: {
     title: "Social Intelligence",
     items: [
-      "Engagement Metrics",
-      "Content Analysis"
+      { name: "Engagement Metrics", href: "/social/engagement" },
+      { name: "Content Analysis", href: "/social/content" }
     ]
   },
   marketingIntelligence: {
     title: "Marketing Intelligence",
     items: [
-      "Content Strategy Shifts",
-      "Newsletter Insights"
+      { name: "Content Strategy Shifts", href: "/marketing/strategy" },
+      { name: "Newsletter Insights", href: "/marketing/newsletter" }
+    ]
+  }
+};
+
+const resourcesItems = {
+  resources: {
+    title: "Resources",
+    items: [
+      { name: "Swipe Files", href: "/resources/swipe-files" },
+      { name: "Ad Library", href: "/resources/ad-library" },
+      { name: "Newsletter Library", href: "/resources/newsletter-library" },
+      { name: "Interface Library", href: "/resources/interface-library" }
+    ]
+  },
+  byrd: {
+    title: "Byrd",
+    items: [
+      { name: "Release Notes", href: "/release-notes" },
+      { name: "Blog", href: "/blog" },
+      { name: "About Us", href: "/about" }
+    ]
+  },
+  help: {
+    title: "Help",
+    items: [
+      { name: "Slack Community", href: "/community" },
+      { name: "Support", href: "/support" },
+      { name: "Hire an expert", href: "/experts" },
+      { name: "System Status", href: "/status" }
     ]
   }
 };
@@ -80,8 +109,8 @@ const ProductDropdown = () => {
           <h3 className="font-semibold mb-4">{navigationItems.productIntelligence.title}</h3>
           <ul className="space-y-3">
             {navigationItems.productIntelligence.items.map((item) => (
-              <li key={item}>
-                <a href="/" className={navAccentStyle}>{item}</a>
+              <li key={item.name}>
+                <a href={item.href} className={navAccentStyle}>{item.name}</a>
               </li>
             ))}
           </ul>
@@ -90,8 +119,8 @@ const ProductDropdown = () => {
           <h3 className="font-semibold mb-4">{navigationItems.mediaIntelligence.title}</h3>
           <ul className="space-y-3">
             {navigationItems.mediaIntelligence.items.map((item) => (
-              <li key={item}>
-                <a href="/" className={navAccentStyle}>{item}</a>
+              <li key={item.name}>
+                <a href={item.href} className={navAccentStyle}>{item.name}</a>
               </li>
             ))}
           </ul>
@@ -100,8 +129,8 @@ const ProductDropdown = () => {
           <h3 className="font-semibold mb-4">{navigationItems.competitiveIntelligence.title}</h3>
           <ul className="space-y-3">
             {navigationItems.competitiveIntelligence.items.map((item) => (
-              <li key={item}>
-                <a href="/" className={navAccentStyle}>{item}</a>
+              <li key={item.name}>
+                <a href={item.href} className={navAccentStyle}>{item.name}</a>
               </li>
             ))}
           </ul>
@@ -110,8 +139,8 @@ const ProductDropdown = () => {
           <h3 className="font-semibold mb-4">{navigationItems.customerIntelligence.title}</h3>
           <ul className="space-y-3">
             {navigationItems.customerIntelligence.items.map((item) => (
-              <li key={item}>
-                <a href="/" className={navAccentStyle}>{item}</a>
+              <li key={item.name}>
+                <a href={item.href} className={navAccentStyle}>{item.name}</a>
               </li>
             ))}
           </ul>
@@ -122,8 +151,8 @@ const ProductDropdown = () => {
           <h3 className="font-semibold mb-4">{navigationItems.integrations.title}</h3>
           <ul className="space-y-3">
             {navigationItems.integrations.items.map((item) => (
-              <li key={item}>
-                <a href="/" className={navAccentStyle}>{item}</a>
+              <li key={item.name}>
+                <a href={item.href} className={navAccentStyle}>{item.name}</a>
               </li>
             ))}
           </ul>
@@ -132,8 +161,8 @@ const ProductDropdown = () => {
           <h3 className="font-semibold mb-4">{navigationItems.socialIntelligence.title}</h3>
           <ul className="space-y-3">
             {navigationItems.socialIntelligence.items.map((item) => (
-              <li key={item}>
-                <a href="/" className={navAccentStyle}>{item}</a>
+              <li key={item.name}>
+                <a href={item.href} className={navAccentStyle}>{item.name}</a>
               </li>
             ))}
           </ul>
@@ -142,8 +171,8 @@ const ProductDropdown = () => {
           <h3 className="font-semibold mb-4">{navigationItems.marketingIntelligence.title}</h3>
           <ul className="space-y-3">
             {navigationItems.marketingIntelligence.items.map((item) => (
-              <li key={item}>
-                <a href="/" className={navAccentStyle}>{item}</a>
+              <li key={item.name}>
+                <a href={item.href} className={navAccentStyle}>{item.name}</a>
               </li>
             ))}
           </ul>
@@ -160,36 +189,40 @@ const ResourcesDropdown = () => {
         {/* Left Section - Navigation Links */}
         <div className="col-span-7 grid grid-cols-2 gap-8">
           <div>
-            <h3 className="font-semibold mb-4">Resources</h3>
+            <h3 className="font-semibold mb-4">{resourcesItems.resources.title}</h3>
             <ul className="space-y-3">
-              <li><a href="/" className={navAccentStyle}>Swipe Files</a></li>
-              <li><a href="/" className={navAccentStyle}>Ad Library</a></li>
-              <li><a href="/" className={navAccentStyle}>Newsletter Library</a></li>
-              <li><a href="/" className={navAccentStyle}>Interface Library</a></li>
+              {resourcesItems.resources.items.map((item) => (
+                <li key={item.name}>
+                  <a href={item.href} className={navAccentStyle}>{item.name}</a>
+                </li>
+              ))}
             </ul>
 
-            <h3 className="font-semibold mb-4 mt-8">Byrd</h3>
+            <h3 className="font-semibold mb-4 mt-8">{resourcesItems.byrd.title}</h3>
             <ul className="space-y-3">
-              <li><a href="/" className={navAccentStyle}>Release Notes</a></li>
-              <li><a href="/" className={navAccentStyle}>Blog</a></li>
-              <li><a href="/" className={navAccentStyle}>About Us</a></li>
+              {resourcesItems.byrd.items.map((item) => (
+                <li key={item.name}>
+                  <a href={item.href} className={navAccentStyle}>{item.name}</a>
+                </li>
+              ))}
             </ul>
           </div>
 
           <div>
-            <h3 className="font-semibold mb-4">Help</h3>
+            <h3 className="font-semibold mb-4">{resourcesItems.help.title}</h3>
             <ul className="space-y-3">
-              <li><a href="/" className={navAccentStyle}>Slack Community</a></li>
-              <li><a href="/" className={navAccentStyle}>Support</a></li>
-              <li><a href="/" className={navAccentStyle}>Hire an expert</a></li>
-              <li><a href="/" className={navAccentStyle}>System Status</a></li>
+              {resourcesItems.help.items.map((item) => (
+                <li key={item.name}>
+                  <a href={item.href} className={navAccentStyle}>{item.name}</a>
+                </li>
+              ))}
             </ul>
           </div>
         </div>
 
         {/* Right Section - Featured Content */}
         <div className="col-span-5">
-          <a href="/" className="block group">
+          <a href="/blog/uber-case-study" className="block group">
             <div className="rounded-xl overflow-hidden">
               <img 
                 src="assets/blog-cover.png" 
@@ -215,7 +248,7 @@ const Navbar = () => {
 
   return (
     <>
-    <div className="w-full bg-background">
+    <div className="w-full bg-background relative z-50">
     <div className="relative">
       <nav className={`${activeDropdown ? 'border-none bg-white' : ''}`}>
       <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
