@@ -56,6 +56,9 @@ const config: Config = {
 				md: "calc(var(--radius) - 2px)",
 				sm: "calc(var(--radius) - 4px)",
 			},
+			animation: {
+				"spin-slow": "spin 5s linear infinite",
+			},
 		},
 	},
 	plugins: [require("tailwindcss-animate")],
