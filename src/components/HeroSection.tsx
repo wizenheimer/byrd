@@ -1,6 +1,6 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
-import OverflowCard from "./PreviewContainer";
+import PreviewContainer from "./PreviewContainer";
 
 const Hero = () => {
 	return (
@@ -38,10 +38,11 @@ const Hero = () => {
 
 			{/* Screenshot Container */}
 			<div className="max-w-6xl mx-auto px-4 relative">
-				<OverflowCard imageSrc="/assets/dashboard.png" caption="loremipsum" />
+				<PreviewContainer
+					imageSrc="/assets/dashboard.png"
+					caption="Every change, no matter how small, gets flagged."
+				/>
 			</div>
-
-			{/* Caption under screenshot */}
 		</div>
 	);
 };
