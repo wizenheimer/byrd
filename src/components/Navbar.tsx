@@ -8,7 +8,6 @@ import {
 	NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
 import React, { useState } from "react";
-import Image from "next/image";
 
 const navigationItems = {
 	productIntelligence: {
@@ -264,7 +263,7 @@ const ResourcesDropdown = () => {
 				<div className="col-span-5">
 					<a href="/blog/uber-case-study" className="block group">
 						<div className="rounded-xl overflow-hidden">
-							<Image
+							<img
 								src="/assets/blog-cover.png"
 								alt="Blog cover"
 								className="w-full h-48 object-cover rounded-xl"
