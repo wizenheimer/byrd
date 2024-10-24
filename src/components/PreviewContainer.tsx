@@ -2,6 +2,7 @@
 
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 
 interface PreviewContainerProps {
 	imageSrc: string;
@@ -115,7 +116,7 @@ const PreviewContainer: React.FC<PreviewContainerProps> = ({
 						variant === "fitted" ? "h-auto" : "w-full h-full"
 					}`}
 				>
-					<img
+					<Image
 						src={imageSrc}
 						alt={caption || "Preview image"}
 						className={getImageClassName()}

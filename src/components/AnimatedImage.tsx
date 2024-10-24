@@ -2,6 +2,7 @@
 
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 
 interface AnimatedImageProps {
 	imageSrc: string;
@@ -61,7 +62,7 @@ const AnimatedImage: React.FC<AnimatedImageProps> = ({
 
 	return (
 		<div ref={containerRef} className={`relative overflow-hidden ${className}`}>
-			<img
+			<Image
 				src={imageSrc}
 				alt={alt || "Image"}
 				className={`w-full object-cover transition-all duration-1000 ease-out ${imageClassName}`}
