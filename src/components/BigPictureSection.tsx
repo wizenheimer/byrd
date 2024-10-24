@@ -1,6 +1,8 @@
 import React from "react";
 import PreviewContainer from "./PreviewContainer";
 import Link from "next/link";
+import Image from "next/image";
+import AnimatedImage from "./AnimatedImage";
 
 const BigPictureSection = () => {
 	return (
@@ -24,10 +26,7 @@ const BigPictureSection = () => {
 
 			{/* Screenshot Container */}
 			<div className="max-w-6xl mx-auto px-4 relative ">
-				<PreviewContainer
-					imageSrc="/assets/dashboard.png"
-					caption="Observe market shifts as they happen."
-				/>
+				<AnimatedImage imageSrc="/assets/big-picture.png" />
 			</div>
 
 			{/* Bottom Section - Aligned with PreviewContainer */}
@@ -46,7 +45,7 @@ const BigPictureSection = () => {
 							Forget PMF, you just re-discovered the express lane to Chapter 11.
 						</p>
 						<div className="inline-block text-gray-500 hover:text-gray-900 font-medium underline">
-							<Link href="/">Learn more about market intelligence</Link>
+							<Link href="/">Don't solve problems, by creating new ones</Link>
 						</div>
 					</div>
 
@@ -63,7 +62,7 @@ const BigPictureSection = () => {
 							be the first to know.
 						</p>
 						<div className="inline-block text-gray-500 hover:text-gray-900 font-medium underline">
-							<Link href="/">Learn more about market intelligence</Link>
+							<Link href="/">Competition never sleeps, but you can</Link>
 						</div>
 					</div>
 
@@ -80,7 +79,7 @@ const BigPictureSection = () => {
 							minus the expensive suits and PowerPoint.
 						</p>
 						<div className="inline-block text-gray-500 hover:text-gray-900 font-medium underline">
-							<Link href="/">Learn more about market intelligence</Link>
+							<Link href="/">Never Miss a Market Move</Link>
 						</div>
 					</div>
 				</div>

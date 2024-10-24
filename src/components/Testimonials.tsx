@@ -4,19 +4,19 @@ const TestimonialsSection = () => {
 	return (
 		<div className="w-full bg-background relative overflow-hidden mt-60">
 			{/* Hero Text Content */}
-			<div className="max-w-7xl mx-auto px-4 pt-16 pb-16">
+			<div className="max-w-7xl mx-auto px-4 pt-20 pb-40">
 				<div className="text-center max-w-4xl mx-auto">
-					<h1 className="text-4xl font-bold tracking-tight mb-4">
+					<h1 className="text-5xl font-bold tracking-tight mb-6">
 						You're in a good company
 					</h1>
-					<p className="text-base text-gray-600">
-						Titans who crush it with us. From Underdogs to Top Dogs.
+					<p className="text-lg text-gray-600 mt-8">
+						From Underdogs to Top Dogs. Titans who crush it with byrd.
 					</p>
 				</div>
 			</div>
 
 			{/* Testimonials Grid */}
-			<div className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-6 mt-16">
+			<div className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-6 mt-30">
 				{/* CTO Testimonial */}
 				<div className="bg-gray-100 hover:bg-black rounded-2xl p-10 flex flex-col justify-between transition-colors duration-500 group">
 					<div>

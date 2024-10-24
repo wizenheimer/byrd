@@ -22,7 +22,7 @@ const DifferentiationSection = () => {
 			{/* Screenshot Container */}
 			<div className="max-w-6xl mx-auto px-4 relative ">
 				<PreviewContainer
-					imageSrc="/assets/dashboard.png"
+					imageSrc="/assets/context.png"
 					caption="Observe market shifts as they happen."
 				/>
 			</div>
@@ -64,7 +64,7 @@ const DifferentiationSection = () => {
 								href="/"
 								className="inline-block text-gray-500 font-medium underline underline-offset-4 hover:text-gray-700"
 							>
-								Learn more about competitive intelligence
+								Competitive Intelligence for Scaleups
 							</Link>
 						</div>
 					</div>
@@ -86,7 +86,7 @@ const DifferentiationSection = () => {
 								href="/"
 								className="inline-block text-gray-500 font-medium underline underline-offset-4 hover:text-gray-700"
 							>
-								Learn more about market intelligence
+								Don't play catchup. Call the shots.
 							</Link>
 						</div>
 					</div>

@@ -12,9 +12,7 @@ const CompetitionSection = () => {
 						Competition Who Cares?
 					</h1>
 					<p className="text-lg text-gray-600 mt-8">
-						You can't disrupt a market you don't understand, and you can't
-						understand a market without knowing who the players are and what
-						they're doing.
+						Your customers do. They compare. They seek alternatives.
 					</p>
 				</div>
 			</div>
@@ -22,7 +20,7 @@ const CompetitionSection = () => {
 			{/* Screenshot Container */}
 			<div className="max-w-6xl mx-auto px-4 relative">
 				<PreviewContainer
-					imageSrc="/assets/dashboard.png"
+					imageSrc="/assets/who-cares.png"
 					caption="Observe market shifts as they happen."
 				/>
 			</div>
@@ -31,7 +29,7 @@ const CompetitionSection = () => {
 				<div className="grid grid-cols-4 gap-12">
 					{/* Title Column */}
 					<div>
-						<h2 className="text-4xl font-bold leading-tight">
+						<h2 className="text-3xl font-bold leading-tight">
 							There are no
 							<br />
 							participation
@@ -47,7 +45,7 @@ const CompetitionSection = () => {
 						{/* Column 1 */}
 						<div className="flex flex-col">
 							<div>
-								<h3 className="text-2xl font-semibold mb-4">
+								<h3 className="text-xl font-semibold mb-4">
 									Your Product
 									<br />
 									Better Have Claws
@@ -71,7 +69,7 @@ const CompetitionSection = () => {
 						{/* Column 2 */}
 						<div className="flex flex-col">
 							<div>
-								<h3 className="text-2xl font-semibold mb-4">
+								<h3 className="text-xl font-semibold mb-4">
 									Second Place is
 									<br />
 									First Loser
@@ -95,9 +93,10 @@ const CompetitionSection = () => {
 						{/* Column 3 */}
 						<div className="flex flex-col">
 							<div>
-								<h3 className="text-2xl font-semibold mb-4">
-									Size isn't a shield –<br />
-									it's a target
+								<h3 className="text-xl font-semibold mb-4">
+									Size isn't a Shield
+									<br />
+									It's a Target
 								</h3>
 								<p className="text-gray-600 mb-6">
 									Think you know your market? Think again. Being big doesn't

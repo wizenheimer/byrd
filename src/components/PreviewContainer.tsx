@@ -22,7 +22,7 @@ const PreviewContainer: React.FC<PreviewContainerProps> = ({
 	imageSize = "contain",
 	className = "",
 	imageClassName = "",
-	parallaxStrength = 0.1,
+	parallaxStrength = 0.05,
 }) => {
 	const containerRef = useRef<HTMLDivElement>(null);
 	const [offset, setOffset] = useState(0);
@@ -40,7 +40,7 @@ const PreviewContainer: React.FC<PreviewContainerProps> = ({
 				}
 			},
 			{
-				threshold: 0.4, // Trigger when 10% of the element is visible
+				threshold: 0.3,
 			},
 		);
 

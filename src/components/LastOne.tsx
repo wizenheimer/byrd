@@ -19,7 +19,6 @@ const LastOne = () => {
 					</p>
 				</div>
 			</div>
-
 			<div className="max-w-7xl mx-auto">
 				{/* Two Column Layout with PreviewContainers */}
 				<div className="grid grid-cols-1 lg:grid-cols-2 gap-24 px-8 py-12">
@@ -27,9 +26,9 @@ const LastOne = () => {
 					<div>
 						<div className="relative mb-16">
 							<PreviewContainer
-								imageSrc="/assets/dashboard.png"
-								variant="fitted"
-								parallaxStrength={0}
+								imageSrc="/assets/shared-view-left.png"
+								variant="compact"
+								position="right"
 							/>
 						</div>
 						<div className="space-y-6">
@@ -60,9 +59,9 @@ const LastOne = () => {
 					<div>
 						<div className="relative mb-16">
 							<PreviewContainer
-								imageSrc="/assets/dashboard.png"
-								variant="fitted"
-								parallaxStrength={0}
+								imageSrc="/assets/shared-view-right.png"
+								variant="compact"
+								position="right"
 							/>
 						</div>
 						<div className="space-y-6">
@@ -85,67 +84,6 @@ const LastOne = () => {
 								className="text-gray-500 font-medium underline underline-offset-4 hover:text-gray-700"
 							>
 								No new tabs, turn Slack into a war room
-							</Link>
-						</div>
-					</div>
-				</div>
-			</div>
-			{/* Bottom Three Column Section - Aligned with PreviewContainer */}
-			<div className="max-w-6xl mx-auto px-4 relative mt-48">
-				{" "}
-				{/* Changed from max-w-7xl to max-w-6xl */}
-				<div className="grid grid-cols-3 gap-20">
-					{/* Column 1 */}
-					<div className="grid grid-rows-[1fr] items-start">
-						{" "}
-						{/* Removed ml-20 */}
-						<h2 className="text-3xl font-semibold">
-							There's nothing like being too early,
-							<br />
-							there's only too late.
-						</h2>
-					</div>
-
-					{/* Column 2 */}
-					<div className="grid grid-rows-[auto_1fr_auto] gap-8">
-						{" "}
-						{/* Removed max-w-sm */}
-						<h2 className="text-2xl font-semibold">
-							Know your Goliath inside out.
-						</h2>
-						<p className="text-base font-medium text-gray-600 leading-relaxed">
-							You think you're crushing it? So does everyone else. Stop patting
-							yourself on the back and start learning from competitors. Build a
-							product that resonates best with your customers.
-						</p>
-						<div>
-							<Link
-								href="/"
-								className="inline-block text-gray-500 font-medium underline underline-offset-4 hover:text-gray-700"
-							>
-								Learn more about competitive intelligence
-							</Link>
-						</div>
-					</div>
-
-					{/* Column 3 */}
-					<div className="grid grid-rows-[auto_1fr_auto] gap-8">
-						{" "}
-						{/* Removed max-w-sm */}
-						<h2 className="text-2xl font-semibold">
-							Differentiate Early. And Often.
-						</h2>
-						<p className="text-base font-medium text-gray-600 leading-relaxed">
-							Your competitors are constantly evolving, changing prices,
-							launching new features. It's not what you know about your
-							competitors - it's what you don't know yet that matters.
-						</p>
-						<div>
-							<Link
-								href="/"
-								className="inline-block text-gray-500 font-medium underline underline-offset-4 hover:text-gray-700"
-							>
-								Learn more about market intelligence
 							</Link>
 						</div>
 					</div>

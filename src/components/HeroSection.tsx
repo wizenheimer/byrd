@@ -30,7 +30,7 @@ const Hero = () => {
 							Get Started
 						</Button>
 						<Button variant="outline" className="border-gray-200">
-							Is byrd for me?
+							Contact Sales
 						</Button>
 					</div>
 				</div>

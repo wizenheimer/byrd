@@ -23,7 +23,7 @@ const MonitoringSection = () => {
 			{/* Screenshot Container */}
 			<div className="max-w-6xl mx-auto px-4 relative ">
 				<PreviewContainer
-					imageSrc="/assets/dashboard.png"
+					imageSrc="/assets/collective-pages.png"
 					caption="No more sifting through noise to find the signal"
 				/>
 			</div>
@@ -33,12 +33,22 @@ const MonitoringSection = () => {
 				<div className="grid grid-cols-3 gap-20">
 					{/* Column 1 */}
 					<div className="ml-20">
-						<h2 className="text-3xl font-semibold">Ignorance isn't bliss</h2>
+						<h2 className="text-3xl font-semibold">
+							Stop admiring
+							<br />
+							the problem
+							<br />
+							and start
+							<br />
+							solving it.
+						</h2>
 					</div>
 
 					{/* Column 2 */}
 					<div className="max-w-sm">
-						<h2 className="text-2xl font-semibold mb-4">Rivals Don't Rest</h2>
+						<h2 className="text-2xl font-semibold mb-4">
+							Your Rivals Don't Rest
+						</h2>
 						<p className="text-base font-medium">
 							You think you're crushing it? So does everyone else. Stop patting
 							yourself on the back and start learning from competitors. Build a
@@ -69,7 +79,7 @@ const MonitoringSection = () => {
 								href="/"
 								className="inline-block text-gray-500 font-medium underline underline-offset-4 hover:text-gray-700"
 							>
-								Learn more about competitive intelligence
+								Learn more about market intelligence
 							</Link>
 						</div>
 					</div>
