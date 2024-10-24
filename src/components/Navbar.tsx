@@ -340,7 +340,6 @@
 // export default Navbar;
 
 "use client";
-import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	NavigationMenu,
@@ -348,6 +347,7 @@ import {
 	NavigationMenuList,
 	NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
+import React, { useState } from "react";
 
 const navigationItems = {
 	productIntelligence: {

@@ -1,8 +1,8 @@
-import React from "react";
-import PreviewContainer from "./PreviewContainer";
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
+import React from "react";
 import AnimatedImage from "./AnimatedImage";
+import PreviewContainer from "./PreviewContainer";
 
 const BigPictureSection = () => {
 	return (

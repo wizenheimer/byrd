@@ -1,7 +1,7 @@
-import type React from "react";
-import Link from "next/link";
-import { Github, Linkedin, Slack } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { Github, Linkedin, Slack } from "lucide-react";
+import Link from "next/link";
+import type React from "react";
 
 const footerData = {
 	mainSections: [
