@@ -28,21 +28,24 @@ const BigPictureSection = () => {
 			</div>
 
 			{/* Bottom Section - Aligned with PreviewContainer */}
-			<div className="max-w-6xl mx-auto px-4 relative mt-32">
-				<div className="grid grid-cols-3 gap-24">
+			<div className="max-w-6xl mx-auto px-4 relative mt-16 md:mt-32">
+				<div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-24">
 					{/* Column 1 */}
-					<div className="grid grid-rows-[auto_1fr_auto] gap-8">
-						<h2 className="text-3xl font-semibold">
-							More Bodies
-							<br />
-							More Problems
+					<div className="space-y-6 md:grid md:grid-rows-[auto_1fr_auto] md:gap-8 max-w-sm mx-auto md:mx-0">
+						<h2 className="text-2xl font-bold text-center md:text-left">
+							<span className="hidden md:inline">
+								More Bodies
+								<br />
+								More Problems
+							</span>
+							<span className="md:hidden">More Bodies More Problems</span>
 						</h2>
-						<p className="text-base text-gray-600 leading-relaxed">
+						<p className="text-gray-600 leading-relaxed">
 							Planning on hiring an army of interns? Flooding them with
 							busywork? Measuring outcome by the pounds of reports generated?
 							Forget PMF, you just re-discovered the express lane to Chapter 11.
 						</p>
-						<div className="inline-block text-gray-500 hover:text-gray-900 font-medium underline">
+						<div className="inline-block text-gray-500 hover:text-gray-900 font-bold underline">
 							<Link href="/">
 								Don&apos;t solve problems, by creating new ones
 							</Link>
@@ -50,35 +53,41 @@ const BigPictureSection = () => {
 					</div>
 
 					{/* Column 2 */}
-					<div className="grid grid-rows-[auto_1fr_auto] gap-8">
-						<h2 className="text-3xl font-semibold">
-							All Signal
-							<br />
-							No Noise
+					<div className="space-y-6 md:grid md:grid-rows-[auto_1fr_auto] md:gap-8 max-w-sm mx-auto md:mx-0">
+						<h2 className="text-2xl font-bold text-center md:text-left">
+							<span className="hidden md:inline">
+								All Signal
+								<br />
+								No Noise
+							</span>
+							<span className="md:hidden">All Signal No Noise</span>
 						</h2>
-						<p className="text-base text-gray-600 leading-relaxed">
+						<p className="text-gray-600 leading-relaxed">
 							With Byrd, each alert is like a personal briefing. Whether
 							it&apos;s product updates, branding overhauls, or partnership
 							plays, you&apos;ll be the first to know.
 						</p>
-						<div className="inline-block text-gray-500 hover:text-gray-900 font-medium underline">
+						<div className="inline-block text-gray-500 hover:text-gray-900 font-bold underline">
 							<Link href="/">Competition never sleeps, but you can</Link>
 						</div>
 					</div>
 
 					{/* Column 3 */}
-					<div className="grid grid-rows-[auto_1fr_auto] gap-8">
-						<h2 className="text-3xl font-semibold">
-							Real-time
-							<br />
-							All the Time
+					<div className="space-y-6 md:grid md:grid-rows-[auto_1fr_auto] md:gap-8 max-w-sm mx-auto md:mx-0">
+						<h2 className="text-2xl font-bold text-center md:text-left">
+							<span className="hidden md:inline">
+								Real-time
+								<br />
+								All the Time
+							</span>
+							<span className="md:hidden">Real-time All the Time</span>
 						</h2>
-						<p className="text-base text-gray-600 leading-relaxed">
+						<p className="text-gray-600 leading-relaxed">
 							With byrd you get clear, concise, and actionable intel delivered
 							straight to you. It&apos;s like having a team of consultants on
 							call, minus the expensive suits and PowerPoint.
 						</p>
-						<div className="inline-block text-gray-500 hover:text-gray-900 font-medium underline">
+						<div className="inline-block text-gray-500 hover:text-gray-900 font-bold underline">
 							<Link href="/">Never Miss a Market Move</Link>
 						</div>
 					</div>

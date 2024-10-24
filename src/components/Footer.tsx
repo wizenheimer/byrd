@@ -108,11 +108,11 @@ const FooterSection: React.FC<FooterSectionProps> = ({ title, links }) => (
 
 const Footer = () => {
 	return (
-		<footer className="w-full bg-gray-100 py-16 mt-20">
+		<footer className="w-full bg-gray-100 py-8 md:py-16 mt-20">
 			<div className="max-w-7xl mx-auto px-4">
 				{/* Top Footer Section */}
-				<div className="flex justify-between mb-16">
-					<div className="grid grid-cols-3 gap-24">
+				<div className="flex flex-col lg:flex-row gap-8 lg:justify-between mb-8 lg:mb-16">
+					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-24 w-full">
 						{footerData.mainSections.map((section) => (
 							<FooterSection
 								key={section.title}
@@ -121,7 +121,7 @@ const Footer = () => {
 							/>
 						))}
 					</div>
-					<div className="min-w-[200px]">
+					<div className="w-full sm:w-1/2 lg:w-auto lg:min-w-[200px]">
 						<FooterSection
 							title={footerData.rightSection.title}
 							links={footerData.rightSection.links}
@@ -130,8 +130,8 @@ const Footer = () => {
 				</div>
 
 				{/* Bottom Footer Section */}
-				<div className="flex justify-between mb-16">
-					<div className="grid grid-cols-3 gap-24">
+				<div className="flex flex-col lg:flex-row gap-8 lg:justify-between mb-8 lg:mb-16">
+					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-24 w-full">
 						{footerData.bottomMainSections.map((section) => (
 							<FooterSection
 								key={section.title}
@@ -140,7 +140,7 @@ const Footer = () => {
 							/>
 						))}
 					</div>
-					<div className="min-w-[200px]">
+					<div className="w-full sm:w-1/2 lg:w-auto lg:min-w-[200px]">
 						<FooterSection
 							title={footerData.bottomRightSection.title}
 							links={footerData.bottomRightSection.links}
@@ -151,11 +151,11 @@ const Footer = () => {
 				<Separator className="mb-8" />
 
 				{/* Bottom Section */}
-				<div className="flex justify-between">
+				<div className="flex flex-col sm:flex-row justify-between gap-8">
 					{/* Left side with social icons and copyright */}
-					<div>
+					<div className="order-2 sm:order-1">
 						{/* Social Links */}
-						<div className="flex gap-6 mb-4">
+						<div className="flex gap-6 mb-4 justify-center sm:justify-start">
 							<Link
 								href="/"
 								className="text-gray-600 hover:text-gray-900 transition-colors"
@@ -176,11 +176,13 @@ const Footer = () => {
 							</Link>
 						</div>
 						{/* Copyright */}
-						<div className="text-gray-600">© 2024 ByrdLabs</div>
+						<div className="text-gray-600 text-center sm:text-left">
+							© 2024 ByrdLabs
+						</div>
 					</div>
 
 					{/* Right side with stacked legal links */}
-					<div className="flex flex-col space-y-4 min-w-[200px]">
+					<div className="flex flex-col sm:flex-row gap-4 sm:gap-8 order-1 sm:order-2 items-center sm:items-start">
 						{footerData.legalLinks.map((link) => (
 							<Link
 								key={link.href}

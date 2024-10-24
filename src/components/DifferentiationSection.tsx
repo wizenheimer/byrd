@@ -25,31 +25,32 @@ const DifferentiationSection = () => {
 			</div>
 
 			{/* Bottom Three Column Section - Aligned with PreviewContainer */}
-			<div className="max-w-6xl mx-auto px-4 relative mt-48">
-				{" "}
-				{/* Changed from max-w-7xl to max-w-6xl */}
-				<div className="grid grid-cols-3 gap-20">
+			<div className="max-w-6xl mx-auto px-4 relative mt-20 md:mt-48">
+				<div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-20">
 					{/* Column 1 */}
-					<div className="grid grid-rows-[1fr] items-start">
-						{" "}
-						{/* Removed ml-20 */}
+					<div className="md:block grid grid-rows-[1fr] items-start">
 						<h2 className="text-3xl font-semibold">
-							There&apos;s nothing
-							<br />
-							like being too
-							<br />
-							early, there&apos;s
-							<br />
-							only too late.
+							<span className="hidden md:inline">
+								There&apos;s nothing
+								<br />
+								like being too
+								<br />
+								early, there&apos;s
+								<br />
+								only too late.
+							</span>
 						</h2>
 					</div>
 
 					{/* Column 2 */}
-					<div className="grid grid-rows-[auto_1fr_auto] gap-8">
-						{" "}
-						{/* Removed max-w-sm */}
+					<div className="grid grid-rows-[auto_1fr_auto] gap-6 md:gap-8 max-w-sm mx-auto md:mx-0">
 						<h2 className="text-2xl font-semibold">
-							Know your Goliath inside out.
+							<span className="hidden md:inline">
+								Know your Goliath
+								<br />
+								inside out.
+							</span>
+							<span className="md:hidden">Know your Goliath inside out.</span>
 						</h2>
 						<p className="text-base font-medium text-gray-600 leading-relaxed">
 							You think you&apos;re crushing it? So does everyone else. Stop
@@ -67,11 +68,14 @@ const DifferentiationSection = () => {
 					</div>
 
 					{/* Column 3 */}
-					<div className="grid grid-rows-[auto_1fr_auto] gap-8">
-						{" "}
-						{/* Removed max-w-sm */}
+					<div className="grid grid-rows-[auto_1fr_auto] gap-6 md:gap-8 max-w-sm mx-auto md:mx-0">
 						<h2 className="text-2xl font-semibold">
-							Differentiate Early. And Often.
+							<span className="hidden md:inline">
+								Differentiate Early.
+								<br />
+								And Often.
+							</span>
+							<span className="md:hidden">Differentiate Early. And Often.</span>
 						</h2>
 						<p className="text-base font-medium text-gray-600 leading-relaxed">
 							Your competitors are constantly evolving, changing prices,
