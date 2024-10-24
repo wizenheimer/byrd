@@ -1,6 +1,6 @@
 import Link from "next/link";
 import React from "react";
-import PreviewContainer from "./PreviewContainer";
+import AnimatedImage from "./AnimatedImage";
 
 const DifferentiationSection = () => {
 	return (
@@ -12,19 +12,16 @@ const DifferentiationSection = () => {
 						Differentiation Requires Context
 					</h1>
 					<p className="text-lg text-gray-600 mt-8">
-						You can&apos;t disrupt a market you don&apos;t understand, and you can&apos;t
-						understand a market without knowing who the players are and what
-						they&apos;re doing.
+						You can&apos;t disrupt a market you don&apos;t understand, and you
+						can&apos;t understand a market without knowing who the players are
+						and what they&apos;re doing.
 					</p>
 				</div>
 			</div>
 
 			{/* Screenshot Container */}
 			<div className="max-w-6xl mx-auto px-4 relative ">
-				<PreviewContainer
-					imageSrc="/assets/context.png"
-					caption="Observe market shifts as they happen."
-				/>
+				<AnimatedImage imageSrc="/differentiation.png" />
 			</div>
 
 			{/* Bottom Three Column Section - Aligned with PreviewContainer */}
@@ -55,9 +52,9 @@ const DifferentiationSection = () => {
 							Know your Goliath inside out.
 						</h2>
 						<p className="text-base font-medium text-gray-600 leading-relaxed">
-							You think you&apos;re crushing it? So does everyone else. Stop patting
-							yourself on the back and start learning from competitors. Build a
-							product that resonates best with your customers.
+							You think you&apos;re crushing it? So does everyone else. Stop
+							patting yourself on the back and start learning from competitors.
+							Build a product that resonates best with your customers.
 						</p>
 						<div>
 							<Link

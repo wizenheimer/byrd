@@ -1,6 +1,6 @@
 import Link from "next/link";
 import React from "react";
-import PreviewContainer from "./PreviewContainer";
+import AnimatedImage from "./AnimatedImage";
 
 const CompetitionSection = () => {
 	return (
@@ -19,10 +19,7 @@ const CompetitionSection = () => {
 
 			{/* Screenshot Container */}
 			<div className="max-w-6xl mx-auto px-4 relative">
-				<PreviewContainer
-					imageSrc="/assets/who-cares.png"
-					caption="Observe market shifts as they happen."
-				/>
+				<AnimatedImage imageSrc="/inspector.png" />
 			</div>
 
 			<div className="max-w-6xl mx-auto px-4 relative mt-48">
@@ -51,9 +48,10 @@ const CompetitionSection = () => {
 									Better Have Claws
 								</h3>
 								<p className="text-gray-600 mb-6">
-									Chances are, the very thing you&apos;re working on, someone&apos;s
-									already thought of it, tried it, or is working on it. The most
-									dangerous competition is the one you pretend doesn&apos;t exist.
+									Chances are, the very thing you&apos;re working on,
+									someone&apos;s already thought of it, tried it, or is working
+									on it. The most dangerous competition is the one you pretend
+									doesn&apos;t exist.
 								</p>
 							</div>
 							<div className="mt-auto text-sm">
@@ -76,8 +74,8 @@ const CompetitionSection = () => {
 								</h3>
 								<p className="text-gray-600 mb-6">
 									First to market, last to profit? Your competitors are gunning
-									for gold. Don&apos;t become a footnote in someone else&apos;s success
-									story.
+									for gold. Don&apos;t become a footnote in someone else&apos;s
+									success story.
 								</p>
 							</div>
 							<div className="mt-auto text-sm">
@@ -99,9 +97,9 @@ const CompetitionSection = () => {
 									It&apos;s a Target
 								</h3>
 								<p className="text-gray-600 mb-6">
-									Think you know your market? Think again. Being big doesn&apos;t
-									make you invincible; it makes you visible. And in business,
-									visibility without vigilance is a death sentence.
+									Think you know your market? Think again. Being big
+									doesn&apos;t make you invincible; it makes you visible. And in
+									business, visibility without vigilance is a death sentence.
 								</p>
 							</div>
 							<div className="mt-auto text-sm">

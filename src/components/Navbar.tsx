@@ -13,58 +13,58 @@ const navigationItems = {
 	productIntelligence: {
 		title: "Product Intelligence",
 		items: [
-			{ name: "Product Launches", href: "/product/launches" },
-			{ name: "Roadmap Changes", href: "/product/roadmap" },
-			{ name: "Feature Releases", href: "/product/features" },
-			{ name: "Integration Highlights", href: "/product/integrations" },
+			{ name: "Product Launches", href: "/" },
+			{ name: "Roadmap Changes", href: "/" },
+			{ name: "Feature Releases", href: "/" },
+			{ name: "Integration Highlights", href: "/" },
 		],
 	},
 	mediaIntelligence: {
 		title: "Media Intelligence",
 		items: [
-			{ name: "Press Release Tracking", href: "/media/press" },
-			{ name: "Funding Rounds", href: "/media/funding" },
-			{ name: "Acquisitions and Mergers", href: "/media/acquisitions" },
-			{ name: "Leadership Changes", href: "/media/leadership" },
+			{ name: "Press Release Tracking", href: "/" },
+			{ name: "Funding Rounds", href: "/" },
+			{ name: "Acquisitions and Mergers", href: "/" },
+			{ name: "Leadership Changes", href: "/" },
 		],
 	},
 	competitiveIntelligence: {
 		title: "Competitive Intelligence",
 		items: [
-			{ name: "Price Monitoring", href: "/competitive/pricing" },
-			{ name: "Partnership Briefings", href: "/competitive/partnerships" },
-			{ name: "Positioning Changes", href: "/competitive/positioning" },
-			{ name: "Promotional Offers", href: "/competitive/promotions" },
+			{ name: "Price Monitoring", href: "/" },
+			{ name: "Partnership Briefings", href: "/" },
+			{ name: "Positioning Changes", href: "/" },
+			{ name: "Promotional Offers", href: "/" },
 		],
 	},
 	customerIntelligence: {
 		title: "Customer Intelligence",
 		items: [
-			{ name: "Sentiment Overview", href: "/customer/sentiment" },
-			{ name: "Review Highlights", href: "/customer/reviews" },
-			{ name: "Testimonial Changes", href: "/customer/testimonials" },
+			{ name: "Sentiment Overview", href: "/" },
+			{ name: "Review Highlights", href: "/" },
+			{ name: "Testimonial Changes", href: "/" },
 		],
 	},
 	integrations: {
 		title: "Integrations",
 		items: [
-			{ name: "Slack", href: "/integrations/slack" },
-			{ name: "Notion", href: "/integrations/notion" },
-			{ name: "Google Workspace", href: "/integrations/google" },
+			{ name: "Slack", href: "/" },
+			{ name: "Notion", href: "/" },
+			{ name: "Google Workspace", href: "/" },
 		],
 	},
 	socialIntelligence: {
 		title: "Social Intelligence",
 		items: [
-			{ name: "Engagement Metrics", href: "/social/engagement" },
-			{ name: "Content Analysis", href: "/social/content" },
+			{ name: "Engagement Metrics", href: "/" },
+			{ name: "Content Analysis", href: "/" },
 		],
 	},
 	marketingIntelligence: {
 		title: "Marketing Intelligence",
 		items: [
-			{ name: "Content Strategy Shifts", href: "/marketing/strategy" },
-			{ name: "Newsletter Insights", href: "/marketing/newsletter" },
+			{ name: "Content Strategy Shifts", href: "/" },
+			{ name: "Newsletter Insights", href: "/" },
 		],
 	},
 };
@@ -73,27 +73,27 @@ const resourcesItems = {
 	resources: {
 		title: "Resources",
 		items: [
-			{ name: "Swipe Files", href: "/resources/swipe-files" },
-			{ name: "Ad Library", href: "/resources/ad-library" },
-			{ name: "Newsletter Library", href: "/resources/newsletter-library" },
-			{ name: "Interface Library", href: "/resources/interface-library" },
+			{ name: "Swipe Files", href: "/" },
+			{ name: "Ad Library", href: "/" },
+			{ name: "Newsletter Library", href: "/" },
+			{ name: "Interface Library", href: "/" },
 		],
 	},
 	byrd: {
 		title: "Byrd",
 		items: [
-			{ name: "Release Notes", href: "/release-notes" },
-			{ name: "Blog", href: "/blog" },
-			{ name: "About Us", href: "/about" },
+			{ name: "Release Notes", href: "/" },
+			{ name: "Blog", href: "/" },
+			{ name: "About Us", href: "/" },
 		],
 	},
 	help: {
 		title: "Help",
 		items: [
-			{ name: "Slack Community", href: "/community" },
-			{ name: "Support", href: "/support" },
-			{ name: "Hire an expert", href: "/experts" },
-			{ name: "System Status", href: "/status" },
+			{ name: "Slack Community", href: "/" },
+			{ name: "Support", href: "/" },
+			{ name: "Hire an expert", href: "/" },
+			{ name: "System Status", href: "/" },
 		],
 	},
 };

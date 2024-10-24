@@ -24,7 +24,7 @@ const BigPictureSection = () => {
 
 			{/* Screenshot Container */}
 			<div className="max-w-6xl mx-auto px-4 relative ">
-				<AnimatedImage imageSrc="/assets/big-picture.png" />
+				<AnimatedImage imageSrc="/newsletter-monitoring.png" />
 			</div>
 
 			{/* Bottom Section - Aligned with PreviewContainer */}

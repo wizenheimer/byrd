@@ -2,6 +2,7 @@
 
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 
 interface AnimatedImageProps {
 	imageSrc: string;
@@ -75,4 +76,5 @@ const AnimatedImage: React.FC<AnimatedImageProps> = ({
 	);
 };
 
-export default AnimatedImage;
+// Export as a client-only component
+export default dynamic(() => Promise.resolve(AnimatedImage), { ssr: false });

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import React from "react";
-import PreviewContainer from "./PreviewContainer";
+import AnimatedImage from "./AnimatedImage";
 
 const LastOne = () => {
 	return (
@@ -25,11 +25,7 @@ const LastOne = () => {
 					{/* Left Column */}
 					<div>
 						<div className="relative mb-16">
-							<PreviewContainer
-								imageSrc="/assets/shared-view-left.png"
-								variant="compact"
-								position="right"
-							/>
+							<AnimatedImage imageSrc="/updates-mobile-view.png" />
 						</div>
 						<div className="space-y-6">
 							<h2 className="text-3xl font-bold">Shared competitive picture</h2>
@@ -58,11 +54,7 @@ const LastOne = () => {
 					{/* Right Column */}
 					<div>
 						<div className="relative mb-16">
-							<PreviewContainer
-								imageSrc="/assets/shared-view-right.png"
-								variant="compact"
-								position="right"
-							/>
+							<AnimatedImage imageSrc="/integrations.png" />
 						</div>
 						<div className="space-y-6">
 							<h2 className="text-3xl font-bold">Enrich your knowledge base</h2>

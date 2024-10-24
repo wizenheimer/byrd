@@ -1,6 +1,6 @@
 import Link from "next/link";
 import React from "react";
-import PreviewContainer from "./PreviewContainer";
+import AnimatedImage from "./AnimatedImage";
 
 const MonitoringSection = () => {
 	return (
@@ -14,18 +14,15 @@ const MonitoringSection = () => {
 						Not Just Cheerleaders
 					</h1>
 					<p className="text-lg text-gray-600 mt-8">
-						Ignorance isn&apos;t bliss. Transform competitive blind spots into your
-						unfair advantage.
+						Ignorance isn&apos;t bliss. Transform competitive blind spots into
+						your unfair advantage.
 					</p>
 				</div>
 			</div>
 
 			{/* Screenshot Container */}
 			<div className="max-w-6xl mx-auto px-4 relative ">
-				<PreviewContainer
-					imageSrc="/assets/collective-pages.png"
-					caption="No more sifting through noise to find the signal"
-				/>
+				<AnimatedImage imageSrc="/web-monitoring.png" />
 			</div>
 
 			{/* Bottom Three Column Section */}
@@ -50,9 +47,9 @@ const MonitoringSection = () => {
 							Your Rivals Don&apos;t Rest
 						</h2>
 						<p className="text-base font-medium">
-							You think you&apos;re crushing it? So does everyone else. Stop patting
-							yourself on the back and start learning from competitors. Build a
-							product that resonates best with your customers.
+							You think you&apos;re crushing it? So does everyone else. Stop
+							patting yourself on the back and start learning from competitors.
+							Build a product that resonates best with your customers.
 						</p>
 						<div className="mt-12">
 							<Link

@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import React from "react";
-import PreviewContainer from "./PreviewContainer";
+import AnimatedImage from "./AnimatedImage";
 
 const Hero = () => {
 	return (
@@ -38,10 +38,7 @@ const Hero = () => {
 
 			{/* Screenshot Container */}
 			<div className="max-w-6xl mx-auto px-4 relative">
-				<PreviewContainer
-					imageSrc="/assets/dashboard.png"
-					caption="Every change, no matter how small, gets flagged."
-				/>
+				<AnimatedImage imageSrc="/overview.png" />
 			</div>
 		</div>
 	);
