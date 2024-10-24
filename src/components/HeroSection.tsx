@@ -19,7 +19,7 @@ const Hero = () => {
 					<h1 className="text-5xl font-bold tracking-tight mb-6">
 						We watch your competitors,
 						<br />
-						so you don't have to
+						so you don&apos;t have to
 					</h1>
 					<p className="text-lg text-gray-600 mb-8">
 						Know the moves your competitors make, long before their own

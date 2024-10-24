@@ -12,9 +12,9 @@ const DifferentiationSection = () => {
 						Differentiation Requires Context
 					</h1>
 					<p className="text-lg text-gray-600 mt-8">
-						You can't disrupt a market you don't understand, and you can't
+						You can&apos;t disrupt a market you don&apos;t understand, and you can&apos;t
 						understand a market without knowing who the players are and what
-						they're doing.
+						they&apos;re doing.
 					</p>
 				</div>
 			</div>
@@ -37,11 +37,11 @@ const DifferentiationSection = () => {
 						{" "}
 						{/* Removed ml-20 */}
 						<h2 className="text-3xl font-semibold">
-							There's nothing
+							There&apos;s nothing
 							<br />
 							like being too
 							<br />
-							early, there's
+							early, there&apos;s
 							<br />
 							only too late.
 						</h2>
@@ -55,7 +55,7 @@ const DifferentiationSection = () => {
 							Know your Goliath inside out.
 						</h2>
 						<p className="text-base font-medium text-gray-600 leading-relaxed">
-							You think you're crushing it? So does everyone else. Stop patting
+							You think you&apos;re crushing it? So does everyone else. Stop patting
 							yourself on the back and start learning from competitors. Build a
 							product that resonates best with your customers.
 						</p>
@@ -78,15 +78,15 @@ const DifferentiationSection = () => {
 						</h2>
 						<p className="text-base font-medium text-gray-600 leading-relaxed">
 							Your competitors are constantly evolving, changing prices,
-							launching new features. It's not what you know about your
-							competitors - it's what you don't know yet that matters.
+							launching new features. It&apos;s not what you know about your
+							competitors - it&apos;s what you don&apos;t know yet that matters.
 						</p>
 						<div>
 							<Link
 								href="/"
 								className="inline-block text-gray-500 font-medium underline underline-offset-4 hover:text-gray-700"
 							>
-								Don't play catchup. Call the shots.
+								Don&apos;t play catchup. Call the shots.
 							</Link>
 						</div>
 					</div>

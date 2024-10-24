@@ -1,8 +1,6 @@
-import Image from "next/image";
 import Link from "next/link";
 import React from "react";
 import AnimatedImage from "./AnimatedImage";
-import PreviewContainer from "./PreviewContainer";
 
 const BigPictureSection = () => {
 	return (
@@ -45,7 +43,9 @@ const BigPictureSection = () => {
 							Forget PMF, you just re-discovered the express lane to Chapter 11.
 						</p>
 						<div className="inline-block text-gray-500 hover:text-gray-900 font-medium underline">
-							<Link href="/">Don't solve problems, by creating new ones</Link>
+							<Link href="/">
+								Don&apos;t solve problems, by creating new ones
+							</Link>
 						</div>
 					</div>
 
@@ -57,9 +57,9 @@ const BigPictureSection = () => {
 							No Noise
 						</h2>
 						<p className="text-base text-gray-600 leading-relaxed">
-							With Byrd, each alert is like a personal briefing. Whether it's
-							product updates, branding overhauls, or partnership plays, you'll
-							be the first to know.
+							With Byrd, each alert is like a personal briefing. Whether
+							it&apos;s product updates, branding overhauls, or partnership
+							plays, you&apos;ll be the first to know.
 						</p>
 						<div className="inline-block text-gray-500 hover:text-gray-900 font-medium underline">
 							<Link href="/">Competition never sleeps, but you can</Link>
@@ -75,8 +75,8 @@ const BigPictureSection = () => {
 						</h2>
 						<p className="text-base text-gray-600 leading-relaxed">
 							With byrd you get clear, concise, and actionable intel delivered
-							straight to you. It's like having a team of consultants on call,
-							minus the expensive suits and PowerPoint.
+							straight to you. It&apos;s like having a team of consultants on
+							call, minus the expensive suits and PowerPoint.
 						</p>
 						<div className="inline-block text-gray-500 hover:text-gray-900 font-medium underline">
 							<Link href="/">Never Miss a Market Move</Link>

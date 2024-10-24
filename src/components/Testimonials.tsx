@@ -7,7 +7,7 @@ const TestimonialsSection = () => {
 			<div className="max-w-7xl mx-auto px-4 pt-20 pb-40">
 				<div className="text-center max-w-4xl mx-auto">
 					<h1 className="text-5xl font-bold tracking-tight mb-6">
-						You're in a good company
+						You&apos;re in a good company
 					</h1>
 					<p className="text-lg text-gray-600 mt-8">
 						From Underdogs to Top Dogs. Titans who crush it with byrd.
@@ -22,8 +22,9 @@ const TestimonialsSection = () => {
 					<div>
 						<p className="text-2xl font-semibold mb-6 leading-tight text-gray-900 group-hover:text-white">
 							After trying and ditching countless other tools, I was pretty
-							jaded. A month later, I'm eating my words. Have never seen our
-							sales and product team so pumped about a tool. Absolute must-have.
+							jaded. A month later, I&apos;m eating my words. Have never seen
+							our sales and product team so pumped about a tool. Absolute
+							must-have.
 						</p>
 					</div>
 					<div>
@@ -45,8 +46,8 @@ const TestimonialsSection = () => {
 					<div className="bg-gray-100 hover:bg-black rounded-2xl p-10 transition-colors duration-500 group">
 						<div className="mb-6">
 							<p className="text-xl font-semibold mb-6 leading-tight text-gray-900 group-hover:text-white">
-								I've used 'em all, and this one takes the cake. Doesn't just add
-								value, multiplies it.
+								I&apos;ve used &apos;em all, and this one takes the cake.
+								Doesn&apos;t just add value, multiplies it.
 							</p>
 						</div>
 						<div>
@@ -67,7 +68,7 @@ const TestimonialsSection = () => {
 						<div className="mb-6">
 							<p className="text-xl font-semibold mb-6 leading-tight text-gray-900 group-hover:text-white">
 								CFO nearly had a heart attack when I suggested another tool.
-								Now? She's the one championing it.
+								Now? She&apos;s the one championing it.
 							</p>
 						</div>
 						<div>

@@ -14,7 +14,7 @@ const MonitoringSection = () => {
 						Not Just Cheerleaders
 					</h1>
 					<p className="text-lg text-gray-600 mt-8">
-						Ignorance isn't bliss. Transform competitive blind spots into your
+						Ignorance isn&apos;t bliss. Transform competitive blind spots into your
 						unfair advantage.
 					</p>
 				</div>
@@ -47,10 +47,10 @@ const MonitoringSection = () => {
 					{/* Column 2 */}
 					<div className="max-w-sm">
 						<h2 className="text-2xl font-semibold mb-4">
-							Your Rivals Don't Rest
+							Your Rivals Don&apos;t Rest
 						</h2>
 						<p className="text-base font-medium">
-							You think you're crushing it? So does everyone else. Stop patting
+							You think you&apos;re crushing it? So does everyone else. Stop patting
 							yourself on the back and start learning from competitors. Build a
 							product that resonates best with your customers.
 						</p>
@@ -71,8 +71,8 @@ const MonitoringSection = () => {
 						</h2>
 						<p className="text-base font-medium">
 							Your competitors are constantly evolving, changing prices,
-							launching new features. It's not what you know about your
-							competitors - it's what you don't know yet that matters.
+							launching new features. It&apos;s not what you know about your
+							competitors - it&apos;s what you don&apos;t know yet that matters.
 						</p>
 						<div className="mt-12">
 							<Link

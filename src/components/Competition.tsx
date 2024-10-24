@@ -51,9 +51,9 @@ const CompetitionSection = () => {
 									Better Have Claws
 								</h3>
 								<p className="text-gray-600 mb-6">
-									Chances are, the very thing you're working on, someone's
+									Chances are, the very thing you&apos;re working on, someone&apos;s
 									already thought of it, tried it, or is working on it. The most
-									dangerous competition is the one you pretend doesn't exist.
+									dangerous competition is the one you pretend doesn&apos;t exist.
 								</p>
 							</div>
 							<div className="mt-auto text-sm">
@@ -61,7 +61,7 @@ const CompetitionSection = () => {
 									href="/"
 									className="text-gray-500 font-medium underline underline-offset-4 hover:text-gray-700"
 								>
-									What you don't know CAN hurt you
+									What you don&apos;t know CAN hurt you
 								</Link>
 							</div>
 						</div>
@@ -76,7 +76,7 @@ const CompetitionSection = () => {
 								</h3>
 								<p className="text-gray-600 mb-6">
 									First to market, last to profit? Your competitors are gunning
-									for gold. Don't become a footnote in someone else's success
+									for gold. Don&apos;t become a footnote in someone else&apos;s success
 									story.
 								</p>
 							</div>
@@ -94,12 +94,12 @@ const CompetitionSection = () => {
 						<div className="flex flex-col">
 							<div>
 								<h3 className="text-xl font-semibold mb-4">
-									Size isn't a Shield
+									Size isn&apos;t a Shield
 									<br />
-									It's a Target
+									It&apos;s a Target
 								</h3>
 								<p className="text-gray-600 mb-6">
-									Think you know your market? Think again. Being big doesn't
+									Think you know your market? Think again. Being big doesn&apos;t
 									make you invincible; it makes you visible. And in business,
 									visibility without vigilance is a death sentence.
 								</p>
