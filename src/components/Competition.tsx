@@ -9,10 +9,10 @@ const CompetitionSection = () => {
 			<div className="max-w-7xl mx-auto px-4 pt-20 pb-40">
 				<div className="text-center max-w-4xl mx-auto">
 					<h1 className="text-5xl font-bold tracking-tight mb-6">
-						Competition Who Cares?
+						Not Watching Competitors?
 					</h1>
 					<p className="text-lg text-gray-600 mt-8">
-						Your customers do. They compare. They seek alternatives.
+						Hope You Like Surprises (Spoiler: You Won't)
 					</p>
 				</div>
 			</div>
@@ -26,7 +26,7 @@ const CompetitionSection = () => {
 				<div className="grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-12">
 					{/* Title Column - Hidden on mobile */}
 					<div className="hidden md:block">
-						<h2 className="text-3xl font-bold leading-tight">
+						<h2 className="text-2xl font-bold leading-tight">
 							<span className="hidden md:inline">
 								There are no
 								<br />
@@ -47,7 +47,7 @@ const CompetitionSection = () => {
 						<div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-12">
 							{/* Column 1 */}
 							<div className="space-y-6 md:grid md:grid-rows-[auto_1fr_auto] md:gap-8 max-w-sm mx-auto md:mx-0">
-								<h2 className="text-3xl font-bold">
+								<h2 className="text-2xl font-bold">
 									<span className="hidden md:inline">
 										Your Product
 										<br />
@@ -66,7 +66,7 @@ const CompetitionSection = () => {
 								<div>
 									<Link
 										href="/"
-										className="text-gray-500 hover:text-gray-900 font-bold underline"
+										className="text-gray-500 font-medium underline underline-offset-4 hover:text-gray-700"
 									>
 										What you don&apos;t know CAN hurt you
 									</Link>
@@ -75,7 +75,7 @@ const CompetitionSection = () => {
 
 							{/* Column 2 */}
 							<div className="space-y-6 md:grid md:grid-rows-[auto_1fr_auto] md:gap-8 max-w-sm mx-auto md:mx-0">
-								<h2 className="text-3xl font-bold">
+								<h2 className="text-2xl font-bold">
 									<span className="hidden md:inline">
 										Second Place is
 										<br />
@@ -91,7 +91,7 @@ const CompetitionSection = () => {
 								<div>
 									<Link
 										href="/"
-										className="text-gray-500 hover:text-gray-900 font-bold underline"
+										className="text-gray-500 font-medium underline underline-offset-4 hover:text-gray-700"
 									>
 										Customers close, Competitors closer
 									</Link>
@@ -100,7 +100,7 @@ const CompetitionSection = () => {
 
 							{/* Column 3 */}
 							<div className="space-y-6 md:grid md:grid-rows-[auto_1fr_auto] md:gap-8 max-w-sm mx-auto md:mx-0">
-								<h2 className="text-3xl font-bold">
+								<h2 className="text-2xl font-bold">
 									<span className="hidden md:inline">
 										Size isn&apos;t a Shield
 										<br />
@@ -118,7 +118,7 @@ const CompetitionSection = () => {
 								<div>
 									<Link
 										href="/"
-										className="text-gray-500 hover:text-gray-900 font-bold underline"
+										className="text-gray-500 font-medium underline underline-offset-4 hover:text-gray-700"
 									>
 										Blindfolds Are for Piñatas, Not CEOs
 									</Link>

@@ -45,8 +45,13 @@ const BigPictureSection = () => {
 							busywork? Measuring outcome by the pounds of reports generated?
 							Forget PMF, you just re-discovered the express lane to Chapter 11.
 						</p>
-						<div className="inline-block text-gray-500 hover:text-gray-900 font-bold underline">
-							<Link href="/">
+						<div className="inline-block text-gray-500 font-medium underline underline-offset-4 hover:text-gray-700">
+							<Link href="/" className="hidden md:inline">
+								Don&apos;t solve problems
+								<br />
+								by creating new ones
+							</Link>
+							<Link href="/" className="md:hidden">
 								Don&apos;t solve problems, by creating new ones
 							</Link>
 						</div>
@@ -67,8 +72,15 @@ const BigPictureSection = () => {
 							it&apos;s product updates, branding overhauls, or partnership
 							plays, you&apos;ll be the first to know.
 						</p>
-						<div className="inline-block text-gray-500 hover:text-gray-900 font-bold underline">
-							<Link href="/">Competition never sleeps, but you can</Link>
+						<div className="inline-block text-gray-500 font-medium underline underline-offset-4 hover:text-gray-700">
+							<Link href="/" className="hidden md:inline">
+								Competition never sleeps,
+								<br />
+								but you can
+							</Link>
+							<Link href="/" className="md:hidden">
+								Competition never sleeps, but you can
+							</Link>
 						</div>
 					</div>
 
@@ -87,8 +99,15 @@ const BigPictureSection = () => {
 							straight to you. It&apos;s like having a team of consultants on
 							call, minus the expensive suits and PowerPoint.
 						</p>
-						<div className="inline-block text-gray-500 hover:text-gray-900 font-bold underline">
-							<Link href="/">Never Miss a Market Move</Link>
+						<div className="inline-block text-gray-500 font-medium underline underline-offset-4 hover:text-gray-700">
+							<Link href="/" className="hidden md:inline">
+								The Market's Hungry,
+								<br />
+								and You Look Like Lunch
+							</Link>
+							<Link href="/" className="md:hidden">
+								The Market's Hungry, and You Look Like Lunch
+							</Link>
 						</div>
 					</div>
 				</div>
