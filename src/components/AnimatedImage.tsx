@@ -60,8 +60,27 @@ const AnimatedImage: React.FC<AnimatedImageProps> = ({
 		return () => window.removeEventListener("scroll", handleScroll);
 	}, [parallaxStrength]);
 
+	// Prevent right-click
+	const handleContextMenu = (e: React.MouseEvent) => {
+		e.preventDefault();
+	};
+
 	return (
-		<div ref={containerRef} className={`relative overflow-hidden ${className}`}>
+		<div
+			ref={containerRef}
+			className={`relative overflow-hidden ${className}`}
+			onContextMenu={handleContextMenu}
+			onDragStart={(e) => e.preventDefault()}
+			draggable="false"
+			style={
+				{
+					userSelect: "none",
+					WebkitUserSelect: "none",
+					MozUserSelect: "none",
+					msUserSelect: "none",
+				} as React.CSSProperties
+			}
+		>
 			<img
 				src={imageSrc}
 				alt={alt || "Image"}
@@ -70,7 +89,13 @@ const AnimatedImage: React.FC<AnimatedImageProps> = ({
 					transform: `translateY(${offset}px) scale(${isVisible ? 1 : 1.05})`,
 					opacity: isVisible ? 1 : 0,
 					willChange: "transform, opacity",
+					userSelect: "none",
+					WebkitUserSelect: "none",
+					MozUserSelect: "none",
+					msUserSelect: "none",
 				}}
+				draggable={false}
+				onDragStart={(e) => e.preventDefault()}
 			/>
 		</div>
 	);
