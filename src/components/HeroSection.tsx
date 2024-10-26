@@ -5,11 +5,11 @@ import AnimatedImage from "./AnimatedImage";
 const Hero = () => {
 	return (
 		<div className="w-full bg-background relative overflow-hidden">
-			<div className="max-w-7xl mx-auto px-4 pt-24 pb-48">
+			<div className="max-w-7xl mx-auto px-4 pt-24 pb-16 md:pb-32 lg:pb-48">
 				{/* Beta Badge */}
 				<div className="flex justify-center mb-8">
 					<div className="bg-black/10 rounded-full px-3 py-1 inline-flex items-center gap-2">
-						<div className="w-2 h-2 rounded-full bg-green-500" />
+						<div className="w-2 h-2 rounded-full bg-green-500 animate-[statusBlink_3s_ease-in-out_infinite]" />
 						<span className="text-sm">Beta</span>
 					</div>
 				</div>

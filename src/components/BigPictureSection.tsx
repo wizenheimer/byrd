@@ -4,9 +4,9 @@ import AnimatedImage from "./AnimatedImage";
 
 const BigPictureSection = () => {
 	return (
-		<div className="w-full bg-background relative overflow-hidden mt-40">
+		<div className="w-full bg-background relative overflow-hidden mt-20 md:mt-32 lg:mt-40">
 			{/* Hero Text Content */}
-			<div className="max-w-7xl mx-auto px-4 pt-20 pb-40">
+			<div className="max-w-7xl mx-auto px-4 pt-12 md:pt-16 lg:pt-20 pb-20 md:pb-32 lg:pb-40">
 				<div className="text-center max-w-4xl mx-auto">
 					<h1 className="text-5xl font-bold tracking-tight mb-6">
 						Focus on the big picture
@@ -28,7 +28,7 @@ const BigPictureSection = () => {
 			</div>
 
 			{/* Bottom Section - Aligned with PreviewContainer */}
-			<div className="max-w-6xl mx-auto px-4 relative mt-16 md:mt-32">
+			<div className="max-w-6xl mx-auto px-4 relative mt-12 md:mt-32 lg:mt-48">
 				<div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-24">
 					{/* Column 1 */}
 					<div className="space-y-6 md:grid md:grid-rows-[auto_1fr_auto] md:gap-8 max-w-sm mx-auto md:mx-0">
@@ -38,7 +38,7 @@ const BigPictureSection = () => {
 								<br />
 								More Problems
 							</span>
-							<span className="md:hidden">More Bodies More Problems</span>
+							<span className="md:hidden">More Bodies. More Problems</span>
 						</h2>
 						<p className="text-gray-600 leading-relaxed">
 							Planning on hiring an army of interns? Flooding them with
@@ -65,7 +65,7 @@ const BigPictureSection = () => {
 								<br />
 								No Noise
 							</span>
-							<span className="md:hidden">All Signal No Noise</span>
+							<span className="md:hidden">All Signal. No Noise</span>
 						</h2>
 						<p className="text-gray-600 leading-relaxed">
 							With Byrd, each alert is like a personal briefing. Whether
@@ -92,7 +92,7 @@ const BigPictureSection = () => {
 								<br />
 								All the Time
 							</span>
-							<span className="md:hidden">Real-time All the Time</span>
+							<span className="md:hidden">Real-time. All the Time</span>
 						</h2>
 						<p className="text-gray-600 leading-relaxed">
 							With byrd you get clear, concise, and actionable intel delivered

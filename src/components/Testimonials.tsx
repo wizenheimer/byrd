@@ -2,9 +2,9 @@ import React from "react";
 
 const TestimonialsSection = () => {
 	return (
-		<div className="w-full bg-background relative overflow-hidden mt-60">
+		<div className="w-full bg-background relative overflow-hidden mt-32 md:mt-48 lg:mt-60">
 			{/* Hero Text Content */}
-			<div className="max-w-7xl mx-auto px-4 pt-20 pb-40">
+			<div className="max-w-7xl mx-auto px-4 pt-12 md:pt-16 lg:pt-20 pb-20 md:pb-32 lg:pb-40">
 				<div className="text-center max-w-4xl mx-auto">
 					<h1 className="text-5xl font-bold tracking-tight mb-6">
 						You&apos;re in a good company
@@ -16,9 +16,9 @@ const TestimonialsSection = () => {
 			</div>
 
 			{/* Testimonials Grid */}
-			<div className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-6 mt-30">
+			<div className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mt-16 md:mt-24 lg:mt-30">
 				{/* CTO Testimonial */}
-				<div className="bg-gray-100 hover:bg-black rounded-2xl p-10 flex flex-col justify-between transition-colors duration-500 group">
+				<div className="bg-gray-100 hover:bg-black rounded-2xl p-6 md:p-8 lg:p-10 flex flex-col justify-between transition-colors duration-500 group">
 					<div>
 						<p className="text-2xl font-semibold mb-6 leading-tight text-gray-900 group-hover:text-white">
 							After trying and ditching countless other tools, I was pretty
@@ -41,9 +41,9 @@ const TestimonialsSection = () => {
 				</div>
 
 				{/* Right Column Testimonials */}
-				<div className="space-y-6">
+				<div className="space-y-4 md:space-y-6">
 					{/* VP Product Testimonial */}
-					<div className="bg-gray-100 hover:bg-black rounded-2xl p-10 transition-colors duration-500 group">
+					<div className="bg-gray-100 hover:bg-black rounded-2xl p-6 md:p-8 lg:p-10 transition-colors duration-500 group">
 						<div className="mb-6">
 							<p className="text-xl font-semibold mb-6 leading-tight text-gray-900 group-hover:text-white">
 								I&apos;ve used &apos;em all, and this one takes the cake.
@@ -64,7 +64,7 @@ const TestimonialsSection = () => {
 					</div>
 
 					{/* Founder Testimonial */}
-					<div className="bg-gray-100 hover:bg-black rounded-2xl p-10 transition-colors duration-500 group">
+					<div className="bg-gray-100 hover:bg-black rounded-2xl p-6 md:p-8 lg:p-10 transition-colors duration-500 group">
 						<div className="mb-6">
 							<p className="text-xl font-semibold mb-6 leading-tight text-gray-900 group-hover:text-white">
 								CFO nearly had a heart attack when I suggested another tool.

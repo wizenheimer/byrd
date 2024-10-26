@@ -4,9 +4,9 @@ import AnimatedImage from "./AnimatedImage";
 
 const CompetitionSection = () => {
 	return (
-		<div className="w-full bg-background relative overflow-hidden mt-40">
+		<div className="w-full bg-background relative overflow-hidden mt-20 md:mt-32 lg:mt-40">
 			{/* Hero Text Content */}
-			<div className="max-w-7xl mx-auto px-4 pt-20 pb-40">
+			<div className="max-w-7xl mx-auto pt-12 md:pt-16 lg:pt-20 pb-20 md:pb-32 lg:pb-40">
 				<div className="text-center max-w-4xl mx-auto">
 					<h1 className="text-5xl font-bold tracking-tight mb-6">
 						Not Watching Competitors?
@@ -22,7 +22,7 @@ const CompetitionSection = () => {
 				<AnimatedImage imageSrc="/inspector.png" />
 			</div>
 
-			<div className="max-w-6xl mx-auto px-4 relative mt-20 md:mt-48">
+			<div className="max-w-6xl mx-auto px-4 relative mt-12 md:mt-32 lg:mt-48">
 				<div className="grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-12">
 					{/* Title Column - Hidden on mobile */}
 					<div className="hidden md:block">

@@ -4,9 +4,9 @@ import AnimatedImage from "./AnimatedImage";
 
 const DifferentiationSection = () => {
 	return (
-		<div className="w-full bg-background relative overflow-hidden mt-60">
+		<div className="w-full bg-background relative overflow-hidden mt-32 md:mt-48 lg:mt-60">
 			{/* Hero Text Content */}
-			<div className="max-w-7xl mx-auto px-4 pt-20 pb-40">
+			<div className="max-w-7xl mx-auto px-4 pt-12 md:pt-16 lg:pt-20 pb-20 md:pb-32 lg:pb-40">
 				<div className="text-center max-w-4xl mx-auto">
 					<h1 className="text-5xl font-bold tracking-tight mb-6">
 						Differentiation Requires Context
@@ -20,12 +20,12 @@ const DifferentiationSection = () => {
 			</div>
 
 			{/* Screenshot Container */}
-			<div className="max-w-6xl mx-auto px-4 relative ">
+			<div className="max-w-6xl mx-auto px-4 relative">
 				<AnimatedImage imageSrc="/differentiation.png" />
 			</div>
 
 			{/* Bottom Three Column Section - Aligned with PreviewContainer */}
-			<div className="max-w-6xl mx-auto px-4 relative mt-20 md:mt-48">
+			<div className="max-w-6xl mx-auto px-4 relative mt-12 md:mt-32 lg:mt-48">
 				<div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-20">
 					{/* Column 1 */}
 					<div className="md:block grid grid-rows-[1fr] items-start">

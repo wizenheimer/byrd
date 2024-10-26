@@ -4,9 +4,9 @@ import AnimatedImage from "./AnimatedImage";
 
 const LastOne = () => {
 	return (
-		<div className="w-full bg-background relative overflow-hidden mt-40">
+		<div className="w-full bg-background relative overflow-hidden mt-20 md:mt-32 lg:mt-40">
 			{/* Hero Text Content */}
-			<div className="max-w-7xl mx-auto px-4 pt-20 pb-20">
+			<div className="max-w-7xl mx-auto px-4 pt-12 md:pt-16 lg:pt-20 pb-12 md:pb-16 lg:pb-20">
 				<div className="text-center max-w-4xl mx-auto">
 					<h1 className="text-5xl font-bold tracking-tight mb-4">
 						Don&apos;t be the last one to know.

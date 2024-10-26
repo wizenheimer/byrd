@@ -3,8 +3,8 @@ import React from "react";
 
 const ExitCTA = () => {
 	return (
-		<div className="w-full bg-background relative overflow-hidden mt-40">
-			<div className="max-w-7xl mx-auto px-4 pt-24 pb-40">
+		<div className="w-full bg-background relative overflow-hidden mt-20 md:mt-32 lg:mt-40">
+			<div className="max-w-7xl mx-auto px-4 pt-16 md:pt-20 lg:pt-24 pb-20 md:pb-32 lg:pb-40">
 				{/* Hero Text Content */}
 				<div className="text-center max-w-3xl mx-auto">
 					<h1 className="text-5xl font-bold tracking-tight mb-6">
