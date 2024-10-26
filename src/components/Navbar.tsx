@@ -176,7 +176,7 @@ const ResourcesDropdown = () => {
 					<a href="/blog/uber-case-study" className="block group">
 						<div className="rounded-xl overflow-hidden">
 							<img
-								src="/assets/blog-cover.png"
+								src="/blog-cover.png"
 								alt="Blog cover"
 								className="w-full h-48 object-cover rounded-xl"
 							/>
