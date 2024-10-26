@@ -12,7 +12,7 @@ const CompetitionSection = () => {
 						Not Watching Competitors?
 					</h1>
 					<p className="text-lg text-gray-600 mt-8">
-						Hope You Like Surprises (Spoiler: You Won't)
+						Hope You Like Surprises (Spoiler: You Won&apos;t)
 					</p>
 				</div>
 			</div>

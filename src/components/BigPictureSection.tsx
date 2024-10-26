@@ -101,12 +101,12 @@ const BigPictureSection = () => {
 						</p>
 						<div className="inline-block text-gray-500 font-medium underline underline-offset-4 hover:text-gray-700">
 							<Link href="/" className="hidden md:inline">
-								The Market's Hungry,
+								The Market&apos;s Hungry,
 								<br />
 								and You Look Like Lunch
 							</Link>
 							<Link href="/" className="md:hidden">
-								The Market's Hungry, and You Look Like Lunch
+								The Market&apos;s Hungry, and You Look Like Lunch
 							</Link>
 						</div>
 					</div>

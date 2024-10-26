@@ -12,27 +12,23 @@ const errorMessages = [
 	},
 	{
 		message:
-			"Think of this as our one blind spot. But don't worry - our competitive tracking is still spot-on.",
+			"404: Think of this page as our one blind spots. But don't worry - our competitive tracking is still spot-on.",
 	},
 	{
 		message:
-			"Well this is embarrassing... but hey, don't worry we haven't lost track of your competitors!",
+			"404: Well this is embarrassing... but hey, don't worry we haven't lost track of your competitors!",
 	},
 	{
 		message:
-			"We dropped the ball on this page. But don't worry haven't lost track of your competitors!",
+			"404: We dropped the ball on this page. But don't worry haven't lost track of your competitors!",
 	},
 	{
 		message:
-			"Consider this our one missed signal. Your competitors are still in our sights.",
+			"404: Page not found - but found something better: your competitors' latest moves! Check them out now.",
 	},
 	{
 		message:
-			"Page not found - but found something better: your competitors' latest moves! Check them now.",
-	},
-	{
-		message:
-			"Seems this page is an uncharted territory. Rest assured, we're still mapping your competitors' every move.",
+			"404: Seems this page is an uncharted territory. Rest assured, we're still mapping your competitors' every move.",
 	},
 	{
 		message:
@@ -40,15 +36,15 @@ const errorMessages = [
 	},
 	{
 		message:
-			"This page is playing hard to get. Your competitors? We've got them right where we can see them.",
+			"404: This page is playing hard to get. Your competitors? We've got them right where we can see them.",
 	},
 	{
 		message:
-			"Looks like we misplaced this page. Good thing we never misplace your competitor data!",
+			"404: Looks like we misplaced this page. Good thing we never misplace your competitor data! Go check it out.",
 	},
 	{
 		message:
-			"This page is a ghost town. But don't worry, we're still tracking your competitors' every move.",
+			"404: This page is a ghost town. But don't worry, we're still tracking your competitors' every move.",
 	},
 	{
 		message:
