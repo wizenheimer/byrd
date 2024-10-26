@@ -76,3 +76,25 @@ body {
 		@apply bg-background text-foreground;
 	}
 }
+
+
+/* Hide scrollbars for Chrome, Safari and Opera */
+::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbars for IE, Edge and Firefox */
+* {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+/* Maintain smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Optional: If you want to keep scrolling momentum on Safari */
+body {
+  -webkit-overflow-scrolling: touch;
+}
