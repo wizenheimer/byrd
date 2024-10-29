@@ -2,19 +2,19 @@
 
 import { Button } from "@/components/ui/button";
 import {
+	Collapsible,
+	CollapsibleContent,
+	CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
 	NavigationMenu,
 	NavigationMenuItem,
 	NavigationMenuList,
 	NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import {
-	Collapsible,
-	CollapsibleContent,
-	CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 import { ChevronDown, Menu } from "lucide-react";
-import React, { useState } from "react";
+import { useState } from "react";
 
 const navigationItems = {
 	product: {
@@ -253,7 +253,11 @@ const MobileMenu = () => {
 	);
 };
 
-const Navbar = () => {
+interface NavbarProps {
+	isSimpleVersion?: boolean;
+}
+
+const Navbar = ({ isSimpleVersion = true }: NavbarProps) => {
 	const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 	const [isOverlayVisible, setIsOverlayVisible] = useState(false);
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -262,6 +266,25 @@ const Navbar = () => {
 		setActiveDropdown(dropdownName);
 		setIsOverlayVisible(!!dropdownName);
 	};
+
+	// Added a temporary flag to render a simple version of the navbar
+	// Phased out once product and resources pages are implemented
+	if (isSimpleVersion) {
+		return (
+			<div className="relative z-50 w-full bg-background">
+				<nav>
+					<div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
+						<a href="/" className="text-xl font-bold">
+							byrd
+						</a>
+						<Button className="bg-black text-white hover:bg-black/90">
+							Get Started
+						</Button>
+					</div>
+				</nav>
+			</div>
+		);
+	}
 
 	return (
 		<>

@@ -1,6 +1,6 @@
-import ContentGrid from "./block/ContentGridBlock";
-import ScreenshotBlock from "./block/ScreenshotBlock";
-import SectionHeader from "./block/SectionHeaderBlock";
+import ContentGrid from "../block/ContentGridBlock";
+import ScreenshotBlock from "../block/ScreenshotBlock";
+import SectionHeader from "../block/SectionHeaderBlock";
 
 const CompetitionSection = () => {
 	const gridContent = {

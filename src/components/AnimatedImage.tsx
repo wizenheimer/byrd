@@ -1,26 +1,23 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
-import dynamic from "next/dynamic";
 
-interface AnimatedImageProps {
+interface RevealImageProps {
 	imageSrc: string;
 	alt?: string;
 	className?: string;
 	imageClassName?: string;
-	parallaxStrength?: number;
 }
 
-const AnimatedImage: React.FC<AnimatedImageProps> = ({
+const RevealImage: React.FC<RevealImageProps> = ({
 	imageSrc,
 	alt,
 	className = "",
 	imageClassName = "",
-	parallaxStrength = 0.1,
 }) => {
 	const containerRef = useRef<HTMLDivElement>(null);
-	const [offset, setOffset] = useState(0);
 	const [isVisible, setIsVisible] = useState(false);
 
 	useEffect(() => {
@@ -42,23 +39,6 @@ const AnimatedImage: React.FC<AnimatedImageProps> = ({
 
 		return () => observer.disconnect();
 	}, []);
-
-	useEffect(() => {
-		const handleScroll = () => {
-			if (!containerRef.current) return;
-			const rect = containerRef.current.getBoundingClientRect();
-			const containerCenter = rect.top + rect.height / 2;
-			const viewportCenter = window.innerHeight / 2;
-			const distanceFromCenter = containerCenter - viewportCenter;
-
-			setOffset(distanceFromCenter * parallaxStrength);
-		};
-
-		window.addEventListener("scroll", handleScroll);
-		handleScroll();
-
-		return () => window.removeEventListener("scroll", handleScroll);
-	}, [parallaxStrength]);
 
 	// Prevent right-click
 	const handleContextMenu = (e: React.MouseEvent) => {
@@ -84,9 +64,9 @@ const AnimatedImage: React.FC<AnimatedImageProps> = ({
 			<img
 				src={imageSrc}
 				alt={alt || "Image"}
-				className={`w-full object-cover transition-all duration-1000 ease-out ${imageClassName}`}
+				className={`w-full object-cover transition-all duration-700 ease-out ${imageClassName}`}
 				style={{
-					transform: `translateY(${offset}px) scale(${isVisible ? 1 : 1.05})`,
+					transform: `scale(${isVisible ? 1 : 1.05})`,
 					opacity: isVisible ? 1 : 0,
 					willChange: "transform, opacity",
 					userSelect: "none",
@@ -101,5 +81,4 @@ const AnimatedImage: React.FC<AnimatedImageProps> = ({
 	);
 };
 
-// Export as a client-only component
-export default dynamic(() => Promise.resolve(AnimatedImage), { ssr: false });
+export default dynamic(() => Promise.resolve(RevealImage), { ssr: false });

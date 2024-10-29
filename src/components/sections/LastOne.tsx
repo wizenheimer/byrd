@@ -1,5 +1,5 @@
-import SectionHeader from "./block/SectionHeaderBlock";
-import SplitBlock from "./block/SplitBlock";
+import SectionHeader from "../block/SectionHeaderBlock";
+import SplitBlock from "../block/SplitBlock";
 
 const LastOne = () => {
 	const headerContent = {

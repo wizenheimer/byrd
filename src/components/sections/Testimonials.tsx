@@ -1,4 +1,4 @@
-import SectionHeader from "./block/SectionHeaderBlock";
+import SectionHeader from "../block/SectionHeaderBlock";
 
 const TestimonialsSection = () => {
 	const headerContent = {

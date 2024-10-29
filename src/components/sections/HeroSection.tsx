@@ -1,5 +1,5 @@
-import HeroSection from "./block/HeroBlock";
-import ScreenshotBlock from "./block/ScreenshotBlock";
+import HeroSection from "../block/HeroBlock";
+import ScreenshotBlock from "../block/ScreenshotBlock";
 
 const Hero = () => {
 	return (
