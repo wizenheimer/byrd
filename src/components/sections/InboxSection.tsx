@@ -2,9 +2,9 @@ import ContentGrid from "../block/ContentGridBlock";
 import ScreenshotBlock from "../block/ScreenshotBlock";
 import SectionHeader from "../block/SectionHeaderBlock";
 
-const MonitoringSection = () => {
+const InboxSection = () => {
 	const headerContent = {
-		title: "Focus on the big picture\nLet us handle the details",
+		title: "Monitor the Direct Line\nto their Customers",
 		subtitle:
 			"Every hour spent tracking competitors is an hour spent not crushing them.\nStop wasting your brilliance on spreadsheets.",
 	};
@@ -52,11 +52,11 @@ const MonitoringSection = () => {
 		<div className="w-full bg-background relative overflow-hidden mt-20 md:mt-32 lg:mt-40">
 			<SectionHeader {...headerContent} />
 
-			<ScreenshotBlock imageSrc="/product-intelligence.png" />
+			<ScreenshotBlock imageSrc="/inbox-monitoring.png" />
 
 			<ContentGrid {...gridContent} />
 		</div>
 	);
 };
 
-export default MonitoringSection;
+export default InboxSection;

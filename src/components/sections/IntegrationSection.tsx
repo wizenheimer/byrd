@@ -1,7 +1,7 @@
 import SectionHeader from "../block/SectionHeaderBlock";
 import SplitBlock from "../block/SplitBlock";
 
-const LastOne = () => {
+const IntegrationSection = () => {
 	const headerContent = {
 		title: "Don't be the last one to know",
 		subtitle:
@@ -10,7 +10,7 @@ const LastOne = () => {
 
 	const splitContent = {
 		leftColumn: {
-			imageSrc: "/updates-mobile-view.png",
+			imageSrc: "/inbox-mobile-view.png",
 			title: "Shared competitive picture",
 			paragraphs: [
 				"Right now, you've got Marketing hoarding one set of competitor data, Sales clutching another, and Product off to something else. By the time this fragmented intel makes its way up the chain, competitors have already made their move, and you're playing on the back foot.",
@@ -42,4 +42,4 @@ const LastOne = () => {
 	);
 };
 
-export default LastOne;
+export default IntegrationSection;

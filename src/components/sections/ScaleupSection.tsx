@@ -2,7 +2,7 @@ import ScreenshotBlock from "../block/ScreenshotBlock";
 import SectionHeader from "../block/SectionHeaderBlock";
 import SectionWithLead from "../block/SectionWithLead";
 
-const DifferentiationSection = () => {
+const ScaleupSection = () => {
 	const content = {
 		leadText: {
 			desktop:
@@ -52,4 +52,4 @@ const DifferentiationSection = () => {
 	);
 };
 
-export default DifferentiationSection;
+export default ScaleupSection;

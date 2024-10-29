@@ -2,7 +2,13 @@ import ContentGrid from "../block/ContentGridBlock";
 import ScreenshotBlock from "../block/ScreenshotBlock";
 import SectionHeader from "../block/SectionHeaderBlock";
 
-const CompetitionSection = () => {
+const CustomerIntelligenceSection = () => {
+	const headerContent = {
+		title: "Listen to the Voices\nThey're Ignoring",
+		subtitle:
+			"Every hour spent tracking competitors is an hour spent not crushing them.\nStop wasting your brilliance on spreadsheets.",
+	};
+
 	const gridContent = {
 		mainTitle: {
 			desktop: "There are no\nparticipation\ntrophies in\nbusiness",
@@ -42,23 +48,15 @@ const CompetitionSection = () => {
 		],
 	};
 
-	const headerContent = {
-		title: "Your Company Has Competitors\nNot Just Cheerleaders",
-		subtitle:
-			"Ignorance isn't bliss. Transform competitive blind spots into your unfair advantage.",
-	};
-
 	return (
 		<div className="w-full bg-background relative overflow-hidden mt-20 md:mt-32 lg:mt-40">
-			{/* Hero Text Content */}
 			<SectionHeader {...headerContent} />
 
-			{/* Screenshot Container */}
-			<ScreenshotBlock imageSrc="/inspector.png" />
+			<ScreenshotBlock imageSrc="/customer-intelligence.png" />
 
 			<ContentGrid {...gridContent} />
 		</div>
 	);
 };
 
-export default CompetitionSection;
+export default CustomerIntelligenceSection;

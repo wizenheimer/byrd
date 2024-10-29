@@ -1,6 +1,6 @@
 import HeroSection from "../block/HeroBlock";
 
-const ExitCTA = () => {
+const ClosingNoteSection = () => {
 	return (
 		<div className="w-full bg-background relative overflow-hidden mt-20 md:mt-32 lg:mt-40">
 			<HeroSection
@@ -22,4 +22,4 @@ const ExitCTA = () => {
 	);
 };
 
-export default ExitCTA;
+export default ClosingNoteSection;
