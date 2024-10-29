@@ -1,15 +1,19 @@
-import BigPictureSection from "@/components/BigPictureSection";
-import CompetitionSection from "@/components/Competition";
-import DifferentiationSection from "@/components/DifferentiationSection";
-import ExitCTA from "@/components/ExitCTA";
-import HeroSection from "@/components/HeroSection";
-import LastOne from "@/components/LastOne";
-import MonitoringSection from "@/components/MonitoringSection";
-import TestimonialsSection from "@/components/Testimonials";
+import BigPictureSection from "@/components/sections/BigPictureSection";
+
+import Navbar from "@/components/Navbar";
+import HeroSection from "@/components/sections/HeroSection";
+import MonitoringSection from "@/components/sections/MonitoringSection";
+import LastOne from "@/components/sections/LastOne";
+import CompetitionSection from "@/components/sections/Competition";
+import DifferentiationSection from "@/components/sections/DifferentiationSection";
+import TestimonialsSection from "@/components/sections/Testimonials";
+import ExitCTA from "@/components/sections/ExitCTA";
+import Footer from "@/components/Footer";
 
 export default function Home() {
 	return (
 		<>
+			<Navbar />
 			<HeroSection />
 			<MonitoringSection />
 			<BigPictureSection />
@@ -18,6 +22,7 @@ export default function Home() {
 			<DifferentiationSection />
 			<TestimonialsSection />
 			<ExitCTA />
+			<Footer />
 		</>
 	);
 }

@@ -1,3 +1,4 @@
+import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
@@ -57,26 +58,31 @@ export default function NotFound() {
 		errorMessages[Math.floor(Math.random() * errorMessages.length)];
 
 	return (
-		<div className="w-full bg-background relative overflow-hidden">
-			<div className="max-w-7xl mx-auto px-4 py-24">
-				{/* Error Content */}
-				<div className="text-center max-w-3xl mx-auto">
-					<h1 className="text-5xl font-bold tracking-tight mb-6">Whoops</h1>
-					<p className="text-lg text-gray-600 mb-8">{randomMessage.message}</p>
-					<div className="flex gap-4 justify-center">
-						<Link href="/">
-							<Button className="bg-black text-white hover:bg-black/90 px-8">
-								Back to Homepage
-							</Button>
-						</Link>
-						<Link href="/help">
-							<Button variant="outline" className="border-gray-200">
-								Help Center
-							</Button>
-						</Link>
+		<>
+			<div className="w-full bg-background relative overflow-hidden">
+				<div className="max-w-7xl mx-auto px-4 py-24">
+					{/* Error Content */}
+					<div className="text-center max-w-3xl mx-auto">
+						<h1 className="text-5xl font-bold tracking-tight mb-6">Whoops</h1>
+						<p className="text-lg text-gray-600 mb-8">
+							{randomMessage.message}
+						</p>
+						<div className="flex gap-4 justify-center">
+							<Link href="/">
+								<Button className="bg-black text-white hover:bg-black/90 px-8">
+									Back to Homepage
+								</Button>
+							</Link>
+							<Link href="/help">
+								<Button variant="outline" className="border-gray-200">
+									Help Center
+								</Button>
+							</Link>
+						</div>
 					</div>
 				</div>
 			</div>
-		</div>
+			<Footer />
+		</>
 	);
 }
