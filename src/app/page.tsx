@@ -1,13 +1,14 @@
-import BigPictureSection from "@/components/sections/BigPictureSection";
-
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/sections/HeroSection";
+import ContextSection from "@/components/sections/ContextSection";
+import TestimonialsSection from "@/components/sections/TestimonialSection";
 import MonitoringSection from "@/components/sections/MonitoringSection";
-import LastOne from "@/components/sections/LastOne";
-import CompetitionSection from "@/components/sections/Competition";
-import DifferentiationSection from "@/components/sections/DifferentiationSection";
-import TestimonialsSection from "@/components/sections/Testimonials";
-import ExitCTA from "@/components/sections/ExitCTA";
+import InboxSection from "@/components/sections/InboxSection";
+import MediaIntelligenceSection from "@/components/sections/MediaIntelligenceSection";
+import CustomerIntelligenceSection from "@/components/sections/CustomerIntelligenceSection";
+import IntegrationSection from "@/components/sections/IntegrationSection";
+import ScaleupSection from "@/components/sections/ScaleupSection";
+import ClosingNoteSection from "@/components/sections/ClosingNoteSection";
 import Footer from "@/components/Footer";
 
 export default function Home() {
@@ -15,13 +16,15 @@ export default function Home() {
 		<>
 			<Navbar />
 			<HeroSection />
+			<ContextSection />
 			<MonitoringSection />
-			<BigPictureSection />
-			<LastOne />
-			<CompetitionSection />
-			<DifferentiationSection />
+			<InboxSection />
+			<MediaIntelligenceSection />
+			<CustomerIntelligenceSection />
+			<IntegrationSection />
+			<ScaleupSection />
 			<TestimonialsSection />
-			<ExitCTA />
+			<ClosingNoteSection />
 			<Footer />
 		</>
 	);
