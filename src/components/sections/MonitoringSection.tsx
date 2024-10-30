@@ -11,8 +11,8 @@ const MonitoringSection = () => {
 
 	const gridContent = {
 		mainTitle: {
-			desktop: "Your Competitors'\nNightmares Just Got Real.",
-			mobile: "Your Competitors' Nightmares Just Got Real.",
+			desktop: "Your Competitors'\nNightmares\n Just Got Real",
+			mobile: "Your Competitors' Nightmares Just Got Real",
 		},
 		columns: [
 			{

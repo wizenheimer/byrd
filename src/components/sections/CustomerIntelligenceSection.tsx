@@ -11,8 +11,8 @@ const CustomerIntelligenceSection = () => {
 
 	const gridContent = {
 		mainTitle: {
-			desktop: "Stop admiring the problem and start solving it.",
-			mobile: "Stop admiring the problem and start solving it.",
+			desktop: "Stop admiring\nthe problem and\nstart solving it",
+			mobile: "Stop admiring the problem and start solving it",
 		},
 		columns: [
 			{
