@@ -9,7 +9,7 @@ const Hero = () => {
 					desktop: "We Watch Your Competitors,\nSo You Don't Have To",
 					mobile: "We Watch Your Competitors, So You Don't Have To",
 				}}
-				description="Know the moves your competitors make, long before their own employees do."
+				description="Know the moves your competitors make, long before their own employees do"
 				badge={{
 					text: "Beta",
 				}}

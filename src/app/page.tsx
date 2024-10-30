@@ -21,8 +21,8 @@ export default function Home() {
 			<InboxSection />
 			<MediaIntelligenceSection />
 			<CustomerIntelligenceSection />
-			<IntegrationSection />
 			<ScaleupSection />
+			<IntegrationSection />
 			<TestimonialsSection />
 			<ClosingNoteSection />
 			<Footer />

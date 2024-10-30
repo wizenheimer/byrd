@@ -3,28 +3,28 @@ import SplitBlock from "../block/SplitBlock";
 
 const IntegrationSection = () => {
 	const headerContent = {
-		title: "Don't be the last one to know",
+		title: "Don't Be the Last One To Know",
 		subtitle:
-			"Spot emerging competitors long before they become existential threats.",
+			"Spot emerging competitors long before they become existential threats.\nNo more of 'how did we miss that?' moments.",
 	};
 
 	const splitContent = {
 		leftColumn: {
 			imageSrc: "/inbox-mobile-view.png",
-			title: "Shared competitive picture",
+			title: "Winning Is a Team Sport",
 			paragraphs: [
-				"Right now, you've got Marketing hoarding one set of competitor data, Sales clutching another, and Product off to something else. By the time this fragmented intel makes its way up the chain, competitors have already made their move, and you're playing on the back foot.",
-				"With byrd product, marketing, sales, and even c-suite can all benefit from the same, constantly updated competitive picture.",
+				"Bring in your heavy hitters. Keep everyone on the same page. When everyone sees the same signals, nobody misses the big moves.",
+				"Deliver real-time updates across all your teams, with customized views for each role. No more of 'marketing said this, sales heard that'.",
 			],
-			linkText: "Learn more about Unified Stream of Intel for Teams",
+			linkText: "Stop losing intel in endless email threads",
 			linkHref: "/",
 		},
 		rightColumn: {
 			imageSrc: "/integrations.png",
-			title: "Enrich your knowledge base",
+			title: "Same Tools. No New Dashboards.",
 			paragraphs: [
 				"Existing tools don't solve data silos; they create new ones and leave the plumbing for you. Byrd is built differently.",
-				"Byrd offers first class integrations with the tools you already use - Slack, Notion, and even email. This means the competitive intelligence you gather doesn't just sit in yet another dashboard you'll forget to check. Instead, it flows seamlessly into your existing knowledge base and communication channels.",
+				"With first class integrations, competitive intelligence you gather no longer sits in yet another dashboard you'll forget to check.",
 			],
 			linkText: "No new tabs, turn Slack into a war room",
 			linkHref: "/",

@@ -5,28 +5,27 @@ import SectionWithLead from "../block/SectionWithLead";
 const ScaleupSection = () => {
 	const content = {
 		leadText: {
-			desktop:
-				"There's nothing\nlike being too\nearly, there's\nonly too late.",
+			desktop: "The Market's Hungry,\nand You Look Like Lunch",
 		},
 		contentColumns: [
-			{
-				title: {
-					desktop: "Know your Goliath\ninside out.",
-					mobile: "Know your Goliath inside out.",
-				},
-				description:
-					"You think you're crushing it? So does everyone else. Stop patting yourself on the back and start learning from competitors. Build a product that resonates best with your customers.",
-				linkText: "Competitive Intelligence for Scaleups",
-				linkHref: "/",
-			},
 			{
 				title: {
 					desktop: "Differentiate Early.\nAnd Often.",
 					mobile: "Differentiate Early. And Often.",
 				},
 				description:
-					"Your competitors are constantly evolving, changing prices, launching new features. It's not what you know about your competitors - it's what you don't know yet that matters.",
-				linkText: "Don't play catchup. Call the shots.",
+					"Don't just think outside the box. Study every box out there and build a product that resonates best with your customers.",
+				linkText: "Competitive Intelligence for Scaleups",
+				linkHref: "/",
+			},
+			{
+				title: {
+					desktop: "Size Isn't a Shield.\nIt's a Target.",
+					mobile: "Size Isn't a Shield. It's a Target.",
+				},
+				description:
+					"Being big doesn't make you invincible; it makes you visible. And in business, visibility without vigilance is a death sentence.",
+				linkText: "Disruption Doesn't Send Invites",
 				linkHref: "/",
 			},
 		] as const,
@@ -35,7 +34,7 @@ const ScaleupSection = () => {
 	const headerContent = {
 		title: "Differentiation Requires Context",
 		subtitle:
-			"You can't disrupt a market you don't understand, and you can't understand a market without knowing who the players are and what they're doing.",
+			"You can't disrupt what you don't understand. Stop building with blindfolds on.",
 	};
 
 	return (

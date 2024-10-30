@@ -4,45 +4,45 @@ import SectionHeader from "../block/SectionHeaderBlock";
 
 const InboxSection = () => {
 	const headerContent = {
-		title: "Monitor the Direct Line\nto their Customers",
+		title: "Monitor the Direct Line\nto Their Customers",
 		subtitle:
-			"Every hour spent tracking competitors is an hour spent not crushing them.\nStop wasting your brilliance on spreadsheets.",
+			"Your competitors' best marketing strategies live in their email campaigns.\nLearn what they're telling their best customers.",
 	};
 
 	const gridContent = {
 		mainTitle: {
-			desktop: "There are no\nparticipation\ntrophies in\nbusiness",
-			mobile: "There are no participation trophies in business",
+			desktop: "Watch Their Messaging Evolve, Email by Email",
+			mobile: "Watch Their Messaging Evolve, Email by Email",
 		},
 		columns: [
 			{
 				title: {
-					desktop: "Your Product\nBetter Have Claws",
-					mobile: "Your Product Better Have Claws",
+					desktop: "Never Miss a Message",
+					mobile: "Never Miss a Message",
 				},
 				description:
-					"Chances are, the very thing you're working on, someone's already thought of it, tried it, or is working on it. The most dangerous competition is the one you pretend doesn't exist.",
-				linkText: "What you don't know CAN hurt you",
+					"Every competitor email archived and searchable, from day one. Search across all competitor emails by topic, product, or campaign.",
+				linkText: "Learn Which Bets Your Competitors Are Making Next",
 				linkHref: "/",
 			},
 			{
 				title: {
-					desktop: "Second Place is\nFirst Loser",
-					mobile: "Second Place is First Loser",
+					desktop: "Know When They Strike",
+					mobile: "Know When They Strike",
 				},
 				description:
-					"First to market, last to profit? Your competitors are gunning for gold. Don't become a footnote in someone else's success story.",
-				linkText: "Customers close, Competitors closer",
+					"Track exactly when they hit send. Learn which days and times their emails land hardest. Beat them to the inbox next time.",
+				linkText: "Focus on What Works. Skip the Rest",
 				linkHref: "/",
 			},
 			{
 				title: {
-					desktop: "Size isn't a Shield\nIt's a Target",
-					mobile: "Size isn't a Shield It's a Target",
+					desktop: "Bookmark their winning moves",
+					mobile: "Bookmark their winning moves",
 				},
 				description:
-					"Think you know your market? Think again. Being big doesn't make you invincible; it makes you visible. And in business, visibility without vigilance is a death sentence.",
-				linkText: "Blindfolds Are for Piñatas, Not CEOs",
+					"Build Your Swipe Files. Turn their best work into your advantage. Give your marketing team the ammo they need.",
+				linkText: "Your Competition's Greatest Hits. Save Now. Strike Later",
 				linkHref: "/",
 			},
 		],

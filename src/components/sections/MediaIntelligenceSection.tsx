@@ -4,45 +4,45 @@ import SectionHeader from "../block/SectionHeaderBlock";
 
 const MediaIntelligenceSection = () => {
 	const headerContent = {
-		title: "Track the story they want to tell.\nAnd what they don't.",
+		title: "Track the Stories They Break\nAnd Those They Don't",
 		subtitle:
-			"Every hour spent tracking competitors is an hour spent not crushing them.\nStop wasting your brilliance on spreadsheets.",
+			"Your front-row seat to their media strategy.\nFrom social chatter to media mentions, catch every signal that matters.",
 	};
 
 	const gridContent = {
 		mainTitle: {
-			desktop: "There are no\nparticipation\ntrophies in\nbusiness",
-			mobile: "There are no participation trophies in business",
+			desktop: "Observe Every Competitor Move Before Your Customers Do",
+			mobile: "Observe Every Competitor Move Before Your Customers Do",
 		},
 		columns: [
 			{
 				title: {
-					desktop: "Your Product\nBetter Have Claws",
-					mobile: "Your Product Better Have Claws",
+					desktop: "Markets Talk.\nWe Translate.",
+					mobile: "Markets Talk. We Translate.",
 				},
 				description:
-					"Chances are, the very thing you're working on, someone's already thought of it, tried it, or is working on it. The most dangerous competition is the one you pretend doesn't exist.",
-				linkText: "What you don't know CAN hurt you",
+					"Measure what matters. See where they publish. Track what resonates. Learn why it works.",
+				linkText: "Track Their Narrative Before It Hits Mainstream",
 				linkHref: "/",
 			},
 			{
 				title: {
-					desktop: "Second Place is\nFirst Loser",
-					mobile: "Second Place is First Loser",
+					desktop: "First To Know.\nFirst To Move.",
+					mobile: "First To Know. First To Move.",
 				},
 				description:
-					"First to market, last to profit? Your competitors are gunning for gold. Don't become a footnote in someone else's success story.",
-				linkText: "Customers close, Competitors closer",
+					"Track every dime or dollar your competitors raise. Keep a pulse on leadership changes, partnerships, and more.",
+				linkText: "Start Pitching with Precision, not Prayers",
 				linkHref: "/",
 			},
 			{
 				title: {
-					desktop: "Size isn't a Shield\nIt's a Target",
-					mobile: "Size isn't a Shield It's a Target",
+					desktop: "Guess Less.\nLearn More.",
+					mobile: "Guess Less. Learn More.",
 				},
 				description:
-					"Think you know your market? Think again. Being big doesn't make you invincible; it makes you visible. And in business, visibility without vigilance is a death sentence.",
-				linkText: "Blindfolds Are for Piñatas, Not CEOs",
+					"From major announcements to minor mentions. Never miss on coverage that shapes market perceptions or influences buyers.",
+				linkText: "Market Visibility Without the Busy Work",
 				linkHref: "/",
 			},
 		],

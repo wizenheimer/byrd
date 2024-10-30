@@ -4,45 +4,45 @@ import SectionHeader from "../block/SectionHeaderBlock";
 
 const MonitoringSection = () => {
 	const headerContent = {
-		title: "Focus on the big picture\nLet us handle the details",
+		title: "Focus on the Big Picture\nLet Us Handle the Details",
 		subtitle:
 			"Every hour spent tracking competitors is an hour spent not crushing them.\nStop wasting your brilliance on spreadsheets.",
 	};
 
 	const gridContent = {
 		mainTitle: {
-			desktop: "There are no\nparticipation\ntrophies in\nbusiness",
-			mobile: "There are no participation trophies in business",
+			desktop: "Your Competitors'\nNightmares Just Got Real.",
+			mobile: "Your Competitors' Nightmares Just Got Real.",
 		},
 		columns: [
 			{
 				title: {
-					desktop: "Your Product\nBetter Have Claws",
-					mobile: "Your Product Better Have Claws",
+					desktop: "All Signal.\nNo Noise.",
+					mobile: "All Signal. No Noise.",
 				},
 				description:
-					"Chances are, the very thing you're working on, someone's already thought of it, tried it, or is working on it. The most dangerous competition is the one you pretend doesn't exist.",
-				linkText: "What you don't know CAN hurt you",
+					"Mine competitor mistakes for your advantage. Skip the guesswork. Start with what already works.",
+				linkText: "Keep Your Customers Close, and Competitors Closer",
 				linkHref: "/",
 			},
 			{
 				title: {
-					desktop: "Second Place is\nFirst Loser",
-					mobile: "Second Place is First Loser",
+					desktop: "Real-Time.\nAll the Time.",
+					mobile: "Real-Time. All the Time.",
 				},
 				description:
-					"First to market, last to profit? Your competitors are gunning for gold. Don't become a footnote in someone else's success story.",
-				linkText: "Customers close, Competitors closer",
+					"Make alerts your allies. Stay ahead of every product move. Stop discovering competitor announcements through lost deals.",
+				linkText: "Stop Losing Deals to Competitors' Price Changes",
 				linkHref: "/",
 			},
 			{
 				title: {
-					desktop: "Size isn't a Shield\nIt's a Target",
-					mobile: "Size isn't a Shield It's a Target",
+					desktop: "Their Next Move.\nYour Next Win.",
+					mobile: "Their Next Move. Your Next Win.",
 				},
 				description:
-					"Think you know your market? Think again. Being big doesn't make you invincible; it makes you visible. And in business, visibility without vigilance is a death sentence.",
-				linkText: "Blindfolds Are for Piñatas, Not CEOs",
+					"Skip watching from the sidelines. Head straight to what works. Start turning their moves into your strategic wins.",
+				linkText: "Beat them at their own game, every single time",
 				linkHref: "/",
 			},
 		],

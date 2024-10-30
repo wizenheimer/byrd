@@ -6,43 +6,43 @@ const CustomerIntelligenceSection = () => {
 	const headerContent = {
 		title: "Listen to the Voices\nThey're Ignoring",
 		subtitle:
-			"Every hour spent tracking competitors is an hour spent not crushing them.\nStop wasting your brilliance on spreadsheets.",
+			"Every complaint is a competitive opportunity.\nTurn their user feedback into your feature wins.",
 	};
 
 	const gridContent = {
 		mainTitle: {
-			desktop: "There are no\nparticipation\ntrophies in\nbusiness",
-			mobile: "There are no participation trophies in business",
+			desktop: "Stop admiring the problem and start solving it.",
+			mobile: "Stop admiring the problem and start solving it.",
 		},
 		columns: [
 			{
 				title: {
-					desktop: "Your Product\nBetter Have Claws",
-					mobile: "Your Product Better Have Claws",
+					desktop: "From Rage To Riches.",
+					mobile: "From Rage To Riches.",
 				},
 				description:
-					"Chances are, the very thing you're working on, someone's already thought of it, tried it, or is working on it. The most dangerous competition is the one you pretend doesn't exist.",
-				linkText: "What you don't know CAN hurt you",
+					"Spot product gaps before they fix them. Learn what users love (and hate) about your competitors. Turn reviews into revenue.",
+				linkText: "Their Users Are Talking. Are You Listening ?",
 				linkHref: "/",
 			},
 			{
 				title: {
-					desktop: "Second Place is\nFirst Loser",
-					mobile: "Second Place is First Loser",
+					desktop: "They Churn. You Learn.",
+					mobile: "They Churn. You Learn.",
 				},
 				description:
-					"First to market, last to profit? Your competitors are gunning for gold. Don't become a footnote in someone else's success story.",
-				linkText: "Customers close, Competitors closer",
+					"Turn their dissatisfied users into your would be customers. While they're busy defending 1-star reviews, build what their customers wish they had.",
+				linkText: "Let their Customers Inform your Roadmap",
 				linkHref: "/",
 			},
 			{
 				title: {
-					desktop: "Size isn't a Shield\nIt's a Target",
-					mobile: "Size isn't a Shield It's a Target",
+					desktop: "Their Logos. Your Leads.",
+					mobile: "Their Logos. Your Leads.",
 				},
 				description:
-					"Think you know your market? Think again. Being big doesn't make you invincible; it makes you visible. And in business, visibility without vigilance is a death sentence.",
-				linkText: "Blindfolds Are for Piñatas, Not CEOs",
+					"Stop prospecting cold. Every new case study your partners release is a fresh target for your pipeline. Turn their logos into your leads.",
+				linkText: "Rivals are leaving money on the table. Go cash in",
 				linkHref: "/",
 			},
 		],

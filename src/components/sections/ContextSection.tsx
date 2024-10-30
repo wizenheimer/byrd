@@ -5,33 +5,32 @@ import SectionWithLead from "../block/SectionWithLead";
 const ContextSection = () => {
 	const headerContent = {
 		title: "Your Company Has Competitors\nNot Just Cheerleaders",
-		subtitle:
-			"Ignorance isn't bliss. Transform competitive blind spots into your unfair advantage.",
+		subtitle: "Turn Your Competitor's Moves Into Your Customer Wins",
 	};
 
 	const sectionContent = {
 		leadText: {
-			desktop: "Stop admiring\nthe problem\nand start\nsolving it.",
+			desktop: "There are No\nParticipation\nTrophies in\nBusiness",
 		},
 		contentColumns: [
 			{
 				title: {
-					desktop: "Your Rivals Don't Rest",
-					mobile: "Your Rivals Don't Rest",
+					desktop: "Turn Competitors into Case Studies",
+					mobile: "Turn Competitors into Case Studies",
 				},
 				description:
-					"You think you're crushing it? So does everyone else. Stop patting yourself on the back and start learning from competitors. Build a product that resonates best with your customers.",
-				linkText: "Competitive Intelligence for Scaleups",
+					"Every change, no matter how small, gets flagged. Whether it's roadmap changes, pricing shifts, or positioning plays. Consider yourself briefed.",
+				linkText: "Competition Never Sleeps. But You Can",
 				linkHref: "/",
 			},
 			{
 				title: {
-					desktop: "Be Competitor Informed.",
-					mobile: "Be Competitor Informed.",
+					desktop: "Focus on Every Move That Matters",
+					mobile: "Focus on Every Move That Matters",
 				},
 				description:
-					"Your competitors are constantly evolving, changing prices, launching new features. It's not what you know about your competitors - it's what you don't know yet that matters.",
-				linkText: "Don't play catchup. Call the shots.",
+					"Your time is better spent crushing competitors, not cataloging them. Track what matters, skip what doesn't. Build upon real market context.",
+				linkText: "Don't Play Catchup. Call the Shots",
 				linkHref: "/",
 			},
 		] as const,

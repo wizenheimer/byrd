@@ -8,7 +8,7 @@ const ClosingNoteSection = () => {
 					desktop: "Your Unfair Advantage Starts Here",
 					mobile: "Your Unfair Advantage Starts Here",
 				}}
-				description="Your rivals are making moves. Time to put them under surveillance."
+				description="Your competitors are everywhere. So are we."
 				primaryButton={{
 					label: "Get Started",
 					href: "/signup",

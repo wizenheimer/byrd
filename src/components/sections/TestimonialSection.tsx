@@ -2,9 +2,9 @@ import SectionHeader from "../block/SectionHeaderBlock";
 
 const TestimonialsSection = () => {
 	const headerContent = {
-		title: "You're in a good company",
+		title: "You're in Good Company",
 		subtitle:
-			"From challenger brands to category kings. From underdogs to top dogs.",
+			"From challenger brands to category kings, we've got you covered.",
 	};
 	return (
 		<div className="w-full bg-background relative overflow-hidden mt-32 md:mt-48 lg:mt-60">
