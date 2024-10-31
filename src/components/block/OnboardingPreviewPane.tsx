@@ -10,6 +10,14 @@ const OnboardingPreviewPane = ({ imageSrc, altText }: Props) => {
 				src={imageSrc}
 				alt={altText || "Dashboard Preview"}
 				className="absolute top-0 left-0 w-auto h-full object-cover object-left pl-8 pt-6 pb-6"
+				style={{
+					userSelect: "none",
+					WebkitUserSelect: "none",
+					MozUserSelect: "none",
+					msUserSelect: "none",
+				}}
+				draggable={false}
+				onDragStart={(e) => e.preventDefault()}
 			/>
 		</div>
 	);
