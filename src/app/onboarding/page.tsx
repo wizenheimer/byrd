@@ -1,14 +1,17 @@
 "use client";
 import { useState } from "react";
+import { motion, AnimatePresence } from 'framer-motion'
 import CompetitorStep from "../../components/steps/CompetitorStep";
 import FeaturesStep from "../../components/steps/FeaturesStep";
 import ChannelsStep from "../../components/steps/ChannelsStep";
 import TeamStep from "../../components/steps/TeamStep";
 import AuthStep from "../../components/steps/AuthStep";
-import { OnboardingLayout } from "@/components/OnboardingLayout";
+// import { OnboardingLayout } from "@/components/OnboardingLayout";
 import { OnboardingHeader } from "@/components/OnboardingHeader";
 import { Inbox, Megaphone, Rss, Share2 } from "lucide-react";
 import type { ChannelCard } from "../_types/onboarding";
+// import OnboardingPreviewPane from "@/components/block/OnboardingPreviewPane";
+// import { cn } from "@/lib/utils";
 
 const MultiStepOnboarding = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -123,17 +126,70 @@ const MultiStepOnboarding = () => {
   };
 
   return (
-    <OnboardingLayout
-      previewImage={steps[currentStep].image}
-      previewAlt="Dashboard Preview"
-    >
-      <OnboardingHeader
-        title={steps[currentStep].title}
-        description={steps[currentStep].description}
-      />
+    <div className=
+      "flex min-h-screen flex-col lg:flex-row">
+      <div className="flex flex-1 flex-col bg-white p-8 lg:p-12">
+        {/* Navbar */}
+        <div className="mb-16">
+          <span className="text-xl font-semibold">byrd</span>
+        </div>
 
-      {renderStep()}
-    </OnboardingLayout>
+        {/* Onboarding Pane */}
+        <div className="mx-auto w-full max-w-[440px] space-y-12">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentStep}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+              className="space-y-6"
+            >
+              <OnboardingHeader
+                title={steps[currentStep].title}
+                description={steps[currentStep].description}
+              />
+              {renderStep()}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      </div>
+      <div className="hidden md:block md:w-1/3 lg:w-1/2 bg-white relative">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={steps[currentStep].image}
+            className="absolute inset-0 bg-gray-50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          />
+          <motion.img
+            key={`img-${steps[currentStep].image}`}
+            src={steps[currentStep].image}
+            alt="Dashboard Preview"
+            className="absolute top-0 left-0 w-auto h-full object-cover object-left pl-8 pt-6 pb-6"
+            style={{
+              userSelect: "none",
+              WebkitUserSelect: "none",
+              MozUserSelect: "none",
+              msUserSelect: "none"
+            }}
+            draggable={false}
+            onDragStart={(e) => e.preventDefault()}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{
+              type: "spring",
+              stiffness: 400,
+              damping: 30,
+              mass: 0.8
+            }}
+          />
+        </AnimatePresence>
+      </div>
+    </div>
   );
 }
 
