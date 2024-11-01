@@ -2,41 +2,31 @@
 
 import OnboardingPreviewPane from "@/components/block/OnboardingPreviewPane";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import {
-	// ArrowLeft,
-	// BarChart2,
-	Box,
-	DollarSign,
-	Lightbulb,
-	Link2,
-	Palette,
-	Share2,
-} from "lucide-react";
-// import Link from "next/link";
 import * as React from "react";
 
+interface FeatureItem {
+	id: string
+	title: string
+	description: string
+	enabled: boolean
+}
+
 export default function Component() {
-	const [selected, setSelected] = React.useState<string[]>([
-		"pricing",
-		"product",
-		"positioning",
-	]);
+	const [features, setFeatures] = React.useState<FeatureItem[]>([
+		{ id: "1", title: "Product", description: "Catch product evolution in real-time", enabled: true },
+		{ id: "2", title: "Pricing", description: "Never be the last to know about a price war", enabled: false },
+		{ id: "3", title: "Partnership", description: "Track who's teaming up with whom", enabled: false },
+		{ id: "4", title: "Branding", description: "Monitor messaging shifts, and identity changes", enabled: false },
+		{ id: "5", title: "Positioning", description: "Track narratives before they go mainstream", enabled: false },
+	])
 
-	const cards = [
-		{ id: "pricing", icon: DollarSign, label: "Pricing" },
-		{ id: "product", icon: Box, label: "Product" },
-		{ id: "branding", icon: Palette, label: "Branding" },
-		{ id: "positioning", icon: Lightbulb, label: "Positioning" },
-		{ id: "integrations", icon: Link2, label: "Integrations" },
-		{ id: "partnership", icon: Share2, label: "Partnership" },
-	];
-
-	const toggleCard = (id: string) => {
-		setSelected((prev) =>
-			prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
-		);
-	};
+	const toggleFeature = (id: string) => {
+		setFeatures(features.map(feature =>
+			feature.id === id ? { ...feature, enabled: !feature.enabled } : feature
+		))
+	}
 
 	return (
 		<div className="flex min-h-screen flex-col lg:flex-row">
@@ -54,25 +44,26 @@ export default function Component() {
 							Choose your signals. Cut through the noise.
 						</p>
 					</div>
-					<div className="grid grid-cols-2 gap-4">
-						{cards.map(({ id, icon: Icon, label }) => (
-							<button
-								key={id}
-								onClick={() => toggleCard(id)}
-								type="button"
-								className={`relative flex h-32 flex-col items-center justify-center rounded-xl border-2 transition-colors
-				  ${
-						selected.includes(id)
-							? "border-primary bg-primary/5"
-							: "border-border bg-background hover:border-primary/50"
-					}`}
-							>
-								{selected.includes(id) && (
-									<div className="absolute right-2 top-2 size-4 rounded-full bg-primary" />
-								)}
-								<Icon className="mb-2 size-6" />
-								<span className="text-sm font-medium">{label}</span>
-							</button>
+					<div className="space-y-6">
+						{features.map((feature) => (
+							<div key={feature.id} className="flex items-center space-x-4">
+								<Switch
+									id={feature.id}
+									checked={feature.enabled}
+									onCheckedChange={() => toggleFeature(feature.id)}
+								/>
+								<div className="flex-1 space-y-1">
+									<label
+										htmlFor={feature.id}
+										className="text-base font-semibold leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+									>
+										{feature.title}
+									</label>
+									<p className="text-sm text-muted-foreground">
+										{feature.description}
+									</p>
+								</div>
+							</div>
 						))}
 					</div>
 					<div className="space-y-6">
