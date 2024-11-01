@@ -7,7 +7,7 @@ import ChannelsStep from "../../components/steps/ChannelsStep";
 import TeamStep from "../../components/steps/TeamStep";
 import AuthStep from "../../components/steps/AuthStep";
 // import { OnboardingLayout } from "@/components/OnboardingLayout";
-import { OnboardingHeader } from "@/components/OnboardingHeader";
+// import { OnboardingHeader } from "@/components/OnboardingHeader";
 import { Inbox, Megaphone, Rss, Share2 } from "lucide-react";
 import type { ChannelCard } from "../_types/onboarding";
 // import OnboardingPreviewPane from "@/components/block/OnboardingPreviewPane";
@@ -145,10 +145,14 @@ const MultiStepOnboarding = () => {
               transition={{ duration: 0.3 }}
               className="space-y-6"
             >
-              <OnboardingHeader
-                title={steps[currentStep].title}
-                description={steps[currentStep].description}
-              />
+              <div className="space-y-3">
+                <h1 className="text-3xl font-bold tracking-tight">
+                  {steps[currentStep].title}
+                </h1>
+                <p className="text-base text-muted-foreground">
+                  {steps[currentStep].description}
+                </p>
+              </div>
               {renderStep()}
             </motion.div>
           </AnimatePresence>
