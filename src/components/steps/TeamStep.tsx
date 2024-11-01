@@ -1,7 +1,5 @@
 "use client";
 
-// import { OnboardingHeader } from "@/components/OnboardingHeader";
-// import { OnboardingLayout } from "@/components/OnboardingLayout";
 import { Button } from "@/components/ui/button";
 import {
 	Form,
@@ -48,15 +46,20 @@ interface TeamStepProps {
 	onBack: () => void;
 }
 
-export default function TeamStep({ formData, setFormData, onNext, onBack }: TeamStepProps) {
-	const [duplicateError, setDuplicateError] = useState<{ [key: number]: boolean }>({});
+export default function TeamStep({
+	formData,
+	setFormData,
+	onNext,
+	onBack,
+}: TeamStepProps) {
+	const [duplicateError, setDuplicateError] = useState<{
+		[key: number]: boolean;
+	}>({});
 
 	const form = useForm<TeamFormData>({
 		resolver: zodResolver(teamFormSchema),
 		defaultValues: {
-			members: formData.team.length > 0
-				? formData.team
-				: [{ email: "" }],
+			members: formData.team.length > 0 ? formData.team : [{ email: "" }],
 		},
 	});
 
@@ -120,7 +123,7 @@ export default function TeamStep({ formData, setFormData, onNext, onBack }: Team
 			console.log("Submitted data:", data);
 			setFormData({
 				...formData,
-				team: data.members
+				team: data.members,
 			});
 			onNext();
 		} catch (error) {
@@ -185,9 +188,9 @@ export default function TeamStep({ formData, setFormData, onNext, onBack }: Team
 														className={cn(
 															"h-10 bg-background",
 															duplicateError[index] &&
-															"border-red-500 focus:border-red-500",
+																"border-red-500 focus:border-red-500",
 															form.formState.errors.members?.[index] &&
-															"border-red-500 focus:border-red-500",
+																"border-red-500 focus:border-red-500",
 														)}
 														type="email"
 														placeholder="Email address"
@@ -200,9 +203,7 @@ export default function TeamStep({ formData, setFormData, onNext, onBack }: Team
 														}}
 														onBlur={async (e) => {
 															field.onBlur();
-															await form.trigger(
-																`members.${index}.email`,
-															);
+															await form.trigger(`members.${index}.email`);
 															if (e.target.value) {
 																checkDuplicate(e.target.value, index);
 															}
@@ -241,8 +242,8 @@ export default function TeamStep({ formData, setFormData, onNext, onBack }: Team
 												<FormMessage className="text-xs">
 													{duplicateError[index]
 														? "This email is already added"
-														: form.formState.errors.members?.[index]
-															?.email?.message}
+														: form.formState.errors.members?.[index]?.email
+																?.message}
 												</FormMessage>
 											</FormItem>
 										)}

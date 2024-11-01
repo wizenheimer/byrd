@@ -1,5 +1,5 @@
-import Link from "next/link"
-import { ArrowUpRight } from "lucide-react"
+import { ArrowUpRight } from "lucide-react";
+import Link from "next/link";
 
 export default function WaitlistScreen() {
 	return (
@@ -14,9 +14,7 @@ export default function WaitlistScreen() {
 
 			<main className="flex-grow flex flex-col justify-center items-center px-4 text-center">
 				<div className="flex items-center mb-4">
-					<h1 className="text-6xl font-bold text-black">
-						Stay tuned
-					</h1>
+					<h1 className="text-6xl font-bold text-black">Stay tuned</h1>
 					<ArrowUpRight className="w-12 h-12 ml-2 text-black" />
 				</div>
 				<p className="text-lg text-gray-600 max-w-md">
@@ -29,12 +27,16 @@ export default function WaitlistScreen() {
 					<div className="flex justify-between items-center text-sm text-gray-600">
 						<p>© 2024 byrd. All rights reserved.</p>
 						<div className="flex space-x-4">
-							<Link href="/terms" className="hover:text-black">Terms</Link>
-							<Link href="/privacy" className="hover:text-black">Privacy</Link>
+							<Link href="/terms" className="hover:text-black">
+								Terms
+							</Link>
+							<Link href="/privacy" className="hover:text-black">
+								Privacy
+							</Link>
 						</div>
 					</div>
 				</div>
 			</footer>
 		</div>
-	)
+	);
 }
