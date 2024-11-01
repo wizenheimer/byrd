@@ -1,6 +1,7 @@
 "use client";
 
-import OnboardingPreviewPane from "@/components/block/OnboardingPreviewPane";
+import { OnboardingHeader } from "@/components/OnboardingHeader";
+import { OnboardingLayout } from "@/components/OnboardingLayout";
 import { Button } from "@/components/ui/button";
 import {
 	Form,
@@ -35,7 +36,7 @@ const teamFormSchema = z.object({
 
 type TeamFormData = z.infer<typeof teamFormSchema>;
 
-export default function TeamOnboarding() {
+export default function TeamStep() {
 	const form = useForm<TeamFormData>({
 		resolver: zodResolver(teamFormSchema),
 		defaultValues: {
@@ -131,214 +132,201 @@ export default function TeamOnboarding() {
 	};
 
 	return (
-		<div className="flex min-h-screen flex-col lg:flex-row">
-			<div className="flex flex-1 flex-col bg-white p-8 lg:p-12">
-				<div className="mb-16">
-					<span className="text-xl font-semibold">byrd</span>
-				</div>
-				<div className="mx-auto w-full max-w-[440px] space-y-12">
-					<div className="space-y-3">
-						<h1 className="text-3xl font-bold tracking-tight">
-							Build Your War Room
-						</h1>
-						<p className="text-base text-muted-foreground">
-							Business is a team sport. Bring in your heavy hitters.
-						</p>
-					</div>
+		<OnboardingLayout
+			previewImage="/onboarding/four.png"
+			previewAlt="Dashboard Preview"
+		>
+			<OnboardingHeader
+				title="Build Your War Room"
+				description="Business is a team sport. Bring in your heavy hitters."
+			/>
 
-					<Form {...form}>
-						<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-							<div className="space-y-4">
-								{fields.map((field, index) => (
-									<div key={field.id} className="group relative">
-										<div className="flex items-center gap-3 rounded-lg bg-muted/50 p-3">
-											<div className="flex size-10 shrink-0 items-center justify-center">
-												<Avatar
-													size={40}
-													name={field.id}
-													variant="beam"
-													colors={[
-														"#2463eb",
-														"#4b80ee",
-														"#729df1",
-														"#99baf4",
-														"#c0d7f7",
-													]}
-												/>
-											</div>
-											<div className="flex-1">
-												<FormField
-													control={form.control}
-													name={`members.${index}.email`}
-													render={({ field }) => (
-														<FormItem>
-															<FormControl>
-																<Input
-																	{...field}
-																	className={cn(
-																		"h-10 bg-background",
-																		duplicateError[index] &&
-																			"border-red-500 focus:border-red-500",
-																		form.formState.errors.members?.[index] &&
-																			"border-red-500 focus:border-red-500",
-																	)}
-																	type="email"
-																	placeholder="Email address"
-																	onKeyDown={(e) => handleKeyDown(e, index)}
-																	onChange={(e) => {
-																		field.onChange(e);
-																		if (duplicateError[index]) {
-																			checkDuplicate(e.target.value, index);
-																		}
-																	}}
-																	onBlur={async (e) => {
-																		field.onBlur();
-																		await form.trigger(
-																			`members.${index}.email`,
-																		);
-																		if (e.target.value) {
-																			checkDuplicate(e.target.value, index);
-																		}
-																	}}
-																	onPaste={(e) => {
-																		e.preventDefault();
-																		const pastedText =
-																			e.clipboardData.getData("text");
-																		const emails = pastedText
-																			.split(/[\s,;]+/)
-																			.filter((email) => email.includes("@"))
-																			.slice(0, 5 - fields.length + 1);
-
-																		if (!checkDuplicate(emails[0], index)) {
-																			field.onChange(emails[0] || "");
-																			form.trigger(`members.${index}.email`);
-
-																			for (const email of emails.slice(1)) {
-																				if (
-																					fields.length < 5 &&
-																					!form
-																						.getValues()
-																						.members.some(
-																							(m) =>
-																								m.email.toLowerCase() ===
-																								email.toLowerCase(),
-																						)
-																				) {
-																					append({ email });
-																				}
-																			}
-																		}
-																	}}
-																/>
-															</FormControl>
-															<FormMessage className="text-xs">
-																{duplicateError[index]
-																	? "This email is already added"
-																	: form.formState.errors.members?.[index]
-																			?.email?.message}
-															</FormMessage>
-														</FormItem>
-													)}
-												/>
-											</div>
-										</div>
-										{index > 0 && (
-											<Button
-												type="button"
-												variant="ghost"
-												size="sm"
-												className="absolute -right-2 -top-2 size-6 rounded-full p-0 opacity-0 transition-opacity group-hover:opacity-100"
-												onClick={() => {
-													remove(index);
-													setDuplicateError((prev) => {
-														const newState = { ...prev };
-														delete newState[index];
-														return newState;
-													});
-												}}
-											>
-												<X className="size-4" />
-											</Button>
-										)}
+			<Form {...form}>
+				<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+					<div className="space-y-4">
+						{fields.map((field, index) => (
+							<div key={field.id} className="group relative">
+								<div className="flex items-center gap-3 rounded-lg bg-muted/50 p-3">
+									<div className="flex size-10 shrink-0 items-center justify-center">
+										<Avatar
+											size={40}
+											name={field.id}
+											variant="beam"
+											colors={[
+												"#2463eb",
+												"#4b80ee",
+												"#729df1",
+												"#99baf4",
+												"#c0d7f7",
+											]}
+										/>
 									</div>
-								))}
-							</div>
+									<div className="flex-1">
+										<FormField
+											control={form.control}
+											name={`members.${index}.email`}
+											render={({ field }) => (
+												<FormItem>
+													<FormControl>
+														<Input
+															{...field}
+															className={cn(
+																"h-10 bg-background",
+																duplicateError[index] &&
+																"border-red-500 focus:border-red-500",
+																form.formState.errors.members?.[index] &&
+																"border-red-500 focus:border-red-500",
+															)}
+															type="email"
+															placeholder="Email address"
+															onKeyDown={(e) => handleKeyDown(e, index)}
+															onChange={(e) => {
+																field.onChange(e);
+																if (duplicateError[index]) {
+																	checkDuplicate(e.target.value, index);
+																}
+															}}
+															onBlur={async (e) => {
+																field.onBlur();
+																await form.trigger(
+																	`members.${index}.email`,
+																);
+																if (e.target.value) {
+																	checkDuplicate(e.target.value, index);
+																}
+															}}
+															onPaste={(e) => {
+																e.preventDefault();
+																const pastedText =
+																	e.clipboardData.getData("text");
+																const emails = pastedText
+																	.split(/[\s,;]+/)
+																	.filter((email) => email.includes("@"))
+																	.slice(0, 5 - fields.length + 1);
 
-							{fields.length < 5 && (
-								<Button
-									type="button"
-									variant="outline"
-									className={cn(
-										"w-full h-12 border-dashed",
-										"disabled:opacity-50 disabled:cursor-not-allowed",
-									)}
-									onClick={() => append({ email: "" })}
-									disabled={hasFormErrors()}
-								>
-									<Plus className="h-4 w-4 mr-2" />
-									Add Team Member
-								</Button>
-							)}
+																if (!checkDuplicate(emails[0], index)) {
+																	field.onChange(emails[0] || "");
+																	form.trigger(`members.${index}.email`);
 
-							<div className="space-y-6">
-								<Button
-									type="submit"
-									className={cn(
-										"w-full h-12 text-base font-semibold",
-										"bg-[#14171F] hover:bg-[#14171F]/90",
-										"transition-colors duration-200",
-										"disabled:opacity-50 disabled:cursor-not-allowed",
-									)}
-									size="lg"
-									disabled={
-										form.formState.isSubmitting ||
-										Object.values(duplicateError).some(Boolean)
-									}
-								>
-									{form.formState.isSubmitting ? (
-										<span className="flex items-center justify-center">
-											<svg
-												className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-												xmlns="http://www.w3.org/2000/svg"
-												fill="none"
-												viewBox="0 0 24 24"
-											>
-												<title>Loading</title>
-												<circle
-													className="opacity-25"
-													cx="12"
-													cy="12"
-													r="10"
-													stroke="currentColor"
-													strokeWidth="4"
-												/>
-												<path
-													className="opacity-75"
-													fill="currentColor"
-													d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-												/>
-											</svg>
-											Submitting...
-										</span>
-									) : (
-										"Continue"
-									)}
-								</Button>
-								{fields.length === 5 && (
-									<p className="text-sm text-muted-foreground text-center">
-										You can always invite more team members later
-									</p>
+																	for (const email of emails.slice(1)) {
+																		if (
+																			fields.length < 5 &&
+																			!form
+																				.getValues()
+																				.members.some(
+																					(m) =>
+																						m.email.toLowerCase() ===
+																						email.toLowerCase(),
+																				)
+																		) {
+																			append({ email });
+																		}
+																	}
+																}
+															}}
+														/>
+													</FormControl>
+													<FormMessage className="text-xs">
+														{duplicateError[index]
+															? "This email is already added"
+															: form.formState.errors.members?.[index]
+																?.email?.message}
+													</FormMessage>
+												</FormItem>
+											)}
+										/>
+									</div>
+								</div>
+								{index > 0 && (
+									<Button
+										type="button"
+										variant="ghost"
+										size="sm"
+										className="absolute -right-2 -top-2 size-6 rounded-full p-0 opacity-0 transition-opacity group-hover:opacity-100"
+										onClick={() => {
+											remove(index);
+											setDuplicateError((prev) => {
+												const newState = { ...prev };
+												delete newState[index];
+												return newState;
+											});
+										}}
+									>
+										<X className="size-4" />
+									</Button>
 								)}
 							</div>
-						</form>
-					</Form>
-				</div>
-			</div>
+						))}
+					</div>
 
-			<OnboardingPreviewPane
-				imageSrc="/onboarding/four.png"
-				altText="Dashboard Preview"
-			/>
-		</div>
+					{fields.length < 5 && (
+						<Button
+							type="button"
+							variant="outline"
+							className={cn(
+								"w-full h-12 border-dashed",
+								"disabled:opacity-50 disabled:cursor-not-allowed",
+							)}
+							onClick={() => append({ email: "" })}
+							disabled={hasFormErrors()}
+						>
+							<Plus className="h-4 w-4 mr-2" />
+							Add Team Member
+						</Button>
+					)}
+
+					<div className="space-y-6">
+						<Button
+							type="submit"
+							className={cn(
+								"w-full h-12 text-base font-semibold",
+								"bg-[#14171F] hover:bg-[#14171F]/90",
+								"transition-colors duration-200",
+								"disabled:opacity-50 disabled:cursor-not-allowed",
+							)}
+							size="lg"
+							disabled={
+								form.formState.isSubmitting ||
+								Object.values(duplicateError).some(Boolean)
+							}
+						>
+							{form.formState.isSubmitting ? (
+								<span className="flex items-center justify-center">
+									<svg
+										className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+										xmlns="http://www.w3.org/2000/svg"
+										fill="none"
+										viewBox="0 0 24 24"
+									>
+										<title>Loading</title>
+										<circle
+											className="opacity-25"
+											cx="12"
+											cy="12"
+											r="10"
+											stroke="currentColor"
+											strokeWidth="4"
+										/>
+										<path
+											className="opacity-75"
+											fill="currentColor"
+											d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+										/>
+									</svg>
+									Submitting...
+								</span>
+							) : (
+								"Continue"
+							)}
+						</Button>
+						{fields.length === 5 && (
+							<p className="text-sm text-muted-foreground text-center">
+								You can always invite more team members later
+							</p>
+						)}
+					</div>
+				</form>
+			</Form>
+		</OnboardingLayout>
 	);
 }
