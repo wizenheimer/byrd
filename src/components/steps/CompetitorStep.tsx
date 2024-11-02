@@ -31,10 +31,6 @@ const normalizeUrl = (url: string): string => {
   }
 };
 
-interface FaviconState {
-  [key: number]: string | null;
-}
-
 interface CompetitorStepProps {
   formData: CompetitorFormData;
   // biome-ignore lint/suspicious/noExplicitAny: <explanation>
@@ -47,7 +43,6 @@ export default function CompetitorStep({
   setFormData,
   onNext,
 }: CompetitorStepProps) {
-  const [favicons, setFavicons] = useState<FaviconState>({});
   const [urlErrors, setUrlErrors] = useState<{ [key: number]: boolean }>({});
 
   const form = useForm<CompetitorFormData>({
@@ -220,32 +215,18 @@ export default function CompetitorStep({
 
   const handleRemove = (index: number) => {
     remove(index);
-    // Update favicon state to match new indices
-    setFavicons((prev) => {
-      const newState: FaviconState = {};
-      for (const [key, value] of Object.entries(prev)) {
-        const keyNum = Number.parseInt(key);
-        if (keyNum < index) {
-          newState[keyNum] = value;
-        } else if (keyNum > index) {
-          newState[keyNum - 1] = value;
-        }
-      }
-      return newState;
-    });
-
-    // Update URL errors state
+    // Update URL State
     setUrlErrors((prev) => {
-      const newState = { ...prev };
-      delete newState[index];
+      const newState = { ...prev }
+      delete newState[index]
       for (const key of Object.keys(newState)) {
-        const keyNum = Number.parseInt(key);
+        const keyNum = Number.parseInt(key)
         if (keyNum > index) {
-          newState[keyNum - 1] = newState[keyNum];
-          delete newState[keyNum];
+          newState[keyNum - 1] = newState[keyNum]
+          delete newState[keyNum]
         }
       }
-      return newState;
+      return newState
     });
   };
 
