@@ -54,7 +54,7 @@ export default function CompetitorStep({
     resolver: zodResolver(competitorFormSchema),
     defaultValues: {
       competitors:
-        formData.competitors.length > 0 ? formData.competitors : [{ url: "" }],
+        formData.competitors.length > 0 ? formData.competitors : [{ url: '', favicon: '' }],
     },
     mode: "onBlur",
   });
@@ -142,55 +142,42 @@ export default function CompetitorStep({
     }
   };
 
-  // Update the fetchFavicon function to check for duplicates
   const fetchFavicon = async (url: string, index: number) => {
     if (!isValidUrl(url)) {
-      setUrlErrors((prev) => ({ ...prev, [index]: true }));
-      setFavicons((prev) => {
-        const newState = { ...prev };
-        delete newState[index];
-        return newState;
-      });
-      return;
+      setUrlErrors((prev) => ({ ...prev, [index]: true }))
+      form.setValue(`competitors.${index}.favicon`, '')
+      return
     }
 
     if (isDuplicateUrl(url, index)) {
-      setUrlErrors((prev) => ({ ...prev, [index]: true }));
+      setUrlErrors((prev) => ({ ...prev, [index]: true }))
       form.setError(`competitors.${index}.url`, {
-        type: "manual",
-        message: "This website has already been added",
-      });
-      return;
+        type: 'manual',
+        message: 'This website has already been added',
+      })
+      return
     }
 
     try {
-      const domain = new URL(url.startsWith("http") ? url : `https://${url}`)
-        .hostname;
-      const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
+      const domain = new URL(url.startsWith('http') ? url : `https://${url}`).hostname
+      const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`
 
-      const img = new Image();
-      img.src = faviconUrl;
+      const img = new Image()
+      img.src = faviconUrl
 
       await new Promise((resolve, reject) => {
-        img.onload = resolve;
-        img.onerror = reject;
-      });
+        img.onload = resolve
+        img.onerror = reject
+      })
 
-      setUrlErrors((prev) => ({ ...prev, [index]: false }));
-      setFavicons((prev) => ({
-        ...prev,
-        [index]: faviconUrl,
-      }));
+      setUrlErrors((prev) => ({ ...prev, [index]: false }))
+      form.setValue(`competitors.${index}.favicon`, faviconUrl)
     } catch (error) {
-      console.log("Error fetching favicon:", error);
-      setUrlErrors((prev) => ({ ...prev, [index]: true }));
-      setFavicons((prev) => {
-        const newState = { ...prev };
-        delete newState[index];
-        return newState;
-      });
+      console.log('Error fetching favicon:', error)
+      setUrlErrors((prev) => ({ ...prev, [index]: true }))
+      form.setValue(`competitors.${index}.favicon`, '')
     }
-  };
+  }
 
   const handleKeyPress = async (
     event: React.KeyboardEvent<HTMLInputElement>,
@@ -264,21 +251,20 @@ export default function CompetitorStep({
 
   const onSubmit: SubmitHandler<CompetitorFormData> = async (data) => {
     try {
-      console.log("Submitted data:", data);
+      console.log('Submitted data:', data)
       setFormData({
         ...formData,
         competitors: data.competitors,
-      });
-      onNext();
+      })
+      onNext()
     } catch (error) {
-      console.error("Submission error:", error);
+      console.error('Submission error:', error)
     }
-  };
+  }
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        {/* Form Field */}
         <div className="space-y-4">
           {fields.map((field, index) => (
             <FormField
@@ -289,14 +275,13 @@ export default function CompetitorStep({
                 <FormItem>
                   <FormControl>
                     <div className="relative flex items-center">
-                      {favicons[index] && (
+                      {form.getValues(`competitors.${index}.favicon`) ? (
                         <img
-                          src={favicons[index] || ""}
+                          src={form.getValues(`competitors.${index}.favicon`)}
                           alt="Favicon"
                           className="absolute left-3 w-4 h-4"
                         />
-                      )}
-                      {!favicons[index] && (
+                      ) : (
                         <Globe className="absolute left-3 w-4 h-4 text-gray-400" />
                       )}
                       <Input
@@ -310,11 +295,11 @@ export default function CompetitorStep({
                         )}
                         onKeyDown={(e) => handleKeyPress(e, index)}
                         onBlur={async (e) => {
-                          field.onBlur();
+                          field.onBlur()
                           if (e.target.value) {
-                            await fetchFavicon(e.target.value, index);
+                            await fetchFavicon(e.target.value, index)
                           }
-                          form.trigger(`competitors.${index}.url`);
+                          form.trigger(`competitors.${index}.url`)
                         }}
                       />
                       {index > 0 && (
@@ -337,21 +322,19 @@ export default function CompetitorStep({
           ))}
         </div>
 
-        {/* Form Button */}
         {fields.length < 5 && (
           <Button
             type="button"
             variant="outline"
             className="w-full h-12 border-dashed"
-            onClick={() => append({ url: "" })}
-            disabled={hasInvalidUrls}
+            onClick={() => append({ url: '', favicon: '' })}
+            disabled={Object.values(urlErrors).some((error) => error)}
           >
             <Plus className="h-4 w-4 mr-2" />
             Add Competitor
           </Button>
         )}
 
-        {/* Form Foot Note */}
         <div className="space-y-6">
           <Button
             type="submit"
@@ -394,14 +377,12 @@ export default function CompetitorStep({
             )}
           </Button>
 
-          {/* End State */}
           {fields.length === 5 && (
             <p className="text-sm text-muted-foreground text-center">
               You can always add more later
             </p>
           )}
 
-          {/* Starter State */}
           {fields.length === 1 && (
             <p className="text-center text-sm text-gray-600">
               Already have an account?{" "}
