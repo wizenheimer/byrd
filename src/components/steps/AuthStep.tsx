@@ -1,13 +1,24 @@
 "use client";
+
 import { Button } from "@/components/ui/button";
 
-export default function AuthStep() {
+interface AuthStepProps {
+  onComplete: () => void;
+}
+
+export default function AuthStep({ onComplete }: AuthStepProps) {
+  const handleComplete = () => {
+    onComplete();
+    window.location.reload();
+  }
+
   return (
     <div className="space-y-3">
       <Button
         variant="outline"
         className="relative h-12 w-full justify-center text-base font-normal"
-        onClick={() => { }}
+        onClick={() => { }
+        }
       >
         <div className="absolute left-4 size-5">
           <svg viewBox="0 0 24 24" className="size-5 fill-[#0A66C2]">
@@ -45,6 +56,9 @@ export default function AuthStep() {
         </div>
         Continue with Google
       </Button>
+      <p className="text-sm text-muted-foreground text-center" onClick={handleComplete} onKeyDown={handleComplete}>
+        Start Over
+      </p>
     </div>
   );
 }

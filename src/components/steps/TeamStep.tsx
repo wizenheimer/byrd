@@ -17,22 +17,6 @@ import { Plus, X } from "lucide-react";
 import { useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 
-// const teamMemberSchema = z.object({
-//   email: z.string().email("Invalid email address").min(1, "Email is required"),
-// });
-
-// const teamFormSchema = z.object({
-//   members: z
-//     .array(teamMemberSchema)
-//     .max(5, "Maximum 5 team members allowed")
-//     .refine((members) => {
-//       const emails = members.map((m) => m.email.toLowerCase());
-//       return new Set(emails).size === emails.length;
-//     }, "Duplicate email addresses are not allowed"),
-// });
-
-// type TeamFormData = z.infer<typeof teamFormSchema>;
-
 interface TeamStepProps {
   formData: {
     team: TeamFormData[];
@@ -56,7 +40,9 @@ export default function TeamStep({
   const form = useForm<TeamFormData>({
     resolver: zodResolver(teamFormSchema),
     defaultValues: {
-      members: formData.team.length > 0 ? formData.team.flatMap(team => team.members) : [{ email: "" }],
+      members: formData.team && formData.team.length > 0 && formData.team[0].members
+        ? formData.team[0].members
+        : [{ email: "" }],
     },
   });
 
@@ -120,7 +106,7 @@ export default function TeamStep({
       console.log("Submitted data:", data);
       setFormData({
         ...formData,
-        team: data.members,
+        team: [data],
       });
       onNext();
     } catch (error) {
@@ -129,30 +115,16 @@ export default function TeamStep({
   };
 
   const hasFormErrors = () => {
-    // Check for validation errors
     const hasZodErrors = Object.keys(form.formState.errors).length > 0;
-
-    // Check for duplicate errors
     const hasDuplicates = Object.values(duplicateError).some(Boolean);
-
-    // Check for empty fields
     const hasEmptyFields = form
       .getValues()
-      .members.some((member) => !member.email.trim());
+      .members.some((member) => !member?.email?.trim());
 
     return hasZodErrors || hasDuplicates || hasEmptyFields;
   };
 
   return (
-    // <OnboardingLayout
-    // 	previewImage="/onboarding/four.png"
-    // 	previewAlt="Dashboard Preview"
-    // >
-    // 	<OnboardingHeader
-    // 		title="Build Your War Room"
-    // 		description="Business is a team sport. Bring in your heavy hitters."
-    // 	/>
-
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <div className="space-y-4">
@@ -207,8 +179,7 @@ export default function TeamStep({
                             }}
                             onPaste={(e) => {
                               e.preventDefault();
-                              const pastedText =
-                                e.clipboardData.getData("text");
+                              const pastedText = e.clipboardData.getData("text");
                               const emails = pastedText
                                 .split(/[\s,;]+/)
                                 .filter((email) => email.includes("@"))
@@ -337,6 +308,5 @@ export default function TeamStep({
         </div>
       </form>
     </Form>
-    // </OnboardingLayout>
   );
 }
