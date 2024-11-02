@@ -10,6 +10,7 @@
 		"check": "biome check --write ./src"
 	},
 	"dependencies": {
+		"@clerk/nextjs": "^6.1.0",
 		"@hookform/resolvers": "^3.9.1",
 		"@radix-ui/react-collapsible": "^1.1.1",
 		"@radix-ui/react-dialog": "^1.1.2",
