@@ -47,3 +47,38 @@ export interface ChannelCard {
 	title: string;
 	description: string;
 }
+
+export const featureSchema = z.object({
+	id: z.string(),
+	title: z.string(),
+	description: z.string(),
+	enabled: z.boolean(),
+});
+
+export const channelSchema = z.string();
+
+const teamMemberSchema = z.object({
+	email: z.string().email("Invalid email address").min(1, "Email is required"),
+});
+
+export const teamFormSchema = z.object({
+	members: z
+		.array(teamMemberSchema)
+		.max(5, "Maximum 5 team members allowed")
+		.refine((members) => {
+			const emails = members.map((m) => m.email.toLowerCase());
+			return new Set(emails).size === emails.length;
+		}, "Duplicate email addresses are not allowed"),
+});
+
+export const onboardingFormSchema = z.object({
+	competitors: competitorFormSchema.shape.competitors,
+	features: z.array(featureSchema),
+	channels: z.array(channelSchema),
+	team: z.array(teamFormSchema),
+});
+
+export type FeatureFormData = z.infer<typeof featureSchema>;
+export type ChannelFormData = z.infer<typeof channelSchema>;
+export type TeamFormData = z.infer<typeof teamFormSchema>;
+export type OnboardingFormData = z.infer<typeof onboardingFormSchema>;
