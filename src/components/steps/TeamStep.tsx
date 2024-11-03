@@ -104,7 +104,7 @@ export default function TeamStep({
 
 	const onSubmit = async (data: TeamFormData) => {
 		try {
-			console.log("Submitted data:", data);
+			// console.log("Submitted data:", data);
 			setFormData({
 				...formData,
 				team: [data],

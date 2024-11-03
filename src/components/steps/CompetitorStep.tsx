@@ -80,7 +80,7 @@ export default function CompetitorStep({
 	}, [urlErrors, fields.length]);
 
 	const isValidUrl = (urlString: string): boolean => {
-		console.log("Validating URL:", urlString);
+		// console.log("Validating URL:", urlString);
 		// Define allowed protocols
 		const ALLOWED_PROTOCOLS = ["http:", "https:"];
 
@@ -171,7 +171,7 @@ export default function CompetitorStep({
 			setUrlErrors((prev) => ({ ...prev, [index]: false }));
 			form.setValue(`competitors.${index}.favicon`, faviconUrl);
 		} catch (error) {
-			console.log("Error fetching favicon:", error);
+			// console.log("Error fetching favicon:", error);
 			setUrlErrors((prev) => ({ ...prev, [index]: true }));
 			form.setValue(`competitors.${index}.favicon`, "");
 		}
@@ -235,7 +235,7 @@ export default function CompetitorStep({
 
 	const onSubmit: SubmitHandler<CompetitorFormData> = async (data) => {
 		try {
-			console.log("Submitted data:", data);
+			// console.log("Submitted data:", data);
 			setFormData({
 				...formData,
 				competitors: data.competitors,

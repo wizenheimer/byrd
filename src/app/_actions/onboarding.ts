@@ -38,7 +38,7 @@ export async function persistOnboardingData(
 	data: OnboardingData,
 ): Promise<{ success: boolean; workspaceId: string }> {
 	try {
-		console.log("Persisting onboarding data:", data);
+		// console.log("Persisting onboarding data:", data);
 		return await prisma.$transaction(async () => {
 			// Create primary user
 			const userData: UserCreateData = {
