@@ -1,6 +1,6 @@
+import prisma from "@/lib/db";
 // workspace.ts
 import type { UserRole } from "@prisma/client";
-import prisma from "@/lib/db";
 
 export interface OnboardingData {
 	clerkId: string;

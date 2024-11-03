@@ -1,7 +1,7 @@
 // team.ts
 
-import type { UserRole } from "@prisma/client";
 import prisma from "@/lib/db";
+import type { UserRole } from "@prisma/client";
 
 export interface TeamMemberInvite {
 	email: string;

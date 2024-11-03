@@ -1,6 +1,6 @@
+import prisma from "@/lib/db";
 // property.ts
 import { PropertyCategory } from "@prisma/client";
-import prisma from "@/lib/db";
 
 interface PropertyCoordinates {
 	points: { x: number; y: number }[];

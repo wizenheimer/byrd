@@ -95,34 +95,34 @@ body {
 
 /* Default state */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-  background: transparent;
+	width: 6px;
+	height: 6px;
+	background: transparent;
 }
 
 /* Track */
 ::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.05);
+	background: rgba(0, 0, 0, 0.05);
 }
 
 /* Thumb */
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.2);  /* Subtle black with low opacity */
-  border-radius: 3px;
+	background: rgba(0, 0, 0, 0.2); /* Subtle black with low opacity */
+	border-radius: 3px;
 }
 
 /* Thumb on hover */
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.3);  /* Slightly darker on hover */
+	background: rgba(0, 0, 0, 0.3); /* Slightly darker on hover */
 }
 
 /* Firefox */
 * {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+	scrollbar-width: thin;
+	scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
 }
 
 /* Maintain smooth scrolling */
 html {
-  scroll-behavior: smooth;
+	scroll-behavior: smooth;
 }

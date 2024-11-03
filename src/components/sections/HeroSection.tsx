@@ -19,7 +19,7 @@ const Hero = () => {
 				}}
 				secondaryButton={{
 					label: "Contact Sales",
-          href: "https://cal.com/nayann/byrd",
+					href: "https://cal.com/nayann/byrd",
 				}}
 			/>
 

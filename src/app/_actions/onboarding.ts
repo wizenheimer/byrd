@@ -3,7 +3,7 @@
 import prisma from "@/lib/db";
 import { createCompetitorProperties } from "@/services/property";
 import { inviteTeamMember } from "@/services/team";
-import { createUser, type UserCreateData } from "@/services/user";
+import { type UserCreateData, createUser } from "@/services/user";
 import { createWorkspace } from "@/services/workspace";
 
 interface Competitor {
@@ -39,7 +39,7 @@ export async function persistOnboardingData(
 ): Promise<{ success: boolean; workspaceId: string }> {
 	try {
 		console.log("Persisting onboarding data:", data);
-		return await prisma.$transaction(async (tx) => {
+		return await prisma.$transaction(async () => {
 			// Create primary user
 			const userData: UserCreateData = {
 				email: data.email,
