@@ -93,5 +93,5 @@ export default function OnboardingComplete() {
 		return <LoadingStep />;
 	}
 
-	return null;
+	return <LoadingStep />;
 }
