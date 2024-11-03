@@ -16,7 +16,7 @@ import type { ChannelCard, OnboardingFormData } from "../../_types/onboarding";
 
 export const STORAGE_KEYS = {
 	STEP: "onboarding_current_step",
-	FORM_DATA: "onboarding_form_data",
+	FORM_DATA: "onboarding_data",
 } as const;
 
 interface Step {
