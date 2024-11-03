@@ -18,7 +18,7 @@ export default function CustomClerkOAuth() {
 			await signIn.authenticateWithRedirect({
 				strategy,
 				redirectUrl: "/sso-callback",
-				redirectUrlComplete: "/waitlist",
+        redirectUrlComplete: "/onboarding-complete",
 			});
 		} catch (error) {
 			console.error("OAuth error", error);
