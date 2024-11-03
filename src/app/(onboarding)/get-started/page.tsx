@@ -2,6 +2,7 @@
 
 import LoadingStep from "@/components/steps/LoadingStep";
 import { Button } from "@/components/ui/button";
+import { STORAGE_KEYS } from "@/constants/storage";
 import { useUser } from "@clerk/nextjs";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, Inbox, Megaphone, Rss, Share2 } from "lucide-react";
@@ -13,11 +14,6 @@ import CompetitorStep from "../../../components/steps/CompetitorStep";
 import FeaturesStep from "../../../components/steps/FeaturesStep";
 import TeamStep from "../../../components/steps/TeamStep";
 import type { ChannelCard, OnboardingFormData } from "../../_types/onboarding";
-
-export const STORAGE_KEYS = {
-	STEP: "onboarding_current_step",
-	FORM_DATA: "onboarding_data",
-} as const;
 
 interface Step {
 	title: string;

@@ -6,10 +6,10 @@ import {
 } from "@/app/_actions/onboarding";
 import { onboardingFormSchema } from "@/app/_types/onboarding";
 import LoadingStep from "@/components/steps/LoadingStep";
+import { STORAGE_KEYS } from "@/constants/storage";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { STORAGE_KEYS } from "../get-started/page";
 
 function loadOnboardingDataFromStorage(
 	storageKey: string,
