@@ -40,7 +40,7 @@ export default function WaitlistScreen() {
 					<ArrowUpRight className="w-12 h-12 ml-2 text-black" />
 				</div>
 				<p className="text-md text-gray-600 max-w-md">
-					Rolling out access to 7 new teams monthly.
+					{"You're on the list! We'll reach out soon."}
 				</p>
 			</main>
 
