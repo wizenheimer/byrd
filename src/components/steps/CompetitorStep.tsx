@@ -171,7 +171,7 @@ export default function CompetitorStep({
 			setUrlErrors((prev) => ({ ...prev, [index]: false }));
 			form.setValue(`competitors.${index}.favicon`, faviconUrl);
 		} catch (error) {
-			// console.log("Error fetching favicon:", error);
+			console.error("Error fetching favicon:", error);
 			setUrlErrors((prev) => ({ ...prev, [index]: true }));
 			form.setValue(`competitors.${index}.favicon`, "");
 		}
