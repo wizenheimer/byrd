@@ -1,3 +1,4 @@
+// src/components/sections/ClosingNoteSection.tsx
 import HeroSection from "../block/HeroBlock";
 
 const ClosingNoteSection = () => {

@@ -1,3 +1,4 @@
+// src/components/sections/MediaIntelligenceSection.tsx
 import ContentGrid from "../block/ContentGridBlock";
 import ScreenshotBlock from "../block/ScreenshotBlock";
 import SectionHeader from "../block/SectionHeaderBlock";

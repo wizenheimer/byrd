@@ -1,3 +1,4 @@
+// src/components/steps/ChannelsStep.tsx
 "use client";
 
 import type { ChannelCard, ChannelFormData } from "@/app/_types/onboarding";
