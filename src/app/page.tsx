@@ -1,3 +1,4 @@
+// src/app/(onboarding)/page.tsx
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import ClosingNoteSection from "@/components/sections/ClosingNoteSection";
@@ -12,20 +13,20 @@ import ScaleupSection from "@/components/sections/ScaleupSection";
 import TestimonialsSection from "@/components/sections/TestimonialSection";
 
 export default function Home() {
-	return (
-		<>
-			<Navbar />
-			<HeroSection />
-			<ContextSection />
-			<MonitoringSection />
-			<InboxSection />
-			<MediaIntelligenceSection />
-			<CustomerIntelligenceSection />
-			<ScaleupSection />
-			<IntegrationSection />
-			<TestimonialsSection />
-			<ClosingNoteSection />
-			<Footer />
-		</>
-	);
+  return (
+    <>
+      <Navbar />
+      <HeroSection />
+      <ContextSection />
+      <MonitoringSection />
+      <InboxSection />
+      <MediaIntelligenceSection />
+      <CustomerIntelligenceSection />
+      <ScaleupSection />
+      <IntegrationSection />
+      <TestimonialsSection />
+      <ClosingNoteSection />
+      <Footer />
+    </>
+  );
 }
