@@ -1,0 +1,1 @@
+.PHONY: build test run
