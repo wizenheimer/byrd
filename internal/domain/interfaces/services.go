@@ -7,7 +7,7 @@ import (
 )
 
 type ScreenshotService interface {
-	TakeScreenshot(ctx context.Context, opts models.ScreenshotOptions) (*models.ScreenshotResponse, error)
+	TakeScreenshot(ctx context.Context, opts models.ScreenshotRequestOptions) (*models.ScreenshotResponse, error)
 	GetScreenshot(ctx context.Context, hash, weekNumber, runID string) (*models.ScreenshotResponse, error)
 	GetContent(ctx context.Context, hash, weekNumber, runID string) (*models.ScreenshotResponse, error)
 }
