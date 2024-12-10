@@ -13,7 +13,6 @@ import (
 	"github.com/wizenheimer/iris/internal/api/routes"
 	"github.com/wizenheimer/iris/internal/config"
 	"github.com/wizenheimer/iris/internal/domain/interfaces"
-	"github.com/wizenheimer/iris/internal/domain/models"
 	"github.com/wizenheimer/iris/internal/repository/db"
 	"github.com/wizenheimer/iris/internal/repository/storage"
 	"github.com/wizenheimer/iris/internal/service/ai"
@@ -21,7 +20,7 @@ import (
 	"github.com/wizenheimer/iris/internal/service/diff"
 	"github.com/wizenheimer/iris/internal/service/notification"
 	"github.com/wizenheimer/iris/internal/service/screenshot"
-	"github.com/wizenheimer/iris/pkg/utils/sqlDb"
+	"github.com/wizenheimer/iris/pkg/utils/database"
 )
 
 func initializer(cfg *config.Config, sqlDb *sql.DB) (*routes.HandlerContainer, error) {
@@ -69,7 +68,7 @@ func main() {
 	}
 
 	// Initialize database
-	sqlDb, err := sqlDb.Init(cfg.Database)
+	sqlDb, err := database.Init(cfg.Database)
 	if err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 		return
@@ -123,10 +122,14 @@ func setupScreenshotService(cfg *config.Config, httpClient interfaces.HTTPClient
 		log.Fatalf("Failed to initialize storage: %v", err)
 	}
 
+	screenshotServiceOptions := []screenshot.ScreenshotServiceOption{
+		screenshot.WithStorage(storageRepo),
+		screenshot.WithHTTPClient(httpClient),
+		screenshot.WithKey(cfg.Services.ScreenshotServiceAPIKey),
+	}
+
 	return screenshot.NewScreenshotService(
-		storageRepo,
-		httpClient,
-		&models.ScreenshotServiceConfig{},
+		screenshotServiceOptions...,
 	)
 }
 

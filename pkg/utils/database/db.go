@@ -1,4 +1,4 @@
-package sqlDb
+package database
 
 import (
 	"database/sql"
