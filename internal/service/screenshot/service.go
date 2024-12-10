@@ -2,6 +2,7 @@ package screenshot
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/wizenheimer/iris/internal/domain/interfaces"
@@ -14,19 +15,32 @@ type screenshotService struct {
 	config     *models.ScreenshotServiceConfig
 }
 
-func NewScreenshotService(
-	storage interfaces.StorageRepository,
-	httpClient interfaces.HTTPClient,
-	config *models.ScreenshotServiceConfig,
-) (interfaces.ScreenshotService, error) {
-	return &screenshotService{
-		storage:    storage,
-		httpClient: httpClient,
-		config:     config,
-	}, nil
+// NewScreenshotService creates a new screenshot service with the given options
+func NewScreenshotService(opts ...ScreenshotServiceOption) (interfaces.ScreenshotService, error) {
+	s := &screenshotService{
+		config: defaultConfig(),
+	}
+
+	// Apply all options
+	for _, opt := range opts {
+		opt(s)
+	}
+
+	// Validate required dependencies
+	if s.storage == nil {
+		return nil, errors.New("storage repository is required")
+	}
+	if s.httpClient == nil {
+		return nil, errors.New("HTTP client is required")
+	}
+	if s.config.Key == "" {
+		return nil, errors.New("API key is required")
+	}
+
+	return s, nil
 }
 
-func (s *screenshotService) TakeScreenshot(ctx context.Context, opts models.ScreenshotOptions) (*models.ScreenshotResponse, error) {
+func (s *screenshotService) TakeScreenshot(ctx context.Context, opts models.ScreenshotRequestOptions) (*models.ScreenshotResponse, error) {
 	// Implementation
 	return nil, nil
 }

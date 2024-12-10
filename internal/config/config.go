@@ -32,9 +32,9 @@ type StorageConfig struct {
 }
 
 type ServicesConfig struct {
-	ScreenshotServiceAPI string
-	OpenAIKey            string
-	ResendAPIKey         string
+	ScreenshotServiceAPIKey string
+	OpenAIKey               string
+	ResendAPIKey            string
 }
 
 func Load() (*Config, error) {

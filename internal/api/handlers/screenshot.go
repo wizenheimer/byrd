@@ -17,7 +17,7 @@ func NewScreenshotHandler(screenshotService interfaces.ScreenshotService) *Scree
 }
 
 func (h *ScreenshotHandler) CreateScreenshot(c *fiber.Ctx) error {
-	var opts models.ScreenshotOptions
+	var opts models.ScreenshotRequestOptions
 	if err := c.BodyParser(&opts); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "Invalid request body")
 	}
