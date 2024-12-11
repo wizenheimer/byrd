@@ -47,13 +47,13 @@ func NewShutdownHandler(app *fiber.App, db *sql.DB, logger *logger.Logger, confi
 
 // HandleGracefulShutdown coordinates the shutdown process
 func (h *ShutdownHandler) HandleGracefulShutdown() {
-	// Create context with timeout
-	ctx, cancel := context.WithTimeout(context.Background(), h.config.Timeout)
-	defer cancel()
-
 	// Wait for shutdown signal
 	<-h.shutdown
 	h.logger.Info("Shutdown signal received")
+
+	// Create context with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), h.config.Timeout)
+	defer cancel()
 
 	// Set shutdown flag to reject new requests
 	middleware.IsShuttingDown.Store(true)
