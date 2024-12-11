@@ -3,7 +3,7 @@ package config
 import (
 	"time"
 
-	"github.com/wizenheimer/iris/pkg/utils/parser"
+	"github.com/wizenheimer/iris/src/pkg/utils/parser"
 )
 
 type Config struct {
@@ -27,12 +27,22 @@ type EnvironmentConfig struct {
 }
 
 type DatabaseConfig struct {
-	Driver   string
-	Host     string
-	Port     string
+	// Driver for the database
+	Driver string
+
+	// Host and port of the database
+	Host string
+	Port string
+
+	// Credentials for the database
 	User     string
 	Password string
+
+	// Name of the database
 	Database string
+
+	// Connection string for the database
+	ConnectionString string
 }
 
 type StorageConfig struct {
@@ -118,6 +128,8 @@ func LoadDatabaseConfig() DatabaseConfig {
 		Password: GetEnv("DB_PASSWORD", "postgres", parser.StrParser),
 		// Database is set to the value of the DB_DATABASE environment variable, or "postgres" if the variable is not set.
 		Database: GetEnv("DB_DATABASE", "postgres", parser.StrParser),
+		// ConnectionString is set to the value of the DB_CONNECTION_STRING environment variable, or "" if the variable is not set.
+		ConnectionString: GetEnv("DB_CONNECTION_STRING", "", parser.StrParser),
 	}
 }
 

@@ -3,9 +3,9 @@ package competitor
 import (
 	"context"
 
-	"github.com/wizenheimer/iris/internal/domain/interfaces"
-	"github.com/wizenheimer/iris/internal/domain/models"
-	"github.com/wizenheimer/iris/pkg/logger"
+	"github.com/wizenheimer/iris/src/internal/domain/interfaces"
+	"github.com/wizenheimer/iris/src/internal/domain/models"
+	"github.com/wizenheimer/iris/src/pkg/logger"
 	"go.uber.org/zap"
 )
 

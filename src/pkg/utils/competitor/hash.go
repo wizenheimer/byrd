@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/wizenheimer/iris/internal/constants"
+	"github.com/wizenheimer/iris/src/internal/constants"
 )
 
 // GeneratePathHash generates a hash for a given url

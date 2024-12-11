@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/wizenheimer/iris/internal/domain/interfaces"
-	"github.com/wizenheimer/iris/pkg/logger"
+	"github.com/wizenheimer/iris/src/internal/domain/interfaces"
+	"github.com/wizenheimer/iris/src/pkg/logger"
 	"go.uber.org/zap"
 )
 

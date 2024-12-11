@@ -4,9 +4,9 @@ import (
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/wizenheimer/iris/internal/domain/interfaces"
-	"github.com/wizenheimer/iris/internal/domain/models"
-	"github.com/wizenheimer/iris/pkg/logger"
+	"github.com/wizenheimer/iris/src/internal/domain/interfaces"
+	"github.com/wizenheimer/iris/src/internal/domain/models"
+	"github.com/wizenheimer/iris/src/pkg/logger"
 )
 
 type CompetitorHandler struct {

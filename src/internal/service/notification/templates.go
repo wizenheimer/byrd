@@ -3,7 +3,7 @@ package notification
 import (
 	"html/template"
 
-	"github.com/wizenheimer/iris/pkg/logger"
+	"github.com/wizenheimer/iris/src/pkg/logger"
 )
 
 type TemplateManager struct {

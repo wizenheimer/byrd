@@ -3,7 +3,7 @@ package interfaces
 import (
 	"context"
 
-	"github.com/wizenheimer/iris/internal/domain/models"
+	"github.com/wizenheimer/iris/src/internal/domain/models"
 )
 
 type ScreenshotService interface {

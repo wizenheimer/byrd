@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 
-	"github.com/wizenheimer/iris/internal/domain/interfaces"
-	"github.com/wizenheimer/iris/internal/domain/models"
-	"github.com/wizenheimer/iris/pkg/logger"
-	"github.com/wizenheimer/iris/pkg/utils/competitor"
+	"github.com/wizenheimer/iris/src/internal/domain/interfaces"
+	"github.com/wizenheimer/iris/src/internal/domain/models"
+	"github.com/wizenheimer/iris/src/pkg/logger"
+	"github.com/wizenheimer/iris/src/pkg/utils/competitor"
 	"go.uber.org/zap"
 )
 

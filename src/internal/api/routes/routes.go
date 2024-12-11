@@ -2,9 +2,9 @@ package routes
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/wizenheimer/iris/internal/api/handlers"
-	"github.com/wizenheimer/iris/internal/domain/interfaces"
-	"github.com/wizenheimer/iris/pkg/logger"
+	"github.com/wizenheimer/iris/src/internal/api/handlers"
+	"github.com/wizenheimer/iris/src/internal/domain/interfaces"
+	"github.com/wizenheimer/iris/src/pkg/logger"
 )
 
 type HandlerContainer struct {

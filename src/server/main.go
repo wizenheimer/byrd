@@ -6,11 +6,11 @@ import (
 	"runtime/debug"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/wizenheimer/iris/internal/api/middleware"
-	"github.com/wizenheimer/iris/internal/api/routes"
-	"github.com/wizenheimer/iris/internal/config"
-	"github.com/wizenheimer/iris/pkg/logger"
-	"github.com/wizenheimer/iris/pkg/utils/database"
+	"github.com/wizenheimer/iris/src/internal/api/middleware"
+	"github.com/wizenheimer/iris/src/internal/api/routes"
+	"github.com/wizenheimer/iris/src/internal/config"
+	"github.com/wizenheimer/iris/src/pkg/logger"
+	"github.com/wizenheimer/iris/src/pkg/utils/database"
 	"go.uber.org/zap"
 )
 
@@ -44,7 +44,7 @@ func main() {
 	}()
 
 	// Initialize database
-	sqlDb, err := database.Init(cfg.Database)
+	sqlDb, err := database.Init(cfg)
 	if err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 		return

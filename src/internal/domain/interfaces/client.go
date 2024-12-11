@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/wizenheimer/iris/internal/domain/models"
+	"github.com/wizenheimer/iris/src/internal/domain/models"
 )
 
 type HTTPClient interface {

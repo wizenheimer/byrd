@@ -1,8 +1,8 @@
 package screenshot
 
 import (
-	"github.com/wizenheimer/iris/internal/domain/interfaces"
-	"github.com/wizenheimer/iris/internal/domain/models"
+	"github.com/wizenheimer/iris/src/internal/domain/interfaces"
+	"github.com/wizenheimer/iris/src/internal/domain/models"
 )
 
 // ScreenshotServiceOption is a function type that modifies ScreenshotService

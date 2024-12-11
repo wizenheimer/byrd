@@ -1,6 +1,6 @@
 package competitor
 
-import "github.com/wizenheimer/iris/internal/domain/models"
+import "github.com/wizenheimer/iris/src/internal/domain/models"
 
 type CompetitorMapper struct{}
 
