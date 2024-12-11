@@ -50,4 +50,11 @@ playground
 
 # Environment
 .env
+.env.local
+.env.development
+.env.test
+.env.production
 !example.env
+
+# Logs
+logs
