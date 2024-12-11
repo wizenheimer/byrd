@@ -17,7 +17,7 @@ func NewDiffHandler(diffService interfaces.DiffService) *DiffHandler {
 }
 
 func (h *DiffHandler) CreateDiff(c *fiber.Ctx) error {
-	var req models.DiffRequest
+	var req models.URLDiffRequest
 	if err := c.BodyParser(&req); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "Invalid request body")
 	}
@@ -33,33 +33,13 @@ func (h *DiffHandler) CreateDiff(c *fiber.Ctx) error {
 	})
 }
 
-func (h *DiffHandler) GetDiffHistory(c *fiber.Ctx) error {
-	params := models.DiffHistoryParams{
-		URL:        c.Query("url"),
-		FromRunID:  c.Query("fromRunId"),
-		ToRunID:    c.Query("toRunId"),
-		WeekNumber: c.Query("weekNumber"),
-		Limit:      c.QueryInt("limit", 10),
-	}
-
-	result, err := h.diffService.GetDiffHistory(c.Context(), params)
-	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
-	}
-
-	return c.JSON(fiber.Map{
-		"status": "success",
-		"data":   result,
-	})
-}
-
 func (h *DiffHandler) CreateReport(c *fiber.Ctx) error {
-	var req models.ReportRequest
+	var req models.WeeklyReportRequest
 	if err := c.BodyParser(&req); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "Invalid request body")
 	}
 
-	result, err := h.diffService.GenerateReport(c.Context(), req)
+	result, err := h.diffService.CreateReport(c.Context(), req)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}

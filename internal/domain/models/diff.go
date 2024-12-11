@@ -1,121 +1,105 @@
 package models
 
-import "time"
+// -----------------------	Weekly Diff Report	------------------------------
 
-type DiffAnalysis struct {
+// WeeklyReportRequest represents parameters for generating a weekly report for a list of URLs for a competitor
+type WeeklyReportRequest struct {
+	// List of URLs to analyze
+	URLs []string `json:"urls" validate:"required,min=1,max=100,dive,url"`
+
+	// Range of days to compare
+	WeekDay1 string `json:"weekDay1,omitempty"`
+	WeekDay2 string `json:"weekDay2,omitempty"`
+
+	// Week number for the report
+	WeekNumber string `json:"weekNumber,omitempty"`
+
+	// Competitor name
+	Competitor string `json:"competitor" validate:"required"`
+
+	// Whether to enrich the report with AI-generated summaries
+	Enriched bool `json:"enriched,omitempty"`
+}
+
+// WeeklyReport represents a complete weekly analysis across all URLs
+type WeeklyReport struct {
+	Data     WeeklyReportData     `json:"data"`
+	Metadata WeeklyReportMetadata `json:"metadata"`
+}
+
+// WeeklyReportData represents categorized changes for a weekly report
+type WeeklyReportData struct {
+	Branding    WeeklyCategoryReport `json:"branding"`
+	Integration WeeklyCategoryReport `json:"integration"`
+	Pricing     WeeklyCategoryReport `json:"pricing"`
+	Product     WeeklyCategoryReport `json:"product"`
+	Positioning WeeklyCategoryReport `json:"positioning"`
+	Partnership WeeklyCategoryReport `json:"partnership"`
+}
+
+// WeeklyCategoryReport represents a weekly diff report for a single category
+type WeeklyCategoryReport struct {
+	Changes []string            `json:"changes"`
+	URLs    map[string][]string `json:"urls"`
+	Summary string              `json:"summary"`
+}
+
+// WeeklyReportMetadata represents metadata for a weekly report
+type WeeklyReportMetadata struct {
+	GeneratedAt     string                `json:"generatedAt"`
+	WeekNumber      string                `json:"weekNumber"`
+	Competitor      string                `json:"competitor"`
+	URLCount        int                   `json:"urlCount"`
+	WeekDayRange    WeekDayRange          `json:"weekDayRange"`
+	ProcessedURLs   WeeklyProcessedURLs   `json:"processedUrls"`
+	ProcessingStats WeeklyProcessingStats `json:"processingStats"`
+	Errors          map[string]string     `json:"errors"`
+	Enriched        bool                  `json:"enriched"`
+}
+
+// WeeklyProcessedURLs tracks the status of processed URLs
+type WeeklyProcessedURLs struct {
+	Successful []string `json:"successful"`
+	Failed     []string `json:"failed"`
+	Skipped    []string `json:"skipped"`
+}
+
+// WeeklyProcessingStats provides statistics about URL processing
+type WeeklyProcessingStats struct {
+	TotalURLs    int `json:"totalUrls"`
+	SuccessCount int `json:"successCount"`
+	FailureCount int `json:"failureCount"`
+	SkippedCount int `json:"skippedCount"`
+}
+
+// WeekDayRange represents a time range for comparison
+type WeekDayRange struct {
+	FromDay string `json:"fromDay"`
+	ToDay   string `json:"toDay"`
+}
+
+// -----------------------	Bi-weekly Diff per URL	------------------------------
+
+// URLDiffRequest represents parameters for a diff comparison
+type URLDiffRequest struct {
+	// URL to compare
+	URL string `json:"url" validate:"required,url"`
+
+	// From timestamp
+	WeekDay1    string `json:"weekDay1" validate:"required"`
+	WeekNumber1 string `json:"weekNumber1,omitempty"`
+
+	// To timestamp
+	WeekDay2    string `json:"weekDay2" validate:"required"`
+	WeekNumber2 string `json:"weekNumber2,omitempty"`
+}
+
+// URLDiffAnalysis represents differences found across all categories
+type URLDiffAnalysis struct {
 	Branding    []string `json:"branding"`
 	Integration []string `json:"integration"`
 	Pricing     []string `json:"pricing"`
 	Product     []string `json:"product"`
 	Positioning []string `json:"positioning"`
 	Partnership []string `json:"partnership"`
-}
-
-type DiffRequest struct {
-	URL         string `json:"url" validate:"required,url"`
-	RunID1      string `json:"runId1" validate:"required"`
-	RunID2      string `json:"runId2" validate:"required"`
-	WeekNumber1 string `json:"weekNumber1,omitempty"`
-	WeekNumber2 string `json:"weekNumber2,omitempty"`
-}
-
-type CategoryBase struct {
-	Changes []string            `json:"changes"`
-	URLs    map[string][]string `json:"urls"`
-}
-
-type CategoryEnriched struct {
-	CategoryBase
-	Summary string `json:"summary"`
-}
-
-type DiffData struct {
-	Branding    CategoryBase `json:"branding"`
-	Integration CategoryBase `json:"integration"`
-	Pricing     CategoryBase `json:"pricing"`
-	Product     CategoryBase `json:"product"`
-	Positioning CategoryBase `json:"positioning"`
-	Partnership CategoryBase `json:"partnership"`
-}
-
-type AggregatedReport struct {
-	Data     DiffData `json:"data"`
-	Metadata struct {
-		GeneratedAt string `json:"generatedAt"`
-		WeekNumber  string `json:"weekNumber"`
-		RunRange    struct {
-			FromRun string `json:"fromRun"`
-			ToRun   string `json:"toRun"`
-		} `json:"runRange"`
-		Competitor    string `json:"competitor"`
-		URLCount      int    `json:"urlCount"`
-		ProcessedURLs struct {
-			Successful []string `json:"successful"`
-			Failed     []string `json:"failed"`
-			Skipped    []string `json:"skipped"`
-		} `json:"processedUrls"`
-		ProcessingStats struct {
-			TotalURLs    int `json:"totalUrls"`
-			SuccessCount int `json:"successCount"`
-			FailureCount int `json:"failureCount"`
-			SkippedCount int `json:"skippedCount"`
-		} `json:"processingStats"`
-		Errors   map[string]string `json:"errors"`
-		Enriched bool              `json:"enriched"`
-	} `json:"metadata"`
-}
-
-type ReportRequest struct {
-	URLs       []string `json:"urls" validate:"required,min=1,max=100,dive,url"`
-	RunID1     string   `json:"runId1,omitempty"`
-	RunID2     string   `json:"runId2,omitempty"`
-	WeekNumber string   `json:"weekNumber,omitempty"`
-	Competitor string   `json:"competitor" validate:"required"`
-	Enriched   bool     `json:"enriched,omitempty"`
-}
-
-// internal/domain/models/diff.go
-// Add to existing file
-
-type DiffHistoryParams struct {
-	URL        string `json:"url" validate:"required,url"`
-	FromRunID  string `json:"fromRunId,omitempty"`
-	ToRunID    string `json:"toRunId,omitempty"`
-	WeekNumber string `json:"weekNumber,omitempty" validate:"omitempty,len=2,numeric"`
-	Limit      int    `json:"limit,omitempty" validate:"omitempty,min=1,max=100"`
-}
-
-type DiffMetadata struct {
-	URL         string    `json:"url"`
-	RunID1      string    `json:"runId1"`
-	RunID2      string    `json:"runId2"`
-	WeekNumber  string    `json:"weekNumber"`
-	CreatedAt   time.Time `json:"createdAt"`
-	PageTitle   string    `json:"pageTitle,omitempty"`
-	LastUpdated string    `json:"lastUpdated,omitempty"`
-}
-
-type DiffReport struct {
-	URL         string       `json:"url"`
-	Timestamp1  string       `json:"timestamp1"`
-	Timestamp2  string       `json:"timestamp2"`
-	Differences DiffAnalysis `json:"differences"`
-	Metadata    struct {
-		PageTitle   string `json:"pageTitle,omitempty"`
-		LastUpdated string `json:"lastUpdated,omitempty"`
-	} `json:"metadata,omitempty"`
-}
-
-type DiffHistoryResponse struct {
-	Results  []DiffReport `json:"results"`
-	Metadata struct {
-		URL        string `json:"url"`
-		WeekNumber string `json:"weekNumber"`
-		DateRange  struct {
-			FromRun string `json:"fromRun"`
-			ToRun   string `json:"toRun"`
-		} `json:"dateRange"`
-		Count int `json:"count"`
-		Limit int `json:"limit"`
-	} `json:"metadata"`
 }

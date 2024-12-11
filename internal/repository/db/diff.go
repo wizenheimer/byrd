@@ -18,17 +18,14 @@ func NewDiffRepository(db *sql.DB) (interfaces.DiffRepository, error) {
 	}, nil
 }
 
-func (r *diffRepository) SaveDiff(ctx context.Context, diff *models.DiffAnalysis, metadata models.DiffMetadata) error {
+// SaveDiff saves the diff analysis for a URL
+func (r *diffRepository) SaveDiff(ctx context.Context, url string, diff *models.URLDiffAnalysis) error {
 	// Implementation
 	return nil
 }
 
-func (r *diffRepository) GetDiffHistory(ctx context.Context, params models.DiffHistoryParams) ([]models.DiffReport, error) {
-	// Implementation
-	return nil, nil
-}
-
-func (r *diffRepository) GetLatestDiff(ctx context.Context, url string) (*models.DiffReport, error) {
+// GetDiff retrieves the diff analysis for a URL, week day, and week number
+func (r *diffRepository) GetDiff(ctx context.Context, url, weekDay, weekNumber string) (*models.URLDiffAnalysis, error) {
 	// Implementation
 	return nil, nil
 }

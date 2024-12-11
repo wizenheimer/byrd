@@ -18,15 +18,24 @@ type CompetitorRepository interface {
 }
 
 type DiffRepository interface {
-	SaveDiff(ctx context.Context, diff *models.DiffAnalysis, metadata models.DiffMetadata) error
-	GetDiffHistory(ctx context.Context, params models.DiffHistoryParams) ([]models.DiffReport, error)
-	GetLatestDiff(ctx context.Context, url string) (*models.DiffReport, error)
+	// SaveDiff saves the diff analysis for the given URL
+	SaveDiff(ctx context.Context, url string, diff *models.URLDiffAnalysis) error
+
+	// GetDiff retrieves the diff analysis for the given URL, week day, and week number
+	GetDiff(ctx context.Context, url, weekDay, weekNumber string) (*models.URLDiffAnalysis, error)
 }
 
 type StorageRepository interface {
+	// StoreScreenshot stores a screenshot in the storage
 	StoreScreenshot(ctx context.Context, data []byte, path string, metadata map[string]string) error
+
+	// GetScreenshot retrieves a screenshot from the storage
 	StoreContent(ctx context.Context, content string, path string, metadata map[string]string) error
+
+	// Get retrieves the content of a file from the storage
 	Get(ctx context.Context, path string) ([]byte, map[string]string, error)
+
+	// Delete deletes a file from the storage
 	Delete(ctx context.Context, path string) error
 }
 
