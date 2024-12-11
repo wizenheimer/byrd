@@ -7,15 +7,22 @@ import (
 )
 
 type ScreenshotService interface {
+	// TakeScreenshot takes a screenshot of the given URL
 	TakeScreenshot(ctx context.Context, opts models.ScreenshotRequestOptions) (*models.ScreenshotResponse, error)
+
+	// GetScreenshot retrieves a screenshot from the storage
 	GetScreenshot(ctx context.Context, url, weekNumber, weekDay string) (*models.ScreenshotResponse, error)
+
+	// GetContent retrieves the content of a screenshot from the storage
 	GetContent(ctx context.Context, url, weekNumber, weekDay string) (*models.ScreenshotResponse, error)
 }
 
 type DiffService interface {
-	CreateDiff(ctx context.Context, req models.DiffRequest) (*models.DiffAnalysis, error)
-	GetDiffHistory(ctx context.Context, params models.DiffHistoryParams) (*models.DiffHistoryResponse, error)
-	GenerateReport(ctx context.Context, req models.ReportRequest) (*models.AggregatedReport, error)
+	// CreateDiff creates a diff for between versions of a URL
+	CreateDiff(ctx context.Context, req models.URLDiffRequest) (*models.URLDiffAnalysis, error)
+
+	// CreateReport creates a weekly report for the given competitor
+	CreateReport(ctx context.Context, req models.WeeklyReportRequest) (*models.WeeklyReport, error)
 }
 
 type CompetitorService interface {
@@ -34,6 +41,10 @@ type NotificationService interface {
 }
 
 type AIService interface {
-	AnalyzeDifferences(ctx context.Context, content1, content2 string) (*models.DiffAnalysis, error)
-	EnrichReport(ctx context.Context, report *models.AggregatedReport) error
+	// AnalyzeContentDifferences analyzes the content differences between two versions of a URL
+	AnalyzeContentDifferences(ctx context.Context, content1, content2 string) (*models.URLDiffAnalysis, error)
+	// AnalyzeVisualDifferences analyzes the visual differences between two screenshots
+	AnalyzeVisualDifferences(ctx context.Context, screenshot1, screenshot2 []byte) (*models.URLDiffAnalysis, error)
+	// EnrichReport enriches a weekly report with AI-generated summaries
+	EnrichReport(ctx context.Context, report *models.WeeklyReport) error
 }

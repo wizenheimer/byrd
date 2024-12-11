@@ -2,7 +2,6 @@ package diff
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/wizenheimer/iris/internal/domain/interfaces"
 	"github.com/wizenheimer/iris/internal/domain/models"
@@ -27,27 +26,12 @@ func NewDiffService(
 	return diffService, nil
 }
 
-func (s *diffService) CreateDiff(ctx context.Context, req models.DiffRequest) (*models.DiffAnalysis, error) {
+func (s *diffService) CreateDiff(ctx context.Context, req models.URLDiffRequest) (*models.URLDiffAnalysis, error) {
 	// Implementation
 	return nil, nil
 }
 
-func (s *diffService) GenerateReport(ctx context.Context, req models.ReportRequest) (*models.AggregatedReport, error) {
-	report := &models.AggregatedReport{}
-
-	// Process each URL and aggregate the results
-	// Implementation here
-
-	if req.Enriched {
-		if err := s.aiService.EnrichReport(ctx, report); err != nil {
-			return nil, fmt.Errorf("failed to enrich report: %w", err)
-		}
-	}
-
-	return report, nil
-}
-
-func (s *diffService) GetDiffHistory(ctx context.Context, params models.DiffHistoryParams) (*models.DiffHistoryResponse, error) {
+func (s *diffService) CreateReport(ctx context.Context, req models.WeeklyReportRequest) (*models.WeeklyReport, error) {
 	// Implementation
 	return nil, nil
 }

@@ -19,12 +19,20 @@ func NewOpenAIService(apiKey string, httpClient interfaces.HTTPClient) (interfac
 	}, nil
 }
 
-func (s *openAIService) AnalyzeDifferences(ctx context.Context, content1, content2 string) (*models.DiffAnalysis, error) {
+// AnalyzeContentDifferences analyzes the content differences between two versions of a URL
+func (s *openAIService) AnalyzeContentDifferences(ctx context.Context, content1, content2 string) (*models.URLDiffAnalysis, error) {
 	// Implementation
 	return nil, nil
 }
 
-func (s *openAIService) EnrichReport(ctx context.Context, report *models.AggregatedReport) error {
+// AnalyzeVisualDifferences analyzes the visual differences between two screenshots
+func (s *openAIService) AnalyzeVisualDifferences(ctx context.Context, screenshot1, screenshot2 []byte) (*models.URLDiffAnalysis, error) {
+	// Implementation
+	return nil, nil
+}
+
+// EnrichReport enriches a weekly report with AI-generated summaries
+func (s *openAIService) EnrichReport(ctx context.Context, report *models.WeeklyReport) error {
 	// Implementation
 	return nil
 }

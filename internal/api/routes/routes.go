@@ -39,8 +39,7 @@ func SetupRoutes(app *fiber.App, handlers *HandlerContainer) {
 	// Diff routes
 	diff := api.Group("/diff")
 	diff.Post("/create", handlers.DiffHandler.CreateDiff)
-	diff.Get("/history", handlers.DiffHandler.GetDiffHistory)
-	diff.Post("/report", handlers.DiffHandler.CreateReport)
+	diff.Get("/report", handlers.DiffHandler.CreateReport)
 
 	// Competitor routes
 	competitors := api.Group("/competitors")
