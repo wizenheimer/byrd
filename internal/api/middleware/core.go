@@ -9,6 +9,8 @@ import (
 func SetupMiddleware(app *fiber.App) {
 	// Recover from panics
 	app.Use(recover.New())
+	// Handle shutdown
+	app.Use(rejectRequestsDuringShutdown)
 	// Log requests
 	app.Use(logger.New())
 	// Handle Auth

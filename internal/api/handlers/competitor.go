@@ -6,19 +6,26 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/wizenheimer/iris/internal/domain/interfaces"
 	"github.com/wizenheimer/iris/internal/domain/models"
+	"github.com/wizenheimer/iris/pkg/logger"
 )
 
 type CompetitorHandler struct {
 	competitorService interfaces.CompetitorService
+	logger            *logger.Logger
 }
 
-func NewCompetitorHandler(competitorService interfaces.CompetitorService) *CompetitorHandler {
+func NewCompetitorHandler(competitorService interfaces.CompetitorService, logger *logger.Logger) *CompetitorHandler {
+	logger.Debug("creating new competitor handler")
+
 	return &CompetitorHandler{
 		competitorService: competitorService,
+		logger:            logger.WithFields(map[string]interface{}{"module": "competitor_handler"}),
 	}
 }
 
 func (h *CompetitorHandler) CreateCompetitor(c *fiber.Ctx) error {
+	h.logger.Debug("creating new competitor")
+
 	var input models.CompetitorInput
 	if err := c.BodyParser(&input); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "Invalid request body")
@@ -36,6 +43,8 @@ func (h *CompetitorHandler) CreateCompetitor(c *fiber.Ctx) error {
 }
 
 func (h *CompetitorHandler) ListCompetitors(c *fiber.Ctx) error {
+	h.logger.Debug("listing competitors")
+
 	limit := c.QueryInt("limit", 10)
 	offset := c.QueryInt("offset", 0)
 
@@ -56,6 +65,8 @@ func (h *CompetitorHandler) ListCompetitors(c *fiber.Ctx) error {
 }
 
 func (h *CompetitorHandler) GetCompetitor(c *fiber.Ctx) error {
+	h.logger.Debug("getting competitor by ID")
+
 	id, err := strconv.Atoi(c.Params("id"))
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "Invalid competitor ID")

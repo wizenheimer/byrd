@@ -4,6 +4,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/wizenheimer/iris/internal/api/handlers"
 	"github.com/wizenheimer/iris/internal/domain/interfaces"
+	"github.com/wizenheimer/iris/pkg/logger"
 )
 
 type HandlerContainer struct {
@@ -18,12 +19,13 @@ func NewHandlerContainer(
 	diffService interfaces.DiffService,
 	competitorService interfaces.CompetitorService,
 	notificationService interfaces.NotificationService,
+	logger *logger.Logger,
 ) *HandlerContainer {
 	return &HandlerContainer{
-		ScreenshotHandler:   handlers.NewScreenshotHandler(screenshotService),
-		DiffHandler:         handlers.NewDiffHandler(diffService),
-		CompetitorHandler:   handlers.NewCompetitorHandler(competitorService),
-		NotificationHandler: handlers.NewNotificationHandler(notificationService),
+		ScreenshotHandler:   handlers.NewScreenshotHandler(screenshotService, logger),
+		DiffHandler:         handlers.NewDiffHandler(diffService, logger),
+		CompetitorHandler:   handlers.NewCompetitorHandler(competitorService, logger),
+		NotificationHandler: handlers.NewNotificationHandler(notificationService, logger),
 	}
 }
 
