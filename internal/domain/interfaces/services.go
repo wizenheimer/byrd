@@ -8,8 +8,8 @@ import (
 
 type ScreenshotService interface {
 	TakeScreenshot(ctx context.Context, opts models.ScreenshotRequestOptions) (*models.ScreenshotResponse, error)
-	GetScreenshot(ctx context.Context, hash, weekNumber, runID string) (*models.ScreenshotResponse, error)
-	GetContent(ctx context.Context, hash, weekNumber, runID string) (*models.ScreenshotResponse, error)
+	GetScreenshot(ctx context.Context, url, weekNumber, weekDay string) (*models.ScreenshotResponse, error)
+	GetContent(ctx context.Context, url, weekNumber, weekDay string) (*models.ScreenshotResponse, error)
 }
 
 type DiffService interface {

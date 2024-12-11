@@ -34,12 +34,11 @@ func (h *ScreenshotHandler) CreateScreenshot(c *fiber.Ctx) error {
 }
 
 func (h *ScreenshotHandler) GetScreenshot(c *fiber.Ctx) error {
-	hash := c.Params("hash")
+	url := c.Params("hash")
 	weekNumber := c.Params("weekNumber")
-	runID := c.Params("runId")
-	// format := c.Query("format", "base64")
+	weekDay := c.Params("weekDay")
 
-	result, err := h.screenshotService.GetScreenshot(c.Context(), hash, weekNumber, runID)
+	result, err := h.screenshotService.GetScreenshot(c.Context(), url, weekNumber, weekDay)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
@@ -51,11 +50,11 @@ func (h *ScreenshotHandler) GetScreenshot(c *fiber.Ctx) error {
 }
 
 func (h *ScreenshotHandler) GetScreenshotContent(c *fiber.Ctx) error {
-	hash := c.Params("hash")
+	url := c.Params("hash")
 	weekNumber := c.Params("weekNumber")
-	runID := c.Params("runId")
+	weekDay := c.Params("weekDay")
 
-	result, err := h.screenshotService.GetContent(c.Context(), hash, weekNumber, runID)
+	result, err := h.screenshotService.GetContent(c.Context(), url, weekNumber, weekDay)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}

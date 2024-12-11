@@ -119,8 +119,7 @@ const (
 // ScreenshotRequestOptions defines all possible options for taking a screenshot
 type ScreenshotRequestOptions struct {
 	// Target Options
-	URL   string `json:"url"`   // The URL of the website to take a screenshot of
-	RunID string `json:"runId"` // Run ID for the screenshot
+	URL string `json:"url"` // The URL of the website to take a screenshot of
 
 	// Selector Options
 	Selector              *string `json:"selector,omitempty"`              // A selector to take screenshot of

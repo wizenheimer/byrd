@@ -21,10 +21,12 @@ type NotificationRequest struct {
 }
 
 type NotificationResults struct {
-	Email struct {
-		Successful []string `json:"successful"`
-		Failed     []string `json:"failed"`
-	} `json:"email"`
+	EmailNotificationResults EmailNotificationResults `json:"email"`
+}
+
+type EmailNotificationResults struct {
+	Successful []string `json:"successful"`
+	Failed     []string `json:"failed"`
 }
 
 type DiffReportEmailParams struct {

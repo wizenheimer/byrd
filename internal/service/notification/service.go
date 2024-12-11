@@ -24,5 +24,11 @@ func NewNotificationService(
 
 func (s *notificationService) SendNotification(ctx context.Context, req models.NotificationRequest) (*models.NotificationResults, error) {
 	// Implementation
-	return nil, nil
+	emailNotificationResults := models.EmailNotificationResults{
+		Successful: []string{},
+		Failed:     []string{},
+	}
+	return &models.NotificationResults{
+		EmailNotificationResults: emailNotificationResults,
+	}, nil
 }

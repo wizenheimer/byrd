@@ -3,10 +3,10 @@ package screenshot
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/wizenheimer/iris/internal/domain/interfaces"
 	"github.com/wizenheimer/iris/internal/domain/models"
+	"github.com/wizenheimer/iris/pkg/utils/competitor"
 )
 
 type screenshotService struct {
@@ -45,8 +45,8 @@ func (s *screenshotService) TakeScreenshot(ctx context.Context, opts models.Scre
 	return nil, nil
 }
 
-func (s *screenshotService) GetContent(ctx context.Context, hash, weekNumber, runID string) (*models.ScreenshotResponse, error) {
-	screenshotPath := s.getScreenshotPath(hash, weekNumber, runID)
+func (s *screenshotService) GetContent(ctx context.Context, hash, weekNumber, weekDay string) (*models.ScreenshotResponse, error) {
+	screenshotPath := competitor.GetScreenshotPath(hash, weekNumber, weekDay)
 	_, _, err := s.storage.Get(ctx, screenshotPath)
 	if err != nil {
 		return nil, err
@@ -55,16 +55,12 @@ func (s *screenshotService) GetContent(ctx context.Context, hash, weekNumber, ru
 	return &models.ScreenshotResponse{}, nil
 }
 
-func (s *screenshotService) GetScreenshot(ctx context.Context, hash, weekNumber, runID string) (*models.ScreenshotResponse, error) {
-	screenshotPath := s.getScreenshotPath(hash, weekNumber, runID)
+func (s *screenshotService) GetScreenshot(ctx context.Context, hash, weekNumber, weekDay string) (*models.ScreenshotResponse, error) {
+	screenshotPath := competitor.GetScreenshotPath(hash, weekNumber, weekDay)
 	_, _, err := s.storage.Get(ctx, screenshotPath)
 	if err != nil {
 		return nil, err
 	}
 
 	return &models.ScreenshotResponse{}, nil
-}
-
-func (s *screenshotService) getScreenshotPath(hash, weekNumber, runID string) string {
-	return fmt.Sprintf("screenshots/%s/%s/%s", hash, weekNumber, runID)
 }
