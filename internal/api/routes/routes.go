@@ -33,8 +33,8 @@ func SetupRoutes(app *fiber.App, handlers *HandlerContainer) {
 	// Screenshot routes
 	screenshot := api.Group("/screenshot")
 	screenshot.Post("/", handlers.ScreenshotHandler.CreateScreenshot)
-	screenshot.Get("/:hash/:weekNumber/:runId", handlers.ScreenshotHandler.GetScreenshot)
-	screenshot.Get("/content/:hash/:weekNumber/:runId", handlers.ScreenshotHandler.GetScreenshotContent)
+	screenshot.Get("/:hash/:weekNumber/:weekDay", handlers.ScreenshotHandler.GetScreenshot)
+	screenshot.Get("/content/:hash/:weekNumber/:weekDay", handlers.ScreenshotHandler.GetScreenshotContent)
 
 	// Diff routes
 	diff := api.Group("/diff")
