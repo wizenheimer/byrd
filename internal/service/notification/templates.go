@@ -2,16 +2,20 @@ package notification
 
 import (
 	"html/template"
+
+	"github.com/wizenheimer/iris/pkg/logger"
 )
 
 type TemplateManager struct {
 	templates map[string]*template.Template
+	logger    *logger.Logger
 }
 
-func NewTemplateManager() (*TemplateManager, error) {
+func NewTemplateManager(logger *logger.Logger) (*TemplateManager, error) {
 	// Load and parse all email templates
 	return &TemplateManager{
 		templates: make(map[string]*template.Template),
+		logger:    logger.WithFields(map[string]interface{}{"module": "template_manager"}),
 	}, nil
 }
 

@@ -5,19 +5,25 @@ import (
 
 	"github.com/wizenheimer/iris/internal/domain/interfaces"
 	"github.com/wizenheimer/iris/internal/domain/models"
+	"github.com/wizenheimer/iris/pkg/logger"
+	"go.uber.org/zap"
 )
 
 type competitorService struct {
-	repo interfaces.CompetitorRepository
+	repo   interfaces.CompetitorRepository
+	logger *logger.Logger
 }
 
-func NewCompetitorService(repo interfaces.CompetitorRepository) (interfaces.CompetitorService, error) {
+func NewCompetitorService(repo interfaces.CompetitorRepository, logger *logger.Logger) (interfaces.CompetitorService, error) {
+	logger.Debug("creating new competitor service")
 	return &competitorService{
-		repo: repo,
+		repo:   repo,
+		logger: logger.WithFields(map[string]interface{}{"module": "competitor_service"}),
 	}, nil
 }
 
 func (s *competitorService) Create(ctx context.Context, input models.CompetitorInput) (*models.Competitor, error) {
+	s.logger.Debug("creating new competitor", zap.Any("input", input))
 	// TODO: Validate input
 	// TODO: Create competitor entity
 	// TODO: Save to repository
@@ -25,6 +31,7 @@ func (s *competitorService) Create(ctx context.Context, input models.CompetitorI
 }
 
 func (s *competitorService) Update(ctx context.Context, id int, input models.CompetitorInput) (*models.Competitor, error) {
+	s.logger.Debug("updating competitor", zap.Int("id", id), zap.Any("input", input))
 	// TODO: Validate input
 	// TODO: Check if competitor exists
 	// TODO: Update competitor
@@ -33,17 +40,20 @@ func (s *competitorService) Update(ctx context.Context, id int, input models.Com
 }
 
 func (s *competitorService) Delete(ctx context.Context, id int) error {
+	s.logger.Debug("deleting competitor", zap.Int("id", id))
 	// TODO: Check if competitor exists
 	// TODO: Delete competitor
 	return nil
 }
 
 func (s *competitorService) Get(ctx context.Context, id int) (*models.Competitor, error) {
+	s.logger.Debug("getting competitor by ID", zap.Int("id", id))
 	// TODO: Get competitor from repository
 	return nil, nil
 }
 
 func (s *competitorService) List(ctx context.Context, limit, offset int) ([]models.Competitor, int, error) {
+	s.logger.Debug("listing competitors", zap.Int("limit", limit), zap.Int("offset", offset))
 	// TODO: Validate pagination parameters
 	// TODO: Get competitors from repository with pagination
 	// TODO: Get total count
@@ -51,12 +61,14 @@ func (s *competitorService) List(ctx context.Context, limit, offset int) ([]mode
 }
 
 func (s *competitorService) FindByURLHash(ctx context.Context, hash string) ([]models.Competitor, error) {
+	s.logger.Debug("finding competitor by URL hash", zap.String("hash", hash))
 	// TODO: Validate hash
 	// TODO: Find competitors by URL hash
 	return nil, nil
 }
 
 func (s *competitorService) AddURL(ctx context.Context, id int, url string) error {
+	s.logger.Debug("adding URL to competitor", zap.Int("id", id), zap.String("url", url))
 	// TODO: Validate URL
 	// TODO: Check if competitor exists
 	// TODO: Add URL to competitor
@@ -64,6 +76,7 @@ func (s *competitorService) AddURL(ctx context.Context, id int, url string) erro
 }
 
 func (s *competitorService) RemoveURL(ctx context.Context, id int, url string) error {
+	s.logger.Debug("removing URL from competitor", zap.Int("id", id), zap.String("url", url))
 	// TODO: Validate URL
 	// TODO: Check if competitor exists
 	// TODO: Remove URL from competitor
