@@ -29,7 +29,11 @@ func main() {
 		log.Fatalf("Failed to initialize logger: %v", err)
 		return
 	} else {
-		defer logger.Sync()
+		defer func() {
+			if err := logger.Sync(); err != nil {
+				log.Fatalf("Failed to sync logger: %v", err)
+			}
+		}()
 	}
 
 	// Recover from panics in main

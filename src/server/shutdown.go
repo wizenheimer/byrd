@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"runtime/debug"
@@ -82,8 +83,10 @@ func (h *ShutdownHandler) HandleGracefulShutdown() {
 		break
 	}
 
-	// Ensure logs are flushed
-	h.logger.Sync()
+	// Ensure logs are flushed before exiting
+	if err := h.logger.Sync(); err != nil {
+		log.Fatalf("Failed to sync logger: %v", err)
+	}
 }
 
 // performCleanup handles the actual cleanup tasks
