@@ -1,0 +1,47 @@
+# Dockerfile
+# Build stage
+FROM golang:1.23.2-alpine AS builder
+
+# Install git and build dependencies
+RUN apk add --no-cache git
+
+# Set working directory
+WORKDIR /app
+
+# Copy only the files needed for downloading dependencies first
+COPY go.mod go.sum ./
+
+# Download dependencies
+RUN go mod download
+
+# Copy only the necessary source code
+COPY src/ ./src/
+
+# Build the application
+RUN CGO_ENABLED=0 GOOS=linux go build -o /app/server src/server/*.go
+
+# Final stage
+FROM alpine:3.19
+
+# Install ca-certificates for HTTPS
+RUN apk --no-cache add ca-certificates
+
+WORKDIR /app
+
+# Copy only the binary from builder
+COPY --from=builder /app/server .
+
+# Copy only the .env file
+COPY .env .
+
+# Create logs directory
+RUN mkdir -p /app/logs
+
+# Expose port 8080
+EXPOSE 8080
+
+# Create volume for logs
+VOLUME ["/app/logs"]
+
+# Set the binary as the entrypoint
+ENTRYPOINT ["/app/server"]
