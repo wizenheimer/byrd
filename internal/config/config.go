@@ -7,15 +7,23 @@ import (
 )
 
 type Config struct {
-	Server   ServerConfig
-	Database DatabaseConfig
-	Storage  StorageConfig
-	Services ServicesConfig
+	Environment EnvironmentConfig
+	Server      ServerConfig
+	Database    DatabaseConfig
+	Storage     StorageConfig
+	Services    ServicesConfig
 }
 
 type ServerConfig struct {
-	Port        string
-	IdleTimeout time.Duration
+	Port                string
+	IdleTimeout         time.Duration
+	ShutdownTimeout     time.Duration
+	ShutdownMaxAttempts int
+}
+
+type EnvironmentConfig struct {
+	EnvProfile  string
+	EnvLogLevel string
 }
 
 type DatabaseConfig struct {
@@ -47,6 +55,9 @@ func Load() (*Config, error) {
 		return nil, err
 	}
 
+	// Load environment configuration.
+	environmentConfig := LoadEnvironmentConfig()
+
 	// Load server configuration.
 	serverConfig := LoadServerConfig()
 
@@ -60,11 +71,21 @@ func Load() (*Config, error) {
 	servicesConfig := LoadServicesConfig()
 
 	return &Config{
-		Server:   serverConfig,
-		Database: databaseConfig,
-		Storage:  storageConfig,
-		Services: servicesConfig,
+		Environment: environmentConfig,
+		Server:      serverConfig,
+		Database:    databaseConfig,
+		Storage:     storageConfig,
+		Services:    servicesConfig,
 	}, nil
+}
+
+func LoadEnvironmentConfig() EnvironmentConfig {
+	return EnvironmentConfig{
+		// EnvProfile is set to the value of the ENV_PROFILE environment variable, or "development" if the variable is not set.
+		EnvProfile: GetEnv("ENV_PROFILE", "development", parser.StrParser),
+		// EnvLogLevel is set to the value of the ENV_LOG_LEVEL environment variable, or "info" if the variable is not set.
+		EnvLogLevel: GetEnv("ENV_LOG_LEVEL", "info", parser.StrParser),
+	}
 }
 
 func LoadServerConfig() ServerConfig {
@@ -73,7 +94,13 @@ func LoadServerConfig() ServerConfig {
 		Port: GetEnv("SERVER_PORT", "8080", parser.StrParser),
 
 		// IdleTimeout is set to the value of the IDLE_TIMEOUT environment variable, or 300 seconds if the variable is not set.
-		IdleTimeout: time.Duration(GetEnv("IDLE_TIMEOUT", 300, parser.IntParser)) * time.Second,
+		IdleTimeout: time.Duration(GetEnv("SERVER_IDLE_TIMEOUT", 300, parser.IntParser)) * time.Second,
+
+		// ShutdownTimeout is set to the value of the SHUTDOWN_TIMEOUT environment variable, or 10 seconds if the variable is not set.
+		ShutdownTimeout: time.Duration(GetEnv("SERVER_SHUTDOWN_TIMEOUT", 10, parser.IntParser)) * time.Second,
+
+		// ShutdownMaxAttempts is set to the value of the SHUTDOWN_MAX_ATTEMPTS environment variable, or 3 if the variable is not set.
+		ShutdownMaxAttempts: GetEnv("SERVER_SHUTDOWN_MAX_ATTEMPTS", 3, parser.IntParser),
 	}
 }
 
@@ -111,8 +138,8 @@ func LoadStorageConfig() StorageConfig {
 
 func LoadServicesConfig() ServicesConfig {
 	return ServicesConfig{
-		ScreenshotServiceAPIKey: GetEnv("ScreenshotServiceAPIKey", "", parser.StrParser),
-		OpenAIKey:               GetEnv("OpenAIKey", "", parser.StrParser),
-		ResendAPIKey:            GetEnv("ResendAPIKey", "", parser.StrParser),
+		ScreenshotServiceAPIKey: GetEnv("SCREENSHOT_API_KEY", "", parser.StrParser),
+		OpenAIKey:               GetEnv("OPENAI_API_KEY", "", parser.StrParser),
+		ResendAPIKey:            GetEnv("RESEND_API_KEY", "", parser.StrParser),
 	}
 }
