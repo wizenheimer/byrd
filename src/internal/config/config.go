@@ -55,6 +55,8 @@ type StorageConfig struct {
 
 type ServicesConfig struct {
 	ScreenshotServiceAPIKey string
+	ScreenshotServiceOrigin string
+	ScreenshotServiceQPS    float64
 	OpenAIKey               string
 	ResendAPIKey            string
 }
@@ -150,8 +152,15 @@ func LoadStorageConfig() StorageConfig {
 
 func LoadServicesConfig() ServicesConfig {
 	return ServicesConfig{
+		// ScreenshotServiceAPIKey is set to the value of the SCREENSHOT_API_KEY environment variable, or "" if the variable is not set.
 		ScreenshotServiceAPIKey: GetEnv("SCREENSHOT_API_KEY", "", parser.StrParser),
-		OpenAIKey:               GetEnv("OPENAI_API_KEY", "", parser.StrParser),
-		ResendAPIKey:            GetEnv("RESEND_API_KEY", "", parser.StrParser),
+		// ScreenshotServiceOrigin is set to the value of the SCREENSHOT_API_ORIGIN environment variable, or "" if the variable is not set.
+		ScreenshotServiceOrigin: GetEnv("SCREENSHOT_API_ORIGIN", "", parser.StrParser),
+		// ScreenshotServiceQPS is set to the value of the SCREENSHOT_API_QPS environment variable, or 0.667 if the variable is not set.
+		ScreenshotServiceQPS: GetEnv("SCREENSHOT_API_QPS", 0.667, parser.Float64Parser),
+		// OpenAIKey is set to the value of the OPENAI_API_KEY environment variable, or "" if the variable is not set.
+		OpenAIKey: GetEnv("OPENAI_API_KEY", "", parser.StrParser),
+		// ResendAPIKey is set to the value of the RESEND_API_KEY environment variable, or "" if the variable is not set.
+		ResendAPIKey: GetEnv("RESEND_API_KEY", "", parser.StrParser),
 	}
 }
