@@ -1,3 +1,21 @@
+# Makefile for managing development and production environments
+define IRIS_ASCII
+$(BLUE)
+╔══╗╔═══╗╔══╗╔═══╗ ║║ ╔═══╗╔══╗╔═══╗╔══╗
+║  ║║   ║║  ║║   ║ ║║ ║   ║║  ║║   ║║  ║
+║  ║║   ║║  ║╚══╗║ ║║ ║╔══╝║  ║║   ║║  ║
+║  ║║   ║║  ║   ║║ ║║ ║║   ║  ║║   ║║  ║
+╚══╝╚═══╝╚══╝═══╝║ ║║ ║╚═══╝╚══╝╚═══╝╚══╝
+                  ║ ║║ ║
+╔══╗╔═══╗╔══╗╔═══╝ ╚╝ ╚═══╗╔══╗╔═══╗╔══╗
+║  ║║   ║║  ║║         ║   ║║  ║║   ║║  ║
+║  ║║   ║║  ║╚══╗     ╔╝   ║║  ║║   ║║  ║
+║  ║║   ║║  ║   ║     ║    ║║  ║║   ║║  ║
+╚══╝╚═══╝╚══╝═══╝     ╚════╝╚══╝╚═══╝╚══╝
+$(RESET)
+endef
+export IRIS_ASCII
+
 # Colors for pretty output
 BLUE := $(shell printf "\033[36m")
 GREEN := $(shell printf "\033[32m")
@@ -8,7 +26,14 @@ RESET := $(shell printf "\033[0m")
 # Default shell
 SHELL := /bin/bash
 
-# Include .env file
+DEV_ENV_FILE := .env.development
+PROD_ENV_FILE := .env.production
+
+# Docker compose commands for dev and prod
+DOCKER_COMPOSE_DEV := docker-compose --profile development --env-file $(DEV_ENV_FILE)
+DOCKER_COMPOSE_PROD := docker-compose --profile production --env-file $(PROD_ENV_FILE)
+
+# Include .env file by default
 ifneq (,$(wildcard ./.env))
     include .env
     export
@@ -16,40 +41,59 @@ endif
 
 .PHONY: help
 help:
+	@echo "$$IRIS_ASCII"
 	@echo "$(BLUE)Available commands:$(RESET)"
-	@echo "$(GREEN)Development Setup:$(RESET)"
-	@echo "  make init          - Initialize development environment"
-	@echo "  make deps          - Install/Update dependencies"
+	@echo "$(GREEN)Setup Commands:$(RESET)"
+	@echo "  make init            - Initialize development environment"
+	@echo "  make deps            - Update dependencies"
 	@echo "$(GREEN)Development Commands:$(RESET)"
-	@echo "  make start         - Start development environment"
-	@echo "  make stop          - Stop development environment"
-	@echo "  make restart       - Restart development environment"
+	@echo "  make start-dev         - Start development environment"
+	@echo "  make stop-dev          - Stop development environment"
+	@echo "  make shell-app-dev     - Shell into development app container"
+	@echo "  make shell-db-dev      - Shell into development database container"
+	@echo "  make restart-dev       - Restart development environment"
+	@echo "  make build-dev         - Build development Docker images"
+	@echo "  make rebuild-dev       - Force rebuild development Docker images"
+	@echo "  make build-dev-nocache - Build development Docker images without cache"
+	@echo "$(GREEN)Production Commands:$(RESET)"
+	@echo "  make start-prod         - Start production environment locally"
+	@echo "  make stop-prod          - Stop production environment locally"
+	@echo "  make shell-app-prod     - Shell into production app container"
+	@echo "  make shell-db-prod      - Shell into production database container"
+	@echo "  make restart-prod       - Restart production environment locally"
+	@echo "  make build-prod         - Build production Docker images locally"
+	@echo "  make rebuild-prod       - Force rebuild production Docker images locally"
+	@echo "  make build-prod-nocache - Build production Docker images without cache locally"
 	@echo "$(GREEN)Testing & Linting:$(RESET)"
 	@echo "  make test          - Run tests"
 	@echo "  make lint          - Run linter"
 	@echo "  make format        - Format code"
-	@echo "$(GREEN)Build Commands:$(RESET)"
-	@echo "  make build         - Build Docker images"
-	@echo "  make rebuild       - Force rebuild Docker images"
-	@echo "  make build-nocache - Build Docker images without cache"
 	@echo "$(GREEN)Database Commands:$(RESET)"
-	@echo "  make db-status     - Check database connection"
-	@echo "  make db-console    - Enter PostgreSQL console"
-	@echo "  make db-migrate    - Run database migrations"
+	@echo "  make db-status-dev  - Check development database connection"
+	@echo "  make db-status-prod - Check production database connection"
+	@echo "  make db-console-dev - Enter development PostgreSQL console"
+	@echo "  make db-console-prod - Enter production PostgreSQL console"
 	@echo "$(GREEN)Logs & Monitoring:$(RESET)"
-	@echo "  make logs          - View all logs"
-	@echo "  make logs-app      - View application logs"
-	@echo "  make logs-db       - View database logs"
+	@echo "  make logs-dev      - View all development logs"
+	@echo "  make logs-prod     - View all production logs"
+	@echo "  make logs-app-dev  - View development application logs"
+	@echo "  make logs-app-prod - View production application logs"
+	@echo "  make logs-db-dev   - View development database logs"
+	@echo "  make logs-db-prod  - View production database logs"
 	@echo "$(GREEN)Container Commands:$(RESET)"
-	@echo "  make shell-app     - Shell into app container"
-	@echo "  make shell-db      - Shell into database container"
+	@echo "  make shell-app-dev  - Shell into development app container"
+	@echo "  make shell-app-prod - Shell into production app container"
+	@echo "  make shell-db-dev   - Shell into development database container"
+	@echo "  make shell-db-prod  - Shell into production database container"
 	@echo "$(GREEN)Cleanup Commands:$(RESET)"
-	@echo "  make clean         - Remove containers"
-	@echo "  make clean-volumes - Remove containers and volumes"
-	@echo "  make clean-all     - Remove all Docker artifacts"
+	@echo "  make clean-dev      - Remove development containers"
+	@echo "  make clean-prod     - Remove production containers"
+	@echo "  make clean-all      - Remove all Docker artifacts"
 	@echo "$(GREEN)Service Control:$(RESET)"
-	@echo "  make pause         - Pause services"
-	@echo "  make unpause       - Unpause services"
+	@echo "  make pause-dev      - Pause development services"
+	@echo "  make pause-prod     - Pause production services"
+	@echo "  make unpause-dev    - Unpause development services"
+	@echo "  make unpause-prod   - Unpause production services"
 
 .PHONY: init
 init:
@@ -73,90 +117,151 @@ deps:
 	go mod verify
 
 # Development Environment Commands
-.PHONY: start
-start:
+.PHONY: start-dev
+start-dev:
 	@echo "$(BLUE)== Starting Development Environment ==$(RESET)"
-	docker-compose up -d
+	$(DOCKER_COMPOSE_DEV) up -d --build
 
-.PHONY: stop
-stop:
+.PHONY: stop-dev
+stop-dev:
 	@echo "$(BLUE)== Stopping Development Environment ==$(RESET)"
-	docker-compose stop
+	$(DOCKER_COMPOSE_DEV) stop
 
-.PHONY: restart
-restart:
+.PHONY: restart-dev
+restart-dev:
 	@echo "$(BLUE)== Restarting Development Environment ==$(RESET)"
-	docker-compose restart
+	$(DOCKER_COMPOSE_DEV) restart
 
-# Build Commands
-.PHONY: build
-build:
-	@echo "$(BLUE)== Building Docker Images ==$(RESET)"
-	docker-compose build
+.PHONY: build-dev
+build-dev:
+	@echo "$(BLUE)== Building Development Docker Images ==$(RESET)"
+	$(DOCKER_COMPOSE_DEV) build
 
-.PHONY: rebuild
-rebuild:
-	@echo "$(BLUE)== Rebuilding Docker Images ==$(RESET)"
-	docker-compose build --force-rm
+.PHONY: rebuild-dev
+rebuild-dev:
+	@echo "$(BLUE)== Rebuilding Development Docker Images ==$(RESET)"
+	$(DOCKER_COMPOSE_DEV) build --force-rm
 
-.PHONY: build-nocache
-build-nocache:
-	@echo "$(BLUE)== Building Docker Images Without Cache ==$(RESET)"
-	docker-compose build --no-cache
+.PHONY: build-dev-nocache
+build-dev-nocache:
+	@echo "$(BLUE)== Building Development Docker Images Without Cache ==$(RESET)"
+	$(DOCKER_COMPOSE_DEV) build --no-cache
+
+# Production Environment Commands
+.PHONY: start-prod
+start-prod:
+	@echo "$(BLUE)== Starting Production Environment ==$(RESET)"
+	$(DOCKER_COMPOSE_PROD) up -d --build
+
+.PHONY: stop-prod
+stop-prod:
+	@echo "$(BLUE)== Stopping Production Environment ==$(RESET)"
+	$(DOCKER_COMPOSE_PROD) stop
+
+.PHONY: restart-prod
+restart-prod:
+	@echo "$(BLUE)== Restarting Production Environment ==$(RESET)"
+	$(DOCKER_COMPOSE_PROD) restart
+
+.PHONY: build-prod
+build-prod:
+	@echo "$(BLUE)== Building Production Docker Images ==$(RESET)"
+	$(DOCKER_COMPOSE_PROD) build
+
+.PHONY: rebuild-prod
+rebuild-prod:
+	@echo "$(BLUE)== Rebuilding Production Docker Images ==$(RESET)"
+	$(DOCKER_COMPOSE_PROD) build --force-rm
+
+.PHONY: build-prod-nocache
+build-prod-nocache:
+	@echo "$(BLUE)== Building Production Docker Images Without Cache ==$(RESET)"
+	$(DOCKER_COMPOSE_PROD) build --no-cache
 
 # Database Commands
-.PHONY: db-status
-db-status:
-	@echo "$(BLUE)== Checking Database Connection ==$(RESET)"
-	@docker-compose exec db pg_isready -U "$(DB_USER)" -d "$(DB_NAME)" || echo "$(RED)Database is not ready$(RESET)"
+.PHONY: db-status-dev
+db-status-dev:
+	@echo "$(BLUE)== Checking Development Database Connection ==$(RESET)"
+	@$(DOCKER_COMPOSE_DEV) exec db pg_isready -U "$(DB_USER)" -d "$(DB_NAME)" || echo "$(RED)Database is not ready$(RESET)"
 
-.PHONY: db-console
-db-console:
-	@echo "$(BLUE)== Entering PostgreSQL Console ==$(RESET)"
-	docker-compose exec db psql -U "$(DB_USER)" -d "$(DB_NAME)"
+.PHONY: db-status-prod
+db-status-prod:
+	@echo "$(BLUE)== Checking Production Database Connection ==$(RESET)"
+	@$(DOCKER_COMPOSE_PROD) exec db pg_isready -U "$(DB_USER)" -d "$(DB_NAME)" || echo "$(RED)Database is not ready$(RESET)"
 
-.PHONY: db-migrate
-db-migrate:
-	@echo "$(BLUE)== Running Database Migrations ==$(RESET)"
-	docker-compose exec app go run scripts/migrations/*.go
+.PHONY: db-console-dev
+db-console-dev:
+	@echo "$(BLUE)== Entering Development PostgreSQL Console ==$(RESET)"
+	$(DOCKER_COMPOSE_DEV) exec db psql -U "$(DB_USER)" -d "$(DB_NAME)"
+
+.PHONY: db-console-prod
+db-console-prod:
+	@echo "$(BLUE)== Entering Production PostgreSQL Console ==$(RESET)"
+	$(DOCKER_COMPOSE_PROD) exec db psql -U "$(DB_USER)" -d "$(DB_NAME)"
 
 # Logs & Monitoring
 .PHONY: logs
-logs:
-	@echo "$(BLUE)== Viewing All Logs ==$(RESET)"
-	docker-compose logs -f
+.PHONY: logs-dev
+logs-dev:
+	@echo "$(BLUE)== Viewing Development Logs ==$(RESET)"
+	$(DOCKER_COMPOSE_DEV) logs -f
 
-.PHONY: logs-app
-logs-app:
-	@echo "$(BLUE)== Viewing Application Logs ==$(RESET)"
-	docker-compose logs -f app
+.PHONY: logs-prod
+logs-prod:
+	@echo "$(BLUE)== Viewing Production Logs ==$(RESET)"
+	$(DOCKER_COMPOSE_PROD) logs -f
 
-.PHONY: logs-db
-logs-db:
-	@echo "$(BLUE)== Viewing Database Logs ==$(RESET)"
-	docker-compose logs -f db
+.PHONY: logs-app-dev
+logs-app-dev:
+	@echo "$(BLUE)== Viewing Development Application Logs ==$(RESET)"
+	$(DOCKER_COMPOSE_DEV) logs -f app
+
+.PHONY: logs-app-prod
+logs-app-prod:
+	@echo "$(BLUE)== Viewing Production Application Logs ==$(RESET)"
+	$(DOCKER_COMPOSE_PROD) logs -f app-prod
+
+.PHONY: logs-db-dev
+logs-db-dev:
+	@echo "$(BLUE)== Viewing Development Database Logs ==$(RESET)"
+	$(DOCKER_COMPOSE_DEV) logs -f db
+
+.PHONY: logs-db-prod
+logs-db-prod:
+	@echo "$(BLUE)== Viewing Production Database Logs ==$(RESET)"
+	$(DOCKER_COMPOSE_PROD) logs -f db
 
 # Container Shell Access
-.PHONY: shell-app
-shell-app:
-	@echo "$(BLUE)== Opening Shell in App Container ==$(RESET)"
-	docker-compose exec app sh
+.PHONY: shell-app-dev
+shell-app-dev:
+	@echo "$(BLUE)== Opening Shell in Development App Container ==$(RESET)"
+	$(DOCKER_COMPOSE_DEV) exec app sh
 
-.PHONY: shell-db
-shell-db:
-	@echo "$(BLUE)== Opening Shell in Database Container ==$(RESET)"
-	docker-compose exec db bash
+.PHONY: shell-app-prod
+shell-app-prod:
+	@echo "$(BLUE)== Opening Shell in Production App Container ==$(RESET)"
+	$(DOCKER_COMPOSE_PROD) exec app-prod sh
+
+.PHONY: shell-db-dev
+shell-db-dev:
+	@echo "$(BLUE)== Opening Shell in Development Database Container ==$(RESET)"
+	$(DOCKER_COMPOSE_DEV) exec db bash
+
+.PHONY: shell-db-prod
+shell-db-prod:
+	@echo "$(BLUE)== Opening Shell in Production Database Container ==$(RESET)"
+	$(DOCKER_COMPOSE_PROD) exec db bash
 
 # Cleanup Commands
-.PHONY: clean
-clean:
-	@echo "$(BLUE)== Removing Containers ==$(RESET)"
-	docker-compose down
+.PHONY: clean-dev
+clean-dev:
+	@echo "$(BLUE)== Removing Development Containers ==$(RESET)"
+	$(DOCKER_COMPOSE_DEV) down
 
-.PHONY: clean-volumes
-clean-volumes:
-	@echo "$(BLUE)== Removing Containers and Volumes ==$(RESET)"
-	docker-compose down -v
+.PHONY: clean-prod
+clean-prod:
+	@echo "$(BLUE)== Removing Production Containers ==$(RESET)"
+	$(DOCKER_COMPOSE_PROD) down
 
 .PHONY: clean-all
 clean-all:
@@ -164,15 +269,25 @@ clean-all:
 	docker-compose down -v --rmi all --remove-orphans
 
 # Service Control
-.PHONY: pause
-pause:
-	@echo "$(BLUE)== Pausing Services ==$(RESET)"
-	docker-compose pause
+.PHONY: pause-dev
+pause-dev:
+	@echo "$(BLUE)== Pausing Development Services ==$(RESET)"
+	$(DOCKER_COMPOSE_DEV) pause
 
-.PHONY: unpause
-unpause:
-	@echo "$(BLUE)== Unpausing Services ==$(RESET)"
-	docker-compose unpause
+.PHONY: pause-prod
+pause-prod:
+	@echo "$(BLUE)== Pausing Production Services ==$(RESET)"
+	$(DOCKER_COMPOSE_PROD) pause
+
+.PHONY: unpause-dev
+unpause-dev:
+	@echo "$(BLUE)== Unpausing Development Services ==$(RESET)"
+	$(DOCKER_COMPOSE_DEV) unpause
+
+.PHONY: unpause-prod
+unpause-prod:
+	@echo "$(BLUE)== Unpausing Production Services ==$(RESET)"
+	$(DOCKER_COMPOSE_PROD) unpause
 
 # Testing and Linting
 .PHONY: test
