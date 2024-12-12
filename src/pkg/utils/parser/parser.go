@@ -1,9 +1,12 @@
 package parser
 
 import (
+	"bytes"
 	"fmt"
 	"strconv"
 	"strings"
+
+	"golang.org/x/net/html"
 )
 
 func SliceParser[T any](separator string, elementParser func(string) (T, error)) func(string) ([]T, error) {
@@ -53,4 +56,59 @@ func DeduplicateElements[T comparable](slice []T) []T {
 		}
 	}
 	return list
+}
+
+func Contains[T comparable](slice []T, element T) bool {
+	for _, e := range slice {
+		if e == element {
+			return true
+		}
+	}
+	return false
+}
+
+func ParseTextFromHTML(htmlContent string) (string, error) {
+	doc, err := html.Parse(strings.NewReader(htmlContent))
+	if err != nil {
+		return "", err
+	}
+
+	var buf bytes.Buffer
+	var extract func(*html.Node)
+
+	extract = func(n *html.Node) {
+		if n.Type == html.TextNode {
+			// Get text content
+			text := strings.TrimSpace(n.Data)
+			if text != "" {
+				buf.WriteString(text)
+				buf.WriteString("\n")
+			}
+		}
+
+		if n.Type == html.ElementNode {
+			// Skip script and style elements
+			switch n.Data {
+			case "script", "style", "noscript":
+				return
+			}
+		}
+
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			extract(c)
+		}
+	}
+
+	extract(doc)
+
+	// Clean up the extracted text
+	text := buf.String()
+
+	// Remove extra whitespace
+	text = strings.Join(strings.Fields(text), " ")
+
+	// Remove multiple newlines
+	text = strings.ReplaceAll(text, "\n\n", "\n")
+
+	return text, nil
 }
