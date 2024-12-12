@@ -1,6 +1,6 @@
 // src/components/block/SplitBlock.tsx
+import AnimatedImage from "@/components/AnimatedImage";
 import Link from "next/link";
-import AnimatedImage from "../AnimatedImage";
 
 type ColumnContent = {
   imageSrc: string;

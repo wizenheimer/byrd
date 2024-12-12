@@ -1,7 +1,7 @@
 // src/app/(onboarding)/waitlist/page.tsx
 "use client";
 
-import LoadingStep from "@/components/steps/LoadingStep";
+import LoadingStep from "@/app/(auth)/components/steps/LoadingStep";
 import { UserButton, useUser } from "@clerk/nextjs";
 import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";

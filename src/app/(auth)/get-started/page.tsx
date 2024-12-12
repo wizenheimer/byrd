@@ -1,7 +1,7 @@
 // src/app/(onboarding)/get-started/page.tsx
 "use client";
 
-import LoadingStep from "@/components/steps/LoadingStep";
+import LoadingStep from "@/app/(auth)/components/steps/LoadingStep";
 import { Button } from "@/components/ui/button";
 import { STORAGE_KEYS } from "@/constants/storage";
 import { useUser } from "@clerk/nextjs";
@@ -9,11 +9,11 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, Inbox, Megaphone, Rss, Share2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import AuthStep from "../../../components/steps/AuthStep";
-import ChannelsStep from "../../../components/steps/ChannelsStep";
-import CompetitorStep from "../../../components/steps/CompetitorStep";
-import FeaturesStep from "../../../components/steps/FeaturesStep";
-import TeamStep from "../../../components/steps/TeamStep";
+import AuthStep from "../components/steps/AuthStep";
+import ChannelsStep from "../components/steps/ChannelsStep";
+import CompetitorStep from "../components/steps/CompetitorStep";
+import FeaturesStep from "../components/steps/FeaturesStep";
+import TeamStep from "../components/steps/TeamStep";
 import type { ChannelCard, OnboardingFormData } from "../../_types/onboarding";
 
 interface Step {

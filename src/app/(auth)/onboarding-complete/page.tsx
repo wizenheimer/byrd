@@ -6,7 +6,7 @@ import {
   persistOnboardingData,
 } from "@/app/_actions/onboarding";
 import { onboardingFormSchema } from "@/app/_types/onboarding";
-import LoadingStep from "@/components/steps/LoadingStep";
+import LoadingStep from "@/app/(auth)/components/steps/LoadingStep";
 import { STORAGE_KEYS } from "@/constants/storage";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";

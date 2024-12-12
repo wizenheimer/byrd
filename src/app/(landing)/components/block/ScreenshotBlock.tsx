@@ -1,5 +1,6 @@
 // src/components/block/ScreenshotBlock.tsx
-import AnimatedImage from "../AnimatedImage";
+
+import AnimatedImage from "@/components/AnimatedImage";
 
 type Props = {
   imageSrc: string;
