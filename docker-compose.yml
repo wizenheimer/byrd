@@ -1,46 +1,76 @@
-# docker-compose.yml
-
 services:
   app:
+    profiles:
+      - development
     build:
       context: .
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile.development
     ports:
       - "8080:8080"
     volumes:
+      - .:/app
+      - go-mod-cache:/go/pkg/mod
       - ./logs:/app/logs
     env_file:
-      - .env
+      - .env.development
+    environment:
+      - ENV=development
     depends_on:
       - db
     networks:
       - app-network
+
+  app-prod:
+    profiles:
+      - production
+    build:
+      context: .
+      dockerfile: Dockerfile.production
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env.production
+    environment:
+      - ENV=production
+    depends_on:
+      - db
+    networks:
+      - app-network
+    deploy:
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
 
   db:
     image: postgres:15-alpine
     ports:
       - "5432:5432"
     volumes:
-      - ./data:/var/lib/postgresql/data
+      - ./data/postgres_data:/var/lib/postgresql/data
       - ./scripts/migrations/init.sql:/docker-entrypoint-initdb.d/init.sql
     env_file:
-      - .env
+      - .env.development
     environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-postgresdb}
     networks:
       - app-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-postgresdb}",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
 
 volumes:
-  postgres_data:
-    name: app_postgres_data
+  go-mod-cache:
+    name: iris_go_mod_cache
 
 networks:
   app-network:
-    name: app_network
+    name: iris_network
+    driver: bridge
