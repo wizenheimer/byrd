@@ -1,6 +1,7 @@
 package screenshot
 
 import (
+	"github.com/wizenheimer/iris/src/internal/client"
 	"github.com/wizenheimer/iris/src/internal/domain/interfaces"
 	"github.com/wizenheimer/iris/src/internal/domain/models"
 )
@@ -26,7 +27,7 @@ func WithStorage(storage interfaces.StorageRepository) ScreenshotServiceOption {
 }
 
 // WithHTTPClient sets the HTTP client
-func WithHTTPClient(client interfaces.HTTPClient) ScreenshotServiceOption {
+func WithHTTPClient(client client.HTTPClient) ScreenshotServiceOption {
 	return func(s *screenshotService) {
 		s.httpClient = client
 	}
