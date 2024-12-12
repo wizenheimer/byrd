@@ -51,7 +51,7 @@ func LoadEnv() error {
 	}
 
 	if len(loadedFiles) == 0 {
-		return fmt.Errorf("no environment files found")
+		return fmt.Errorf("no environment files found for environment %s", os.Getenv("ENV"))
 	}
 
 	return nil
