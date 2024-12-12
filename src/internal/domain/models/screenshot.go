@@ -122,69 +122,69 @@ type ScreenshotRequestOptions struct {
 	URL string `json:"url"` // The URL of the website to take a screenshot of
 
 	// Selector Options
-	Selector              *string `json:"selector,omitempty"`              // A selector to take screenshot of
-	ScrollIntoView        *string `json:"scrollIntoView,omitempty"`        // Selector to scroll into view
-	AdjustTop             *int    `json:"adjustTop,omitempty"`             // Once reached the selector, scroll by this amount of pixels
-	CaptureBeyondViewport *bool   `json:"captureBeyondViewport,omitempty"` // Handle case where the page or element might not be visible on the viewport
+	Selector              *string `json:"selector,omitempty"`                // A selector to take screenshot of
+	ScrollIntoView        *string `json:"scroll_into_view,omitempty"`        // Selector to scroll into view
+	AdjustTop             *int    `json:"adjust_top,omitempty"`              // Once reached the selector, scroll by this amount of pixels
+	CaptureBeyondViewport *bool   `json:"capture_beyond_viewport,omitempty"` // Handle case where the page or element might not be visible on the viewport
 
 	// Capture Options
-	FullPage          *bool              `json:"fullPage,omitempty"`          // Whether to capture the full page
-	FullPageScroll    *bool              `json:"fullPageScroll,omitempty"`    // Whether to scroll the page before capturing
-	FullPageAlgorithm *FullPageAlgorithm `json:"fullPageAlgorithm,omitempty"` // Algorithm to use for full page capture
-	ScrollDelay       *int               `json:"scrollDelay,omitempty"`       // Milliseconds to wait between scrolls
-	ScrollBy          *int               `json:"scrollBy,omitempty"`          // Scroll by how many pixels
-	MaxHeight         *int               `json:"maxHeight,omitempty"`         // Maximum height of the screenshot
-	Format            *string            `json:"format,omitempty"`            // Format of the image (jpg, png, webp)
-	ImageQuality      *int               `json:"imageQuality,omitempty"`      // Image quality from 0 to 100
-	OmitBackground    *bool              `json:"omitBackground,omitempty"`    // Whether to omit the background
+	FullPage          *bool              `json:"full_page,omitempty"`           // Whether to capture the full page
+	FullPageScroll    *bool              `json:"full_page_scroll,omitempty"`    // Whether to scroll the page before capturing
+	FullPageAlgorithm *FullPageAlgorithm `json:"full_page_algorithm,omitempty"` // Algorithm to use for full page capture
+	ScrollDelay       *int               `json:"scroll_delay,omitempty"`        // Milliseconds to wait between scrolls
+	ScrollBy          *int               `json:"scroll_by,omitempty"`           // Scroll by how many pixels
+	MaxHeight         *int               `json:"max_height,omitempty"`          // Maximum height of the screenshot
+	Format            *string            `json:"format,omitempty"`              // Format of the image (jpg, png, webp)
+	ImageQuality      *int               `json:"image_quality,omitempty"`       // Image quality from 0 to 100
+	OmitBackground    *bool              `json:"omit_background,omitempty"`     // Whether to omit the background
 
 	// Clip Options
 	Clip *ClipOptions `json:"clip,omitempty"`
 
 	// Resource Blocking Options
-	BlockAds                 *bool               `json:"blockAds,omitempty"`
-	BlockCookieBanners       *bool               `json:"blockCookieBanners,omitempty"`
-	BlockBannersByHeuristics *bool               `json:"blockBannersByHeuristics,omitempty"`
-	BlockTrackers            *bool               `json:"blockTrackers,omitempty"`
-	BlockChats               *bool               `json:"blockChats,omitempty"`
-	BlockRequests            []string            `json:"blockRequests,omitempty"`
-	BlockResources           []BlockResourceType `json:"blockResources,omitempty"`
+	BlockAds                 *bool               `json:"block_ads,omitempty"`
+	BlockCookieBanners       *bool               `json:"block_cookie_banners,omitempty"`
+	BlockBannersByHeuristics *bool               `json:"block_banners_by_heuristics,omitempty"`
+	BlockTrackers            *bool               `json:"block_trackers,omitempty"`
+	BlockChats               *bool               `json:"block_chats,omitempty"`
+	BlockRequests            []string            `json:"block_request,omitempty"` // Changed from blockRequests
+	BlockResources           []BlockResourceType `json:"block_resources,omitempty"`
 
 	// Media Options
-	DarkMode      *bool `json:"darkMode,omitempty"`
-	ReducedMotion *bool `json:"reducedMotion,omitempty"`
+	DarkMode      *bool `json:"dark_mode,omitempty"`
+	ReducedMotion *bool `json:"reduced_motion,omitempty"`
 
 	// Request Options
-	UserAgent     *string           `json:"userAgent,omitempty"`
+	UserAgent     *string           `json:"user_agent,omitempty"`
 	Authorization *string           `json:"authorization,omitempty"`
 	Headers       map[string]string `json:"headers,omitempty"`
 	Cookies       []string          `json:"cookies,omitempty"`
 	Timezone      *Timezone         `json:"timezone,omitempty"`
-	BypassCSP     *bool             `json:"bypassCSP,omitempty"`
-	IpCountryCode *IpCountry        `json:"ipCountryCode,omitempty"`
+	BypassCSP     *bool             `json:"bypass_csp,omitempty"`
+	IpCountryCode *IpCountry        `json:"ip_country_code,omitempty"`
 
 	// Wait and Delay Options
 	Delay                    *int                      `json:"delay,omitempty"`
 	Timeout                  *int                      `json:"timeout,omitempty"`
-	NavigationTimeout        *int                      `json:"navigationTimeout,omitempty"`
-	WaitForSelector          *string                   `json:"waitForSelector,omitempty"`
-	WaitForSelectorAlgorithm *WaitForSelectorAlgorithm `json:"waitForSelectorAlgorithm,omitempty"`
-	WaitUntil                []WaitUntilOption         `json:"waitUntil,omitempty"`
+	NavigationTimeout        *int                      `json:"navigation_timeout,omitempty"`
+	WaitForSelector          *string                   `json:"wait_for_selector,omitempty"`
+	WaitForSelectorAlgorithm *WaitForSelectorAlgorithm `json:"wait_for_selector_algorithm,omitempty"`
+	WaitUntil                []WaitUntilOption         `json:"wait_until,omitempty"`
 
 	// Interaction Options
 	Click               *string           `json:"click,omitempty"`
-	FailIfClickNotFound *bool             `json:"failIfClickNotFound,omitempty"`
-	HideSelectors       []string          `json:"hideSelectors,omitempty"`
+	FailIfClickNotFound *bool             `json:"fail_if_click_not_found,omitempty"`
+	HideSelectors       []string          `json:"hide_selector,omitempty"` // Changed from hideSelectors
 	Styles              *string           `json:"styles,omitempty"`
 	Scripts             *string           `json:"scripts,omitempty"`
-	ScriptWaitUntil     []WaitUntilOption `json:"scriptWaitUntil,omitempty"`
+	ScriptWaitUntil     []WaitUntilOption `json:"scripts_wait_until,omitempty"`
 
 	// Metadata Options
-	MetadataImageSize      *bool `json:"metadataImageSize,omitempty"`
-	MetadataPageTitle      *bool `json:"metadataPageTitle,omitempty"`
-	MetadataContent        *bool `json:"metadataContent,omitempty"`
-	MetadataHttpStatusCode *bool `json:"metadataHttpStatusCode,omitempty"`
-	MetadataHttpHeaders    *bool `json:"metadataHttpHeaders,omitempty"`
+	MetadataImageSize      *bool `json:"metadata_image_size,omitempty"`
+	MetadataPageTitle      *bool `json:"metadata_page_title,omitempty"`
+	MetadataContent        *bool `json:"metadata_content,omitempty"`
+	MetadataHttpStatusCode *bool `json:"metadata_http_response_status_code,omitempty"` // Changed from metadataHttpStatusCode
+	MetadataIcon           *bool `json:"metadata_icon,omitempty"`
 }
 
 // OutputFormat defines the possible output formats for screenshots
@@ -198,14 +198,11 @@ const (
 
 // ScreenshotResponse defines the response structure for screenshot requests
 type ScreenshotResponse struct {
-	Status      string           `json:"status"`
-	Paths       *ScreenshotPaths `json:"paths,omitempty"`
-	Metadata    *ScreenshotMeta  `json:"metadata,omitempty"`
-	Size        *int             `json:"size,omitempty"`
-	URL         *string          `json:"url,omitempty"`
-	ContentType *string          `json:"contentType,omitempty"`
-	Error       *string          `json:"error,omitempty"`
-	Details     *string          `json:"details,omitempty"`
+	Status         string           `json:"status"`
+	Paths          *ScreenshotPaths `json:"paths,omitempty"`
+	Metadata       *ScreenshotMeta  `json:"metadata,omitempty"`
+	ScreenshotSize *int             `json:"screenshot_size,omitempty"`
+	URL            *string          `json:"url,omitempty"`
 }
 
 // ScreenshotPaths defines the paths for screenshot and content files
@@ -219,6 +216,7 @@ type ScreenshotMeta struct {
 	ImageWidth  int     `json:"imageWidth"`
 	ImageHeight int     `json:"imageHeight"`
 	PageTitle   *string `json:"pageTitle,omitempty"`
+	ContentSize *int    `json:"contentSize,omitempty"`
 }
 
 // ScreenshotMetadata defines complete metadata for a screenshot
@@ -226,12 +224,10 @@ type ScreenshotMetadata struct {
 	SourceURL         string  `json:"sourceUrl"`
 	FetchedAt         string  `json:"fetchedAt"`
 	ScreenshotService string  `json:"screenshotService"`
-	Options           string  `json:"options"`
 	ImageWidth        int     `json:"imageWidth"`
 	ImageHeight       int     `json:"imageHeight"`
 	ContentLength     int     `json:"contentLength"`
 	PageTitle         *string `json:"pageTitle,omitempty"`
-	ContentType       *string `json:"contentType,omitempty"`
 }
 
 type ScreenshotServiceConfig struct {
