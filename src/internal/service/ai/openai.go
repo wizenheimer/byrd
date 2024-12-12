@@ -3,6 +3,7 @@ package ai
 import (
 	"context"
 
+	"github.com/wizenheimer/iris/src/internal/client"
 	"github.com/wizenheimer/iris/src/internal/domain/interfaces"
 	"github.com/wizenheimer/iris/src/internal/domain/models"
 	"github.com/wizenheimer/iris/src/pkg/logger"
@@ -11,11 +12,11 @@ import (
 
 type openAIService struct {
 	apiKey     string
-	httpClient interfaces.HTTPClient
+	httpClient client.HTTPClient
 	logger     *logger.Logger
 }
 
-func NewOpenAIService(apiKey string, httpClient interfaces.HTTPClient, logger *logger.Logger) (interfaces.AIService, error) {
+func NewOpenAIService(apiKey string, httpClient client.HTTPClient, logger *logger.Logger) (interfaces.AIService, error) {
 	logger.Debug("creating new openAI service")
 	return &openAIService{
 		apiKey:     apiKey,

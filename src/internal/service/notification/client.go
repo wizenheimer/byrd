@@ -2,10 +2,9 @@ package notification
 
 import (
 	"context"
-	"net/http"
 
+	"github.com/wizenheimer/iris/src/internal/client"
 	"github.com/wizenheimer/iris/src/internal/config"
-	"github.com/wizenheimer/iris/src/internal/domain/interfaces"
 	"github.com/wizenheimer/iris/src/internal/domain/models"
 	"github.com/wizenheimer/iris/src/pkg/logger"
 	"go.uber.org/zap"
@@ -13,11 +12,11 @@ import (
 
 type resendEmailClient struct {
 	authKey string
-	client  *http.Client
+	client  client.HTTPClient
 	logger  *logger.Logger
 }
 
-func NewResendEmailClient(config *config.Config, client *http.Client, logger *logger.Logger) (interfaces.EmailClient, error) {
+func NewResendEmailClient(config *config.Config, client client.HTTPClient, logger *logger.Logger) (client.EmailClient, error) {
 	logger.Debug("creating new resend email client")
 
 	return &resendEmailClient{

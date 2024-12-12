@@ -3,6 +3,7 @@ package notification
 import (
 	"context"
 
+	"github.com/wizenheimer/iris/src/internal/client"
 	"github.com/wizenheimer/iris/src/internal/domain/interfaces"
 	"github.com/wizenheimer/iris/src/internal/domain/models"
 	"github.com/wizenheimer/iris/src/pkg/logger"
@@ -10,13 +11,13 @@ import (
 )
 
 type notificationService struct {
-	emailClient interfaces.EmailClient
+	emailClient client.EmailClient
 	templates   *TemplateManager
 	logger      *logger.Logger
 }
 
 func NewNotificationService(
-	emailClient interfaces.EmailClient,
+	emailClient client.EmailClient,
 	templates *TemplateManager,
 	logger *logger.Logger,
 ) (interfaces.NotificationService, error) {
