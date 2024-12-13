@@ -1,5 +1,11 @@
 package models
 
+import (
+	"fmt"
+	"image"
+	"strconv"
+)
+
 // ClipOptions defines the coordinates and dimensions for screenshot clipping
 type ClipOptions struct {
 	X      *int `json:"x,omitempty"`
@@ -187,6 +193,13 @@ type ScreenshotRequestOptions struct {
 	MetadataIcon           *bool `json:"metadata_icon,omitempty"`
 }
 
+type GetScreenshotOptions struct {
+	// Target Options
+	URL        string `json:"url"` // The URL of the website to take a screenshot of
+	WeekNumber int    `json:"week_number"`
+	WeekDay    int    `json:"week_day"`
+}
+
 // OutputFormat defines the possible output formats for screenshots
 type OutputFormat string
 
@@ -205,6 +218,24 @@ type ScreenshotResponse struct {
 	URL            *string          `json:"url,omitempty"`
 }
 
+// ScreenshotContentResponse defines the response structure for screenshot content requests
+type ScreenshotContentResponse struct {
+	Status   string              `json:"status"`
+	Content  string              `json:"content"`
+	Metadata *ScreenshotMetadata `json:"metadata,omitempty"`
+	URL      *string             `json:"url,omitempty"`
+	Path     *string             `json:"path,omitempty"`
+}
+
+// ScreenshotImageResponse defines the response structure for screenshot image requests
+type ScreenshotImageResponse struct {
+	Status   string              `json:"status"`
+	Image    image.Image         `json:"image"`
+	Metadata *ScreenshotMetadata `json:"metadata,omitempty"`
+	URL      *string             `json:"url,omitempty"`
+	Path     *string             `json:"path,omitempty"`
+}
+
 // ScreenshotPaths defines the paths for screenshot and content files
 type ScreenshotPaths struct {
 	Screenshot string `json:"screenshot"`
@@ -213,21 +244,20 @@ type ScreenshotPaths struct {
 
 // ScreenshotMeta defines metadata for screenshots
 type ScreenshotMeta struct {
-	ImageWidth  int     `json:"imageWidth"`
-	ImageHeight int     `json:"imageHeight"`
-	PageTitle   *string `json:"pageTitle,omitempty"`
-	ContentSize *int    `json:"contentSize,omitempty"`
+	ImageWidth  int     `json:"image_width"`
+	ImageHeight int     `json:"image_height"`
+	PageTitle   *string `json:"page_title"`
+	ContentSize *int    `json:"content_size"`
 }
 
 // ScreenshotMetadata defines complete metadata for a screenshot
 type ScreenshotMetadata struct {
-	SourceURL         string  `json:"sourceUrl"`
-	FetchedAt         string  `json:"fetchedAt"`
-	ScreenshotService string  `json:"screenshotService"`
-	ImageWidth        int     `json:"imageWidth"`
-	ImageHeight       int     `json:"imageHeight"`
-	ContentLength     int     `json:"contentLength"`
-	PageTitle         *string `json:"pageTitle,omitempty"`
+	SourceURL         string  `json:"source_url"`
+	FetchedAt         string  `json:"fetched_at"`
+	ScreenshotService string  `json:"screenshot_service"`
+	ImageWidth        int     `json:"image_width"`
+	ImageHeight       int     `json:"image_height"`
+	PageTitle         *string `json:"page_title"`
 }
 
 type ScreenshotServiceConfig struct {
@@ -235,4 +265,66 @@ type ScreenshotServiceConfig struct {
 	Origin    string  `json:"origin"`
 	Key       string  `json:"key"`
 	Signature string  `json:"signature"`
+}
+
+func (s ScreenshotMetadata) ToMap() map[string]string {
+	result := make(map[string]string)
+
+	result["source_url"] = s.SourceURL
+	result["fetched_at"] = s.FetchedAt
+	result["screenshot_service"] = s.ScreenshotService
+	result["image_width"] = strconv.Itoa(s.ImageWidth)
+	result["image_height"] = strconv.Itoa(s.ImageHeight)
+
+	// Handle the pointer field
+	if s.PageTitle != nil {
+		result["page_title"] = *s.PageTitle
+	}
+
+	return result
+}
+
+// FromMap safely converts map[string]string to ScreenshotMetadata
+func ScreenshotMetadataFromMap(m map[string]string) (ScreenshotMetadata, error) {
+	var result ScreenshotMetadata
+	var errors []string
+
+	// Required string fields
+	result.SourceURL = m["source_url"]
+	result.FetchedAt = m["fetched_at"]
+	result.ScreenshotService = m["screenshot_service"]
+
+	// Convert imageWidth
+	if width, exists := m["image_width"]; exists {
+		if w, err := strconv.Atoi(width); err == nil {
+			result.ImageWidth = w
+		} else {
+			errors = append(errors, fmt.Sprintf("invalid image_width: %s", err))
+		}
+	} else {
+		errors = append(errors, "missing required field: image_width")
+	}
+
+	// Convert imageHeight
+	if height, exists := m["image_height"]; exists {
+		if h, err := strconv.Atoi(height); err == nil {
+			result.ImageHeight = h
+		} else {
+			errors = append(errors, fmt.Sprintf("invalid image_height: %s", err))
+		}
+	} else {
+		errors = append(errors, "missing required field: image_height")
+	}
+
+	// Optional pageTitle
+	if title, exists := m["page_title"]; exists {
+		result.PageTitle = &title
+	}
+
+	// Return errors if any occurred
+	if len(errors) > 0 {
+		return result, fmt.Errorf("validation errors: %v", errors)
+	}
+
+	return result, nil
 }
