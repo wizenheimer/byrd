@@ -2,14 +2,14 @@ package handlers
 
 import (
 	"fmt"
-	"net/url"
-	"strconv"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/wizenheimer/iris/src/internal/domain/interfaces"
 	"github.com/wizenheimer/iris/src/internal/domain/models"
 	"github.com/wizenheimer/iris/src/pkg/logger"
 	"github.com/wizenheimer/iris/src/pkg/utils/api"
+	"github.com/wizenheimer/iris/src/pkg/utils/ptr"
 	"go.uber.org/zap"
 )
 
@@ -18,6 +18,7 @@ type ScreenshotHandler struct {
 	logger            *logger.Logger
 }
 
+// NewScreenshotHandler creates a new screenshot handler
 func NewScreenshotHandler(screenshotService interfaces.ScreenshotService, logger *logger.Logger) *ScreenshotHandler {
 	logger.Debug("creating new screenshot handler")
 
@@ -27,6 +28,7 @@ func NewScreenshotHandler(screenshotService interfaces.ScreenshotService, logger
 	}
 }
 
+// CreateScreenshot creates a new screenshot
 func (h *ScreenshotHandler) CreateScreenshot(c *fiber.Ctx) error {
 	h.logger.Debug("creating new screenshot")
 
@@ -53,24 +55,12 @@ func (h *ScreenshotHandler) GetScreenshotImage(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "Invalid request body")
 	}
 
-	url, err := url.Parse(opts.URL)
-	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "Invalid URL")
-	}
+	// handleDefaults sets the year, week number, and week day to the current values if they are not set
+	h.handleTimeDefaults(&opts)
 
-	if opts.WeekNumber < 1 || opts.WeekNumber > 52 {
-		return fiber.NewError(fiber.StatusBadRequest, "Invalid week number, must be between 1 and 52")
-	}
-	weekNumber := strconv.Itoa(opts.WeekNumber)
+	h.logger.Debug("getting screenshot image", zap.Any("url", opts.URL), zap.Any("year", opts.Year), zap.Any("week_number", opts.WeekNumber), zap.Any("week_day", opts.WeekDay))
 
-	if opts.WeekDay < 1 || opts.WeekDay > 7 {
-		return fiber.NewError(fiber.StatusBadRequest, "Invalid week day, must be between 1 and 7")
-	}
-	weekDay := strconv.Itoa(opts.WeekDay)
-
-	h.logger.Debug("getting screenshot", zap.Any("url", url), zap.Any("week_number", weekNumber), zap.Any("week_day", weekDay))
-
-	result, err := h.screenshotService.GetScreenshotImage(c.Context(), url.String(), weekNumber, weekDay)
+	result, err := h.screenshotService.GetScreenshotImage(c.Context(), opts.URL, *opts.Year, *opts.WeekNumber, *opts.WeekDay)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
@@ -85,24 +75,12 @@ func (h *ScreenshotHandler) GetScreenshotContent(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "Invalid request body")
 	}
 
-	url, err := url.Parse(opts.URL)
-	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "Invalid URL")
-	}
+	// handleDefaults sets the year, week number, and week day to the current values if they are not set
+	h.handleTimeDefaults(&opts)
 
-	if opts.WeekNumber < 1 || opts.WeekNumber > 52 {
-		return fiber.NewError(fiber.StatusBadRequest, "Invalid week number, must be between 1 and 52")
-	}
-	weekNumber := strconv.Itoa(opts.WeekNumber)
+	h.logger.Debug("getting screenshot image", zap.Any("url", opts.URL), zap.Any("year", opts.Year), zap.Any("week_number", opts.WeekNumber), zap.Any("week_day", opts.WeekDay))
 
-	if opts.WeekDay < 1 || opts.WeekDay > 7 {
-		return fiber.NewError(fiber.StatusBadRequest, "Invalid week day, must be between 1 and 7")
-	}
-	weekDay := strconv.Itoa(opts.WeekDay)
-
-	h.logger.Debug("getting screenshot content", zap.Any("url", url), zap.Any("week_number", weekNumber), zap.Any("week_day", weekDay))
-
-	result, err := h.screenshotService.GetScreenshotContent(c.Context(), url.String(), weekNumber, weekDay)
+	result, err := h.screenshotService.GetScreenshotContent(c.Context(), opts.URL, *opts.Year, *opts.WeekNumber, *opts.WeekDay)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
@@ -112,6 +90,25 @@ func (h *ScreenshotHandler) GetScreenshotContent(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"status": result.Status,
 		"data":   result.Content,
+	})
+}
+
+func (h *ScreenshotHandler) ListScreenshots(c *fiber.Ctx) error {
+	var opts models.ListScreenshotsOptions
+	if err := c.BodyParser(&opts); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Invalid request body")
+	}
+
+	h.logger.Debug("listing screenshots", zap.Any("url", opts.URL), zap.Any("content_type", opts.ContentType))
+
+	result, err := h.screenshotService.ListScreenshots(c.Context(), opts.URL, opts.ContentType, opts.MaxItems)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(fiber.Map{
+		"status": "success",
+		"data":   result,
 	})
 }
 
@@ -153,4 +150,23 @@ func (h *ScreenshotHandler) sendPNGResponse(c *fiber.Ctx, result *models.Screens
 
 	// Send the PNG byte array as the response
 	return c.Send(pngBytes)
+}
+
+// handleDefaults sets the year, week number, and week day to the current values if they are not set
+func (h *ScreenshotHandler) handleTimeDefaults(opts *models.GetScreenshotOptions) {
+	now := time.Now()
+
+	// If the year, week number, or week day are not set, use the current year, week number, and week day
+	currentYear, currentWeek := now.ISOWeek()
+	currentWeekDay := int(now.Weekday())
+
+	if opts.Year == nil {
+		opts.Year = ptr.To(currentYear)
+	}
+	if opts.WeekNumber == nil {
+		opts.WeekNumber = ptr.To(currentWeek)
+	}
+	if opts.WeekDay == nil {
+		opts.WeekDay = ptr.To(currentWeekDay)
+	}
 }

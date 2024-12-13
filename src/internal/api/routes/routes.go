@@ -35,6 +35,7 @@ func SetupRoutes(app *fiber.App, handlers *HandlerContainer) {
 	// Screenshot routes
 	screenshot := api.Group("/screenshot")
 	screenshot.Post("/", handlers.ScreenshotHandler.CreateScreenshot)
+	screenshot.Get("/", handlers.ScreenshotHandler.ListScreenshots)
 	screenshot.Get("/image", handlers.ScreenshotHandler.GetScreenshotImage)
 	screenshot.Get("/content", handlers.ScreenshotHandler.GetScreenshotContent)
 

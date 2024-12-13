@@ -48,6 +48,10 @@ type StorageRepository interface {
 	// Delete deletes a file from the storage
 	// Return an error if the file does not exist or cannot be deleted
 	Delete(ctx context.Context, path string) error
+
+	// List lists the latest content matching the prefix
+	// Return a list of ScreenshotListResponse objects or an error
+	List(ctx context.Context, prefix string, maxItems int) ([]models.ScreenshotListResponse, error)
 }
 
 type SubscriptionRepository interface {
