@@ -6,8 +6,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"image"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
 
 	"github.com/wizenheimer/iris/src/internal/domain/interfaces"
 	"github.com/wizenheimer/iris/src/internal/domain/models"
@@ -200,4 +203,75 @@ func (s *localStorage) Delete(ctx context.Context, path string) error {
 	_ = os.Remove(metadataPath) // Ignore error as metadata file might not exist
 
 	return nil
+}
+
+func (s *localStorage) List(ctx context.Context, prefix string, maxItems int) ([]models.ScreenshotListResponse, error) {
+	s.logger.Debug("listing files",
+		zap.String("prefix", prefix),
+		zap.Int("maxItems", maxItems))
+
+	fullPrefix := filepath.Join(s.directory, prefix)
+	var results []models.ScreenshotListResponse
+
+	// Walk through the directory
+	err := filepath.WalkDir(fullPrefix, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Skip directories
+		if d.IsDir() {
+			return nil
+		}
+
+		// Skip metadata files
+		if strings.HasSuffix(path, ".metadata.json") {
+			return nil
+		}
+
+		// Get relative path
+		relPath, err := filepath.Rel(s.directory, path)
+		if err != nil {
+			return fmt.Errorf("failed to get relative path: %w", err)
+		}
+
+		// Check if path matches prefix
+		if !strings.HasPrefix(relPath, prefix) {
+			return nil
+		}
+
+		// Get file info for last modified time
+		info, err := d.Info()
+		if err != nil {
+			return fmt.Errorf("failed to get file info: %w", err)
+		}
+
+		results = append(results, models.ScreenshotListResponse{
+			Key:          relPath,
+			LastModified: info.ModTime(),
+		})
+
+		// Check if we've reached maxItems
+		if len(results) >= maxItems {
+			return filepath.SkipAll
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to walk directory: %w", err)
+	}
+
+	// Sort by LastModified in descending order
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].LastModified.After(results[j].LastModified)
+	})
+
+	// Trim to maxItems if needed
+	if len(results) > maxItems {
+		results = results[:maxItems]
+	}
+
+	return results, nil
 }

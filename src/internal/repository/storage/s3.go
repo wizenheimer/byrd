@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"image"
 	"io"
+	"sort"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -171,4 +172,51 @@ func (s *s3Storage) Delete(ctx context.Context, path string) error {
 	}
 
 	return nil
+}
+
+func (s *s3Storage) List(ctx context.Context, prefix string, maxItems int) ([]models.ScreenshotListResponse, error) {
+	// hash, err := path.GenerateURLHash(url)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to generate URL hash: %w", err)
+	// }
+
+	// var prefix string
+	// switch contentType {
+	// case "image", "screenshot":
+	// 	prefix = "images/"
+	// case "content", "text":
+	// 	prefix = "text/"
+	// default:
+	// 	return nil, fmt.Errorf("invalid content type: %s", contentType)
+	// }
+
+	input := &s3.ListObjectsV2Input{
+		Bucket:  aws.String(s.bucket),
+		Prefix:  aws.String(prefix),
+		MaxKeys: aws.Int32(int32(maxItems)),
+	}
+
+	var results []models.ScreenshotListResponse
+
+	output, err := s.client.ListObjectsV2(ctx, input)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list objects: %w", err)
+	}
+
+	for _, obj := range output.Contents {
+		results = append(results, models.ScreenshotListResponse{
+			Key:          *obj.Key,
+			LastModified: *obj.LastModified,
+		})
+		if len(results) >= maxItems {
+			break
+		}
+	}
+
+	// Sort by LastModified in descending order to get newest first
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].LastModified.After(results[j].LastModified)
+	})
+
+	return results, nil
 }

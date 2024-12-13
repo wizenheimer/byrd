@@ -8,6 +8,7 @@ import (
 	"image/jpeg"
 	"image/png"
 	"io"
+	"sort"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -175,6 +176,39 @@ func (s *r2Storage) Delete(ctx context.Context, path string) error {
 	}
 
 	return nil
+}
+
+// Listlists the latest content (images or text) for a given URL
+func (s *r2Storage) List(ctx context.Context, prefix string, maxItems int) ([]models.ScreenshotListResponse, error) {
+	input := &s3.ListObjectsV2Input{
+		Bucket:  aws.String(s.bucket),
+		Prefix:  aws.String(prefix),
+		MaxKeys: aws.Int32(int32(maxItems)),
+	}
+
+	var results []models.ScreenshotListResponse
+
+	output, err := s.client.ListObjectsV2(ctx, input)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list objects: %w", err)
+	}
+
+	for _, obj := range output.Contents {
+		results = append(results, models.ScreenshotListResponse{
+			Key:          *obj.Key,
+			LastModified: *obj.LastModified,
+		})
+		if len(results) >= maxItems {
+			break
+		}
+	}
+
+	// Sort by LastModified in descending order to get newest first
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].LastModified.After(results[j].LastModified)
+	})
+
+	return results, nil
 }
 
 // encodeImage encodes an image.Image to the specified writer
