@@ -11,13 +11,14 @@ import (
 	"net/http"
 	"reflect"
 	"strconv"
+	"time"
 
 	"github.com/wizenheimer/iris/src/internal/client"
 	"github.com/wizenheimer/iris/src/internal/domain/interfaces"
 	"github.com/wizenheimer/iris/src/internal/domain/models"
 	"github.com/wizenheimer/iris/src/pkg/logger"
-	"github.com/wizenheimer/iris/src/pkg/utils/competitor"
 	"github.com/wizenheimer/iris/src/pkg/utils/parser"
+	"github.com/wizenheimer/iris/src/pkg/utils/path"
 	"github.com/wizenheimer/iris/src/pkg/utils/ptr"
 	"go.uber.org/zap"
 )
@@ -60,6 +61,10 @@ func NewScreenshotService(logger *logger.Logger, opts ...ScreenshotServiceOption
 	return s, nil
 }
 
+// TakeScreenshot takes a screenshot of a given URL
+// The URL is used to generate the path to the image
+// The week number and week day are used to generate the path to the image
+// The options are used to customize the screenshot
 func (s *screenshotService) TakeScreenshot(ctx context.Context, opts models.ScreenshotRequestOptions) (*models.ScreenshotResponse, error) {
 	s.logger.Debug("taking screenshot", zap.Any("url", opts.URL))
 
@@ -72,7 +77,7 @@ func (s *screenshotService) TakeScreenshot(ctx context.Context, opts models.Scre
 		return nil, fmt.Errorf("failed to take screenshot - %v status code", resp.StatusCode)
 	}
 
-	_, width, height, err := parseImageFromResponse(resp)
+	img, width, height, err := parseImageFromResponse(resp)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse image from response: %v", err)
 	}
@@ -82,12 +87,33 @@ func (s *screenshotService) TakeScreenshot(ctx context.Context, opts models.Scre
 		return nil, fmt.Errorf("failed to parse content from response: %v", err)
 	}
 
+	metadata := models.ScreenshotMetadata{
+		SourceURL:         opts.URL,
+		FetchedAt:         time.Now().String(),
+		ScreenshotService: "screenshotone",
+		ImageWidth:        width,
+		ImageHeight:       height,
+		PageTitle:         ptr.To(title),
+	}
+
+	// TODO: check if path already exists
+
+	screenshotPath := path.GetCurrentScreenshotPath(opts.URL)
+	if err := s.storage.StoreScreenshotImage(ctx, img, screenshotPath, metadata); err != nil {
+		return nil, fmt.Errorf("failed to store screenshot: %v", err)
+	}
+
+	contentPath := path.GetCurrentContentPath(opts.URL)
+	if err := s.storage.StoreScreenshotContent(ctx, cleanText, contentPath, metadata); err != nil {
+		return nil, fmt.Errorf("failed to store content: %v", err)
+	}
+
 	// Implementation
 	return &models.ScreenshotResponse{
 		Status: "success",
 		Paths: &models.ScreenshotPaths{
-			Screenshot: "/temp",
-			Content:    "/temp",
+			Screenshot: screenshotPath,
+			Content:    contentPath,
 		},
 		Metadata: &models.ScreenshotMeta{
 			ImageWidth:  width,
@@ -99,28 +125,48 @@ func (s *screenshotService) TakeScreenshot(ctx context.Context, opts models.Scre
 	}, nil
 }
 
-func (s *screenshotService) GetContent(ctx context.Context, hash, weekNumber, weekDay string) (*models.ScreenshotResponse, error) {
-	s.logger.Debug("getting content", zap.Any("hash", hash), zap.Any("week_number", weekNumber), zap.Any("week_day", weekDay))
+// GetScreenshotContent retrieves the screenshot content from the screenshot service
+// The URL is used to generate the path to the image
+// The week number and week day are used to generate the path to the image
+func (s *screenshotService) GetScreenshotContent(ctx context.Context, url, weekNumber, weekDay string) (*models.ScreenshotContentResponse, error) {
+	contentPath := path.GetContentPath(url, weekNumber, weekDay)
 
-	screenshotPath := competitor.GetScreenshotPath(hash, weekNumber, weekDay)
-	_, _, err := s.storage.Get(ctx, screenshotPath)
+	s.logger.Debug("getting content", zap.Any("url", url), zap.Any("week_number", weekNumber), zap.Any("week_day", weekDay), zap.Any("path", contentPath))
+
+	content, metadata, err := s.storage.GetScreenshotContent(ctx, contentPath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get content: %v", err)
 	}
 
-	return &models.ScreenshotResponse{}, nil
+	return &models.ScreenshotContentResponse{
+		Status:   "success",
+		Content:  content,
+		Metadata: ptr.To(metadata),
+		URL:      ptr.To(url),
+		Path:     ptr.To(contentPath),
+	}, nil
 }
 
-func (s *screenshotService) GetScreenshot(ctx context.Context, hash, weekNumber, weekDay string) (*models.ScreenshotResponse, error) {
-	s.logger.Debug("getting screenshot", zap.Any("hash", hash), zap.Any("week_number", weekNumber), zap.Any("week_day", weekDay))
+// GetScreenshotImage retrieves a screenshot image from the storage
+// The URL is used to generate the path to the image
+// The week number and week day are used to generate the path to the image
+func (s *screenshotService) GetScreenshotImage(ctx context.Context, url, weekNumber, weekDay string) (*models.ScreenshotImageResponse, error) {
+	screenshotPath := path.GetScreenshotPath(url, weekNumber, weekDay)
 
-	screenshotPath := competitor.GetScreenshotPath(hash, weekNumber, weekDay)
-	_, _, err := s.storage.Get(ctx, screenshotPath)
+	s.logger.Debug("getting screenshot", zap.Any("url", url), zap.Any("week_number", weekNumber), zap.Any("week_day", weekDay), zap.Any("path", screenshotPath))
+
+	img, metadata, err := s.storage.GetScreenshotImage(ctx, screenshotPath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get screenshot: %v", err)
 	}
 
-	return &models.ScreenshotResponse{}, nil
+	return &models.ScreenshotImageResponse{
+		Status:   "success",
+		Image:    img,
+		Metadata: ptr.To(metadata),
+		URL:      ptr.To(url),
+		Path:     ptr.To(screenshotPath),
+	}, nil
 }
 
 // createScreenshotRequest creates a request for the screenshot API
@@ -143,6 +189,7 @@ func (s *screenshotService) createScreenshotRequest(opts models.ScreenshotReques
 		Execute(s.httpClient)
 }
 
+// getDefaultScreenshotRequestOptions returns the default options for the screenshot request
 func getDefaultScreenshotRequestOptions() models.ScreenshotRequestOptions {
 	// Get default options
 	defaultOpt := models.ScreenshotRequestOptions{
@@ -231,8 +278,8 @@ func parseImageFromResponse(resp *http.Response) (image.Image, int, int, error) 
 
 	imageContentTypes := []string{
 		"image/png",
-		"image/jpeg",
-		"image/jpg",
+		// "image/jpeg", // Not supported
+		// "image/jpg", // Not supported
 	}
 
 	if !parser.Contains(imageContentTypes, resp.Header.Get("Content-Type")) {
