@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 	"strconv"
+	"time"
 )
 
 // ClipOptions defines the coordinates and dimensions for screenshot clipping
@@ -195,9 +196,17 @@ type ScreenshotRequestOptions struct {
 
 type GetScreenshotOptions struct {
 	// Target Options
-	URL        string `json:"url"` // The URL of the website to take a screenshot of
-	WeekNumber int    `json:"week_number"`
-	WeekDay    int    `json:"week_day"`
+	URL        string `json:"url"`                   // The URL of the website to take a screenshot of
+	WeekNumber *int   `json:"week_number,omitempty"` // The week number of the screenshot
+	WeekDay    *int   `json:"week_day,omitempty"`    // The day of the week of the screenshot
+	Year       *int   `json:"year,omitempty"`        // The year of the screenshot
+}
+
+type ListScreenshotsOptions struct {
+	// Target Options
+	URL         string `json:"url"`          // The URL of the website to take a screenshot of
+	ContentType string `json:"content_type"` // The type of content to list
+	MaxItems    int    `json:"max_items"`    // The maximum number of items to list
 }
 
 // OutputFormat defines the possible output formats for screenshots
@@ -234,6 +243,12 @@ type ScreenshotImageResponse struct {
 	Metadata *ScreenshotMetadata `json:"metadata,omitempty"`
 	URL      *string             `json:"url,omitempty"`
 	Path     *string             `json:"path,omitempty"`
+}
+
+// ScreenshotListResponse defines the response structure for listing screenshots
+type ScreenshotListResponse struct {
+	Key          string
+	LastModified time.Time
 }
 
 // ScreenshotPaths defines the paths for screenshot and content files

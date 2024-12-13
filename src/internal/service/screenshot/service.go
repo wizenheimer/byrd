@@ -98,12 +98,20 @@ func (s *screenshotService) TakeScreenshot(ctx context.Context, opts models.Scre
 
 	// TODO: check if path already exists
 
-	screenshotPath := path.GetCurrentScreenshotPath(opts.URL)
+	screenshotPath, err := path.GetCurrentScreenshotPath(opts.URL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get current screenshot path: %v", err)
+	}
+
 	if err := s.storage.StoreScreenshotImage(ctx, img, screenshotPath, metadata); err != nil {
 		return nil, fmt.Errorf("failed to store screenshot: %v", err)
 	}
 
-	contentPath := path.GetCurrentContentPath(opts.URL)
+	contentPath, err := path.GetCurrentContentPath(opts.URL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get current content path: %v", err)
+	}
+
 	if err := s.storage.StoreScreenshotContent(ctx, cleanText, contentPath, metadata); err != nil {
 		return nil, fmt.Errorf("failed to store content: %v", err)
 	}
@@ -128,8 +136,11 @@ func (s *screenshotService) TakeScreenshot(ctx context.Context, opts models.Scre
 // GetScreenshotContent retrieves the screenshot content from the screenshot service
 // The URL is used to generate the path to the image
 // The week number and week day are used to generate the path to the image
-func (s *screenshotService) GetScreenshotContent(ctx context.Context, url, weekNumber, weekDay string) (*models.ScreenshotContentResponse, error) {
-	contentPath := path.GetContentPath(url, weekNumber, weekDay)
+func (s *screenshotService) GetScreenshotContent(ctx context.Context, url string, year int, weekNumber int, weekDay int) (*models.ScreenshotContentResponse, error) {
+	contentPath, err := path.GetContentPath(url, year, weekNumber, weekDay)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get content path: %v", err)
+	}
 
 	s.logger.Debug("getting content", zap.Any("url", url), zap.Any("week_number", weekNumber), zap.Any("week_day", weekDay), zap.Any("path", contentPath))
 
@@ -150,8 +161,11 @@ func (s *screenshotService) GetScreenshotContent(ctx context.Context, url, weekN
 // GetScreenshotImage retrieves a screenshot image from the storage
 // The URL is used to generate the path to the image
 // The week number and week day are used to generate the path to the image
-func (s *screenshotService) GetScreenshotImage(ctx context.Context, url, weekNumber, weekDay string) (*models.ScreenshotImageResponse, error) {
-	screenshotPath := path.GetScreenshotPath(url, weekNumber, weekDay)
+func (s *screenshotService) GetScreenshotImage(ctx context.Context, url string, year int, weekNumber int, weekDay int) (*models.ScreenshotImageResponse, error) {
+	screenshotPath, err := path.GetScreenshotPath(url, year, weekNumber, weekDay)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get screenshot path: %v", err)
+	}
 
 	s.logger.Debug("getting screenshot", zap.Any("url", url), zap.Any("week_number", weekNumber), zap.Any("week_day", weekDay), zap.Any("path", screenshotPath))
 
@@ -167,6 +181,32 @@ func (s *screenshotService) GetScreenshotImage(ctx context.Context, url, weekNum
 		URL:      ptr.To(url),
 		Path:     ptr.To(screenshotPath),
 	}, nil
+}
+
+func (s *screenshotService) ListScreenshots(ctx context.Context, url string, contentType string, maxItems int) ([]models.ScreenshotListResponse, error) {
+	s.logger.Debug("listing screenshots", zap.Any("url", url), zap.Any("content_type", contentType))
+
+	hash, err := path.GenerateURLHash(url)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate URL hash: %w", err)
+	}
+
+	var prefix string
+	switch contentType {
+	case "image", "screenshot":
+		contentType = "images"
+	case "content", "text":
+		contentType = "text"
+	default:
+		return nil, fmt.Errorf("invalid content type: %s", contentType)
+	}
+
+	prefix = fmt.Sprintf("%s/%s", contentType, hash)
+
+	s.logger.Debug("listing screenshots", zap.Any("prefix", prefix), zap.Any("max_items", maxItems))
+
+	// Get the list of screenshots
+	return s.storage.List(ctx, prefix, maxItems)
 }
 
 // createScreenshotRequest creates a request for the screenshot API
