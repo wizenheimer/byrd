@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 
 	"github.com/wizenheimer/iris/src/internal/domain/interfaces"
+	"github.com/wizenheimer/iris/src/internal/domain/models"
 	"github.com/wizenheimer/iris/src/pkg/logger"
 	"go.uber.org/zap"
 )
@@ -28,6 +29,10 @@ func NewLocalStorage(directory string, logger *logger.Logger) (interfaces.Storag
 	if logger == nil {
 		return nil, fmt.Errorf("logger is required")
 	}
+
+	// Append "data" to the directory
+	parentDirector := "data"
+	directory = filepath.Join(parentDirector, directory)
 
 	// Create directory if it doesn't exist
 	if err := os.MkdirAll(directory, 0755); err != nil {
@@ -53,11 +58,7 @@ func (s *localStorage) getMetadataPath(path string) string {
 }
 
 // saveMetadata saves metadata to a separate file
-func (s *localStorage) saveMetadata(path string, metadata map[string]string) error {
-	if metadata == nil {
-		return nil
-	}
-
+func (s *localStorage) saveMetadata(path string, metadata models.ScreenshotMetadata) error {
 	data, err := json.Marshal(metadata)
 	if err != nil {
 		return fmt.Errorf("failed to marshal metadata: %w", err)
@@ -72,26 +73,26 @@ func (s *localStorage) saveMetadata(path string, metadata map[string]string) err
 }
 
 // loadMetadata loads metadata from the metadata file
-func (s *localStorage) loadMetadata(path string) (map[string]string, error) {
+func (s *localStorage) loadMetadata(path string) (models.ScreenshotMetadata, error) {
 	metadataPath := s.getMetadataPath(path)
 	data, err := os.ReadFile(metadataPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return make(map[string]string), nil
+			return models.ScreenshotMetadata{}, nil
 		}
-		return nil, fmt.Errorf("failed to read metadata: %w", err)
+		return models.ScreenshotMetadata{}, fmt.Errorf("failed to read metadata: %w", err)
 	}
 
-	var metadata map[string]string
+	var metadata models.ScreenshotMetadata
 	if err := json.Unmarshal(data, &metadata); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal metadata: %w", err)
+		return models.ScreenshotMetadata{}, fmt.Errorf("failed to unmarshal metadata: %w", err)
 	}
 
 	return metadata, nil
 }
 
 // StoreScreenshot stores a screenshot in the local storage
-func (s *localStorage) StoreScreenshot(ctx context.Context, data image.Image, path string, metadata map[string]string) error {
+func (s *localStorage) StoreScreenshotImage(ctx context.Context, data image.Image, path string, metadata models.ScreenshotMetadata) error {
 	s.logger.Debug("storing screenshot", zap.String("path", path))
 
 	if err := s.ensurePath(path); err != nil {
@@ -113,7 +114,7 @@ func (s *localStorage) StoreScreenshot(ctx context.Context, data image.Image, pa
 }
 
 // StoreContent stores a text content in the local storage
-func (s *localStorage) StoreContent(ctx context.Context, content string, path string, metadata map[string]string) error {
+func (s *localStorage) StoreScreenshotContent(ctx context.Context, content string, path string, metadata models.ScreenshotMetadata) error {
 	s.logger.Debug("storing content", zap.String("path", path))
 
 	if err := s.ensurePath(path); err != nil {
@@ -129,32 +130,42 @@ func (s *localStorage) StoreContent(ctx context.Context, content string, path st
 }
 
 // GetContent retrieves a text content from the local storage
-func (s *localStorage) GetContent(ctx context.Context, path string) (string, map[string]string, error) {
+func (s *localStorage) GetScreenshotContent(ctx context.Context, path string) (string, models.ScreenshotMetadata, error) {
 	s.logger.Debug("getting content", zap.String("path", path))
 
 	data, metadata, err := s.Get(ctx, path)
 	if err != nil {
-		return "", nil, err
+		return "", models.ScreenshotMetadata{}, err
 	}
 
-	return string(data), metadata, nil
+	screenshotMetadata, err := models.ScreenshotMetadataFromMap(metadata)
+	if err != nil {
+		return "", models.ScreenshotMetadata{}, err
+	}
+
+	return string(data), screenshotMetadata, nil
 }
 
 // GetScreenshot retrieves a screenshot from the local storage
-func (s *localStorage) GetScreenshot(ctx context.Context, path string) (image.Image, map[string]string, error) {
+func (s *localStorage) GetScreenshotImage(ctx context.Context, path string) (image.Image, models.ScreenshotMetadata, error) {
 	s.logger.Debug("getting screenshot", zap.String("path", path))
 
 	data, metadata, err := s.Get(ctx, path)
 	if err != nil {
-		return nil, nil, err
+		return nil, models.ScreenshotMetadata{}, err
 	}
 
 	img, _, err := image.Decode(bytes.NewReader(data))
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to decode image: %w", err)
+		return nil, models.ScreenshotMetadata{}, fmt.Errorf("failed to decode image: %w", err)
 	}
 
-	return img, metadata, nil
+	screenshotMetadata, err := models.ScreenshotMetadataFromMap(metadata)
+	if err != nil {
+		return nil, models.ScreenshotMetadata{}, err
+	}
+
+	return img, screenshotMetadata, nil
 }
 
 // Get retrieves a binary from the local storage
@@ -172,7 +183,7 @@ func (s *localStorage) Get(ctx context.Context, path string) ([]byte, map[string
 		return nil, nil, err
 	}
 
-	return data, metadata, nil
+	return data, metadata.ToMap(), nil
 }
 
 // Delete deletes a file from the local storage
