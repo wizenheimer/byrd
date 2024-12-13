@@ -51,6 +51,7 @@ type StorageConfig struct {
 	SecretKey string
 	Bucket    string
 	Region    string
+	AccountId string
 }
 
 type ServicesConfig struct {
@@ -147,6 +148,8 @@ func LoadStorageConfig() StorageConfig {
 		Bucket: GetEnv("STORAGE_BUCKET", "", parser.StrParser),
 		// Region is set to the value of the STORAGE_REGION environment variable, or "" if the variable is not set.
 		Region: GetEnv("STORAGE_REGION", "", parser.StrParser),
+		// AccountId is set to the value of the STORAGE_ACCOUNT_ID environment variable, or "" if the variable is not set.
+		AccountId: GetEnv("STORAGE_ACCOUNT_ID", "", parser.StrParser),
 	}
 }
 
