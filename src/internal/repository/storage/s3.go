@@ -13,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/wizenheimer/iris/src/internal/domain/interfaces"
+	"github.com/wizenheimer/iris/src/internal/domain/models"
 	"github.com/wizenheimer/iris/src/pkg/logger"
 	"go.uber.org/zap"
 )
@@ -56,7 +57,7 @@ func NewS3Storage(accessKey, secretKey, bucket, accountID, session, region strin
 }
 
 // StoreScreenshot stores a screenshot in S3 storage
-func (s *s3Storage) StoreScreenshot(ctx context.Context, data image.Image, path string, metadata map[string]string) error {
+func (s *s3Storage) StoreScreenshotImage(ctx context.Context, data image.Image, path string, metadata models.ScreenshotMetadata) error {
 	s.logger.Debug("storing screenshot",
 		zap.String("path", path))
 
@@ -69,8 +70,8 @@ func (s *s3Storage) StoreScreenshot(ctx context.Context, data image.Image, path 
 		Bucket:      aws.String(s.bucket),
 		Key:         aws.String(path),
 		Body:        buf,
-		ContentType: aws.String(metadata["Content-Type"]),
-		Metadata:    metadata,
+		ContentType: aws.String("image/png"),
+		Metadata:    metadata.ToMap(),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to upload image: %w", err)
@@ -80,15 +81,15 @@ func (s *s3Storage) StoreScreenshot(ctx context.Context, data image.Image, path 
 }
 
 // StoreContent stores text content in S3 storage
-func (s *s3Storage) StoreContent(ctx context.Context, content string, path string, metadata map[string]string) error {
+func (s *s3Storage) StoreScreenshotContent(ctx context.Context, content string, path string, metadata models.ScreenshotMetadata) error {
 	s.logger.Debug("storing content", zap.String("path", path))
 
 	_, err := s.client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket:      aws.String(s.bucket),
 		Key:         aws.String(path),
 		Body:        strings.NewReader(content),
-		ContentType: aws.String(metadata["Content-Type"]),
-		Metadata:    metadata,
+		ContentType: aws.String("text/plain"),
+		Metadata:    metadata.ToMap(),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to upload content: %w", err)
@@ -98,31 +99,42 @@ func (s *s3Storage) StoreContent(ctx context.Context, content string, path strin
 }
 
 // GetContent retrieves text content from S3 storage
-func (s *s3Storage) GetContent(ctx context.Context, path string) (string, map[string]string, error) {
+func (s *s3Storage) GetScreenshotContent(ctx context.Context, path string) (string, models.ScreenshotMetadata, error) {
 	s.logger.Debug("getting content", zap.String("path", path))
 
 	data, metadata, err := s.Get(ctx, path)
 	if err != nil {
-		return "", nil, err
+		return "", models.ScreenshotMetadata{}, err
 	}
-	return string(data), metadata, nil
+
+	screenshotMetadata, err := models.ScreenshotMetadataFromMap(metadata)
+	if err != nil {
+		return "", models.ScreenshotMetadata{}, err
+	}
+
+	return string(data), screenshotMetadata, nil
 }
 
 // GetScreenshot retrieves a screenshot from S3 storage
-func (s *s3Storage) GetScreenshot(ctx context.Context, path string) (image.Image, map[string]string, error) {
+func (s *s3Storage) GetScreenshotImage(ctx context.Context, path string) (image.Image, models.ScreenshotMetadata, error) {
 	s.logger.Debug("getting screenshot", zap.String("path", path))
 
 	data, metadata, err := s.Get(ctx, path)
 	if err != nil {
-		return nil, nil, err
+		return nil, models.ScreenshotMetadata{}, err
 	}
 
 	img, _, err := image.Decode(bytes.NewReader(data))
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to decode image: %w", err)
+		return nil, models.ScreenshotMetadata{}, fmt.Errorf("failed to decode image: %w", err)
 	}
 
-	return img, metadata, nil
+	screenshotMetadata, err := models.ScreenshotMetadataFromMap(metadata)
+	if err != nil {
+		return nil, models.ScreenshotMetadata{}, err
+	}
+
+	return img, screenshotMetadata, nil
 }
 
 // Get retrieves binary data from S3 storage
