@@ -2,6 +2,7 @@ package interfaces
 
 import (
 	"context"
+	"image"
 
 	"github.com/wizenheimer/iris/src/internal/domain/models"
 )
@@ -27,15 +28,25 @@ type DiffRepository interface {
 
 type StorageRepository interface {
 	// StoreScreenshot stores a screenshot in the storage
-	StoreScreenshot(ctx context.Context, data []byte, path string, metadata map[string]string) error
+	StoreScreenshot(ctx context.Context, data image.Image, path string, metadata map[string]string) error
 
-	// GetScreenshot retrieves a screenshot from the storage
+	// StoreContent stores a text content in the storage
 	StoreContent(ctx context.Context, content string, path string, metadata map[string]string) error
 
-	// Get retrieves the content of a file from the storage
+	// GetContent retrieves a text content from the storage
+	// Serialize the content to a string and return it
+	GetContent(ctx context.Context, path string) (string, map[string]string, error)
+
+	// GetScreenshot retrieves a screenshot from the storage
+	// Deserialize the content to an image and return it
+	GetScreenshot(ctx context.Context, path string) (image.Image, map[string]string, error)
+
+	// Get retrieves a binary from the storage
+	// Return the binary content and the metadata
 	Get(ctx context.Context, path string) ([]byte, map[string]string, error)
 
 	// Delete deletes a file from the storage
+	// Return an error if the file does not exist or cannot be deleted
 	Delete(ctx context.Context, path string) error
 }
 

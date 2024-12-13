@@ -43,8 +43,9 @@ func (h *ScreenshotHandler) CreateScreenshot(c *fiber.Ctx) error {
 
 func (h *ScreenshotHandler) GetScreenshot(c *fiber.Ctx) error {
 	url := c.Params("hash")
-	weekNumber := c.Params("weekNumber")
-	weekDay := c.Params("weekDay")
+	weekNumber := c.Params("week_number")
+	weekDay := c.Params("week_day")
+
 	h.logger.Debug("getting screenshot", zap.Any("url", url), zap.Any("week_number", weekNumber), zap.Any("week_day", weekDay))
 
 	result, err := h.screenshotService.GetScreenshot(c.Context(), url, weekNumber, weekDay)
@@ -60,8 +61,9 @@ func (h *ScreenshotHandler) GetScreenshot(c *fiber.Ctx) error {
 
 func (h *ScreenshotHandler) GetScreenshotContent(c *fiber.Ctx) error {
 	url := c.Params("hash")
-	weekNumber := c.Params("weekNumber")
-	weekDay := c.Params("weekDay")
+	weekNumber := c.Params("week_number")
+	weekDay := c.Params("week_day")
+
 	h.logger.Debug("getting screenshot content", zap.Any("url", url), zap.Any("week_number", weekNumber), zap.Any("week_day", weekDay))
 
 	result, err := h.screenshotService.GetContent(c.Context(), url, weekNumber, weekDay)
