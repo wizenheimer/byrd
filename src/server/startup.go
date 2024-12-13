@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 
 	"github.com/wizenheimer/iris/src/internal/api/routes"
@@ -20,8 +21,6 @@ import (
 )
 
 func initializer(cfg *config.Config, sqlDb *sql.DB, logger *logger.Logger) (*routes.HandlerContainer, error) {
-	logger.Debug("initializing services", zap.Any("service_config", zap.Any("config", cfg.Services)), zap.Any("storage_config", cfg.Storage), zap.Any("database_config", cfg.Database), zap.Any("server_config", cfg.Server), zap.Any("environment_config", cfg.Environment))
-
 	// Initialize HTTP client for services
 	screenshotClientOpts := []client.ClientOption{
 		client.WithLogger(logger),
@@ -93,15 +92,70 @@ func initializer(cfg *config.Config, sqlDb *sql.DB, logger *logger.Logger) (*rou
 }
 
 func setupScreenshotService(cfg *config.Config, screenshotHTTPClient client.HTTPClient, logger *logger.Logger) (interfaces.ScreenshotService, error) {
-	storageRepo, err := storage.NewR2Storage(
-		cfg.Storage.AccessKey,
-		cfg.Storage.SecretKey,
-		cfg.Storage.Bucket,
-		cfg.Storage.Region,
-		logger,
-	)
+	logger.Debug("setting up screenshot service", zap.Any("storage_config", cfg.Storage))
+
+	if logger == nil {
+		return nil, fmt.Errorf("can't initialize screenshot service, logger is required")
+	}
+
+	if cfg.Storage.AccessKey == "" {
+		logger.Warn("Access key is empty", zap.String("type", cfg.Storage.Type))
+	}
+
+	if cfg.Storage.SecretKey == "" {
+		logger.Warn("Secret key is empty", zap.String("type", cfg.Storage.Type))
+	}
+
+	if cfg.Storage.Bucket == "" {
+		logger.Warn("Bucket is empty", zap.String("type", cfg.Storage.Type))
+	}
+
+	if cfg.Storage.AccountId == "" {
+		logger.Warn("Account ID is empty", zap.String("type", cfg.Storage.Type))
+	}
+
+	if cfg.Storage.Region == "" {
+		logger.Warn("Region is empty", zap.String("type", cfg.Storage.Type))
+	}
+
+	var storageRepo interfaces.StorageRepository
+	var err error
+	switch cfg.Storage.Type {
+	case "r2":
+		storageRepo, err = storage.NewR2Storage(
+			cfg.Storage.AccessKey,
+			cfg.Storage.SecretKey,
+			cfg.Storage.Bucket,
+			cfg.Storage.AccountId,
+			logger,
+		)
+	case "local":
+		storageRepo, err = storage.NewLocalStorage(cfg.Storage.Bucket, logger)
+	case "s3":
+		storageRepo, err = storage.NewS3Storage(
+			cfg.Storage.AccessKey,
+			cfg.Storage.SecretKey,
+			cfg.Storage.Bucket,
+			cfg.Storage.AccountId,
+			"", // session is empty
+			cfg.Storage.Region,
+			logger,
+		)
+	default:
+		logger.Warn("Unknown storage type, defaulting to local storage", zap.String("type", cfg.Storage.Type))
+		storageRepo, err = storage.NewLocalStorage(cfg.Storage.Bucket, logger)
+	}
+
 	if err != nil {
 		logger.Fatal("Failed to initialize storage", zap.Error(err))
+	}
+
+	if cfg.Services.ScreenshotServiceAPIKey == "" {
+		logger.Warn("API key is empty", zap.String("service", "screenshot"))
+	}
+
+	if cfg.Services.ScreenshotServiceOrigin == "" {
+		logger.Warn("Origin is empty", zap.String("service", "screenshot"))
 	}
 
 	// Create screenshot service option
@@ -120,6 +174,8 @@ func setupScreenshotService(cfg *config.Config, screenshotHTTPClient client.HTTP
 }
 
 func setupNotificationService(cfg *config.Config, httpClient client.HTTPClient, logger *logger.Logger) (interfaces.NotificationService, error) {
+	logger.Debug("setting up notification service", zap.Any("notification_config", cfg.Services))
+
 	emailClient, err := notification.NewResendEmailClient(cfg, httpClient, logger)
 	if err != nil {
 		log.Fatalf("Failed to initialize email client: %v", err)
@@ -134,6 +190,8 @@ func setupNotificationService(cfg *config.Config, httpClient client.HTTPClient, 
 }
 
 func setupDiffService(cfg *config.Config, sqlDb *sql.DB, screenshotHTTPClient, aiHTTPClient client.HTTPClient, logger *logger.Logger) (interfaces.DiffService, error) {
+	logger.Debug("setting up diff service", zap.Any("database", sqlDb.Stats()), zap.Any("service_config", cfg.Services), zap.Any("storage_config", cfg.Storage))
+
 	screenshotService, err := setupScreenshotService(cfg, screenshotHTTPClient, logger)
 	if err != nil {
 		log.Fatalf("Failed to initialize screenshot service: %v", err)
@@ -153,6 +211,8 @@ func setupDiffService(cfg *config.Config, sqlDb *sql.DB, screenshotHTTPClient, a
 }
 
 func setupCompetitorService(sqlDb *sql.DB, logger *logger.Logger) (interfaces.CompetitorService, error) {
+	logger.Debug("setting up competitor service", zap.Any("database", sqlDb.Stats()))
+
 	competitorRepo, err := db.NewCompetitorRepository(sqlDb, logger)
 	if err != nil {
 		log.Fatalf("Failed to initialize competitor repository: %v", err)
