@@ -11,10 +11,10 @@ type ScreenshotService interface {
 	TakeScreenshot(ctx context.Context, opts models.ScreenshotRequestOptions) (*models.ScreenshotResponse, error)
 
 	// GetScreenshot retrieves a screenshot from the storage
-	GetScreenshot(ctx context.Context, url, weekNumber, weekDay string) (*models.ScreenshotResponse, error)
+	GetScreenshotImage(ctx context.Context, url, weekNumber, weekDay string) (*models.ScreenshotImageResponse, error)
 
 	// GetContent retrieves the content of a screenshot from the storage
-	GetContent(ctx context.Context, url, weekNumber, weekDay string) (*models.ScreenshotResponse, error)
+	GetScreenshotContent(ctx context.Context, url, weekNumber, weekDay string) (*models.ScreenshotContentResponse, error)
 }
 
 type DiffService interface {

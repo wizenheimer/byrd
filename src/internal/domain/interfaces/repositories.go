@@ -27,19 +27,19 @@ type DiffRepository interface {
 }
 
 type StorageRepository interface {
-	// StoreScreenshot stores a screenshot in the storage
-	StoreScreenshot(ctx context.Context, data image.Image, path string, metadata map[string]string) error
+	// StoreScreenshotImage stores screenshot image in the storage
+	StoreScreenshotImage(ctx context.Context, data image.Image, path string, metadata models.ScreenshotMetadata) error
 
-	// StoreContent stores a text content in the storage
-	StoreContent(ctx context.Context, content string, path string, metadata map[string]string) error
+	// StoreScreenshotContent stores screenshot content in the storage
+	StoreScreenshotContent(ctx context.Context, content string, path string, metadata models.ScreenshotMetadata) error
 
 	// GetContent retrieves a text content from the storage
 	// Serialize the content to a string and return it
-	GetContent(ctx context.Context, path string) (string, map[string]string, error)
+	GetScreenshotContent(ctx context.Context, path string) (string, models.ScreenshotMetadata, error)
 
 	// GetScreenshot retrieves a screenshot from the storage
 	// Deserialize the content to an image and return it
-	GetScreenshot(ctx context.Context, path string) (image.Image, map[string]string, error)
+	GetScreenshotImage(ctx context.Context, path string) (image.Image, models.ScreenshotMetadata, error)
 
 	// Get retrieves a binary from the storage
 	// Return the binary content and the metadata
