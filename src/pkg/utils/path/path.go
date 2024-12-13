@@ -7,7 +7,6 @@ import (
 	"net/url"
 	"path"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
@@ -19,7 +18,7 @@ func GenerateURLHash(rawURL string) (string, error) {
 	// Parse the URL
 	u, err := url.Parse(rawURL)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to parse URL: %w", err)
 	}
 
 	// Normalize the URL components
@@ -80,134 +79,183 @@ func GenerateURLHash(rawURL string) (string, error) {
 	return hex.EncodeToString(hasher.Sum(nil))[:32], nil
 }
 
-// GetScreenshotPath returns the path to
-// the screenshot for a given url, week number and week day
-func GetScreenshotPath(url, weekNumber, weekDay string) string {
-	// Bucket the week day into a runID
-	weekDayInt, _ := strconv.Atoi(weekDay)
-	var runID string
-	if weekDayInt <= 3 { // Monday, Tuesday, Wednesday
-		runID = constants.FirstRunID
-	} else { // Thursday, Friday, Saturday, Sunday
-		runID = constants.LastRunID
-	}
-
-	path := GeneratePath(url, weekNumber, runID)
-	return fmt.Sprintf("screenshot/%s", path)
-}
-
-// GetCurrentScreenshotPath returns the path to
-// the screenshot for a given url
-func GetCurrentScreenshotPath(url string) string {
-	path := GenerateCurrentPath(url)
-	return fmt.Sprintf("screenshot/%s", path)
-}
-
-// GetPreviousScreenshotPath returns the path to
-// the screenshot for a given url
-func GetPreviousScreenshotPath(url string) string {
-	path := GeneratePreviousPath(url)
-	return fmt.Sprintf("screenshot/%s", path)
-}
-
-// GetContentPath returns the path to the content for a given url, week number and run id
-func GetContentPath(url, weekNumber, weekDay string) string {
-	// Bucket the week day into a runID
-	weekDayInt, _ := strconv.Atoi(weekDay)
-	var runID string
-	if weekDayInt <= 3 { // Monday, Tuesday, Wednesday
-		runID = constants.FirstRunID
-	} else { // Thursday, Friday, Saturday, Sunday
-		runID = constants.LastRunID
-	}
-
-	path := GeneratePath(url, weekNumber, runID)
-	return fmt.Sprintf("content/%s", path)
-}
-
-// GetCurrentContentPath returns the path to the content for a given url
-func GetCurrentContentPath(url string) string {
-	path := GenerateCurrentPath(url)
-	return fmt.Sprintf("content/%s", path)
-}
-
-// GetPreviousContentPath returns the path to the content for a given url
-func GetPreviousContentPath(url string) string {
-	path := GeneratePreviousPath(url)
-	return fmt.Sprintf("content/%s", path)
-}
-
-// GeneratePath generates a path for a given url, week number and run id
-func GeneratePath(url, weekNumber, runID string) string {
+// GetScreenshotPath returns the path to the screenshot for a given url, year, week number and week day
+func GetScreenshotPath(url string, year, weekNumber, weekDay int) (string, error) {
 	hash, err := GenerateURLHash(url)
 	if err != nil {
-		return ""
+		return "", fmt.Errorf("failed to generate URL hash: %w", err)
 	}
-	return fmt.Sprintf("%s/%s/%s", hash, weekNumber, runID)
+
+	var runID string
+	if weekDay <= 3 { // Monday, Tuesday, Wednesday
+		runID = constants.FirstRunID
+	} else { // Thursday, Friday, Saturday, Sunday
+		runID = constants.LastRunID
+	}
+
+	path, err := GeneratePath(hash, year, weekNumber, runID)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate path: %w", err)
+	}
+
+	return fmt.Sprintf("images/%s", path), nil
 }
 
-func GenerateCurrentPath(url string) string {
+// GetContentPath returns the path to the content for a given url, year, week number and week day
+func GetContentPath(url string, year, weekNumber, weekDay int) (string, error) {
+	hash, err := GenerateURLHash(url)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate URL hash: %w", err)
+	}
 
-	// Get the current weekday
-	currentWeekDay := time.Now().Weekday()
+	var runID string
+	if weekDay <= 3 { // Monday, Tuesday, Wednesday
+		runID = constants.FirstRunID
+	} else { // Thursday, Friday, Saturday, Sunday
+		runID = constants.LastRunID
+	}
+
+	path, err := GeneratePath(hash, year, weekNumber, runID)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate path: %w", err)
+	}
+
+	return fmt.Sprintf("text/%s", path), nil
+}
+
+// GeneratePath generates a path for a given hash, year, week number and run id
+func GeneratePath(hash string, year, weekNumber int, runID string) (string, error) {
+	if weekNumber < 1 || weekNumber > 52 {
+		return "", fmt.Errorf("invalid week number: %d", weekNumber)
+	}
+
+	if year < 2000 || year > 2100 {
+		return "", fmt.Errorf("invalid year: %d", year)
+	}
+
+	if runID != constants.FirstRunID && runID != constants.LastRunID {
+		return "", fmt.Errorf("invalid run ID: %s", runID)
+	}
+
+	// Generates a path that sorts in reverse chronological order
+	// This is useful for listing the most recent content first
+	reverseYear := 9999 - year
+	reverseWeek := 53 - weekNumber // 53 since ISO weeks go from 1-53
+	reverseRun := constants.LastRunID
+	if runID == constants.LastRunID {
+		reverseRun = constants.FirstRunID // Reverse the run IDs too
+	}
+
+	return fmt.Sprintf("%s/%04d-%02d-%s", hash, reverseYear, reverseWeek, reverseRun), nil
+}
+
+// GetCurrentScreenshotPath returns the path to the current screenshot for a given url
+func GetCurrentScreenshotPath(url string) (string, error) {
+	hash, err := GenerateURLHash(url)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate URL hash: %w", err)
+	}
+
+	year, weekNumber, runID := getCurrentTimeComponents()
+	path, err := GeneratePath(hash, year, weekNumber, runID)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate path: %w", err)
+	}
+
+	return fmt.Sprintf("images/%s", path), nil
+}
+
+// GetCurrentContentPath returns the path to the current content for a given url
+func GetCurrentContentPath(url string) (string, error) {
+	hash, err := GenerateURLHash(url)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate URL hash: %w", err)
+	}
+
+	year, weekNumber, runID := getCurrentTimeComponents()
+	path, err := GeneratePath(hash, year, weekNumber, runID)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate path: %w", err)
+	}
+
+	return fmt.Sprintf("text/%s", path), nil
+}
+
+// GetPreviousScreenshotPath returns the path to the previous screenshot for a given url
+func GetPreviousScreenshotPath(url string) (string, error) {
+	hash, err := GenerateURLHash(url)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate URL hash: %w", err)
+	}
+
+	year, weekNumber, runID := getPreviousTimeComponents()
+	path, err := GeneratePath(hash, year, weekNumber, runID)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate path: %w", err)
+	}
+
+	return fmt.Sprintf("images/%s", path), nil
+}
+
+// GetPreviousContentPath returns the path to the previous content for a given url
+func GetPreviousContentPath(url string) (string, error) {
+	hash, err := GenerateURLHash(url)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate URL hash: %w", err)
+	}
+
+	year, weekNumber, runID := getPreviousTimeComponents()
+	path, err := GeneratePath(hash, year, weekNumber, runID)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate path: %w", err)
+	}
+
+	return fmt.Sprintf("text/%s", path), nil
+}
+
+// getCurrentTimeComponents returns the current year, week number, and run ID
+func getCurrentTimeComponents() (year, weekNumber int, runID string) {
+	now := time.Now()
+	year, weekNumber = now.ISOWeek()
+
+	currentWeekDay := now.Weekday()
 	if currentWeekDay == 0 { // Convert Sunday (0) to 7
 		currentWeekDay = 7
 	}
 
-	// Bucket the current weekday into a runID
-	var runID string
-	if currentWeekDay <= 3 { // Monday, Tuesday, Wednesday
+	if int(currentWeekDay) <= 3 { // Monday, Tuesday, Wednesday
 		runID = constants.FirstRunID
 	} else { // Thursday, Friday, Saturday, Sunday
 		runID = constants.LastRunID
 	}
 
-	// Generate a week number
-	_, currentWeekNumber := time.Now().ISOWeek()
-	weekNumber := fmt.Sprintf("%d", currentWeekNumber)
-
-	// Generate the path using the url, week number and runID
-	return GeneratePath(url, weekNumber, runID)
+	return year, weekNumber, runID
 }
 
-func GeneratePreviousPath(url string) string {
-	// Get the current weekday
-	currentWeekday := time.Now().Weekday()
-	if currentWeekday == 0 { // Convert Sunday (0) to 7
-		currentWeekday = 7
+// getPreviousTimeComponents returns the previous year, week number, and run ID
+func getPreviousTimeComponents() (year, weekNumber int, runID string) {
+	now := time.Now()
+	currentYear, currentWeek := now.ISOWeek()
+
+	currentWeekDay := now.Weekday()
+	if currentWeekDay == 0 { // Convert Sunday (0) to 7
+		currentWeekDay = 7
 	}
 
-	// Bucket the current weekday into a runID
-	var prevRunID string
-	if currentWeekday <= 3 { // Monday, Tuesday, Wednesday
-		prevRunID = constants.LastRunID
-	} else { // Thursday, Friday, Saturday, Sunday
-		prevRunID = constants.FirstRunID
-	}
-
-	// Generate a week number
-	_, week := time.Now().ISOWeek()
-
-	// Calculate the previous runID and weekNumber
-	var prevWeek string
-	var prevRun string
-
-	// If the current runID is the last run of the current week
-	// then the previous runID is the first run of the current week
-	if prevRunID == constants.LastRunID {
-		prevWeek = fmt.Sprintf("%02d", week)
-	} else {
-		// If the current runID is the first run of the current week
-		// then the previous runID is the last run of the previous week
-
-		// Perform a wrap around to week 52 if the current week is 1
-		if week > 1 {
-			prevWeek = fmt.Sprintf("%02d", week-1)
+	if int(currentWeekDay) <= 3 { // Monday, Tuesday, Wednesday
+		runID = constants.LastRunID
+		if currentWeek > 1 {
+			year = currentYear
+			weekNumber = currentWeek - 1
 		} else {
-			prevWeek = "52" // Wrap around to week 52
+			year = currentYear - 1
+			weekNumber = 52
 		}
+	} else { // Thursday, Friday, Saturday, Sunday
+		runID = constants.FirstRunID
+		year = currentYear
+		weekNumber = currentWeek
 	}
 
-	// Generate the path
-	return GeneratePath(url, prevWeek, prevRun)
+	return year, weekNumber, runID
 }
