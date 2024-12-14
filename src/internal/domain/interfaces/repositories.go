@@ -75,3 +75,12 @@ type URLRepository interface {
 	// URLExists: checks if a URL exists
 	URLExists(ctx context.Context, url string) (*models.URL, bool, error)
 }
+
+type WorkflowRepository interface {
+	// SetStatus checkpoints the status of a workflow
+	SetStatus(ctx context.Context, id *models.WorkflowIdentifier, status models.WorkflowStatus, batchID *string) error
+	// GetStatus retrieves the status of a workflow
+	GetStatus(ctx context.Context, id *models.WorkflowIdentifier) (*models.WorkflowResponse, error)
+	// ListWorkflows lists all workflows
+	ListWorkflows(ctx context.Context, limit int) ([]models.WorkflowResponse, int, error)
+}
