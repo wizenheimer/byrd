@@ -12,6 +12,7 @@ type Config struct {
 	Database    DatabaseConfig
 	Storage     StorageConfig
 	Services    ServicesConfig
+	Workflow    WorkflowConfig
 }
 
 type ServerConfig struct {
@@ -62,6 +63,27 @@ type ServicesConfig struct {
 	ResendAPIKey            string
 }
 
+type WorkflowConfig struct {
+	// SlackAlertToken is the token for the Slack alert
+	SlackAlertToken string
+	// SlackWorkflowChannelId is the channel ID for the workflow updates
+	SlackWorkflowChannelId string
+	// SlackBackendChannelId is the channel ID for the backend updates
+	SlackBackendChannelId string
+	// RedisAddr is the address of the Redis server
+	RedisAddr string
+	// RedisPassword is the password for the Redis server
+	RedisPassword string
+	// RedisDB is the database number for the Redis server
+	RedisDB int
+	// WorkflowTTL is the time-to-live for the workflow
+	WorkflowTTL time.Duration
+	// WorkflowPrefix is the prefix for the workflow
+	WorkflowPrefix string
+	// WorkflowScanRange is the maximum number of workflows to scan as default
+	WorkflowScanRange int
+}
+
 func Load() (*Config, error) {
 	// Load environment variables from a .env file.
 	if err := LoadEnv(); err != nil {
@@ -83,12 +105,16 @@ func Load() (*Config, error) {
 	// Load services configuration.
 	servicesConfig := LoadServicesConfig()
 
+	// Load workflow configuration.
+	workflowConfig := LoadWorkflowConfig()
+
 	return &Config{
 		Environment: environmentConfig,
 		Server:      serverConfig,
 		Database:    databaseConfig,
 		Storage:     storageConfig,
 		Services:    servicesConfig,
+		Workflow:    workflowConfig,
 	}, nil
 }
 
@@ -165,5 +191,28 @@ func LoadServicesConfig() ServicesConfig {
 		OpenAIKey: GetEnv("OPENAI_API_KEY", "", parser.StrParser),
 		// ResendAPIKey is set to the value of the RESEND_API_KEY environment variable, or "" if the variable is not set.
 		ResendAPIKey: GetEnv("RESEND_API_KEY", "", parser.StrParser),
+	}
+}
+
+func LoadWorkflowConfig() WorkflowConfig {
+	// Load workflow configuration.
+	return WorkflowConfig{
+		// SlackAlertToken is set to the value of the SLACK_ALERT_TOKEN environment variable, or "" if the variable is not set.
+		SlackAlertToken: GetEnv("SLACK_ALERT_TOKEN", "", parser.StrParser),
+		// SlackWorkflowChannelId is set to the value of the SLACK_WORKFLOW_CHANNEL_ID environment variable, or "" if the variable is not set.
+		SlackWorkflowChannelId: GetEnv("SLACK_WORKFLOW_CHANNEL_ID", "", parser.StrParser),
+		// SlackBackendChannelId is set to the value of the SLACK_BACKEND_CHANNEL_ID environment variable, or "" if the variable is not set.
+		SlackBackendChannelId: GetEnv("SLACK_BACKEND_CHANNEL_ID", "", parser.StrParser),
+		// RedisAddr is set to the value of the REDIS_ADDR environment variable, or "" if the variable is not set.
+		RedisAddr: GetEnv("REDIS_ADDR", "", parser.StrParser),
+		// RedisPassword is set to the value of the REDIS_PASSWORD environment variable, or "" if the variable is not set.
+		RedisPassword: GetEnv("REDIS_PASSWORD", "", parser.StrParser),
+		// RedisDB is set to the value of the REDIS_DB environment variable, or 0 if the variable is not set.
+		RedisDB: GetEnv("REDIS_DB", 0, parser.IntParser),
+		// RedisConnectionStr is set to the value of the REDIS_CONNECTION_STR environment variable, or "" if the variable is not set.
+		// WorkflowTTL is set to the value of the WORKFLOW_TTL environment variable, or 4 days if the variable is not set.
+		WorkflowTTL: time.Duration(GetEnv("WORKFLOW_TTL", 4*24*60, parser.IntParser)) * time.Second,
+		// WorkflowPrefix is set to the value of the WORKFLOW_PREFIX environment variable, or "workflow" if the variable is not set.
+		WorkflowPrefix: GetEnv("WORKFLOW_PREFIX", "workflow", parser.StrParser),
 	}
 }

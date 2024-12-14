@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/redis/go-redis/v9"
 	"github.com/wizenheimer/iris/src/internal/api/routes"
 	"github.com/wizenheimer/iris/src/internal/client"
 	"github.com/wizenheimer/iris/src/internal/config"
@@ -17,6 +18,7 @@ import (
 	"github.com/wizenheimer/iris/src/internal/service/notification"
 	"github.com/wizenheimer/iris/src/internal/service/screenshot"
 	"github.com/wizenheimer/iris/src/internal/service/url"
+	"github.com/wizenheimer/iris/src/internal/service/workflow"
 	"github.com/wizenheimer/iris/src/pkg/logger"
 	"go.uber.org/zap"
 )
@@ -85,6 +87,11 @@ func initializer(cfg *config.Config, sqlDb *sql.DB, logger *logger.Logger) (*rou
 		return nil, err
 	}
 
+	workflowService, err := setupWorkflowService(cfg, logger)
+	if err != nil {
+		return nil, err
+	}
+
 	// Initialize handlers
 	handlers := routes.NewHandlerContainer(
 		screenshotService,
@@ -92,10 +99,41 @@ func initializer(cfg *config.Config, sqlDb *sql.DB, logger *logger.Logger) (*rou
 		diffService,
 		competitorService,
 		notificationService,
+		workflowService,
 		logger,
 	)
 
 	return handlers, nil
+}
+
+func setupWorkflowService(cfg *config.Config, logger *logger.Logger) (interfaces.WorkflowService, error) {
+	logger.Debug("setting up workflow service", zap.Any("workflow_config", cfg.Workflow))
+
+	if cfg.Workflow.RedisAddr == "" {
+		logger.Warn("Redis URL is empty")
+	}
+
+	if cfg.Workflow.WorkflowPrefix == "" {
+		logger.Warn("Prefix is empty")
+	}
+
+	// Create a new redis client
+	redisClient := redis.NewClient(
+		&redis.Options{
+			Addr:     cfg.Workflow.RedisAddr,
+			Password: cfg.Workflow.RedisPassword,
+			DB:       cfg.Workflow.RedisDB,
+		},
+	)
+
+	// Create a new workflow repository
+	workflowRepo, err := db.NewRedisWorkflowRepository(redisClient, cfg.Workflow.WorkflowTTL, cfg.Workflow.WorkflowPrefix, logger)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create a new workflow service
+	return workflow.NewWorkflowService(workflowRepo, logger), nil
 }
 
 func setupURLService(sqlDb *sql.DB, logger *logger.Logger) (interfaces.URLService, error) {
