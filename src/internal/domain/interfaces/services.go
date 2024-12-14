@@ -67,3 +67,14 @@ type URLService interface {
 	// URLExists: checks if a URL exists
 	URLExists(ctx context.Context, url string) (bool, error)
 }
+
+type WorkflowService interface {
+	// StartWorkflow starts a new workflow
+	StartWorkflow(ctx context.Context, req models.WorkflowRequest) (*models.WorkflowResponse, error)
+
+	// GetWorkflow retrieves a workflow
+	GetWorkflow(ctx context.Context, req models.WorkflowRequest) (*models.WorkflowResponse, error)
+
+	// ListWorkflows lists of all workflows
+	ListWorkflows(ctx context.Context, limit int) ([]models.WorkflowResponse, int, error)
+}
