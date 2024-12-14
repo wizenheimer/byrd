@@ -66,9 +66,39 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD:-redis}
+      --appendonly yes
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+    env_file:
+      - .env.development
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-redis}
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redis}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+
 volumes:
   go-mod-cache:
     name: iris_go_mod_cache
+  redis_data:
+    name: iris_redis_data
 
 networks:
   app-network:

@@ -64,6 +64,16 @@ help:
 	@echo "  make build-prod         - Build production Docker images locally"
 	@echo "  make rebuild-prod       - Force rebuild production Docker images locally"
 	@echo "  make build-prod-nocache - Build production Docker images without cache locally"
+	@echo "$(GREEN)Redis Commands:$(RESET)"
+	@echo "  make shell-redis-dev    - Open Redis CLI in development container"
+	@echo "  make shell-redis-prod   - Open Redis CLI in production container"
+	@echo "  make logs-redis-dev     - View development Redis logs"
+	@echo "  make logs-redis-prod    - View production Redis logs"
+	@echo "  make redis-monitor-dev  - Monitor Redis commands in development"
+	@echo "  make redis-monitor-prod - Monitor Redis commands in production"
+	@echo "  make redis-info-dev     - Show Redis server info in development"
+	@echo "  make redis-info-prod    - Show Redis server info in production"
+	@echo "  make redis-flush-dev    - Flush development Redis database (with confirmation)"
 	@echo "$(GREEN)Testing & Linting:$(RESET)"
 	@echo "  make test          - Run tests"
 	@echo "  make lint          - Run linter"
@@ -251,6 +261,57 @@ shell-db-dev:
 shell-db-prod:
 	@echo "$(BLUE)== Opening Shell in Production Database Container ==$(RESET)"
 	$(DOCKER_COMPOSE_PROD) exec db bash
+
+# Redis Commands
+# Redis Commands
+.PHONY: shell-redis-dev
+shell-redis-dev:
+	@echo "$(BLUE)== Opening Redis CLI in Development Redis Container ==$(RESET)"
+	$(DOCKER_COMPOSE_DEV) exec redis redis-cli -a $${REDIS_PASSWORD:-redis}
+
+.PHONY: shell-redis-prod
+shell-redis-prod:
+	@echo "$(BLUE)== Opening Redis CLI in Production Redis Container ==$(RESET)"
+	$(DOCKER_COMPOSE_PROD) exec redis redis-cli -a $${REDIS_PASSWORD:-redis}
+
+.PHONY: logs-redis-dev
+logs-redis-dev:
+	@echo "$(BLUE)== Viewing Development Redis Logs ==$(RESET)"
+	$(DOCKER_COMPOSE_DEV) logs -f redis
+
+.PHONY: logs-redis-prod
+logs-redis-prod:
+	@echo "$(BLUE)== Viewing Production Redis Logs ==$(RESET)"
+	$(DOCKER_COMPOSE_PROD) logs -f redis
+
+.PHONY: redis-monitor-dev
+redis-monitor-dev:
+	@echo "$(BLUE)== Monitoring Development Redis Commands ==$(RESET)"
+	$(DOCKER_COMPOSE_DEV) exec redis redis-cli -a $${REDIS_PASSWORD:-redis} monitor
+
+.PHONY: redis-monitor-prod
+redis-monitor-prod:
+	@echo "$(BLUE)== Monitoring Production Redis Commands ==$(RESET)"
+	$(DOCKER_COMPOSE_PROD) exec redis redis-cli -a $${REDIS_PASSWORD:-redis} monitor
+
+.PHONY: redis-info-dev
+redis-info-dev:
+	@echo "$(BLUE)== Showing Development Redis Info ==$(RESET)"
+	$(DOCKER_COMPOSE_DEV) exec redis redis-cli -a $${REDIS_PASSWORD:-redis} info
+
+.PHONY: redis-info-prod
+redis-info-prod:
+	@echo "$(BLUE)== Showing Production Redis Info ==$(RESET)"
+	$(DOCKER_COMPOSE_PROD) exec redis redis-cli -a $${REDIS_PASSWORD:-redis} info
+
+.PHONY: redis-flush-dev
+redis-flush-dev:
+	@echo "$(RED)== WARNING: Flushing Development Redis Database ==$(RESET)"
+	@read -p "Are you sure? [y/N] " confirm; \
+	if [ "$$confirm" = "y" ] || [ "$$confirm" = "Y" ]; then \
+		$(DOCKER_COMPOSE_DEV) exec redis redis-cli -a $${REDIS_PASSWORD:-redis} flushall; \
+		echo "$(RED)Redis database flushed$(RESET)"; \
+	fi
 
 # Cleanup Commands
 .PHONY: clean-dev
