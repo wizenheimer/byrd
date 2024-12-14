@@ -16,6 +16,7 @@ import (
 	"github.com/wizenheimer/iris/src/internal/service/diff"
 	"github.com/wizenheimer/iris/src/internal/service/notification"
 	"github.com/wizenheimer/iris/src/internal/service/screenshot"
+	"github.com/wizenheimer/iris/src/internal/service/url"
 	"github.com/wizenheimer/iris/src/pkg/logger"
 	"go.uber.org/zap"
 )
@@ -79,9 +80,15 @@ func initializer(cfg *config.Config, sqlDb *sql.DB, logger *logger.Logger) (*rou
 		return nil, err
 	}
 
+	urlService, err := setupURLService(sqlDb, logger)
+	if err != nil {
+		return nil, err
+	}
+
 	// Initialize handlers
 	handlers := routes.NewHandlerContainer(
 		screenshotService,
+		urlService,
 		diffService,
 		competitorService,
 		notificationService,
@@ -89,6 +96,14 @@ func initializer(cfg *config.Config, sqlDb *sql.DB, logger *logger.Logger) (*rou
 	)
 
 	return handlers, nil
+}
+
+func setupURLService(sqlDb *sql.DB, logger *logger.Logger) (interfaces.URLService, error) {
+	logger.Debug("setting up URL service", zap.Any("database", sqlDb.Stats()))
+
+	urlRepo := db.NewURLRepository(sqlDb, logger)
+
+	return url.NewURLService(urlRepo, logger)
 }
 
 func setupScreenshotService(cfg *config.Config, screenshotHTTPClient client.HTTPClient, logger *logger.Logger) (interfaces.ScreenshotService, error) {
