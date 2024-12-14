@@ -9,6 +9,7 @@ import (
 
 type HandlerContainer struct {
 	ScreenshotHandler   *handlers.ScreenshotHandler
+	WorkflowHandler     *handlers.WorkflowHandler
 	DiffHandler         *handlers.DiffHandler
 	CompetitorHandler   *handlers.CompetitorHandler
 	NotificationHandler *handlers.NotificationHandler
@@ -21,11 +22,14 @@ func NewHandlerContainer(
 	diffService interfaces.DiffService,
 	competitorService interfaces.CompetitorService,
 	notificationService interfaces.NotificationService,
+	workflowService interfaces.WorkflowService,
 	logger *logger.Logger,
 ) *HandlerContainer {
 	return &HandlerContainer{
 		// Handlers for screenshot management
 		ScreenshotHandler: handlers.NewScreenshotHandler(screenshotService, logger),
+		// Handlers for workflow management
+		WorkflowHandler: handlers.NewWorkflowHandler(workflowService, logger),
 		// Handlers for URL management
 		URLHandler:          handlers.NewURLHandler(urlService, logger),
 		DiffHandler:         handlers.NewDiffHandler(diffService, logger),
@@ -49,6 +53,12 @@ func SetupRoutes(app *fiber.App, handlers *HandlerContainer) {
 	url.Post("/", handlers.URLHandler.AddURL)
 	url.Get("/", handlers.URLHandler.ListURLs)
 	url.Delete("/", handlers.URLHandler.DeleteURL)
+
+	// Workflow routes
+	workflow := api.Group("/workflow")
+	workflow.Post("/", handlers.WorkflowHandler.StartWorkflow)
+	workflow.Get("/", handlers.WorkflowHandler.ListWorkflows)
+	workflow.Get("/status", handlers.WorkflowHandler.GetWorkflow)
 
 	// Diff routes
 	diff := api.Group("/diff")
