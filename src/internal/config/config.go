@@ -78,8 +78,6 @@ type WorkflowConfig struct {
 	RedisDB int
 	// WorkflowTTL is the time-to-live for the workflow
 	WorkflowTTL time.Duration
-	// WorkflowPrefix is the prefix for the workflow
-	WorkflowPrefix string
 	// WorkflowScanRange is the maximum number of workflows to scan as default
 	WorkflowScanRange int
 }
@@ -212,7 +210,5 @@ func LoadWorkflowConfig() WorkflowConfig {
 		// RedisConnectionStr is set to the value of the REDIS_CONNECTION_STR environment variable, or "" if the variable is not set.
 		// WorkflowTTL is set to the value of the WORKFLOW_TTL environment variable, or 4 days if the variable is not set.
 		WorkflowTTL: time.Duration(GetEnv("WORKFLOW_TTL", 4*24*60, parser.IntParser)) * time.Second,
-		// WorkflowPrefix is set to the value of the WORKFLOW_PREFIX environment variable, or "workflow" if the variable is not set.
-		WorkflowPrefix: GetEnv("WORKFLOW_PREFIX", "workflow", parser.StrParser),
 	}
 }
