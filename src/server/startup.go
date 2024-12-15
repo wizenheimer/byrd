@@ -135,9 +135,17 @@ func setupWorkflowService(cfg *config.Config, screenshotService interfaces.Scree
 	clientConfig := models.DefaultSlackConfig()
 	clientConfig.Token = cfg.Workflow.SlackAlertToken
 	clientConfig.ChannelID = cfg.Workflow.SlackWorkflowChannelId
-	slackWorkflowClient, err := alert.NewSlackWorkflowClient(clientConfig, logger)
-	if err != nil {
-		return nil, err
+
+	var alertClient client.WorkflowAlertClient
+	if cfg.Environment.EnvProfile == "development" {
+		logger.Debug("Using local workflow alert client")
+		alertClient = alert.NewLocalWorkflowClient(clientConfig, logger)
+	} else {
+		slackWorkflowClient, err := alert.NewSlackWorkflowClient(clientConfig, logger)
+		if err != nil {
+			return nil, err
+		}
+		alertClient = slackWorkflowClient
 	}
 
 	// Create a new workflow executor
@@ -145,7 +153,7 @@ func setupWorkflowService(cfg *config.Config, screenshotService interfaces.Scree
 
 	// Create a new workflow service
 	// TODO: replace screenshotExecutor with reportExecutor
-	return workflow.NewWorkflowService(workflowRepo, slackWorkflowClient, screenshotExecutor, nil, logger), nil
+	return workflow.NewWorkflowService(workflowRepo, alertClient, screenshotExecutor, nil, logger)
 }
 
 func setupURLService(sqlDb *sql.DB, logger *logger.Logger) (interfaces.URLService, error) {
