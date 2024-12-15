@@ -34,4 +34,7 @@ type WorkflowAlertClient interface {
 
 	// SendWorkflowCompleted sends a notification that a workflow has completed
 	SendWorkflowCompleted(ctx context.Context, id models.WorkflowIdentifier, metadata map[string]string) error
+
+	// SendWorkflowCompleted sends a notification that a workflow has cancelled
+	SendWorkflowCancelled(ctx context.Context, id models.WorkflowIdentifier, metadata map[string]string) error
 }
