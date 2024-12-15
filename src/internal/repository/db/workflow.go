@@ -27,7 +27,7 @@ func NewRedisWorkflowRepository(client *redis.Client, ttl time.Duration, logger 
 	}
 
 	// Verify connection on startup
-	if err := repo.CheckConnection(context.Background()); err != nil {
+	if err := repo.checkConnection(context.Background()); err != nil {
 		return nil, fmt.Errorf("failed to connect to Redis: %w", err)
 	}
 
@@ -36,6 +36,8 @@ func NewRedisWorkflowRepository(client *redis.Client, ttl time.Duration, logger 
 
 // SetStatus implements WorkflowRepository.SetStatus
 func (r *RedisWorkflowRepository) SetStatus(ctx context.Context, id *models.WorkflowIdentifier, status models.WorkflowStatus, batchID *string, stage *int) error {
+	r.logger.Debug("setting workflow status", zap.String("status", string(status)), zap.Any("id", id), zap.Any("batchID", batchID), zap.Any("stage", stage))
+
 	// Create workflow response object
 	checkpoint := models.Checkpoint{
 		BatchID: batchID,
@@ -49,12 +51,13 @@ func (r *RedisWorkflowRepository) SetStatus(ctx context.Context, id *models.Work
 	}
 
 	// Set workflow status with TTL
-	prefix := models.GetWorkflowPrefixFromWorkflowType(id.Type)
+	prefix := id.Type.Prefix()
 	key := id.Serialize(prefix, status)
 	if err := r.client.Set(ctx, key, checkpointJSON, r.workflowTTL).Err(); err != nil {
 		return fmt.Errorf("failed to set workflow status: %w", err)
 	}
 
+	r.logger.Debug("set workflow status", zap.String("key", key), zap.Any("value", checkpoint))
 	return nil
 }
 
@@ -62,21 +65,24 @@ func (r *RedisWorkflowRepository) SetStatus(ctx context.Context, id *models.Work
 func (r *RedisWorkflowRepository) GetStatus(ctx context.Context, id *models.WorkflowIdentifier) (*models.WorkflowResponse, error) {
 	possibleStatus := []models.WorkflowStatus{
 		models.WorkflowStatusRunning,
+		// models.WorkflowStatusPending, // Pending workflows are not stored in Redis
 		models.WorkflowStatusCompleted,
 		models.WorkflowStatusFailed,
+		models.WorkflowStatusAborted,
+		// models.WorkflowStatusExpired, // Expired workflows are not stored in Redis
 	}
 
 	// Iterate through possible statuses
-	var workflowJSON []byte
+	var checkpointJSON []byte
 	var err error
 	var workflowKey string
-	prefix := models.GetWorkflowPrefixFromWorkflowType(id.Type)
+	prefix := id.Type.Prefix()
 	for _, status := range possibleStatus {
 		// Serialize the workflow identifier
 		key := id.Serialize(prefix, status)
 
 		// Get workflow data
-		workflowJSON, err = r.client.Get(ctx, key).Bytes()
+		checkpointJSON, err = r.client.Get(ctx, key).Bytes()
 		if err != nil {
 			if err == redis.Nil {
 				// Key doesn't exist or has expired
@@ -86,13 +92,33 @@ func (r *RedisWorkflowRepository) GetStatus(ctx context.Context, id *models.Work
 		} else {
 			// Key exists
 			workflowKey = key
+			r.logger.Debug("found workflow", zap.String("key", key), zap.String("status", string(status)))
 			break
 		}
 	}
 
+	// Check if the workflow was found
+	if workflowKey == "" {
+		// Check if week number is greater than the current week number
+		_, currentWeekNumber := time.Now().UTC().ISOWeek()
+		status := models.WorkflowStatusExpired
+		if id.WeekNumber > currentWeekNumber {
+			status = models.WorkflowStatusPending
+		}
+		return &models.WorkflowResponse{
+			Type:         id.Type,
+			Year:         id.Year,
+			WeekNumber:   id.WeekNumber,
+			BucketNumber: id.BucketNumber,
+			BatchID:      nil,
+			Stage:        nil,
+			Status:       status,
+		}, nil
+	}
+
 	// Unmarshal workflow data
 	checkpoint := &models.Checkpoint{}
-	if err := json.Unmarshal(workflowJSON, checkpoint); err != nil {
+	if err := json.Unmarshal(checkpointJSON, checkpoint); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal workflow: %w", err)
 	}
 
@@ -117,12 +143,12 @@ func (r *RedisWorkflowRepository) GetStatus(ctx context.Context, id *models.Work
 }
 
 // ListWorkflows implements WorkflowRepository.ListWorkflows
-func (r *RedisWorkflowRepository) ListWorkflows(ctx context.Context, status models.WorkflowStatus, limit int) ([]models.WorkflowResponse, int, error) {
+func (r *RedisWorkflowRepository) ListWorkflows(ctx context.Context, status models.WorkflowStatus, workflowType models.WorkflowType, limit int) ([]models.WorkflowResponse, int, error) {
 	var cursor uint64
 	var total int
 	var workflows []models.WorkflowResponse
-	prefix := models.GetWorkflowPrefixFromWorkflowType(models.ScreenshotWorkflowType)
-	pattern := fmt.Sprintf("%s-%v-*", prefix, status)
+	prefix := workflowType.Prefix()
+	pattern := fmt.Sprintf("%s-%v-%s-*", prefix, status, workflowType)
 
 	// If limit is negative, set it to 0
 	// This will return all workflows
@@ -150,8 +176,8 @@ func (r *RedisWorkflowRepository) ListWorkflows(ctx context.Context, status mode
 			}
 
 			// Process results
-			for _, cmd := range cmds {
-				workflowJSON, err := cmd.Bytes()
+			for index, cmd := range cmds {
+				checkpointJSON, err := cmd.Bytes()
 				if err == redis.Nil {
 					// Skip expired workflows
 					continue
@@ -160,9 +186,27 @@ func (r *RedisWorkflowRepository) ListWorkflows(ctx context.Context, status mode
 					continue // Skip workflows that can't be retrieved
 				}
 
-				workflow := models.WorkflowResponse{}
-				if err := json.Unmarshal(workflowJSON, &workflow); err != nil {
+				checkpoint := models.Checkpoint{}
+				if err := json.Unmarshal(checkpointJSON, &checkpoint); err != nil {
 					continue // Skip workflows that can't be unmarshaled
+				}
+
+				// Parse workflow ID
+				identifier, _, status, err := models.ParseWorkflowID(keys[index])
+				if err != nil {
+					r.logger.Error("failed to parse workflow ID", zap.Error(err), zap.Any("key", keys[index]), zap.Any("value", checkpointJSON))
+					continue // Skip workflows that can't be parsed
+				}
+
+				// Create workflow response object
+				workflow := models.WorkflowResponse{
+					Type:         identifier.Type,
+					Year:         identifier.Year,
+					WeekNumber:   identifier.WeekNumber,
+					BucketNumber: identifier.BucketNumber,
+					BatchID:      checkpoint.BatchID,
+					Stage:        checkpoint.Stage,
+					Status:       status,
 				}
 
 				workflows = append(workflows, workflow)
@@ -185,8 +229,28 @@ func (r *RedisWorkflowRepository) ListWorkflows(ctx context.Context, status mode
 	return workflows, total, nil
 }
 
+// StopWorkflow implements WorkflowRepository.StopWorkflow
+func (r *RedisWorkflowRepository) StopWorkflow(ctx context.Context, id *models.WorkflowIdentifier) error {
+	r.logger.Debug("stopping workflow", zap.Any("id", id))
+
+	// Removing the workflow key will effectively stop the workflow
+	prefix := id.Type.Prefix()
+	key := id.Serialize(prefix, models.WorkflowStatusRunning)
+	err := r.client.Del(ctx, key).Err()
+	if err == redis.Nil {
+		return nil
+	}
+
+	if err != nil {
+		return fmt.Errorf("failed to stop workflow: %w", err)
+	}
+
+	// Now that the workflow is stopped, create a new key with status as aborted
+	return r.SetStatus(ctx, id, models.WorkflowStatusAborted, nil, nil)
+}
+
 // CheckConnection verifies the Redis connection is healthy
-func (r *RedisWorkflowRepository) CheckConnection(ctx context.Context) error {
+func (r *RedisWorkflowRepository) checkConnection(ctx context.Context) error {
 	// Set timeout for health check
 	timeoutCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()

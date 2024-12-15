@@ -82,5 +82,7 @@ type WorkflowRepository interface {
 	// GetStatus retrieves the status of a workflow
 	GetStatus(ctx context.Context, id *models.WorkflowIdentifier) (*models.WorkflowResponse, error)
 	// ListWorkflows lists all workflows
-	ListWorkflows(ctx context.Context, status models.WorkflowStatus, limit int) ([]models.WorkflowResponse, int, error)
+	ListWorkflows(ctx context.Context, workflowStatus models.WorkflowStatus, workflowType models.WorkflowType, limit int) ([]models.WorkflowResponse, int, error)
+	// StopWorkflow stops a workflow
+	StopWorkflow(ctx context.Context, id *models.WorkflowIdentifier) error
 }
