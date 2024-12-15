@@ -53,6 +53,7 @@ func (e *screenshotExecutor) Start(ctx context.Context, workflowID *models.Workf
 		defer close(errorChan)
 		e.logger.Debug("Executing workflow", zap.Any("workflow_id", workflowID), zap.Any("job_id", jobID), zap.Any("checkpoint", checkpoint))
 		e.execute(ctx, updateChan, errorChan, &checkpoint)
+		e.sendCompletionAlert(workflowID, updateChan)
 	}()
 
 	return updateChan, errorChan
@@ -74,8 +75,25 @@ func (e *screenshotExecutor) Recover(ctx context.Context, workflowID *models.Wor
 		defer close(errorChan)
 		e.logger.Debug("Recovering workflow", zap.Any("workflow_id", workflowID), zap.Any("executor_id", executorID), zap.Any("checkpoint", checkpoint))
 		e.execute(ctx, updateChan, errorChan, checkpoint)
+		e.sendCompletionAlert(workflowID, updateChan)
 	}()
 	return updateChan, errorChan
+}
+
+func (e *screenshotExecutor) sendCompletionAlert(workflowID *models.WorkflowIdentifier, updateChan chan models.WorkflowUpdate) {
+	e.logger.Debug("Sending completion alert", zap.Any("workflow_id", workflowID))
+	// Implement sending completion alert here
+	update := models.WorkflowUpdate{
+		ID:         workflowID,
+		Checkpoint: nil,
+		Timestamp:  time.Now(),
+		Status:     models.WorkflowStatusCompleted,
+	}
+
+	e.logger.Debug("Sending completion alert", zap.Any("workflow_id", workflowID))
+	// Send the update to the update channel
+	updateChan <- update
+	e.logger.Debug("Sent completion alert", zap.Any("workflow_id", workflowID))
 }
 
 // Stop stops the workflow

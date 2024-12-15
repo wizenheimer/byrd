@@ -155,8 +155,8 @@ const (
 )
 
 const (
-	ScreenshotWorkflowRepositoryPrefix string = "workflow_screenshot"
-	ReportWorkflowRepositoryPrefix     string = "workflow_report"
+	ScreenshotWorkflowRepositoryPrefix string = "sswf"
+	ReportWorkflowRepositoryPrefix     string = "rpwf"
 )
 
 func (wt WorkflowType) Prefix() string {
