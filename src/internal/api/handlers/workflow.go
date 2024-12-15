@@ -92,26 +92,62 @@ func (h *WorkflowHandler) GetWorkflow(c *fiber.Ctx) error {
 // ListWorkflows lists all workflows
 func (h *WorkflowHandler) ListWorkflows(c *fiber.Ctx) error {
 	limit := c.Query("limit", "100")
-	status := c.Query("status", "running")
+	status := c.Query("status", "all")
+	workflowTypeString := c.Query("type", "screenshot")
+
+	// Parse the workflow type
+	workflowType, err := models.ParseWorkflowType(workflowTypeString)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
 
 	limitInt, err := strconv.Atoi(limit)
 	if err != nil {
 		limitInt = 100
 	}
+
+	workflowStatusList := make([]models.WorkflowStatus, 0)
+
+	// Parse the workflow status
+	if status == "all" {
+		workflowStatusList = append(workflowStatusList, models.WorkflowStatusPending, models.WorkflowStatusRunning, models.WorkflowStatusCompleted, models.WorkflowStatusFailed, models.WorkflowStatusAborted)
+	} else {
+		workflowStatus, err := models.ParseWorkflowStatus(status)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": err.Error(),
+			})
+		}
+		workflowStatusList = append(workflowStatusList, workflowStatus)
+	}
+
 	// List all workflows
-	workflows, count, err := h.workflowService.ListWorkflows(c.Context(), status, limitInt)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": err.Error(),
-		})
+	responses := make([]models.WorkflowListResponse, 0)
+	for _, workflowStatus := range workflowStatusList {
+
+		workflows, count, err := h.workflowService.ListWorkflows(c.Context(), workflowStatus, workflowType, limitInt)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": err.Error(),
+			})
+		}
+
+		if len(workflows) == 0 {
+			workflows = make([]models.WorkflowResponse, 0)
+		}
+
+		response := models.WorkflowListResponse{
+			Workflows:      workflows,
+			Total:          count,
+			WorkflowStatus: workflowStatus,
+		}
+
+		responses = append(responses, response)
 	}
 
-	response := models.WorkflowListResponse{
-		Workflows: workflows,
-		Total:     count,
-	}
-
-	return c.Status(fiber.StatusOK).JSON(response)
+	return c.Status(fiber.StatusOK).JSON(responses)
 }
 
 // RecoverWorkflow recovers workflows from available checkpoints
