@@ -76,7 +76,7 @@ type WorkflowService interface {
 	GetWorkflow(ctx context.Context, req models.WorkflowRequest) (*models.WorkflowResponse, error)
 
 	// ListWorkflows lists of all workflows
-	ListWorkflows(ctx context.Context, status string, scanLimit int) ([]models.WorkflowResponse, int, error)
+	ListWorkflows(context.Context, models.WorkflowStatus, models.WorkflowType, int) ([]models.WorkflowResponse, int, error)
 
 	// RecoverWorkflow recovers a workflow from a checkpoint
 	RecoverWorkflow(ctx context.Context) error

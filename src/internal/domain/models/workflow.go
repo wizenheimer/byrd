@@ -3,69 +3,13 @@ package models
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/wizenheimer/iris/src/pkg/utils/ptr"
 )
-
-type WorkflowRequest struct {
-	// Type is the type of the workflow
-	Type string `json:"type"`
-	// Year is the year of the workflow
-	Year *int `json:"year"`
-	// WeekNumber is the week number of the workflow
-	WeekNumber *int `json:"week_number"`
-	// BucketNumber is the bucket number of the workflow
-	BucketNumber *int `json:"bucket_number"`
-}
-
-func (wr *WorkflowRequest) Validate(safe bool) error {
-	now := time.Now()
-
-	// If the year is not set, set it based on the current year
-	if wr.Year == nil {
-		if safe {
-			// Set current year
-			wr.Year = ptr.To(now.Year())
-		} else {
-			return fmt.Errorf("year is required")
-		}
-	}
-
-	// If the week number is not set, set it based on the current week
-	if wr.WeekNumber == nil {
-		if safe {
-			// Set current week number
-			_, week := now.ISOWeek()
-			wr.WeekNumber = ptr.To(week)
-		} else {
-			return fmt.Errorf("week number is required")
-		}
-	}
-
-	// If the bucket number is not set, set it based on the current day of the week
-	if wr.BucketNumber == nil {
-		if safe {
-			// Set current bucket number
-			currentWeekday := now.Weekday()
-			if currentWeekday == 0 {
-				currentWeekday = 7 // Sunday is 0, but we want it to be 7
-			}
-
-			// Calculate the bucket number
-			if currentWeekday <= 3 { // Monday, Tuesday, Wednesday
-				wr.BucketNumber = ptr.To(1)
-			} else { // Thursday, Friday, Saturday, Sunday
-				wr.BucketNumber = ptr.To(2)
-			}
-		} else {
-			return fmt.Errorf("bucket number is required")
-		}
-	}
-	return nil
-}
 
 // WorkflowStatus represents the status of a workflow
 type WorkflowStatus string
@@ -88,6 +32,47 @@ const (
 	WorkflowStatusExpired WorkflowStatus = "expired"
 )
 
+// String returns the string representation of WorkflowStatus
+func (s WorkflowStatus) String() string {
+	switch s {
+	case WorkflowStatusPending:
+		return "pending"
+	case WorkflowStatusRunning:
+		return "running"
+	case WorkflowStatusCompleted:
+		return "completed"
+	case WorkflowStatusFailed:
+		return "failed"
+	case WorkflowStatusAborted:
+		return "aborted"
+	case WorkflowStatusExpired:
+		return "expired"
+	default:
+		return "unknown"
+	}
+}
+
+// ParseWorkflowStatus converts a string to WorkflowStatus
+func ParseWorkflowStatus(s string) (WorkflowStatus, error) {
+	switch strings.ToLower(s) {
+	case "running":
+		return WorkflowStatusRunning, nil
+	case "expired":
+		return WorkflowStatusExpired, nil
+	case "pending":
+		return WorkflowStatusPending, nil
+	case "completed":
+		return WorkflowStatusCompleted, nil
+	case "failed":
+		return WorkflowStatusFailed, nil
+	case "aborted":
+		return WorkflowStatusAborted, nil
+	default:
+		return WorkflowStatusExpired, fmt.Errorf("invalid workflow status: %s", s)
+	}
+}
+
+// Checkpoint represents a checkpoint for a workflow
 type Checkpoint struct {
 	// BatchID is the checkpointed batch id for the workflow
 	BatchID *string `json:"batch_id"`
@@ -96,13 +81,8 @@ type Checkpoint struct {
 	Stage *int `json:"stage"`
 }
 
-// The WorkflowResponse is sourced from Redis
-// Redis in turn gets populed by the workflow service
-// The workflow service is responsible for synchronizing
-// the local state with Redis
-type WorkflowResponse struct {
-	// Status is the status of the workflow
-	Status WorkflowStatus `json:"status"`
+// WorkflowIdentifier uniquely identifies a workflow
+type WorkflowIdentifier struct {
 	// Type is the type of the workflow
 	Type WorkflowType `json:"type"`
 	// Year is the year of the workflow
@@ -111,69 +91,104 @@ type WorkflowResponse struct {
 	WeekNumber int `json:"week_number"`
 	// BucketNumber is the bucket number of the workflow
 	BucketNumber int `json:"bucket_number"`
-	// BatchID is the checkpointed batch id for the workflow
-	BatchID *string `json:"batch_id"`
-	// nil if not checkpointed
-	// Stage is the stage of the workflow
-	Stage *int `json:"stage"`
-}
-
-type WorkflowListResponse struct {
-	// Workflows is the list of workflows
-	Workflows []WorkflowResponse `json:"workflows"`
-	// Total is the total number of workflows
-	Total int `json:"total"`
-}
-
-// WorkflowIdentifier uniquely identifies a workflow
-type WorkflowIdentifier struct {
-	// Type is the type of the workflow
-	Type WorkflowType
-	// Year is the year of the workflow
-	Year int
-	// WeekNumber is the week number of the workflow
-	WeekNumber int
-	// BucketNumber is the bucket number of the workflow
-	BucketNumber int
 }
 
 // formatWorkflowID creates a consistent string representation
 func (id *WorkflowIdentifier) Serialize(prefix string, status WorkflowStatus) string {
-	return fmt.Sprintf("%s-%v-%s-%d-%d-%d", prefix, status, id.Type, id.Year, id.WeekNumber, id.BucketNumber)
+	return fmt.Sprintf("%s-%s-%s-%d-%d-%d",
+		prefix,
+		status.String(),
+		id.Type.String(),
+		id.Year,
+		id.WeekNumber,
+		id.BucketNumber)
 }
 
 // parseWorkflowID parses the string representation into a WorkflowIdentifier
 func ParseWorkflowID(serialized string) (*WorkflowIdentifier, string, WorkflowStatus, error) {
-	var id WorkflowIdentifier
-	var status WorkflowStatus
-	var prefix string
-	_, err := fmt.Sscanf(serialized, "%s-%v-%v-%d-%d-%d", &prefix, &status, &id.Type, &id.Year, &id.WeekNumber, &id.BucketNumber)
-	if err != nil {
-		return nil, "workflow", WorkflowStatusExpired, fmt.Errorf("failed to parse workflow id: %w", err)
+	parts := strings.Split(serialized, "-")
+	if len(parts) != 6 {
+		return nil, "workflow", WorkflowStatusExpired,
+			fmt.Errorf("invalid workflow id format: expected 6 parts, got %d", len(parts))
 	}
-	return &id, prefix, status, nil
+
+	id := &WorkflowIdentifier{}
+	var err error
+
+	prefix := parts[0]
+	status, err := ParseWorkflowStatus(parts[1]) // You'll need this function
+	if err != nil {
+		return nil, "workflow", WorkflowStatusExpired, fmt.Errorf("invalid status: %w", err)
+	}
+
+	id.Type, err = ParseWorkflowType(parts[2]) // You'll need this function
+	if err != nil {
+		return nil, "workflow", WorkflowStatusExpired, fmt.Errorf("invalid type: %w", err)
+	}
+	id.Year, err = strconv.Atoi(parts[3])
+	if err != nil {
+		return nil, "workflow", WorkflowStatusExpired, fmt.Errorf("invalid year: %w", err)
+	}
+
+	id.WeekNumber, err = strconv.Atoi(parts[4])
+	if err != nil {
+		return nil, "workflow", WorkflowStatusExpired, fmt.Errorf("invalid week number: %w", err)
+	}
+
+	id.BucketNumber, err = strconv.Atoi(parts[5])
+	if err != nil {
+		return nil, "workflow", WorkflowStatusExpired, fmt.Errorf("invalid bucket number: %w", err)
+	}
+
+	return id, prefix, status, nil
 }
 
+// WorkflowType represents the type of a workflow
+// This can be either a screenshot or report workflow
 type WorkflowType string
 
 const (
+	// ScreenshotWorkflowType is the type of workflow that takes screenshots
 	ScreenshotWorkflowType WorkflowType = "screenshot"
-	ReportWorkflowType     WorkflowType = "report"
+	// ReportWorkflowType is the type of workflow that generates reports
+	ReportWorkflowType WorkflowType = "report"
 )
 
 const (
-	ScreenshotWorkflowRepositoryPrefix string = "workflow-screenshot"
-	ReportWorkflowRepositoryPrefix     string = "workflow-report"
+	ScreenshotWorkflowRepositoryPrefix string = "workflow_screenshot"
+	ReportWorkflowRepositoryPrefix     string = "workflow_report"
 )
 
-func GetWorkflowPrefixFromWorkflowType(wfType WorkflowType) string {
-	switch wfType {
+func (wt WorkflowType) Prefix() string {
+	switch wt {
 	case ScreenshotWorkflowType:
 		return ScreenshotWorkflowRepositoryPrefix
 	case ReportWorkflowType:
 		return ReportWorkflowRepositoryPrefix
 	default:
 		return ScreenshotWorkflowRepositoryPrefix
+	}
+}
+
+func (wt WorkflowType) String() string {
+	switch wt {
+	case ScreenshotWorkflowType:
+		return "screenshot"
+	case ReportWorkflowType:
+		return "report"
+	default:
+		return "unknown"
+	}
+}
+
+func ParseWorkflowType(s string) (WorkflowType, error) {
+	switch strings.ToLower(s) {
+	case "screenshot":
+		return ScreenshotWorkflowType, nil
+	case "report":
+		return ReportWorkflowType, nil
+	default:
+		return ScreenshotWorkflowType, fmt.Errorf("invalid workflow type: %s", s)
 	}
 }
 
@@ -212,8 +227,11 @@ type WorkflowError struct {
 
 // WorkflowState to track running workflows
 type WorkflowState struct {
-	Cancel     context.CancelFunc
+	// Cancel is the context cancel function
+	Cancel context.CancelFunc
+	// ExecutorID is the executor id
 	ExecutorID uuid.UUID
-	Status     WorkflowStatus
-	Mutex      sync.RWMutex
+	// Status is the status of the workflow
+	Status WorkflowStatus
+	Mutex  sync.RWMutex
 }
