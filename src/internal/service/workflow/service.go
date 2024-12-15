@@ -495,6 +495,11 @@ func (s *workflowService) handleWorkflowBackgroundProcessing(
 			s.logger.Debug("workflow service-wide shutdown triggered", zap.Any("workflow_id", workflowID), zap.Any("workflow_key", workflowKey), zap.Any("executor_id", executorID))
 
 			s.workflowRepo.SetStatus(backgroundCtx, &workflowID, models.WorkflowStatusAborted, nil, nil)
+
+			s.alertClient.SendWorkflowCancelled(backgroundCtx, workflowID, map[string]string{
+				"workflow_key": workflowKey,
+				"status":       string(models.WorkflowStatusAborted),
+			})
 			return
 
 		case err, ok := <-errorChan:
@@ -509,11 +514,13 @@ func (s *workflowService) handleWorkflowBackgroundProcessing(
 			workflowState.Mutex.Unlock()
 
 			alertParam := map[string]string{
-				"workflowID": workflowKey,
-				"error":      err.Error.Error(),
-				"timestamp":  fmt.Sprintf("%v", err.Timestamp),
+				"worflow_key":  workflowKey,
+				"worflow_type": string(workflowID.Type),
+				"worflow_id":   fmt.Sprintf("%v", workflowID),
+				"executor_id":  fmt.Sprintf("%v", executorID),
+				"error":        err.Error.Error(),
+				"timestamp":    fmt.Sprintf("%v", err.Timestamp),
 			}
-			s.workflowRepo.SetStatus(backgroundCtx, &workflowID, models.WorkflowStatusFailed, nil, nil)
 			s.alertClient.SendWorkflowFailed(backgroundCtx, workflowID, alertParam)
 
 		case update, ok := <-updateChan:
@@ -543,8 +550,8 @@ func (s *workflowService) handleWorkflowBackgroundProcessing(
 			if workflowCtx.Err() == context.Canceled {
 				s.workflowRepo.SetStatus(backgroundCtx, &workflowID, models.WorkflowStatusAborted, nil, nil)
 				alertParam := map[string]string{
-					"workflowID": workflowKey,
-					"status":     string(models.WorkflowStatusAborted),
+					"worflow_key": workflowKey,
+					"status":      string(models.WorkflowStatusAborted),
 				}
 				s.alertClient.SendWorkflowCancelled(backgroundCtx, workflowID, alertParam)
 			}

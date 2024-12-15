@@ -11,6 +11,7 @@ import (
 	"github.com/wizenheimer/iris/src/internal/client"
 	"github.com/wizenheimer/iris/src/internal/domain/models"
 	"github.com/wizenheimer/iris/src/pkg/logger"
+	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 )
 
@@ -43,7 +44,7 @@ func NewSlackAlertClient(config models.SlackConfig, logger *logger.Logger) (clie
 		client:  slack.New(config.Token),
 		config:  config,
 		logger:  logger.WithFields(map[string]interface{}{"module": "slack_alert_client"}),
-		limiter: rate.NewLimiter(rate.Limit(1), 5), // 1 message per second, burst of 5
+		limiter: rate.NewLimiter(1, 30), // 1 message per second, burst of 30
 		recent:  make(map[string]time.Time),
 	}
 
@@ -60,6 +61,7 @@ func (s *slackAlertClient) Send(ctx context.Context, alert models.Alert) error {
 	// Check for duplicates
 	key := fmt.Sprintf("%s-%s-%s", alert.Title, alert.Description, alert.Severity)
 	if s.isDuplicate(key) {
+		s.logger.Debug("skipping duplicate alert", zap.Any("alert", alert))
 		return nil
 	}
 
