@@ -47,7 +47,7 @@ func (e *screenshotExecutor) Start(ctx context.Context, workflowID *models.Workf
 		defer e.activeJobs.Delete(executorID.String())
 		defer close(updateChan)
 		defer close(errorChan)
-		e.Execute(updateChan, errorChan, &checkpoint)
+		e.execute(updateChan, errorChan, &checkpoint)
 	}()
 
 	return updateChan, errorChan
@@ -65,7 +65,7 @@ func (e *screenshotExecutor) Recover(ctx context.Context, workflowID *models.Wor
 		defer e.activeJobs.Delete(executorID.String())
 		defer close(updateChan)
 		defer close(errorChan)
-		e.Execute(updateChan, errorChan, checkpoint)
+		e.execute(updateChan, errorChan, checkpoint)
 	}()
 	return updateChan, errorChan
 }
@@ -106,7 +106,7 @@ func (e *screenshotExecutor) List() map[string]context.Context {
 
 // Execute executes the workflow
 // This is the main logic of the workflow
-func (e *screenshotExecutor) Execute(errorChan chan models.WorkflowUpdate, updateChan chan models.WorkflowError, checkpoint *models.Checkpoint) {
+func (e *screenshotExecutor) execute(errorChan chan models.WorkflowUpdate, updateChan chan models.WorkflowError, checkpoint *models.Checkpoint) {
 	// Implement the workflow logic here
 	step := 0
 	if checkpoint.Stage != nil {
@@ -149,5 +149,5 @@ func (e *screenshotExecutor) Execute(errorChan chan models.WorkflowUpdate, updat
 		return
 	}
 	// Once done, move to the next step
-	e.Execute(errorChan, updateChan, nextCheckpoint)
+	e.execute(errorChan, updateChan, nextCheckpoint)
 }
