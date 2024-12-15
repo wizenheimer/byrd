@@ -2,7 +2,6 @@ package alert
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/wizenheimer/iris/src/internal/client"
@@ -30,12 +29,11 @@ func (s *slackWorkflowClient) SendWorkflowStarted(ctx context.Context, id models
 	if metadata == nil {
 		metadata = make(map[string]string)
 	}
-	metadata["Workflow ID"] = id.Serialize()
 
 	alert := models.WorkflowAlert{
 		Alert: models.Alert{
 			Title:       "Workflow Started",
-			Description: fmt.Sprintf("Workflow %s has started", id.Serialize()),
+			Description: "Workflow has started",
 			Timestamp:   time.Now(),
 			Severity:    models.SeverityInfo,
 			Metadata:    metadata,
@@ -50,12 +48,10 @@ func (s *slackWorkflowClient) SendWorkflowRestarted(ctx context.Context, id mode
 		metadata = make(map[string]string)
 	}
 
-	metadata["Workflow ID"] = id.Serialize()
-
 	alert := models.WorkflowAlert{
 		Alert: models.Alert{
 			Title:       "Workflow Restarted",
-			Description: fmt.Sprintf("Workflow %s has been restarted", id.Serialize()),
+			Description: "Workflow has restarted",
 			Timestamp:   time.Now(),
 			Severity:    models.SeverityWarning,
 			Metadata:    metadata,
@@ -70,12 +66,10 @@ func (s *slackWorkflowClient) SendWorkflowProgress(ctx context.Context, id model
 		metadata = make(map[string]string)
 	}
 
-	metadata["Workflow ID"] = id.Serialize()
-
 	alert := models.WorkflowAlert{
 		Alert: models.Alert{
 			Title:       "Workflow Current Progress",
-			Description: fmt.Sprintf("Workflow %s progress update", id.Serialize()),
+			Description: "Workflow progress update",
 			Timestamp:   time.Now(),
 			Severity:    models.SeverityInfo,
 			Metadata:    metadata,
@@ -90,12 +84,28 @@ func (s *slackWorkflowClient) SendWorkflowCompleted(ctx context.Context, id mode
 		metadata = make(map[string]string)
 	}
 
-	metadata["Workflow ID"] = id.Serialize()
-
 	alert := models.WorkflowAlert{
 		Alert: models.Alert{
 			Title:       "Workflow Completed",
-			Description: fmt.Sprintf("Workflow %s has completed successfully", id.Serialize()),
+			Description: "Workflow marked as complete",
+			Timestamp:   time.Now(),
+			Severity:    models.SeverityInfo,
+			Metadata:    metadata,
+		},
+	}
+	return s.Send(ctx, alert.Alert)
+}
+
+// SendWorkflowCompleted implements WorkflowAlertClient interface
+func (s *slackWorkflowClient) SendWorkflowCancelled(ctx context.Context, id models.WorkflowIdentifier, metadata map[string]string) error {
+	if metadata == nil {
+		metadata = make(map[string]string)
+	}
+
+	alert := models.WorkflowAlert{
+		Alert: models.Alert{
+			Title:       "Workflow Cancelled",
+			Description: "Workflow has been cancelled by host",
 			Timestamp:   time.Now(),
 			Severity:    models.SeverityInfo,
 			Metadata:    metadata,
@@ -110,11 +120,10 @@ func (s *slackWorkflowClient) SendWorkflowFailed(ctx context.Context, id models.
 		metadata = make(map[string]string)
 	}
 
-	metadata["Workflow ID"] = id.Serialize()
 	alert := models.WorkflowAlert{
 		Alert: models.Alert{
 			Title:       "Workflow Failed",
-			Description: fmt.Sprintf("Workflow %s has failed", id.Serialize()),
+			Description: "Workflow has failed",
 			Timestamp:   time.Now(),
 			Severity:    models.SeverityCritical,
 			Metadata:    metadata,

@@ -1,9 +1,12 @@
 package models
 
 import (
+	"context"
 	"fmt"
+	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/wizenheimer/iris/src/pkg/utils/ptr"
 )
 
@@ -64,6 +67,7 @@ func (wr *WorkflowRequest) Validate(safe bool) error {
 	return nil
 }
 
+// WorkflowStatus represents the status of a workflow
 type WorkflowStatus string
 
 const (
@@ -84,6 +88,14 @@ const (
 	WorkflowStatusExpired WorkflowStatus = "expired"
 )
 
+type Checkpoint struct {
+	// BatchID is the checkpointed batch id for the workflow
+	BatchID *string `json:"batch_id"`
+	// nil if not checkpointed
+	// Stage is the stage of the workflow
+	Stage *int `json:"stage"`
+}
+
 // The WorkflowResponse is sourced from Redis
 // Redis in turn gets populed by the workflow service
 // The workflow service is responsible for synchronizing
@@ -92,7 +104,7 @@ type WorkflowResponse struct {
 	// Status is the status of the workflow
 	Status WorkflowStatus `json:"status"`
 	// Type is the type of the workflow
-	Type string `json:"type"`
+	Type WorkflowType `json:"type"`
 	// Year is the year of the workflow
 	Year int `json:"year"`
 	// WeekNumber is the week number of the workflow
@@ -102,6 +114,8 @@ type WorkflowResponse struct {
 	// BatchID is the checkpointed batch id for the workflow
 	BatchID *string `json:"batch_id"`
 	// nil if not checkpointed
+	// Stage is the stage of the workflow
+	Stage *int `json:"stage"`
 }
 
 type WorkflowListResponse struct {
@@ -114,7 +128,7 @@ type WorkflowListResponse struct {
 // WorkflowIdentifier uniquely identifies a workflow
 type WorkflowIdentifier struct {
 	// Type is the type of the workflow
-	Type string
+	Type WorkflowType
 	// Year is the year of the workflow
 	Year int
 	// WeekNumber is the week number of the workflow
@@ -124,16 +138,82 @@ type WorkflowIdentifier struct {
 }
 
 // formatWorkflowID creates a consistent string representation
-func (id *WorkflowIdentifier) Serialize() string {
-	return fmt.Sprintf("%s-%d-%d-%d", id.Type, id.Year, id.WeekNumber, id.BucketNumber)
+func (id *WorkflowIdentifier) Serialize(prefix string, status WorkflowStatus) string {
+	return fmt.Sprintf("%s-%v-%s-%d-%d-%d", prefix, status, id.Type, id.Year, id.WeekNumber, id.BucketNumber)
 }
 
 // parseWorkflowID parses the string representation into a WorkflowIdentifier
-func ParseWorkflowID(serialized string) (*WorkflowIdentifier, error) {
+func ParseWorkflowID(serialized string) (*WorkflowIdentifier, string, WorkflowStatus, error) {
 	var id WorkflowIdentifier
-	_, err := fmt.Sscanf(serialized, "%s-%d-%d-%d", &id.Type, &id.Year, &id.WeekNumber, &id.BucketNumber)
+	var status WorkflowStatus
+	var prefix string
+	_, err := fmt.Sscanf(serialized, "%s-%v-%v-%d-%d-%d", &prefix, &status, &id.Type, &id.Year, &id.WeekNumber, &id.BucketNumber)
 	if err != nil {
-		return nil, err
+		return nil, "workflow", WorkflowStatusExpired, fmt.Errorf("failed to parse workflow id: %w", err)
 	}
-	return &id, nil
+	return &id, prefix, status, nil
+}
+
+type WorkflowType string
+
+const (
+	ScreenshotWorkflowType WorkflowType = "screenshot"
+	ReportWorkflowType     WorkflowType = "report"
+)
+
+const (
+	ScreenshotWorkflowRepositoryPrefix string = "workflow-screenshot"
+	ReportWorkflowRepositoryPrefix     string = "workflow-report"
+)
+
+func GetWorkflowPrefixFromWorkflowType(wfType WorkflowType) string {
+	switch wfType {
+	case ScreenshotWorkflowType:
+		return ScreenshotWorkflowRepositoryPrefix
+	case ReportWorkflowType:
+		return ReportWorkflowRepositoryPrefix
+	default:
+		return ScreenshotWorkflowRepositoryPrefix
+	}
+}
+
+func GetWorkflowTypeFromWorkflowPrefix(prefix string) WorkflowType {
+	switch prefix {
+	case ScreenshotWorkflowRepositoryPrefix:
+		return ScreenshotWorkflowType
+	case ReportWorkflowRepositoryPrefix:
+		return ReportWorkflowType
+	default:
+		return ScreenshotWorkflowType
+	}
+}
+
+// WorkflowUpdate represents a heartbeat or status update from the executor
+type WorkflowUpdate struct {
+	// ID is the identifier of the workflow
+	ID *WorkflowIdentifier `json:"id"`
+	// Checkpoint is the checkpointed batch id for the workflow
+	Checkpoint *Checkpoint `json:"checkpoint"`
+	// Timestamp is the time of the update
+	Timestamp time.Time `json:"timestamp"`
+	// Status is the status of the workflow
+	Status WorkflowStatus `json:"status"`
+}
+
+// WorkflowError represents an error from the executor
+type WorkflowError struct {
+	// ID is the identifier of the workflow
+	ID *WorkflowIdentifier `json:"id"`
+	// Error is the error received
+	Error error `json:"error"`
+	// Timestamp is the time of the error
+	Timestamp time.Time `json:"timestamp"`
+}
+
+// WorkflowState to track running workflows
+type WorkflowState struct {
+	Cancel     context.CancelFunc
+	ExecutorID uuid.UUID
+	Status     WorkflowStatus
+	Mutex      sync.RWMutex
 }

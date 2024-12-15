@@ -122,94 +122,7 @@ func (s *workflowService) StartWorkflow(ctx context.Context, req models.Workflow
 	}, nil
 }
 
-func (s *workflowService) handleWorkflowBackgroundProcessing(
-	workflowID models.WorkflowIdentifier,
-	workflowKey string,
-	executorID uuid.UUID,
-	updateChan <-chan models.WorkflowUpdate,
-	errorChan <-chan models.WorkflowError,
-) {
-	// Create background context
-	backgroundCtx := context.Background()
-	workflowCtx, cancel := context.WithCancel(backgroundCtx)
-
-	// Initialize workflow state
-	workflowState := &models.WorkflowState{
-		Cancel:     cancel,
-		ExecutorID: executorID,
-		Status:     models.WorkflowStatusRunning,
-	}
-
-	// Register workflow
-	s.workflowsMu.Lock()
-	s.activeWorkflows[workflowKey] = workflowState
-	s.workflowsMu.Unlock()
-
-	// Cleanup on exit
-	defer func() {
-		cancel()
-		s.workflowsMu.Lock()
-		delete(s.activeWorkflows, workflowKey)
-		s.workflowsMu.Unlock()
-	}()
-
-	for {
-		select {
-		case <-s.serviceCtx.Done():
-			// Service-wide shutdown
-			s.workflowRepo.SetStatus(backgroundCtx, &workflowID, models.WorkflowStatusAborted, nil, nil)
-			return
-
-		case err, ok := <-errorChan:
-			if !ok {
-				return
-			}
-
-			workflowState.Mutex.Lock()
-			workflowState.Status = models.WorkflowStatusFailed
-			workflowState.Mutex.Unlock()
-
-			alertParam := map[string]string{
-				"workflowID": workflowKey,
-				"error":      err.Error.Error(),
-				"timestamp":  fmt.Sprintf("%v", err.Timestamp),
-			}
-			s.workflowRepo.SetStatus(backgroundCtx, &workflowID, models.WorkflowStatusFailed, nil, nil)
-			s.alertClient.SendWorkflowFailed(backgroundCtx, workflowID, alertParam)
-
-		case update, ok := <-updateChan:
-			if !ok {
-				return
-			}
-
-			workflowState.Mutex.Lock()
-			workflowState.Status = update.Status
-			workflowState.Mutex.Unlock()
-
-			s.workflowRepo.SetStatus(backgroundCtx, &workflowID, update.Status, update.Checkpoint.BatchID, update.Checkpoint.Stage)
-
-			if update.Status == models.WorkflowStatusCompleted {
-				alertParam := map[string]string{
-					"workflowID": workflowKey,
-					"status":     string(update.Status),
-				}
-				s.alertClient.SendWorkflowCompleted(backgroundCtx, workflowID, alertParam)
-			}
-
-		case <-workflowCtx.Done():
-			if workflowCtx.Err() == context.Canceled {
-				s.workflowRepo.SetStatus(backgroundCtx, &workflowID, models.WorkflowStatusAborted, nil, nil)
-				alertParam := map[string]string{
-					"workflowID": workflowKey,
-					"status":     string(models.WorkflowStatusAborted),
-				}
-				s.alertClient.SendWorkflowCancelled(backgroundCtx, workflowID, alertParam)
-			}
-			return
-		}
-	}
-}
-
+// StopWorkflow stops a running workflow
 func (s *workflowService) StopWorkflow(ctx context.Context, workflowID models.WorkflowIdentifier) error {
 	workflowKey := workflowID.Serialize(
 		models.GetWorkflowPrefixFromWorkflowType(workflowID.Type),
@@ -228,6 +141,7 @@ func (s *workflowService) StopWorkflow(ctx context.Context, workflowID models.Wo
 	return nil
 }
 
+// Shutdown stops all running workflows
 func (s *workflowService) Shutdown(ctx context.Context) error {
 	s.serviceCancel()
 
@@ -374,4 +288,93 @@ func (s *workflowService) RecoverWorkflow(ctx context.Context) error {
 		)
 	}
 	return nil
+}
+
+// handleWorkflowBackgroundProcessing is a background processing loop for a workflow
+func (s *workflowService) handleWorkflowBackgroundProcessing(
+	workflowID models.WorkflowIdentifier,
+	workflowKey string,
+	executorID uuid.UUID,
+	updateChan <-chan models.WorkflowUpdate,
+	errorChan <-chan models.WorkflowError,
+) {
+	// Create background context
+	backgroundCtx := context.Background()
+	workflowCtx, cancel := context.WithCancel(backgroundCtx)
+
+	// Initialize workflow state
+	workflowState := &models.WorkflowState{
+		Cancel:     cancel,
+		ExecutorID: executorID,
+		Status:     models.WorkflowStatusRunning,
+	}
+
+	// Register workflow
+	s.workflowsMu.Lock()
+	s.activeWorkflows[workflowKey] = workflowState
+	s.workflowsMu.Unlock()
+
+	// Cleanup on exit
+	defer func() {
+		cancel()
+		s.workflowsMu.Lock()
+		delete(s.activeWorkflows, workflowKey)
+		s.workflowsMu.Unlock()
+	}()
+
+	for {
+		select {
+		case <-s.serviceCtx.Done():
+			// Service-wide shutdown
+			s.workflowRepo.SetStatus(backgroundCtx, &workflowID, models.WorkflowStatusAborted, nil, nil)
+			return
+
+		case err, ok := <-errorChan:
+			if !ok {
+				return
+			}
+
+			workflowState.Mutex.Lock()
+			workflowState.Status = models.WorkflowStatusFailed
+			workflowState.Mutex.Unlock()
+
+			alertParam := map[string]string{
+				"workflowID": workflowKey,
+				"error":      err.Error.Error(),
+				"timestamp":  fmt.Sprintf("%v", err.Timestamp),
+			}
+			s.workflowRepo.SetStatus(backgroundCtx, &workflowID, models.WorkflowStatusFailed, nil, nil)
+			s.alertClient.SendWorkflowFailed(backgroundCtx, workflowID, alertParam)
+
+		case update, ok := <-updateChan:
+			if !ok {
+				return
+			}
+
+			workflowState.Mutex.Lock()
+			workflowState.Status = update.Status
+			workflowState.Mutex.Unlock()
+
+			s.workflowRepo.SetStatus(backgroundCtx, &workflowID, update.Status, update.Checkpoint.BatchID, update.Checkpoint.Stage)
+
+			if update.Status == models.WorkflowStatusCompleted {
+				alertParam := map[string]string{
+					"workflowID": workflowKey,
+					"status":     string(update.Status),
+				}
+				s.alertClient.SendWorkflowCompleted(backgroundCtx, workflowID, alertParam)
+			}
+
+		case <-workflowCtx.Done():
+			if workflowCtx.Err() == context.Canceled {
+				s.workflowRepo.SetStatus(backgroundCtx, &workflowID, models.WorkflowStatusAborted, nil, nil)
+				alertParam := map[string]string{
+					"workflowID": workflowKey,
+					"status":     string(models.WorkflowStatusAborted),
+				}
+				s.alertClient.SendWorkflowCancelled(backgroundCtx, workflowID, alertParam)
+			}
+			return
+		}
+	}
 }

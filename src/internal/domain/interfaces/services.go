@@ -76,5 +76,14 @@ type WorkflowService interface {
 	GetWorkflow(ctx context.Context, req models.WorkflowRequest) (*models.WorkflowResponse, error)
 
 	// ListWorkflows lists of all workflows
-	ListWorkflows(ctx context.Context, limit int) ([]models.WorkflowResponse, int, error)
+	ListWorkflows(ctx context.Context, status string, scanLimit int) ([]models.WorkflowResponse, int, error)
+
+	// RecoverWorkflow recovers a workflow from a checkpoint
+	RecoverWorkflow(ctx context.Context) error
+
+	// Shutdown shuts down the workflow service
+	Shutdown(ctx context.Context) error
+
+	// StopWorkflow stops a workflow
+	StopWorkflow(ctx context.Context, workflowID models.WorkflowIdentifier) error
 }
