@@ -90,12 +90,14 @@ func (h *WorkflowHandler) GetWorkflow(c *fiber.Ctx) error {
 
 func (h *WorkflowHandler) ListWorkflows(c *fiber.Ctx) error {
 	limit := c.Query("limit", "100")
+	status := c.Query("status", "running")
+
 	limitInt, err := strconv.Atoi(limit)
 	if err != nil {
 		limitInt = 100
 	}
 	// List all workflows
-	workflows, count, err := h.workflowService.ListWorkflows(c.Context(), limitInt)
+	workflows, count, err := h.workflowService.ListWorkflows(c.Context(), status, limitInt)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
