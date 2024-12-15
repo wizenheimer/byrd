@@ -10,6 +10,7 @@ import (
 	"github.com/wizenheimer/iris/src/internal/domain/models"
 	"github.com/wizenheimer/iris/src/pkg/logger"
 	"github.com/wizenheimer/iris/src/pkg/utils/ptr"
+	"go.uber.org/zap"
 )
 
 type screenshotExecutor struct {
@@ -43,10 +44,14 @@ func (e *screenshotExecutor) Start(ctx context.Context, workflowID *models.Workf
 		BatchID: nil,
 		Stage:   nil,
 	}
+
+	e.logger.Debug("Starting workflow", zap.Any("workflow_id", workflowID), zap.Any("executor_id", executorID), zap.Any("checkpoint", checkpoint))
+
 	go func() {
 		defer e.activeJobs.Delete(executorID.String())
 		defer close(updateChan)
 		defer close(errorChan)
+		e.logger.Debug("Executing workflow", zap.Any("workflow_id", workflowID), zap.Any("executor_id", executorID), zap.Any("checkpoint", checkpoint))
 		e.execute(updateChan, errorChan, &checkpoint)
 	}()
 
@@ -61,10 +66,13 @@ func (e *screenshotExecutor) Recover(ctx context.Context, workflowID *models.Wor
 	executorID := uuid.New()
 	e.activeJobs.Store(executorID.String(), ctx)
 
+	e.logger.Debug("Recovering workflow", zap.Any("workflow_id", workflowID), zap.Any("executor_id", executorID), zap.Any("checkpoint", checkpoint))
+
 	go func() {
 		defer e.activeJobs.Delete(executorID.String())
 		defer close(updateChan)
 		defer close(errorChan)
+		e.logger.Debug("Recovering workflow", zap.Any("workflow_id", workflowID), zap.Any("executor_id", executorID), zap.Any("checkpoint", checkpoint))
 		e.execute(updateChan, errorChan, checkpoint)
 	}()
 	return updateChan, errorChan
@@ -72,23 +80,35 @@ func (e *screenshotExecutor) Recover(ctx context.Context, workflowID *models.Wor
 
 // Stop stops the workflow
 func (e *screenshotExecutor) Stop(ctx context.Context, workflowID *models.WorkflowIdentifier, executorID *uuid.UUID) (<-chan models.WorkflowUpdate, <-chan models.WorkflowError) {
+	e.logger.Debug("Stopping workflow", zap.Any("workflow_id", workflowID), zap.Any("executor_id", executorID))
+
 	errorChan := make(chan models.WorkflowError)
 	updateChan := make(chan models.WorkflowUpdate)
 
 	go func() {
+		defer close(updateChan)
+		defer close(errorChan)
+
+		e.logger.Debug("Stopping workflow", zap.Any("workflow_id", workflowID), zap.Any("executor_id", executorID))
+
 		if executorCtx, ok := e.activeJobs.Load(executorID.String()); ok {
 			if ctx, ok := executorCtx.(context.Context); ok {
 				select {
 				case <-ctx.Done():
+					// Workflow already stopped
+					e.activeJobs.Delete(executorID.String())
+					e.logger.Debug("Workflow already stopped", zap.Any("workflow_id", workflowID), zap.Any("executor_id", executorID))
 					return
 				default:
 					// Perform any cleanup needed
 					e.activeJobs.Delete(executorID.String())
+					e.logger.Debug("Workflow stopped", zap.Any("workflow_id", workflowID), zap.Any("executor_id", executorID))
 					return
 				}
 			}
 		}
 	}()
+
 	return updateChan, errorChan
 }
 
@@ -101,12 +121,14 @@ func (e *screenshotExecutor) List() map[string]context.Context {
 		}
 		return true
 	})
+	e.logger.Debug("Listing active jobs", zap.Any("active_jobs", activeJobs))
 	return activeJobs
 }
 
 // Execute executes the workflow
 // This is the main logic of the workflow
 func (e *screenshotExecutor) execute(errorChan chan models.WorkflowUpdate, updateChan chan models.WorkflowError, checkpoint *models.Checkpoint) {
+	e.logger.Debug("Executing workflow", zap.Any("checkpoint", checkpoint))
 	// Implement the workflow logic here
 	step := 0
 	if checkpoint.Stage != nil {
@@ -149,5 +171,6 @@ func (e *screenshotExecutor) execute(errorChan chan models.WorkflowUpdate, updat
 		return
 	}
 	// Once done, move to the next step
+	e.logger.Debug("Moving to the next step", zap.Any("checkpoint", nextCheckpoint))
 	e.execute(errorChan, updateChan, nextCheckpoint)
 }

@@ -57,8 +57,10 @@ func SetupRoutes(app *fiber.App, handlers *HandlerContainer) {
 	// Workflow routes
 	workflow := api.Group("/workflow")
 	workflow.Post("/", handlers.WorkflowHandler.StartWorkflow)
-	workflow.Get("/", handlers.WorkflowHandler.ListWorkflows)
-	workflow.Get("/status", handlers.WorkflowHandler.GetWorkflow)
+	workflow.Get("/", handlers.WorkflowHandler.GetWorkflow)
+	workflow.Delete("/", handlers.WorkflowHandler.StopWorkflow)
+	workflow.Get("/list", handlers.WorkflowHandler.ListWorkflows)
+	workflow.Post("/recover", handlers.WorkflowHandler.RecoverWorkflow)
 
 	// Diff routes
 	diff := api.Group("/diff")
