@@ -37,22 +37,22 @@ func (e *screenshotExecutor) Start(ctx context.Context, workflowID *models.Workf
 	errorChan := make(chan models.WorkflowError)
 	updateChan := make(chan models.WorkflowUpdate)
 
-	executorID := uuid.New()
-	e.activeJobs.Store(executorID.String(), ctx)
+	jobID := uuid.New()
+	e.activeJobs.Store(jobID.String(), ctx)
 
 	checkpoint := models.Checkpoint{
 		BatchID: nil,
 		Stage:   nil,
 	}
 
-	e.logger.Debug("Starting workflow", zap.Any("workflow_id", workflowID), zap.Any("executor_id", executorID), zap.Any("checkpoint", checkpoint))
+	e.logger.Debug("Starting workflow", zap.Any("workflow_id", workflowID), zap.Any("job_id", jobID), zap.Any("checkpoint", checkpoint))
 
 	go func() {
-		defer e.activeJobs.Delete(executorID.String())
+		defer e.activeJobs.Delete(jobID.String())
 		defer close(updateChan)
 		defer close(errorChan)
-		e.logger.Debug("Executing workflow", zap.Any("workflow_id", workflowID), zap.Any("executor_id", executorID), zap.Any("checkpoint", checkpoint))
-		e.execute(updateChan, errorChan, &checkpoint)
+		e.logger.Debug("Executing workflow", zap.Any("workflow_id", workflowID), zap.Any("job_id", jobID), zap.Any("checkpoint", checkpoint))
+		e.execute(ctx, updateChan, errorChan, &checkpoint)
 	}()
 
 	return updateChan, errorChan
@@ -73,7 +73,7 @@ func (e *screenshotExecutor) Recover(ctx context.Context, workflowID *models.Wor
 		defer close(updateChan)
 		defer close(errorChan)
 		e.logger.Debug("Recovering workflow", zap.Any("workflow_id", workflowID), zap.Any("executor_id", executorID), zap.Any("checkpoint", checkpoint))
-		e.execute(updateChan, errorChan, checkpoint)
+		e.execute(ctx, updateChan, errorChan, checkpoint)
 	}()
 	return updateChan, errorChan
 }
@@ -127,7 +127,17 @@ func (e *screenshotExecutor) List() map[string]context.Context {
 
 // Execute executes the workflow
 // This is the main logic of the workflow
-func (e *screenshotExecutor) execute(errorChan chan models.WorkflowUpdate, updateChan chan models.WorkflowError, checkpoint *models.Checkpoint) {
+func (e *screenshotExecutor) execute(ctx context.Context, errorChan chan models.WorkflowUpdate, updateChan chan models.WorkflowError, checkpoint *models.Checkpoint) {
+
+	// Check if the context is done
+	select {
+	case <-ctx.Done():
+		e.logger.Debug("Context done", zap.Any("checkpoint", checkpoint))
+		return
+	default:
+		e.logger.Debug("Context not done, executing workflow", zap.Any("checkpoint", checkpoint))
+	}
+
 	e.logger.Debug("Executing workflow", zap.Any("checkpoint", checkpoint))
 	// Implement the workflow logic here
 	step := 0
@@ -172,5 +182,5 @@ func (e *screenshotExecutor) execute(errorChan chan models.WorkflowUpdate, updat
 	}
 	// Once done, move to the next step
 	e.logger.Debug("Moving to the next step", zap.Any("checkpoint", nextCheckpoint))
-	e.execute(errorChan, updateChan, nextCheckpoint)
+	e.execute(ctx, errorChan, updateChan, nextCheckpoint)
 }
