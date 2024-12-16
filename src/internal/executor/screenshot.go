@@ -9,11 +9,12 @@ import (
 	"github.com/wizenheimer/iris/src/internal/domain/interfaces"
 	"github.com/wizenheimer/iris/src/internal/domain/models"
 	"github.com/wizenheimer/iris/src/pkg/logger"
-	"github.com/wizenheimer/iris/src/pkg/utils/ptr"
 	"go.uber.org/zap"
 )
 
 type screenshotExecutor struct {
+	// urlService is an interface that is defined in the domain layer
+	urlService interfaces.URLService
 	// screenshotService is an interface that is defined in the domain layer
 	screenshotService interfaces.ScreenshotService
 	// diffService is an interface that is defined in the domain layer
@@ -24,8 +25,9 @@ type screenshotExecutor struct {
 }
 
 // NewScreenshotWorkflowExecutor creates a new ScreenshotWorkflowService
-func NewScreenshotWorkflowExecutor(screenshotService interfaces.ScreenshotService, diffService interfaces.DiffService, logger *logger.Logger) interfaces.WorkflowExecutor {
+func NewScreenshotWorkflowExecutor(screenshotService interfaces.ScreenshotService, diffService interfaces.DiffService, urlService interfaces.URLService, logger *logger.Logger) interfaces.WorkflowExecutor {
 	return &screenshotExecutor{
+		urlService:        urlService,
 		screenshotService: screenshotService,
 		diffService:       diffService,
 		logger:            logger.WithFields(map[string]interface{}{"module": "screenshot_workflow_service"}),
@@ -52,8 +54,7 @@ func (e *screenshotExecutor) Start(ctx context.Context, workflowID *models.Workf
 		defer close(updateChan)
 		defer close(errorChan)
 		e.logger.Debug("Executing workflow", zap.Any("workflow_id", workflowID), zap.Any("job_id", jobID), zap.Any("checkpoint", checkpoint))
-		e.execute(ctx, updateChan, errorChan, &checkpoint)
-		e.sendCompletionAlert(workflowID, updateChan)
+		e.execute(ctx, updateChan, errorChan, &checkpoint, workflowID)
 	}()
 
 	return updateChan, errorChan
@@ -74,26 +75,9 @@ func (e *screenshotExecutor) Recover(ctx context.Context, workflowID *models.Wor
 		defer close(updateChan)
 		defer close(errorChan)
 		e.logger.Debug("Recovering workflow", zap.Any("workflow_id", workflowID), zap.Any("executor_id", executorID), zap.Any("checkpoint", checkpoint))
-		e.execute(ctx, updateChan, errorChan, checkpoint)
-		e.sendCompletionAlert(workflowID, updateChan)
+		e.execute(ctx, updateChan, errorChan, checkpoint, workflowID)
 	}()
 	return updateChan, errorChan
-}
-
-func (e *screenshotExecutor) sendCompletionAlert(workflowID *models.WorkflowIdentifier, updateChan chan models.WorkflowUpdate) {
-	e.logger.Debug("Sending completion alert", zap.Any("workflow_id", workflowID))
-	// Implement sending completion alert here
-	update := models.WorkflowUpdate{
-		ID:         workflowID,
-		Checkpoint: nil,
-		Timestamp:  time.Now(),
-		Status:     models.WorkflowStatusCompleted,
-	}
-
-	e.logger.Debug("Sending completion alert", zap.Any("workflow_id", workflowID))
-	// Send the update to the update channel
-	updateChan <- update
-	e.logger.Debug("Sent completion alert", zap.Any("workflow_id", workflowID))
 }
 
 // Stop stops the workflow
@@ -145,7 +129,15 @@ func (e *screenshotExecutor) List() map[string]context.Context {
 
 // Execute executes the workflow
 // This is the main logic of the workflow
-func (e *screenshotExecutor) execute(ctx context.Context, errorChan chan models.WorkflowUpdate, updateChan chan models.WorkflowError, checkpoint *models.Checkpoint) {
+func (e *screenshotExecutor) execute(ctx context.Context, updateChan chan models.WorkflowUpdate, errorChan chan models.WorkflowError, checkpoint *models.Checkpoint, workflowID *models.WorkflowIdentifier) {
+	const batchWaitTime = 60 * time.Second
+
+	updateChan <- models.WorkflowUpdate{
+		ID:         workflowID,
+		Checkpoint: checkpoint,
+		Timestamp:  time.Now(),
+		Status:     models.WorkflowStatusRunning,
+	}
 
 	// Check if the context is done
 	select {
@@ -156,49 +148,124 @@ func (e *screenshotExecutor) execute(ctx context.Context, errorChan chan models.
 		e.logger.Debug("Context not done, executing workflow", zap.Any("checkpoint", checkpoint))
 	}
 
-	e.logger.Debug("Executing workflow", zap.Any("checkpoint", checkpoint))
-	// Implement the workflow logic here
-	step := 0
-	if checkpoint.Stage != nil {
-		step = *checkpoint.Stage
+	urlChan, errChan := e.urlService.ListURLs(ctx, 40, checkpoint.BatchID)
+
+	// Create a ticker for batch processing
+	batchTicker := time.NewTicker(batchWaitTime)
+	defer batchTicker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			e.logger.Debug("Context done", zap.Any("checkpoint", checkpoint))
+			updateChan <- models.WorkflowUpdate{
+				ID:         workflowID,
+				Checkpoint: checkpoint,
+				Timestamp:  time.Now(),
+				Status:     models.WorkflowStatusAborted,
+			}
+			return
+
+		case err := <-errChan:
+			e.logger.Error("Error processing URL Batch", zap.Error(err))
+			// Send error to error channel but continue processing
+			errorChan <- models.WorkflowError{
+				ID:        workflowID,
+				Error:     err,
+				Timestamp: time.Now(),
+			}
+
+		case urlBatch, ok := <-urlChan:
+			if !ok {
+				// Channel closed, all URLs marked for processing
+				e.logger.Debug("URL channel closed, workflow completed")
+				updateChan <- models.WorkflowUpdate{
+					ID:         workflowID,
+					Checkpoint: checkpoint,
+					Timestamp:  time.Now(),
+					Status:     models.WorkflowStatusCompleted,
+				}
+				return
+			}
+
+			// Process the batch
+			var wg sync.WaitGroup
+			for _, url := range urlBatch.URLs {
+				wg.Add(1)
+				go e.processURLs(ctx, url, workflowID, errorChan, &wg)
+			}
+
+			// Wait for all URLs in this batch to be processed
+			wg.Wait()
+
+			// Update checkpoint and send status update
+			checkpoint.BatchID = urlBatch.LastSeen
+			checkpoint.Stage = nil // Reset the stage
+
+			updateChan <- models.WorkflowUpdate{
+				ID:         workflowID,
+				Checkpoint: checkpoint,
+				Timestamp:  time.Now(),
+				Status:     models.WorkflowStatusRunning,
+			}
+
+			// Wait for the batch interval before processing next batch
+			<-batchTicker.C
+		}
 	}
+}
 
-	nextCheckpoint := &models.Checkpoint{
-		BatchID: nil,
-		Stage:   ptr.To(step + 1),
+// processURLs processes the URLs
+func (e *screenshotExecutor) processURLs(ctx context.Context, url models.URL, workflowID *models.WorkflowIdentifier, errorChan chan models.WorkflowError, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	// Create a sub-context with timeout for the screenshot process
+	screenshotCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
+	defer cancel()
+
+	// Get current screenshot image and content
+	screenshotOptions := models.ScreenshotRequestOptions{
+		URL: url.URL,
 	}
-
-	switch step {
-	case 0:
-		// Step 0: Take a screenshot
-		e.logger.Info("Taking a screenshot")
-		// Iterate through the batches
-		time.Sleep(10 * time.Second)
-
-	case 1:
-		// Step 1: Process the screenshot
-		e.logger.Info("Processing the screenshot")
-		// Iterate through the batches
-		time.Sleep(10 * time.Second)
-
-	case 2:
-		// Step 2: Compare the screenshot
-		e.logger.Info("Comparing the screenshot")
-		// Iterate through the batches
-		time.Sleep(10 * time.Second)
-
-	case 3:
-		// Step 3: Send the report
-		e.logger.Info("Sending the report")
-		// Iterate through the batches
-		time.Sleep(10 * time.Second)
-
-	default:
-		// Done
-		e.logger.Info("Workflow completed")
+	_, currentScreenshotImage, _, err := e.screenshotService.CaptureScreenshot(screenshotCtx, screenshotOptions)
+	if err != nil {
+		e.logger.Error("Error capturing screenshot",
+			zap.Error(err),
+			zap.String("url", url.URL))
+		errorChan <- models.WorkflowError{
+			ID:        workflowID,
+			Error:     err,
+			Timestamp: time.Now(),
+		}
 		return
 	}
-	// Once done, move to the next step
-	e.logger.Debug("Moving to the next step", zap.Any("checkpoint", nextCheckpoint))
-	e.execute(ctx, errorChan, updateChan, nextCheckpoint)
+
+	// Get previous screenshot image and content
+	screenshotImageResponse, err := e.screenshotService.GetPreviousScreenshotImage(screenshotCtx, url.URL)
+	if err != nil {
+		e.logger.Error("Error getting previous screenshot",
+			zap.Error(err),
+			zap.String("url", url.URL))
+		errorChan <- models.WorkflowError{
+			ID:        workflowID,
+			Error:     err,
+			Timestamp: time.Now(),
+		}
+		return
+	}
+	previousScreenshotImage := screenshotImageResponse.Image
+
+	// Perform diff analysis
+	if _, err := e.diffService.CreateCurrentDiffFromScreenshotImages(screenshotCtx, url.URL, currentScreenshotImage, previousScreenshotImage); err != nil {
+		e.logger.Error("Error creating diff",
+			zap.Error(err),
+			zap.String("url", url.URL))
+		errorChan <- models.WorkflowError{
+			ID:        workflowID,
+			Error:     err,
+			Timestamp: time.Now(),
+		}
+		return
+	}
+
 }
