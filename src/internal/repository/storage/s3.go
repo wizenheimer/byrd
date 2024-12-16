@@ -31,7 +31,7 @@ type s3Storage struct {
 
 // NewS3Storage creates a new S3 storage repository
 // It requires the access key, secret key, bucket name, account ID, and a logger
-func NewS3Storage(accessKey, secretKey, bucket, accountID, session, region string, logger *logger.Logger) (interfaces.StorageRepository, error) {
+func NewS3Storage(accessKey, secretKey, bucket, accountID, session, region string, logger *logger.Logger) (interfaces.ScreenshotRepository, error) {
 	if logger == nil {
 		return nil, fmt.Errorf("can't initialize r2, logger is required")
 	}

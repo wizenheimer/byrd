@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/slack-go/slack"
-	"github.com/wizenheimer/iris/src/internal/client"
+	"github.com/wizenheimer/iris/src/internal/domain/interfaces"
 	"github.com/wizenheimer/iris/src/internal/domain/models"
 	"github.com/wizenheimer/iris/src/pkg/logger"
 	"go.uber.org/zap"
@@ -30,7 +30,7 @@ type slackAlertClient struct {
 	recent map[string]time.Time
 }
 
-func NewSlackAlertClient(config models.SlackConfig, logger *logger.Logger) (client.AlertClient, error) {
+func NewSlackAlertClient(config models.SlackConfig, logger *logger.Logger) (interfaces.AlertClient, error) {
 	if config.Token == "" || config.ChannelID == "" {
 		return nil, fmt.Errorf("slack token and channel ID are required")
 	}

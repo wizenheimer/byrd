@@ -5,23 +5,18 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/redis/go-redis/v9"
 	"github.com/wizenheimer/iris/src/internal/api/routes"
 	"github.com/wizenheimer/iris/src/internal/client"
 	"github.com/wizenheimer/iris/src/internal/config"
 	"github.com/wizenheimer/iris/src/internal/domain/interfaces"
-	"github.com/wizenheimer/iris/src/internal/domain/models"
-	"github.com/wizenheimer/iris/src/internal/executor"
 	"github.com/wizenheimer/iris/src/internal/repository/db"
 	"github.com/wizenheimer/iris/src/internal/repository/storage"
 	"github.com/wizenheimer/iris/src/internal/service/ai"
-	"github.com/wizenheimer/iris/src/internal/service/alert"
 	"github.com/wizenheimer/iris/src/internal/service/competitor"
 	"github.com/wizenheimer/iris/src/internal/service/diff"
 	"github.com/wizenheimer/iris/src/internal/service/notification"
 	"github.com/wizenheimer/iris/src/internal/service/screenshot"
 	"github.com/wizenheimer/iris/src/internal/service/url"
-	"github.com/wizenheimer/iris/src/internal/service/workflow"
 	"github.com/wizenheimer/iris/src/pkg/logger"
 	"go.uber.org/zap"
 )
@@ -90,11 +85,6 @@ func initializer(cfg *config.Config, sqlDb *sql.DB, logger *logger.Logger) (*rou
 		return nil, err
 	}
 
-	workflowService, err := setupWorkflowService(cfg, screenshotService, diffService, urlService, logger)
-	if err != nil {
-		return nil, err
-	}
-
 	// Initialize handlers
 	handlers := routes.NewHandlerContainer(
 		screenshotService,
@@ -102,58 +92,10 @@ func initializer(cfg *config.Config, sqlDb *sql.DB, logger *logger.Logger) (*rou
 		diffService,
 		competitorService,
 		notificationService,
-		workflowService,
 		logger,
 	)
 
 	return handlers, nil
-}
-
-func setupWorkflowService(cfg *config.Config, screenshotService interfaces.ScreenshotService, diffService interfaces.DiffService, urlService interfaces.URLService, logger *logger.Logger) (interfaces.WorkflowService, error) {
-	logger.Debug("setting up workflow service", zap.Any("workflow_config", cfg.Workflow))
-
-	if cfg.Workflow.RedisAddr == "" {
-		logger.Warn("Redis URL is empty")
-	}
-
-	// Create a new redis client
-	redisClient := redis.NewClient(
-		&redis.Options{
-			Addr:     cfg.Workflow.RedisAddr,
-			Password: cfg.Workflow.RedisPassword,
-			DB:       cfg.Workflow.RedisDB,
-		},
-	)
-
-	// Create a new workflow repository
-	workflowRepo, err := db.NewRedisWorkflowRepository(redisClient, cfg.Workflow.WorkflowTTL, logger)
-	if err != nil {
-		return nil, err
-	}
-
-	// Create a new workflow alert client
-	clientConfig := models.DefaultSlackConfig()
-	clientConfig.Token = cfg.Workflow.SlackAlertToken
-	clientConfig.ChannelID = cfg.Workflow.SlackWorkflowChannelId
-
-	var alertClient client.WorkflowAlertClient
-	if cfg.Environment.EnvProfile == "development" {
-		logger.Debug("Using local workflow alert client")
-		alertClient = alert.NewLocalWorkflowClient(clientConfig, logger)
-	} else {
-		slackWorkflowClient, err := alert.NewSlackWorkflowClient(clientConfig, logger)
-		if err != nil {
-			return nil, err
-		}
-		alertClient = slackWorkflowClient
-	}
-
-	// Create a new workflow executor
-	screenshotExecutor := executor.NewScreenshotWorkflowExecutor(screenshotService, diffService, urlService, logger)
-
-	// Create a new workflow service
-	// TODO: replace screenshotExecutor with reportExecutor
-	return workflow.NewWorkflowService(workflowRepo, alertClient, screenshotExecutor, nil, logger)
 }
 
 func setupURLService(sqlDb *sql.DB, logger *logger.Logger) (interfaces.URLService, error) {
@@ -191,7 +133,7 @@ func setupScreenshotService(cfg *config.Config, screenshotHTTPClient client.HTTP
 		logger.Warn("Region is empty", zap.String("type", cfg.Storage.Type))
 	}
 
-	var storageRepo interfaces.StorageRepository
+	var storageRepo interfaces.ScreenshotRepository
 	var err error
 	switch cfg.Storage.Type {
 	case "r2":

@@ -20,7 +20,7 @@ func defaultConfig() *models.ScreenshotServiceConfig {
 }
 
 // WithStorage sets the storage repository
-func WithStorage(storage interfaces.StorageRepository) ScreenshotServiceOption {
+func WithStorage(storage interfaces.ScreenshotRepository) ScreenshotServiceOption {
 	return func(s *screenshotService) {
 		s.storage = storage
 	}

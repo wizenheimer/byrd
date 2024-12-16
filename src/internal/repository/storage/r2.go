@@ -32,7 +32,7 @@ type r2Storage struct {
 }
 
 // NewR2Storage creates a new R2 storage repository
-func NewR2Storage(accessKey, secretKey, bucket, accountID string, logger *logger.Logger) (interfaces.StorageRepository, error) {
+func NewR2Storage(accessKey, secretKey, bucket, accountID string, logger *logger.Logger) (interfaces.ScreenshotRepository, error) {
 	if logger == nil {
 		return nil, fmt.Errorf("can't initialize r2, logger is required")
 	}

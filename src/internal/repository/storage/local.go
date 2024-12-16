@@ -28,7 +28,7 @@ type localStorage struct {
 
 // NewLocalStorage creates a new local storage repository
 // It requires the directory where the files will be stored and a logger
-func NewLocalStorage(directory string, logger *logger.Logger) (interfaces.StorageRepository, error) {
+func NewLocalStorage(directory string, logger *logger.Logger) (interfaces.ScreenshotRepository, error) {
 	if logger == nil {
 		return nil, fmt.Errorf("logger is required")
 	}

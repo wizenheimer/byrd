@@ -78,8 +78,6 @@ type WorkflowConfig struct {
 	RedisDB int
 	// WorkflowTTL is the time-to-live for the workflow
 	WorkflowTTL time.Duration
-	// WorkflowScanRange is the maximum number of workflows to scan as default
-	WorkflowScanRange int
 }
 
 func Load() (*Config, error) {

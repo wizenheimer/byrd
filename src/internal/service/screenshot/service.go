@@ -24,7 +24,7 @@ import (
 )
 
 type screenshotService struct {
-	storage    interfaces.StorageRepository
+	storage    interfaces.ScreenshotRepository
 	httpClient client.HTTPClient
 	config     *models.ScreenshotServiceConfig
 	logger     *logger.Logger
