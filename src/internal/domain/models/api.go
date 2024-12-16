@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/wizenheimer/iris/src/pkg/utils/ptr"
 )
 
@@ -80,7 +81,7 @@ type WorkflowResponse struct {
 	// BucketNumber is the bucket number of the workflow
 	BucketNumber int `json:"bucket_number"`
 	// BatchID is the checkpointed batch id for the workflow
-	BatchID *string `json:"batch_id"`
+	BatchID *uuid.UUID `json:"batch_id"`
 	// nil if not checkpointed
 	// Stage is the stage of the workflow
 	Stage *int `json:"stage"`

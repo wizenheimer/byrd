@@ -7,15 +7,15 @@ import (
 )
 
 type URL struct {
-	ID        uuid.UUID `json:"id"`
-	URL       string    `json:"url"`
-	CreatedAt time.Time `json:"created_at"`
+	ID        *uuid.UUID `json:"id"`
+	URL       string     `json:"url"`
+	CreatedAt time.Time  `json:"created_at"`
 }
 
 type URLBatch struct {
-	URLs     []URL     `json:"urls"`
-	HasMore  bool      `json:"has_more"`
-	LastSeen uuid.UUID `json:"last_seen,omitempty"`
+	URLs     []URL      `json:"urls"`
+	HasMore  bool       `json:"has_more"`
+	LastSeen *uuid.UUID `json:"last_seen,omitempty"`
 }
 
 type URLInput struct {

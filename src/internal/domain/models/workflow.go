@@ -75,7 +75,7 @@ func ParseWorkflowStatus(s string) (WorkflowStatus, error) {
 // Checkpoint represents a checkpoint for a workflow
 type Checkpoint struct {
 	// BatchID is the checkpointed batch id for the workflow
-	BatchID *string `json:"batch_id"`
+	BatchID *uuid.UUID `json:"batch_id"`
 	// nil if not checkpointed
 	// Stage is the stage of the workflow
 	Stage *int `json:"stage"`
