@@ -104,7 +104,7 @@ func (s *urlService) ListURLs(ctx context.Context, batchSize int, lastSeenID *uu
 			}
 
 			result <- *batch
-			lastSeenID = &batch.URLs[len(batch.URLs)-1].ID
+			lastSeenID = batch.URLs[len(batch.URLs)-1].ID
 		}
 	}()
 

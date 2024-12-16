@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 	"github.com/wizenheimer/iris/src/internal/domain/interfaces"
 	"github.com/wizenheimer/iris/src/internal/domain/models"
@@ -35,7 +36,7 @@ func NewRedisWorkflowRepository(client *redis.Client, ttl time.Duration, logger 
 }
 
 // SetStatus implements WorkflowRepository.SetStatus
-func (r *RedisWorkflowRepository) SetStatus(ctx context.Context, id *models.WorkflowIdentifier, status models.WorkflowStatus, batchID *string, stage *int) error {
+func (r *RedisWorkflowRepository) SetStatus(ctx context.Context, id *models.WorkflowIdentifier, status models.WorkflowStatus, batchID *uuid.UUID, stage *int) error {
 	r.logger.Debug("setting workflow status", zap.String("status", string(status)), zap.Any("id", id), zap.Any("batchID", batchID), zap.Any("stage", stage))
 
 	// Create workflow response object
