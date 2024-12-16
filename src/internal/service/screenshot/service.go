@@ -61,30 +61,63 @@ func NewScreenshotService(logger *logger.Logger, opts ...ScreenshotServiceOption
 	return s, nil
 }
 
-// TakeScreenshot takes a screenshot of a given URL
-// The URL is used to generate the path to the image
-// The week number and week day are used to generate the path to the image
-// The options are used to customize the screenshot
-func (s *screenshotService) TakeScreenshot(ctx context.Context, opts models.ScreenshotRequestOptions) (*models.ScreenshotResponse, error) {
-	s.logger.Debug("taking screenshot", zap.Any("url", opts.URL))
-
-	resp, err := s.createScreenshotRequest(opts)
+func (s *screenshotService) GetExistingScreenshot(ctx context.Context, url string) (*models.ScreenshotResponse, image.Image, string, error) {
+	screenshotPath, err := path.GetCurrentScreenshotPath(url)
 	if err != nil {
-		return nil, err
+		return nil, nil, "", fmt.Errorf("failed to get current screenshot path: %v", err)
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to take screenshot - %v status code", resp.StatusCode)
+	contentPath, err := path.GetCurrentContentPath(url)
+	if err != nil {
+		return nil, nil, "", fmt.Errorf("failed to get current content path: %v", err)
 	}
 
-	img, width, height, err := parseImageFromResponse(resp)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse image from response: %v", err)
+	var screenshotImage image.Image
+	var screenshotContent string
+	var screenshotMetadata models.ScreenshotMetadata
+	if screenshotImage, screenshotMetadata, err = s.storage.GetScreenshotImage(ctx, screenshotPath); err != nil {
+		s.logger.Warn("failed to get image", zap.Error(err))
+		return nil, nil, "", fmt.Errorf("failed to get existing screenshot: %v", err)
+	}
+	// Get content if it exists
+	if screenshotContent, screenshotMetadata, err = s.storage.GetScreenshotContent(ctx, contentPath); err != nil {
+		s.logger.Warn("failed to get content", zap.Error(err))
+		return nil, nil, "", fmt.Errorf("failed to get existing screenshot: %v", err)
 	}
 
-	cleanText, title, err := parseContentFromResponse(resp)
+	screenshotResponse := models.ScreenshotResponse{
+		Status: "success",
+		Paths: &models.ScreenshotPaths{
+			Screenshot: screenshotPath,
+			Content:    contentPath,
+		},
+		Metadata: &models.ScreenshotMeta{
+			ImageWidth:  screenshotMetadata.ImageWidth,
+			ImageHeight: screenshotMetadata.ImageHeight,
+			PageTitle:   screenshotMetadata.PageTitle,
+			ContentSize: ptr.To(len(screenshotContent)),
+		},
+		URL: ptr.To(url),
+	}
+
+	return &screenshotResponse, screenshotImage, screenshotContent, nil
+}
+
+// CaptureScreenshot takes a screenshot of a given URL
+func (s *screenshotService) CaptureScreenshot(ctx context.Context, opts models.ScreenshotRequestOptions) (*models.ScreenshotResponse, image.Image, string, error) {
+	// Get screenshot if it exists
+	if screenshotResponse, screenshotImage, screenshotContent, err := s.GetExistingScreenshot(ctx, opts.URL); err == nil {
+		return screenshotResponse, screenshotImage, screenshotContent, nil
+	}
+
+	resp, err := s.prepareScreenshot(opts)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse content from response: %v", err)
+		return nil, nil, "", err
+	}
+
+	img, width, height, cleanText, title, err := s.parseScreenshotRespose(resp)
+	if err != nil {
+		return nil, nil, "", err
 	}
 
 	metadata := models.ScreenshotMetadata{
@@ -96,28 +129,23 @@ func (s *screenshotService) TakeScreenshot(ctx context.Context, opts models.Scre
 		PageTitle:         ptr.To(title),
 	}
 
-	// TODO: check if path already exists
-
 	screenshotPath, err := path.GetCurrentScreenshotPath(opts.URL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get current screenshot path: %v", err)
+		return nil, nil, "", fmt.Errorf("failed to get current screenshot path: %v", err)
 	}
-
 	if err := s.storage.StoreScreenshotImage(ctx, img, screenshotPath, metadata); err != nil {
-		return nil, fmt.Errorf("failed to store screenshot: %v", err)
+		return nil, nil, "", fmt.Errorf("failed to store image: %v", err)
 	}
 
 	contentPath, err := path.GetCurrentContentPath(opts.URL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get current content path: %v", err)
+		return nil, nil, "", fmt.Errorf("failed to get current content path: %v", err)
 	}
-
 	if err := s.storage.StoreScreenshotContent(ctx, cleanText, contentPath, metadata); err != nil {
-		return nil, fmt.Errorf("failed to store content: %v", err)
+		return nil, nil, "", fmt.Errorf("failed to store content: %v", err)
 	}
 
-	// Implementation
-	return &models.ScreenshotResponse{
+	screenshotResponse := models.ScreenshotResponse{
 		Status: "success",
 		Paths: &models.ScreenshotPaths{
 			Screenshot: screenshotPath,
@@ -130,7 +158,62 @@ func (s *screenshotService) TakeScreenshot(ctx context.Context, opts models.Scre
 			ContentSize: ptr.To(len(cleanText)),
 		},
 		URL: ptr.To(opts.URL),
-	}, nil
+	}
+	return &screenshotResponse, img, cleanText, nil
+}
+
+// GetPreviousScreenshotImage retrieves previous screenshot image from the storage
+func (s *screenshotService) GetPreviousScreenshotImage(ctx context.Context, url string) (*models.ScreenshotImageResponse, error) {
+	s.logger.Debug("getting previous screenshot", zap.Any("url", url))
+
+	screenshotPath, err := path.GetPreviousScreenshotPath(url)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get previous screenshot path: %v", err)
+	}
+
+	// s.logger.Debug("getting previous screenshot", zap.Any("path", screenshotPath))
+
+	img, metadata, err := s.storage.GetScreenshotImage(ctx, screenshotPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get previous screenshot: %v", err)
+	}
+
+	screenshotResponse := models.ScreenshotImageResponse{
+		Status:   "success",
+		Image:    img,
+		Metadata: ptr.To(metadata),
+		URL:      ptr.To(url),
+		Path:     ptr.To(screenshotPath),
+	}
+
+	return &screenshotResponse, nil
+}
+
+// GetPreviousScreenshotContent retrieves previous screenshot content from the storage
+func (s *screenshotService) GetPreviousScreenshotContent(ctx context.Context, url string) (*models.ScreenshotContentResponse, error) {
+	s.logger.Debug("getting previous content", zap.Any("url", url))
+
+	contentPath, err := path.GetPreviousContentPath(url)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get previous content path: %v", err)
+	}
+
+	s.logger.Debug("getting previous content", zap.Any("path", contentPath))
+
+	content, metadata, err := s.storage.GetScreenshotContent(ctx, contentPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get previous content: %v", err)
+	}
+
+	screenshotResponse := models.ScreenshotContentResponse{
+		Status:   "success",
+		Content:  content,
+		Metadata: ptr.To(metadata),
+		URL:      ptr.To(url),
+		Path:     ptr.To(contentPath),
+	}
+
+	return &screenshotResponse, nil
 }
 
 // GetScreenshotContent retrieves the screenshot content from the screenshot service
@@ -183,6 +266,7 @@ func (s *screenshotService) GetScreenshotImage(ctx context.Context, url string, 
 	}, nil
 }
 
+// ListScreenshots lists the screenshots for a given URL
 func (s *screenshotService) ListScreenshots(ctx context.Context, url string, contentType string, maxItems int) ([]models.ScreenshotListResponse, error) {
 	s.logger.Debug("listing screenshots", zap.Any("url", url), zap.Any("content_type", contentType))
 
@@ -209,8 +293,9 @@ func (s *screenshotService) ListScreenshots(ctx context.Context, url string, con
 	return s.storage.List(ctx, prefix, maxItems)
 }
 
-// createScreenshotRequest creates a request for the screenshot API
-func (s *screenshotService) createScreenshotRequest(opts models.ScreenshotRequestOptions) (*http.Response, error) {
+// prepareScreenshot creates a request for the screenshot API
+// and returns the response
+func (s *screenshotService) prepareScreenshot(opts models.ScreenshotRequestOptions) (*http.Response, error) {
 	// Get default options
 	defaultOpt := getDefaultScreenshotRequestOptions()
 
@@ -227,6 +312,26 @@ func (s *screenshotService) createScreenshotRequest(opts models.ScreenshotReques
 		QueryParam("access_key", s.config.Key).
 		AddQueryParamsFromStruct(mergedOpt).
 		Execute(s.httpClient)
+}
+
+// parseScreenshotRespose parses the screenshot response
+// and returns the image, width, height, clean text, and title
+func (s *screenshotService) parseScreenshotRespose(resp *http.Response) (image.Image, int, int, string, string, error) {
+	if resp.StatusCode != http.StatusOK {
+		return nil, -1, -1, "", "", fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	img, width, height, err := parseImageFromResponse(resp)
+	if err != nil {
+		return nil, -1, -1, "", "", fmt.Errorf("failed to parse image from response: %v", err)
+	}
+
+	cleanText, title, err := parseContentFromResponse(resp)
+	if err != nil {
+		return nil, -1, -1, "", "", fmt.Errorf("failed to parse content from response: %v", err)
+	}
+
+	return img, width, height, cleanText, title, nil
 }
 
 // getDefaultScreenshotRequestOptions returns the default options for the screenshot request
