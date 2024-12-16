@@ -311,7 +311,7 @@ func (s *workflowService) RecoverWorkflow(ctx context.Context) error {
 		}
 
 		// Create a checkpoint
-		checkpoint := models.Checkpoint{
+		checkpoint := &models.Checkpoint{
 			BatchID: workflow.BatchID,
 			Stage:   workflow.Stage,
 		}
@@ -324,17 +324,21 @@ func (s *workflowService) RecoverWorkflow(ctx context.Context) error {
 		}
 		s.workflowsMu.Unlock()
 
-		// Start recovery background processing
-		go s.handleWorkflowRecoveryProcessing(
-			workflowID,
-			executor,
-			checkpoint,
-		)
+		// Capture workflow variables in closure to avoid race conditions
+		wf := workflow
+		wfID := workflowID
 
 		s.logger.Info("started workflow recovery",
-			zap.String("type", string(workflow.Type)),
-			zap.Any("id", workflowID),
+			zap.String("type", string(wf.Type)),
+			zap.Any("id", wfID),
 			zap.Any("checkpoint", checkpoint))
+
+		// Start recovery background processing
+		go s.handleWorkflowRecoveryProcessing(
+			wfID,
+			executor,
+			checkpoint, // Pass pointer to checkpoint
+		)
 	}
 
 	return nil
@@ -343,8 +347,10 @@ func (s *workflowService) RecoverWorkflow(ctx context.Context) error {
 func (s *workflowService) handleWorkflowRecoveryProcessing(
 	workflowID models.WorkflowIdentifier,
 	executor interfaces.WorkflowExecutor,
-	checkpoint models.Checkpoint,
+	checkpoint *models.Checkpoint,
 ) {
+	s.logger.Debug("recovering workflow", zap.Any("workflow_id", workflowID), zap.Any("checkpoint", checkpoint), zap.Any("executor", executor))
+
 	// Create background context
 	backgroundCtx := context.Background()
 	workflowCtx, cancel := context.WithCancel(backgroundCtx)
@@ -361,19 +367,21 @@ func (s *workflowService) handleWorkflowRecoveryProcessing(
 	prefix := workflowID.Type.Prefix()
 	workflowKey := workflowID.Serialize(prefix, models.WorkflowStatusRunning)
 
+	s.logger.Debug("recovering workflow", zap.Any("workflow_id", workflowID), zap.Any("workflow_key", workflowKey), zap.Any("executor_id", executorID))
+
 	// Register workflow
 	s.workflowsMu.Lock()
 	s.activeWorkflows[workflowKey] = workflowState
 	s.workflowsMu.Unlock()
-
-	// Start the executor with recovery checkpoint
-	updateChan, errorChan := executor.Recover(workflowCtx, &workflowID, &checkpoint)
 
 	// Send alert for workflow recovery
 	s.alertClient.SendWorkflowRestarted(backgroundCtx, workflowID, map[string]string{
 		"workflowID": workflowKey,
 		"timestamp":  fmt.Sprintf("%v", time.Now()),
 	})
+
+	// Start the executor with recovery checkpoint
+	updateChan, errorChan := executor.Recover(workflowCtx, &workflowID, checkpoint)
 
 	// Cleanup on exit
 	defer func() {
@@ -386,6 +394,7 @@ func (s *workflowService) handleWorkflowRecoveryProcessing(
 	for {
 		select {
 		case <-s.serviceCtx.Done():
+			s.logger.Debug("workflow service-wide shutdown triggered", zap.Any("workflow_id", workflowID), zap.Any("workflow_key", workflowKey), zap.Any("executor_id", executorID))
 			// Service-wide shutdown
 			s.workflowRepo.SetStatus(backgroundCtx, &workflowID, models.WorkflowStatusAborted, nil, nil)
 			return
@@ -401,10 +410,9 @@ func (s *workflowService) handleWorkflowRecoveryProcessing(
 
 			alertParam := map[string]string{
 				"workflowID": workflowKey,
-				"error":      err.Error.Error(),
+				"error":      fmt.Sprintf("%v", err.Error),
 				"timestamp":  fmt.Sprintf("%v", err.Timestamp),
 			}
-			s.workflowRepo.SetStatus(backgroundCtx, &workflowID, models.WorkflowStatusFailed, nil, nil)
 			s.alertClient.SendWorkflowFailed(backgroundCtx, workflowID, alertParam)
 
 		case update, ok := <-updateChan:
@@ -416,12 +424,14 @@ func (s *workflowService) handleWorkflowRecoveryProcessing(
 			workflowState.Status = update.Status
 			workflowState.Mutex.Unlock()
 
+			s.logger.Debug("workflow update", zap.Any("workflow_id", workflowID), zap.Any("workflow_key", workflowKey), zap.Any("executor_id", executorID), zap.Any("status", update.Status), zap.Any("batch_id", update.Checkpoint.BatchID), zap.Any("stage", update.Checkpoint.Stage))
+
 			s.workflowRepo.SetStatus(backgroundCtx, &workflowID, update.Status, update.Checkpoint.BatchID, update.Checkpoint.Stage)
 
 			if update.Status == models.WorkflowStatusCompleted {
 				alertParam := map[string]string{
-					"workflowID": workflowKey,
-					"status":     string(update.Status),
+					"workflow_key": workflowKey,
+					"status":       string(update.Status),
 				}
 				s.alertClient.SendWorkflowCompleted(backgroundCtx, workflowID, alertParam)
 			}
@@ -468,16 +478,6 @@ func (s *workflowService) handleWorkflowBackgroundProcessing(
 
 	// Start the executor with the background context
 	updateChan, errorChan := executor.Start(workflowCtx, &workflowID)
-
-	// Set the status of the workflow to running
-	if err := s.workflowRepo.SetStatus(backgroundCtx, &workflowID, models.WorkflowStatusRunning, nil, nil); err != nil {
-		s.logger.Error("failed to set workflow status", zap.Any("workflow_id", workflowID), zap.Error(err))
-	}
-
-	s.alertClient.SendWorkflowStarted(backgroundCtx, workflowID, map[string]string{
-		"workflowID": workflowKey,
-		"timestamp":  fmt.Sprintf("%v", time.Now()),
-	})
 
 	// Cleanup on exit
 	defer func() {
