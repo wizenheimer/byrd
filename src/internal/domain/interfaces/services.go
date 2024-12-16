@@ -2,14 +2,21 @@ package interfaces
 
 import (
 	"context"
+	"image"
 
 	"github.com/google/uuid"
 	"github.com/wizenheimer/iris/src/internal/domain/models"
 )
 
 type ScreenshotService interface {
-	// TakeScreenshot takes a screenshot of the given URL
-	TakeScreenshot(ctx context.Context, opts models.ScreenshotRequestOptions) (*models.ScreenshotResponse, error)
+	// CaptureScreenshot takes a screenshot of the given URL
+	CaptureScreenshot(ctx context.Context, opts models.ScreenshotRequestOptions) (*models.ScreenshotResponse, image.Image, string, error)
+
+	// GetPreviousScreenshot retrieves the previous screenshot from the storage
+	GetPreviousScreenshotImage(ctx context.Context, url string) (*models.ScreenshotImageResponse, error)
+
+	// GetPreviousScreenshotContent retrieves the previous content of a screenshot from the storage
+	GetPreviousScreenshotContent(ctx context.Context, url string) (*models.ScreenshotContentResponse, error)
 
 	// GetScreenshot retrieves a screenshot from the storage
 	GetScreenshotImage(ctx context.Context, url string, year int, weekNumber int, weekDay int) (*models.ScreenshotImageResponse, error)
@@ -24,6 +31,12 @@ type ScreenshotService interface {
 type DiffService interface {
 	// CreateDiff creates a diff for between versions of a URL
 	CreateDiff(ctx context.Context, req models.URLDiffRequest) (*models.URLDiffAnalysis, error)
+
+	// CreateDiffFromScreenshotImages creates a diff between two screenshots
+	CreateCurrentDiffFromScreenshotImages(ctx context.Context, url string, screenshot1, screenshot2 image.Image) (*models.URLDiffAnalysis, error)
+
+	// CreateDiffFromScreenshotContents creates a diff between two screenshots
+	CreateCurrentDiffFromScreenshotContents(ctx context.Context, url, content1, content2 string) (*models.URLDiffAnalysis, error)
 
 	// CreateReport creates a weekly report for the given competitor
 	CreateReport(ctx context.Context, req models.WeeklyReportRequest) (*models.WeeklyReport, error)
