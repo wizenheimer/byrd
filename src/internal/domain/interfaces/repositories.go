@@ -78,7 +78,7 @@ type URLRepository interface {
 
 type WorkflowRepository interface {
 	// SetStatus checkpoints the status of a workflow
-	SetStatus(ctx context.Context, id *models.WorkflowIdentifier, status models.WorkflowStatus, batchID *string, stage *int) error
+	SetStatus(ctx context.Context, id *models.WorkflowIdentifier, status models.WorkflowStatus, batchID *uuid.UUID, stage *int) error
 	// GetStatus retrieves the status of a workflow
 	GetStatus(ctx context.Context, id *models.WorkflowIdentifier) (*models.WorkflowResponse, error)
 	// ListWorkflows lists all workflows
