@@ -90,7 +90,7 @@ func initializer(cfg *config.Config, sqlDb *sql.DB, logger *logger.Logger) (*rou
 		return nil, err
 	}
 
-	workflowService, err := setupWorkflowService(cfg, screenshotService, diffService, logger)
+	workflowService, err := setupWorkflowService(cfg, screenshotService, diffService, urlService, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +109,7 @@ func initializer(cfg *config.Config, sqlDb *sql.DB, logger *logger.Logger) (*rou
 	return handlers, nil
 }
 
-func setupWorkflowService(cfg *config.Config, screenshotService interfaces.ScreenshotService, diffService interfaces.DiffService, logger *logger.Logger) (interfaces.WorkflowService, error) {
+func setupWorkflowService(cfg *config.Config, screenshotService interfaces.ScreenshotService, diffService interfaces.DiffService, urlService interfaces.URLService, logger *logger.Logger) (interfaces.WorkflowService, error) {
 	logger.Debug("setting up workflow service", zap.Any("workflow_config", cfg.Workflow))
 
 	if cfg.Workflow.RedisAddr == "" {
@@ -149,7 +149,7 @@ func setupWorkflowService(cfg *config.Config, screenshotService interfaces.Scree
 	}
 
 	// Create a new workflow executor
-	screenshotExecutor := executor.NewScreenshotWorkflowExecutor(screenshotService, diffService, logger)
+	screenshotExecutor := executor.NewScreenshotWorkflowExecutor(screenshotService, diffService, urlService, logger)
 
 	// Create a new workflow service
 	// TODO: replace screenshotExecutor with reportExecutor
