@@ -15,11 +15,7 @@ type workflowAlertClient struct {
 	logger *logger.Logger
 }
 
-func NewWorkflowAlertClient(config models.SlackConfig, logger *logger.Logger) (interfaces.WorkflowAlertClient, error) {
-	embeddedClient, err := NewSlackAlertClient(config, logger)
-	if err != nil {
-		return nil, err
-	}
+func NewWorkflowAlertClient(embeddedClient interfaces.AlertClient, logger *logger.Logger) (interfaces.WorkflowAlertClient, error) {
 
 	workflowAlertClient := workflowAlertClient{
 		AlertClient: embeddedClient,
