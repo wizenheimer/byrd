@@ -8,6 +8,7 @@ import (
 	"github.com/wizenheimer/iris/src/internal/domain/interfaces"
 	"github.com/wizenheimer/iris/src/internal/domain/models"
 	"github.com/wizenheimer/iris/src/pkg/logger"
+	"go.uber.org/zap"
 )
 
 type screenshotTaskExecutor struct {
@@ -60,61 +61,76 @@ func (e *screenshotTaskExecutor) Execute(ctx context.Context, task models.Task) 
 		var completed, failed int
 		checkpoint := task.Checkpoint
 
+		// Get URL batches stream
+		urlBatchChan, errBatchChan := e.urlService.ListURLs(taskCtx, e.config.Parallelism, checkpoint.BatchID)
+
 		for {
 			select {
 			case <-taskCtx.Done():
+				e.logger.Debug("task context cancelled",
+					zap.Any("task_id", task.TaskID),
+					zap.Any("completed", completed),
+					zap.Any("failed", failed))
 				return
-			default:
-				// Get next batch of URLs using checkpoint
-				urlBatchChan, errBatchChan := e.urlService.ListURLs(taskCtx, e.config.Parallelism, checkpoint.BatchID)
 
-				for {
-					select {
-					case <-taskCtx.Done():
-						return
-					case urlsBatch, ok := <-urlBatchChan:
-						if !ok {
-                            // Send final update
-							updates <- models.TaskUpdate{
-								TaskID: task.TaskID,
-								Status: models.TaskStatusComplete,
-							}
-                            // Return
-							return
-						}
-						// Process batch
-						urls := urlsBatch.URLs
-						batchResults := e.processBatch(taskCtx, urls)
-						completed += batchResults.successful
-						failed += batchResults.failed
-						// Update checkpoint with last URL's ID
-						batchID := urls[len(urls)-1].ID
-						checkpoint = models.WorkflowCheckpoint{
-							BatchID: batchID,
-						}
-						// Send update
-						updates <- models.TaskUpdate{
-							TaskID:        task.TaskID,
-							Status:        models.TaskStatusRunning,
-							Completed:     completed,
-							Failed:        failed,
-							NewCheckpoint: checkpoint,
-						}
-					case err, ok := <-errBatchChan:
-						if !ok {
-							return
-						}
-						if err != nil {
-							errors <- models.TaskError{
-								TaskID: task.TaskID,
-								Error:  err,
-								Time:   time.Now(),
-							}
-							time.Sleep(e.config.LowerBound)
-							continue
-						}
+			case err, ok := <-errBatchChan:
+				if !ok {
+					e.logger.Debug("error channel closed",
+						zap.Any("task_id", task.TaskID))
+					return
+				}
+				errors <- models.TaskError{
+					TaskID: task.TaskID,
+					Error:  err,
+					Time:   time.Now(),
+				}
+				// Back off on error
+				time.Sleep(e.config.LowerBound)
+
+			case batch, ok := <-urlBatchChan:
+				if !ok {
+					e.logger.Debug("url batch channel closed, task complete",
+						zap.Any("task_id", task.TaskID),
+						zap.Any("completed", completed),
+						zap.Any("failed", failed))
+					// Send final update
+					updates <- models.TaskUpdate{
+						TaskID:        task.TaskID,
+						Status:        models.TaskStatusComplete,
+						Completed:     completed,
+						Failed:        failed,
+						NewCheckpoint: checkpoint,
+					}
+					return
+				}
+
+				if len(batch.URLs) == 0 {
+					e.logger.Debug("empty batch received",
+						zap.Any("task_id", task.TaskID))
+					continue
+				}
+
+				// Process batch
+				results := e.processBatch(taskCtx, batch.URLs)
+				completed += results.successful
+				failed += results.failed
+
+				// Update checkpoint with last URL's ID
+				if lastURL := batch.URLs[len(batch.URLs)-1]; lastURL.ID != nil {
+					checkpoint = models.WorkflowCheckpoint{
+						BatchID: lastURL.ID,
 					}
 				}
+
+				// Send progress update
+				updates <- models.TaskUpdate{
+					TaskID:        task.TaskID,
+					Status:        models.TaskStatusRunning,
+					Completed:     completed,
+					Failed:        failed,
+					NewCheckpoint: checkpoint,
+				}
+
 			}
 		}
 	}()
