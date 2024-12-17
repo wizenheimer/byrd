@@ -53,6 +53,9 @@ type WorkflowExecutor interface {
 	// Stop stops the workflow
 	Stop(ctx context.Context, wi models.WorkflowIdentifier) error
 
+	// Restart restarts the workflow
+	Restart(ctx context.Context, workflowID models.WorkflowIdentifier) error
+
 	// List returns the list of workflows
 	List(ctx context.Context, ws models.WorkflowStatus, wt models.WorkflowType) ([]models.WorkflowState, error)
 
@@ -64,6 +67,7 @@ type WorkflowExecutor interface {
 type TaskExecutor interface {
 	// Execute executes the task
 	Execute(ctx context.Context, t models.Task) (<-chan models.TaskUpdate, <-chan models.TaskError)
+
 	// Terminate terminates the task
 	Terminate(ctx context.Context) error
 }

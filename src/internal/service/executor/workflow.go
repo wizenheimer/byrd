@@ -56,7 +56,58 @@ func NewWorkflowExecutor(
 
 func (e *workflowExecutor) Initialize(ctx context.Context) error {
 	// Iterate over all active workflows
-	// For each active workflow, create a new context and start execution
+	workflowList, err := e.repository.List(ctx, models.WorkflowStatusRunning, e.workflowType)
+	if err != nil {
+		return fmt.Errorf("failed to list active workflows: %w", err)
+	}
+
+	for _, workflow := range workflowList {
+		// Start workflow execution
+		go e.Restart(ctx, workflow.WorkflowID)
+	}
+	return nil
+}
+
+func (e *workflowExecutor) Restart(ctx context.Context, workflowID models.WorkflowIdentifier) error {
+	// Create task ID
+	taskID := uuid.New().String()
+
+	// Get the workflow state
+	state, err := e.repository.GetState(ctx, workflowID)
+	if err != nil {
+		return fmt.Errorf("failed to get workflow state: %w", err)
+	}
+
+	task := models.Task{
+		TaskID:     taskID,
+		WorkflowID: workflowID,
+		Checkpoint: state.Checkpoint,
+	}
+
+	// Create workflow context
+	workflowCtx, cancel := context.WithCancel(ctx)
+
+	wfCtx := &workflowContext{
+		cancel: cancel,
+		task:   task,
+		state: models.WorkflowState{
+			Status: models.WorkflowStatusRunning,
+		},
+	}
+
+	// Store in active workflows
+	e.activeWorkflows.Store(taskID, wfCtx)
+
+	// Send start alert
+	if err := e.alertClient.SendWorkflowStarted(ctx, workflowID, map[string]string{
+		"task_id": taskID,
+	}); err != nil {
+		e.logger.Error("failed to send start alert", zap.Error(err))
+	}
+
+	// Start execution
+	go e.executeWorkflow(workflowCtx, wfCtx)
+
 	return nil
 }
 
@@ -142,7 +193,15 @@ func (e *workflowExecutor) Stop(ctx context.Context, workflowID models.WorkflowI
 }
 
 func (e *workflowExecutor) List(ctx context.Context, status models.WorkflowStatus, wfType models.WorkflowType) ([]models.WorkflowState, error) {
-	return e.repository.List(ctx, status, wfType)
+	workflowList, err := e.repository.List(ctx, status, wfType)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list workflows: %w", err)
+	}
+	workflowStateList := make([]models.WorkflowState, 0, len(workflowList))
+	for _, workflow := range workflowList {
+		workflowStateList = append(workflowStateList, workflow.WorkflowState)
+	}
+	return workflowStateList, nil
 }
 
 func (e *workflowExecutor) Get(ctx context.Context, workflowID models.WorkflowIdentifier) (models.WorkflowState, error) {
