@@ -114,22 +114,5 @@ func (s *workflowService) GetWorkflow(ctx context.Context, req models.WorkflowRe
 }
 
 func (s *workflowService) ListWorkflows(ctx context.Context, status models.WorkflowStatus, wfType models.WorkflowType) ([]models.WorkflowResponse, error) {
-	executor, err := s.getExecutor(wfType)
-	if err != nil {
-		return nil, err
-	}
-
-	states, err := executor.List(ctx, status, wfType)
-	if err != nil {
-		return nil, err
-	}
-
-	var responses []models.WorkflowResponse
-	for _, state := range states {
-		responses = append(responses, models.WorkflowResponse{
-			WorkflowState: state,
-		})
-	}
-
-	return responses, nil
+	return s.repository.List(ctx, status, wfType)
 }
