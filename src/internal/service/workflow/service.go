@@ -31,6 +31,13 @@ func NewWorkflowService(logger *logger.Logger, repository interfaces.WorkflowRep
 	ws.registerExecutor(models.ScreenshotWorkflowType, screenshotWorkflowExecutor)
 	ws.registerExecutor(models.ReportWorkflowType, reportWorkflowExecutor)
 
+	// Initialize the workflow service
+	if errors := ws.Initialize(context.Background()); len(errors) > 0 {
+		return nil, fmt.Errorf("failed to initialize workflow service: %v", errors)
+	} else {
+		ws.logger.Info("workflow service initialized and ready")
+	}
+
 	return &ws, nil
 }
 

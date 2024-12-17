@@ -169,17 +169,37 @@ func (e *screenshotTaskExecutor) processBatch(ctx context.Context, urls []models
 	return results
 }
 
-func (e *screenshotTaskExecutor) processURL(_ context.Context, _ models.URL) error {
+func (e *screenshotTaskExecutor) processURL(ctx context.Context, url models.URL) error {
 	// Create context with timeout for this URL
-	// urlCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
-	// defer cancel()
+	urlCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
 
 	// Capture current screenshot
+	screenshotOptions := models.ScreenshotRequestOptions{
+		URL: url.URL,
+	}
+	screenshotResponse, currentScreenshotImage, currentScreenshotContent, err := e.screenshotService.CaptureScreenshot(urlCtx, screenshotOptions)
+	if err != nil {
+		return err
+	}
+
+	e.logger.Debug("screenshot captured", zap.Any("screenshot_response", screenshotResponse), zap.Any("screenshot_content", currentScreenshotContent))
 
 	// Get previous screenshot for comparison
+	screenshotImageResponse, err := e.screenshotService.GetPreviousScreenshotImage(urlCtx, url.URL)
+	if err != nil {
+		return err
+	}
 
-	// Create diff
+	e.logger.Debug("previous screenshot retrieved", zap.Any("screenshot_image_response", screenshotImageResponse))
 
+	// Compare screenshots
+	diffAnalysis, err := e.diffService.CreateCurrentDiffFromScreenshotImages(urlCtx, url.URL, currentScreenshotImage, screenshotImageResponse.Image)
+	if err != nil {
+		return err
+	}
+
+	e.logger.Debug("diff analysis created", zap.Any("diff_analysis", diffAnalysis))
 	return nil
 }
 
