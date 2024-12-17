@@ -22,7 +22,7 @@ type ExecutorConfig struct {
 // This is used to determine the configuration for the executor based on the workflow type
 func GetExecutorConfig(workflowType WorkflowType) (ExecutorConfig, error) {
 	// Default executor configuration
-    exConfig := ExecutorConfig{
+	exConfig := ExecutorConfig{
 		Parallelism: 10,
 		LowerBound:  1 * time.Minute,
 		UpperBound:  30 * time.Minute,

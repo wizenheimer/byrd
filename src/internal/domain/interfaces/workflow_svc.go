@@ -54,7 +54,7 @@ type WorkflowExecutor interface {
 	Stop(ctx context.Context, wi models.WorkflowIdentifier) error
 
 	// Restart restarts the workflow
-	Restart(ctx context.Context, workflowID models.WorkflowIdentifier) error
+	Restart(ctx context.Context, workflowID models.WorkflowIdentifier, errChan chan error)
 
 	// List returns the list of workflows
 	List(ctx context.Context, ws models.WorkflowStatus, wt models.WorkflowType) ([]models.WorkflowState, error)

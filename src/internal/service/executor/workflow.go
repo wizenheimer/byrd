@@ -61,21 +61,32 @@ func (e *workflowExecutor) Initialize(ctx context.Context) error {
 		return fmt.Errorf("failed to list active workflows: %w", err)
 	}
 
+	errChan := make(chan error, len(workflowList))
+	defer close(errChan)
+
+	go func() {
+		for err := range errChan {
+			e.logger.Error("failed to restart workflow", zap.Error(err))
+		}
+	}()
+
 	for _, workflow := range workflowList {
 		// Start workflow execution
-		go e.Restart(ctx, workflow.WorkflowID)
+		go e.Restart(ctx, workflow.WorkflowID, errChan)
 	}
+
 	return nil
 }
 
-func (e *workflowExecutor) Restart(ctx context.Context, workflowID models.WorkflowIdentifier) error {
+func (e *workflowExecutor) Restart(ctx context.Context, workflowID models.WorkflowIdentifier, errChan chan error) {
 	// Create task ID
 	taskID := uuid.New().String()
 
 	// Get the workflow state
 	state, err := e.repository.GetState(ctx, workflowID)
 	if err != nil {
-		return fmt.Errorf("failed to get workflow state: %w", err)
+		errChan <- fmt.Errorf("failed to get workflow state: %w", err)
+		return
 	}
 
 	task := models.Task{
@@ -107,8 +118,6 @@ func (e *workflowExecutor) Restart(ctx context.Context, workflowID models.Workfl
 
 	// Start execution
 	go e.executeWorkflow(workflowCtx, wfCtx)
-
-	return nil
 }
 
 func (e *workflowExecutor) Start(ctx context.Context, workflowID models.WorkflowIdentifier) error {
@@ -252,10 +261,13 @@ func (e *workflowExecutor) handleTaskError(ctx context.Context, wfCtx *workflowC
 		e.logger.Error("failed to update state", zap.Error(err))
 	}
 
-	e.alertClient.SendWorkflowFailed(ctx, wfCtx.task.WorkflowID, map[string]string{
+	if err := e.alertClient.SendWorkflowFailed(ctx, wfCtx.task.WorkflowID, map[string]string{
 		"task_id": wfCtx.task.TaskID,
 		"error":   taskErr.Error.Error(),
-	})
+	}); err != nil {
+		e.logger.Error("failed to send error alert", zap.Error(err))
+	}
+
 }
 
 func (e *workflowExecutor) handleWorkflowCompletion(ctx context.Context, wfCtx *workflowContext) {
@@ -267,9 +279,11 @@ func (e *workflowExecutor) handleWorkflowCompletion(ctx context.Context, wfCtx *
 		e.logger.Error("failed to update state", zap.Error(err))
 	}
 
-	e.alertClient.SendWorkflowCompleted(ctx, wfCtx.task.WorkflowID, map[string]string{
+	if err := e.alertClient.SendWorkflowCompleted(ctx, wfCtx.task.WorkflowID, map[string]string{
 		"task_id": wfCtx.task.TaskID,
-	})
+	}); err != nil {
+		e.logger.Error("failed to send completion alert", zap.Error(err))
+	}
 }
 
 func (e *workflowExecutor) handleWorkflowCancellation(ctx context.Context, wfCtx *workflowContext) {
@@ -281,7 +295,9 @@ func (e *workflowExecutor) handleWorkflowCancellation(ctx context.Context, wfCtx
 		e.logger.Error("failed to update state", zap.Error(err))
 	}
 
-	e.alertClient.SendWorkflowCancelled(ctx, wfCtx.task.WorkflowID, map[string]string{
+	if err := e.alertClient.SendWorkflowCancelled(ctx, wfCtx.task.WorkflowID, map[string]string{
 		"task_id": wfCtx.task.TaskID,
-	})
+	}); err != nil {
+		e.logger.Error("failed to send cancel alert", zap.Error(err))
+	}
 }
