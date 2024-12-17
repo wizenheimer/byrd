@@ -68,16 +68,21 @@ func (wh *WorkflowHandler) GetWorkflow(c *fiber.Ctx) error {
 }
 
 func (wh *WorkflowHandler) ListWorkflows(c *fiber.Ctx) error {
-	var workflowStatus models.WorkflowStatus
-	var workflowType models.WorkflowType
-	if err := c.QueryParser(&workflowStatus); err != nil {
-		wh.logger.Error("failed to parse request query", zap.Error(err))
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "failed to parse request query"})
+	workflowStatusString := c.Query("workflow_status")
+	workflowStatus, err := models.ParseWorkflowStatus(workflowStatusString)
+	if err != nil {
+		wh.logger.Error("failed to parse workflow status", zap.Error(err))
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "failed to parse workflow status"})
 	}
-	if err := c.QueryParser(&workflowType); err != nil {
-		wh.logger.Error("failed to parse request query", zap.Error(err))
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "failed to parse request query"})
+
+	workflowTypeString := c.Query("workflow_type")
+	workflowType, err := models.ParseWorkflowType(workflowTypeString)
+	if err != nil {
+		wh.logger.Error("failed to parse workflow type", zap.Error(err))
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "failed to parse workflow type"})
 	}
+
+	wh.logger.Debug("list workflows", zap.String("workflow_status", workflowStatusString), zap.String("workflow_type", workflowTypeString))
 
 	workflows, err := wh.workflowService.ListWorkflows(context.Background(), workflowStatus, workflowType)
 	if err != nil {
