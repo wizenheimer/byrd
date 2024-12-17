@@ -18,6 +18,16 @@ const (
 	ReportWorkflowType WorkflowType = "report"
 )
 
+// Parses a string into a WorkflowType
+func ParseWorkflowType(s string) (WorkflowType, error) {
+	switch WorkflowType(s) {
+	case ScreenshotWorkflowType, ReportWorkflowType:
+		return WorkflowType(s), nil
+	default:
+		return "", fmt.Errorf("invalid workflow type: %s", s)
+	}
+}
+
 // WorkflowStatus is an enum for the status of a workflow
 type WorkflowStatus string
 
@@ -28,6 +38,17 @@ const (
 	WorkflowStatusAborted   WorkflowStatus = "aborted"
 	WorkflowStatusUnknown   WorkflowStatus = "unknown"
 )
+
+// ParseWorkflowStatus converts a string to WorkflowStatus with validation
+func ParseWorkflowStatus(s string) (WorkflowStatus, error) {
+	switch WorkflowStatus(s) {
+	case WorkflowStatusRunning, WorkflowStatusCompleted,
+		WorkflowStatusFailed, WorkflowStatusAborted, WorkflowStatusUnknown:
+		return WorkflowStatus(s), nil
+	default:
+		return "", fmt.Errorf("invalid workflow status: %s", s)
+	}
+}
 
 // WorkflowIdentifier is a unique identifier for a workflow
 type WorkflowIdentifier struct {

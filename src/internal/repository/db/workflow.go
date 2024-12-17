@@ -15,10 +15,8 @@ import (
 )
 
 const (
-	// Key prefixes for Redis
+	// Single key prefix for all workflow data
 	workflowKeyPrefix = "workflow:"
-	statusKeyPrefix   = "status:"
-
 	// TTL for workflow states (30 days)
 	workflowStateTTL = 30 * 24 * time.Hour
 )
@@ -41,218 +39,191 @@ func NewWorkflowRepository(client *redis.Client, logger *logger.Logger) (interfa
 
 func validateClient(ctx context.Context, client *redis.Client) error {
 	if client == nil {
-		return fmt.Errorf("nil client")
+		return fmt.Errorf("client is required")
+	}
+	if _, err := client.Ping(ctx).Result(); err != nil {
+		return fmt.Errorf("failed to ping client: %w", err)
+	}
+	return nil
+}
+
+func (r *workflowRepository) SetState(ctx context.Context, wi models.WorkflowIdentifier, ws models.WorkflowState) error {
+	key := r.generateKey(wi)
+
+	data, err := json.Marshal(ws)
+	if err != nil {
+		return fmt.Errorf("failed to marshal state: %w", err)
 	}
 
-	// Set timeout for health check
-	timeoutCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-
-	// Try to ping Redis
-	if err := client.Ping(timeoutCtx).Err(); err != nil {
-		return fmt.Errorf("failed to ping redis: %w", err)
+	if err := r.client.Set(ctx, key, data, workflowStateTTL).Err(); err != nil {
+		return fmt.Errorf("failed to set state: %w", err)
 	}
 
 	return nil
 }
 
-// GetState retrieves workflow state from Redis
 func (r *workflowRepository) GetState(ctx context.Context, wi models.WorkflowIdentifier) (models.WorkflowState, error) {
-	key := r.generateWorkflowKey(wi)
+	key := r.generateKey(wi)
 
 	data, err := r.client.Get(ctx, key).Bytes()
 	if err != nil {
 		if err == redis.Nil {
-			return models.WorkflowState{}, fmt.Errorf("workflow state not found: %s", key)
+			return models.WorkflowState{}, fmt.Errorf("workflow not found: %s", key)
 		}
-		return models.WorkflowState{}, fmt.Errorf("failed to get workflow state: %w", err)
+		return models.WorkflowState{}, fmt.Errorf("failed to get state: %w", err)
 	}
 
 	var state models.WorkflowState
 	if err := json.Unmarshal(data, &state); err != nil {
-		return models.WorkflowState{}, fmt.Errorf("failed to unmarshal workflow state: %w", err)
+		return models.WorkflowState{}, fmt.Errorf("failed to unmarshal state: %w", err)
 	}
 
 	return state, nil
 }
 
-// SetCheckpoint updates workflow checkpoint in Redis
-func (r *workflowRepository) SetCheckpoint(
-	ctx context.Context,
-	wi models.WorkflowIdentifier,
-	ws models.WorkflowStatus,
-	wc models.WorkflowCheckpoint,
-) error {
-	// Get existing state
-	state, err := r.GetState(ctx, wi)
-	if err != nil && !strings.Contains(err.Error(), "not found") {
-		return fmt.Errorf("failed to get existing state: %w", err)
+func (r *workflowRepository) SetCheckpoint(ctx context.Context, wi models.WorkflowIdentifier, status models.WorkflowStatus, checkpoint models.WorkflowCheckpoint) error {
+	state := models.WorkflowState{
+		Status:     status,
+		Checkpoint: checkpoint,
 	}
-
-	// Update state
-	state.Status = ws
-	state.Checkpoint = wc
-
-	// Store updated state
 	return r.SetState(ctx, wi, state)
 }
 
-// SetState stores complete workflow state in Redis
-func (r *workflowRepository) SetState(
-	ctx context.Context,
-	wi models.WorkflowIdentifier,
-	ws models.WorkflowState,
-) error {
-	key := r.generateWorkflowKey(wi)
+func (r *workflowRepository) List(ctx context.Context, status models.WorkflowStatus, wfType models.WorkflowType) ([]models.WorkflowResponse, error) {
+	r.logger.Debug("listing workflows",
+		zap.String("status", string(status)),
+		zap.String("type", string(wfType)))
 
-	// Marshal state
-	data, err := json.Marshal(ws)
-	if err != nil {
-		return fmt.Errorf("failed to marshal workflow state: %w", err)
-	}
-
-	// Store in Redis with TTL
-	pipe := r.client.Pipeline()
-
-	// Store workflow state
-	pipe.Set(ctx, key, data, workflowStateTTL)
-
-	// Add to status set
-	statusKey := r.generateStatusKey(ws.Status, *wi.Type)
-	pipe.SAdd(ctx, statusKey, key)
-	pipe.Expire(ctx, statusKey, workflowStateTTL)
-
-	// Execute pipeline
-	if _, err := pipe.Exec(ctx); err != nil {
-		return fmt.Errorf("failed to store workflow state: %w", err)
-	}
-
-	r.logger.Debug("stored workflow state",
-		zap.String("key", key),
-		zap.String("status", string(ws.Status)),
-		zap.Any("checkpoint", ws.Checkpoint))
-
-	return nil
-}
-
-// List retrieves workflows by status and type
-func (r *workflowRepository) List(
-	ctx context.Context,
-	ws models.WorkflowStatus,
-	wt models.WorkflowType,
-) ([]models.WorkflowResponse, error) {
-	statusKey := r.generateStatusKey(ws, wt)
-
-	// Get all workflow keys for the status
-	keys, err := r.client.SMembers(ctx, statusKey).Result()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get workflow keys: %w", err)
-	}
-
-	if len(keys) == 0 {
-		return []models.WorkflowResponse{}, nil
-	}
-
-	// Get all workflow states in a pipeline
-	pipe := r.client.Pipeline()
-	cmds := make(map[string]*redis.StringCmd)
-
-	for _, key := range keys {
-		cmds[key] = pipe.Get(ctx, key)
-	}
-
-	if _, err := pipe.Exec(ctx); err != nil {
-		return nil, fmt.Errorf("failed to get workflow states: %w", err)
-	}
-
-	// Process results
 	var responses []models.WorkflowResponse
+	var cursor uint64
+	pattern := fmt.Sprintf("%s%s:*", workflowKeyPrefix, string(wfType))
 
-	for key, cmd := range cmds {
-		data, err := cmd.Bytes()
+	// Debug log the pattern
+	r.logger.Debug("scanning with pattern", zap.String("pattern", pattern))
+
+	for {
+		// Scan for keys
+		keys, nextCursor, err := r.client.Scan(ctx, cursor, pattern, 100).Result()
 		if err != nil {
-			if err == redis.Nil {
-				// Key expired between SMEMBERS and GET
+			return nil, fmt.Errorf("failed to scan keys: %w", err)
+		}
+
+		r.logger.Debug("found keys", zap.Strings("keys", keys))
+
+		// Process found keys
+		for _, key := range keys {
+			// Parse identifier from key
+			identifier, err := r.parseKey(key)
+			if err != nil {
+				r.logger.Error("failed to parse key",
+					zap.String("key", key),
+					zap.Error(err))
 				continue
 			}
-			r.logger.Error("failed to get workflow state",
-				zap.String("key", key),
-				zap.Error(err))
-			continue
+
+			// Get workflow state
+			data, err := r.client.Get(ctx, key).Bytes()
+			if err != nil {
+				if err == redis.Nil {
+					continue // Key expired
+				}
+				r.logger.Error("failed to get workflow data",
+					zap.String("key", key),
+					zap.Error(err))
+				continue
+			}
+
+			var state models.WorkflowState
+			if err := json.Unmarshal(data, &state); err != nil {
+				r.logger.Error("failed to unmarshal state",
+					zap.String("key", key),
+					zap.Error(err))
+				continue
+			}
+
+			// Filter by status if specified
+			if status != "" && state.Status != status {
+				continue
+			}
+
+			// Debug log the parsed data
+			r.logger.Debug("parsed workflow data",
+				zap.Any("identifier", identifier),
+				zap.Any("state", state))
+
+			responses = append(responses, models.WorkflowResponse{
+				WorkflowID: models.WorkflowIdentifier{
+					Type:       &wfType, // Use the input type
+					Year:       identifier.Year,
+					WeekNumber: identifier.WeekNumber,
+					WeekDay:    identifier.WeekDay,
+				},
+				WorkflowState: state,
+			})
 		}
 
-		var state models.WorkflowState
-		if err := json.Unmarshal(data, &state); err != nil {
-			r.logger.Error("failed to unmarshal workflow state",
-				zap.String("key", key),
-				zap.Error(err))
-			continue
+		cursor = nextCursor
+		if cursor == 0 {
+			break
 		}
-
-		identifier, err := r.parseWorkflowKey(key)
-		if err != nil {
-			r.logger.Error("failed to parse workflow key",
-				zap.String("key", key),
-				zap.Error(err))
-			continue
-		}
-
-		responses = append(responses, models.WorkflowResponse{
-			WorkflowID:    identifier,
-			WorkflowState: state,
-		})
 	}
 
 	return responses, nil
 }
 
-// Helper methods for key management
-func (r *workflowRepository) generateWorkflowKey(wi models.WorkflowIdentifier) string {
-	return fmt.Sprintf("%s%s:%d:%d:%d",
+func (r *workflowRepository) parseKey(key string) (models.WorkflowIdentifier, error) {
+	// Remove prefix
+	key = strings.TrimPrefix(key, workflowKeyPrefix)
+
+	// Split the key parts
+	parts := strings.Split(key, ":")
+	if len(parts) != 4 {
+		return models.WorkflowIdentifier{}, fmt.Errorf("invalid key format: %s", key)
+	}
+
+	// Parse values
+	workflowType := models.WorkflowType(parts[0])
+
+	var year, weekNum, weekDay int
+	if _, err := fmt.Sscanf(parts[1], "%d", &year); err != nil {
+		return models.WorkflowIdentifier{}, fmt.Errorf("invalid year: %s", parts[1])
+	}
+	if _, err := fmt.Sscanf(parts[2], "%d", &weekNum); err != nil {
+		return models.WorkflowIdentifier{}, fmt.Errorf("invalid week number: %s", parts[2])
+	}
+	if _, err := fmt.Sscanf(parts[3], "%d", &weekDay); err != nil {
+		return models.WorkflowIdentifier{}, fmt.Errorf("invalid week day: %s", parts[3])
+	}
+
+	// Create new variables for the pointers
+	wfTypeCopy := workflowType
+	yearCopy := year
+	weekNumCopy := weekNum
+	weekDayCopy := weekDay
+
+	// Return identifier with proper pointer values
+	return models.WorkflowIdentifier{
+		Type:       &wfTypeCopy,
+		Year:       &yearCopy,
+		WeekNumber: &weekNumCopy,
+		WeekDay:    &weekDayCopy,
+	}, nil
+}
+
+func (r *workflowRepository) generateKey(wi models.WorkflowIdentifier) string {
+	if wi.Type == nil || wi.Year == nil || wi.WeekNumber == nil || wi.WeekDay == nil {
+		r.logger.Error("invalid workflow identifier - nil values",
+			zap.Any("identifier", wi))
+		return ""
+	}
+
+	key := fmt.Sprintf("%s%s:%d:%d:%d",
 		workflowKeyPrefix,
 		*wi.Type,
 		*wi.Year,
 		*wi.WeekNumber,
 		*wi.WeekDay)
-}
 
-func (r *workflowRepository) generateStatusKey(status models.WorkflowStatus, workflowType models.WorkflowType) string {
-	return fmt.Sprintf("%s%s:%s", statusKeyPrefix, workflowType, status)
-}
-
-func (r *workflowRepository) parseWorkflowKey(key string) (models.WorkflowIdentifier, error) {
-	// Remove prefix
-	key = strings.TrimPrefix(key, workflowKeyPrefix)
-
-	// Split remaining parts
-	parts := strings.Split(key, ":")
-	if len(parts) != 4 {
-		return models.WorkflowIdentifier{}, fmt.Errorf("invalid workflow key format: %s", key)
-	}
-
-	// Parse values
-	wfType := models.WorkflowType(parts[0])
-	var year, weekNum, weekDay int
-
-	_, err := fmt.Sscanf(parts[1], "%d", &year)
-	if err != nil {
-		return models.WorkflowIdentifier{}, fmt.Errorf("invalid year format: %s", parts[1])
-	}
-
-	_, err = fmt.Sscanf(parts[2], "%d", &weekNum)
-	if err != nil {
-		return models.WorkflowIdentifier{}, fmt.Errorf("invalid week number format: %s", parts[2])
-	}
-
-	_, err = fmt.Sscanf(parts[3], "%d", &weekDay)
-	if err != nil {
-		return models.WorkflowIdentifier{}, fmt.Errorf("invalid week day format: %s", parts[3])
-	}
-
-	return models.WorkflowIdentifier{
-		Type:       &wfType,
-		Year:       &year,
-		WeekNumber: &weekNum,
-		WeekDay:    &weekDay,
-	}, nil
+	r.logger.Debug("generated key", zap.String("key", key))
+	return key
 }
