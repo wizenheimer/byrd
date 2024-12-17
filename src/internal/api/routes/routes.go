@@ -13,6 +13,7 @@ type HandlerContainer struct {
 	CompetitorHandler   *handlers.CompetitorHandler
 	NotificationHandler *handlers.NotificationHandler
 	URLHandler          *handlers.URLHandler
+	WorkflowHandler     *handlers.WorkflowHandler
 }
 
 func NewHandlerContainer(
@@ -21,6 +22,7 @@ func NewHandlerContainer(
 	diffService interfaces.DiffService,
 	competitorService interfaces.CompetitorService,
 	notificationService interfaces.NotificationService,
+	workflowService interfaces.WorkflowService,
 	logger *logger.Logger,
 ) *HandlerContainer {
 	return &HandlerContainer{
@@ -31,6 +33,8 @@ func NewHandlerContainer(
 		DiffHandler:         handlers.NewDiffHandler(diffService, logger),
 		CompetitorHandler:   handlers.NewCompetitorHandler(competitorService, logger),
 		NotificationHandler: handlers.NewNotificationHandler(notificationService, logger),
+		// Handler for workflow management
+		WorkflowHandler: handlers.NewWorkflowHandler(workflowService, logger),
 	}
 }
 
@@ -54,6 +58,13 @@ func SetupRoutes(app *fiber.App, handlers *HandlerContainer) {
 	diff := api.Group("/diff")
 	diff.Post("/create", handlers.DiffHandler.CreateDiff)
 	diff.Get("/report", handlers.DiffHandler.CreateReport)
+
+	// Workflow routes
+	workflow := api.Group("/workflow")
+	workflow.Post("/", handlers.WorkflowHandler.StartWorkflow)
+	workflow.Delete("/", handlers.WorkflowHandler.StopWorkflow)
+	workflow.Get("/", handlers.WorkflowHandler.GetWorkflow)
+	workflow.Get("/list", handlers.WorkflowHandler.ListWorkflows)
 
 	// Competitor routes
 	competitors := api.Group("/competitors")
