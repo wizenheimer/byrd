@@ -18,5 +18,5 @@ type WorkflowRepository interface {
 	SetState(ctx context.Context, wi models.WorkflowIdentifier, ws models.WorkflowState) error
 
 	// List returns the list of workflows from the repository
-	List(ctx context.Context, ws models.WorkflowStatus, wt models.WorkflowType) ([]models.WorkflowState, error)
+	List(ctx context.Context, ws models.WorkflowStatus, wt models.WorkflowType) ([]models.WorkflowResponse, error)
 }
