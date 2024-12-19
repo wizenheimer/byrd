@@ -105,7 +105,7 @@ func GetCurrentScreenshotPath(url string) (string, error) {
 		return "", fmt.Errorf("failed to generate URL hash: %w", err)
 	}
 
-	year, weekNumber, runID := getCurrentTimeComponents()
+	year, weekNumber, runID := GetCurrentTimeComponents(true)
 	path, err := GeneratePath(hash, year, weekNumber, runID)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate path: %w", err)
@@ -121,7 +121,7 @@ func GetCurrentContentPath(url string) (string, error) {
 		return "", fmt.Errorf("failed to generate URL hash: %w", err)
 	}
 
-	year, weekNumber, runID := getCurrentTimeComponents()
+	year, weekNumber, runID := GetCurrentTimeComponents(true)
 	path, err := GeneratePath(hash, year, weekNumber, runID)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate path: %w", err)
@@ -137,7 +137,7 @@ func GetPreviousScreenshotPath(url string) (string, error) {
 		return "", fmt.Errorf("failed to generate URL hash: %w", err)
 	}
 
-	year, weekNumber, runID := getPreviousTimeComponents()
+	year, weekNumber, runID := GetPreviousTimeComponents(true)
 	path, err := GeneratePath(hash, year, weekNumber, runID)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate path: %w", err)
@@ -153,7 +153,7 @@ func GetPreviousContentPath(url string) (string, error) {
 		return "", fmt.Errorf("failed to generate URL hash: %w", err)
 	}
 
-	year, weekNumber, runID := getPreviousTimeComponents()
+	year, weekNumber, runID := GetPreviousTimeComponents(true)
 	path, err := GeneratePath(hash, year, weekNumber, runID)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate path: %w", err)
@@ -163,7 +163,7 @@ func GetPreviousContentPath(url string) (string, error) {
 }
 
 // getCurrentTimeComponents returns the current year, week number, and run ID
-func getCurrentTimeComponents() (year, weekNumber int, runID string) {
+func GetCurrentTimeComponents(enableBucketing bool) (year, weekNumber int, runID string) {
 	now := time.Now()
 	year, weekNumber = now.ISOWeek()
 
@@ -172,17 +172,21 @@ func getCurrentTimeComponents() (year, weekNumber int, runID string) {
 		currentWeekDay = 7
 	}
 
-	if int(currentWeekDay) <= 3 { // Monday, Tuesday, Wednesday
-		runID = constants.FirstRunID
-	} else { // Thursday, Friday, Saturday, Sunday
-		runID = constants.LastRunID
+	if enableBucketing {
+		if int(currentWeekDay) <= 3 { // Monday, Tuesday, Wednesday
+			runID = constants.FirstRunID
+		} else { // Thursday, Friday, Saturday, Sunday
+			runID = constants.LastRunID
+		}
+	} else {
+		runID = currentWeekDay.String()
 	}
 
 	return year, weekNumber, runID
 }
 
 // getPreviousTimeComponents returns the previous year, week number, and run ID
-func getPreviousTimeComponents() (year, weekNumber int, runID string) {
+func GetPreviousTimeComponents(enableBucketing bool) (year, weekNumber int, runID string) {
 	now := time.Now()
 	currentYear, currentWeek := now.ISOWeek()
 
@@ -191,22 +195,47 @@ func getPreviousTimeComponents() (year, weekNumber int, runID string) {
 		currentWeekDay = 7
 	}
 
-	if int(currentWeekDay) <= 3 { // Monday, Tuesday, Wednesday
-		runID = constants.LastRunID
-		if currentWeek > 1 {
+	if enableBucketing {
+		if int(currentWeekDay) <= 3 { // Monday, Tuesday, Wednesday
+			runID = constants.LastRunID
+			if currentWeek > 1 {
+				year = currentYear
+				weekNumber = currentWeek - 1
+			} else {
+				year = currentYear - 1
+				weekNumber = 52
+			}
+		} else { // Thursday, Friday, Saturday, Sunday
+			runID = constants.FirstRunID
 			year = currentYear
-			weekNumber = currentWeek - 1
-		} else {
-			year = currentYear - 1
-			weekNumber = 52
+			weekNumber = currentWeek
 		}
-	} else { // Thursday, Friday, Saturday, Sunday
-		runID = constants.FirstRunID
-		year = currentYear
-		weekNumber = currentWeek
+	} else {
+		runID = currentWeekDay.String()
 	}
 
 	return year, weekNumber, runID
+}
+
+func GetListingPrefixFromContentType(url, contentType string) (*string, error) {
+	hash, err := GenerateURLHash(url)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate URL hash: %w", err)
+	}
+
+	var prefix string
+	switch contentType {
+	case "image", "screenshot":
+		contentType = "images"
+	case "content", "text", "html":
+		contentType = "text"
+	default:
+		return nil, fmt.Errorf("invalid content type: %s", contentType)
+	}
+
+	prefix = fmt.Sprintf("%s/%s", contentType, hash)
+
+	return &prefix, nil
 }
 
 // ValidateHostname checks if a hostname is valid and not in the reject list
