@@ -171,35 +171,35 @@ func (e *screenshotTaskExecutor) processBatch(ctx context.Context, urls []models
 
 func (e *screenshotTaskExecutor) processURL(ctx context.Context, url models.URL) error {
 	// Create context with timeout for this URL
-	urlCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	urlContext, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
 	// Capture current screenshot
-	screenshotOptions := models.ScreenshotRequestOptions{
+	currentImgResp, currentHtmlContentResp, err := e.screenshotService.Refresh(urlContext, url.URL, models.ScreenshotRequestOptions{
 		URL: url.URL,
-	}
-	screenshotResponse, currentScreenshotImage, currentScreenshotContent, err := e.screenshotService.CaptureScreenshot(urlCtx, screenshotOptions)
+	})
 	if err != nil {
 		return err
 	}
-
-	e.logger.Debug("screenshot captured", zap.Any("screenshot_response", screenshotResponse), zap.Any("screenshot_content", currentScreenshotContent))
 
 	// Get previous screenshot for comparison
-	screenshotImageResponse, err := e.screenshotService.GetPreviousScreenshotImage(urlCtx, url.URL)
+	previousImgResp, previousHtmlContentResp, err := e.screenshotService.Retrieve(urlContext, url.URL)
 	if err != nil {
 		return err
 	}
-
-	e.logger.Debug("previous screenshot retrieved", zap.Any("screenshot_image_response", screenshotImageResponse))
 
 	// Compare screenshots
-	diffAnalysis, err := e.diffService.CreateCurrentDiffFromScreenshotImages(urlCtx, url.URL, currentScreenshotImage, screenshotImageResponse.Image)
+	diffHTMLResp, err := e.diffService.CompareHTMLContentResponse(urlContext, currentHtmlContentResp, previousHtmlContentResp)
 	if err != nil {
 		return err
 	}
 
-	e.logger.Debug("diff analysis created", zap.Any("diff_analysis", diffAnalysis))
+	diffImgResp, err := e.diffService.CompareImageResponse(urlContext, currentImgResp, previousImgResp)
+	if err != nil {
+		return err
+	}
+
+	e.logger.Debug("diff results", zap.Any("html_diff", diffHTMLResp), zap.Any("img_diff", diffImgResp))
 	return nil
 }
 

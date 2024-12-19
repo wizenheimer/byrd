@@ -1,6 +1,7 @@
 package models
 
 import (
+	"errors"
 	"fmt"
 	"image"
 	"strconv"
@@ -194,6 +195,12 @@ type ScreenshotRequestOptions struct {
 	MetadataIcon           *bool `json:"metadata_icon,omitempty"`
 }
 
+// ScreenshotHTMLRequestOptions defines all possible options for capturing html
+type ScreenshotHTMLRequestOptions struct {
+	// Target Options
+	URL string `json:"url"` // The URL of the website to take a screenshot of
+}
+
 type GetScreenshotOptions struct {
 	// Target Options
 	URL        string `json:"url"`                   // The URL of the website to take a screenshot of
@@ -209,40 +216,20 @@ type ListScreenshotsOptions struct {
 	MaxItems    int    `json:"max_items"`    // The maximum number of items to list
 }
 
-// OutputFormat defines the possible output formats for screenshots
-type OutputFormat string
-
-const (
-	OutputFormatBase64 OutputFormat = "base64"
-	OutputFormatBinary OutputFormat = "binary"
-	OutputFormatJSON   OutputFormat = "json"
-)
-
-// ScreenshotResponse defines the response structure for screenshot requests
-type ScreenshotResponse struct {
-	Status         string           `json:"status"`
-	Paths          *ScreenshotPaths `json:"paths,omitempty"`
-	Metadata       *ScreenshotMeta  `json:"metadata,omitempty"`
-	ScreenshotSize *int             `json:"screenshot_size,omitempty"`
-	URL            *string          `json:"url,omitempty"`
-}
-
-// ScreenshotContentResponse defines the response structure for screenshot content requests
-type ScreenshotContentResponse struct {
-	Status   string              `json:"status"`
-	Content  string              `json:"content"`
-	Metadata *ScreenshotMetadata `json:"metadata,omitempty"`
-	URL      *string             `json:"url,omitempty"`
-	Path     *string             `json:"path,omitempty"`
+// ScreenshotHTMLContentResponse defines the response structure for screenshot content requests
+type ScreenshotHTMLContentResponse struct {
+	Status      string              `json:"status"`
+	HTMLContent string              `json:"content"`
+	Metadata    *ScreenshotMetadata `json:"metadata,omitempty"`
 }
 
 // ScreenshotImageResponse defines the response structure for screenshot image requests
 type ScreenshotImageResponse struct {
-	Status   string              `json:"status"`
-	Image    image.Image         `json:"image"`
-	Metadata *ScreenshotMetadata `json:"metadata,omitempty"`
-	URL      *string             `json:"url,omitempty"`
-	Path     *string             `json:"path,omitempty"`
+	Status      string              `json:"status"`
+	Image       image.Image         `json:"image"`
+	Metadata    *ScreenshotMetadata `json:"metadata,omitempty"`
+	ImageHeight *int                `json:"image_height"`
+	ImageWidth  *int                `json:"image_width"`
 }
 
 // ScreenshotListResponse defines the response structure for listing screenshots
@@ -267,12 +254,11 @@ type ScreenshotMeta struct {
 
 // ScreenshotMetadata defines complete metadata for a screenshot
 type ScreenshotMetadata struct {
-	SourceURL         string  `json:"source_url"`
-	FetchedAt         string  `json:"fetched_at"`
-	ScreenshotService string  `json:"screenshot_service"`
-	ImageWidth        int     `json:"image_width"`
-	ImageHeight       int     `json:"image_height"`
-	PageTitle         *string `json:"page_title"`
+	SourceURL   string `json:"source_url"`
+	RenderedURL string `json:"rendered_url"`
+	Year        int    `json:"year"`
+	WeekNumber  int    `json:"week_number"`
+	WeekDay     int    `json:"week_day"`
 }
 
 type ScreenshotServiceConfig struct {
@@ -286,59 +272,66 @@ func (s ScreenshotMetadata) ToMap() map[string]string {
 	result := make(map[string]string)
 
 	result["source_url"] = s.SourceURL
-	result["fetched_at"] = s.FetchedAt
-	result["screenshot_service"] = s.ScreenshotService
-	result["image_width"] = strconv.Itoa(s.ImageWidth)
-	result["image_height"] = strconv.Itoa(s.ImageHeight)
-
-	// Handle the pointer field
-	if s.PageTitle != nil {
-		result["page_title"] = *s.PageTitle
-	}
+	result["rendered_url"] = s.RenderedURL
+	result["year"] = strconv.Itoa(s.Year)
+	result["week_day"] = strconv.Itoa(s.WeekDay)
+	result["week_number"] = strconv.Itoa(s.WeekNumber)
 
 	return result
 }
 
 // FromMap safely converts map[string]string to ScreenshotMetadata
-func ScreenshotMetadataFromMap(m map[string]string) (ScreenshotMetadata, error) {
+func ScreenshotMetadataFromMap(m map[string]string) (ScreenshotMetadata, []error) {
 	var result ScreenshotMetadata
-	var errors []string
+	var errs []error
 
 	// Required string fields
-	result.SourceURL = m["source_url"]
-	result.FetchedAt = m["fetched_at"]
-	result.ScreenshotService = m["screenshot_service"]
+	if srcURL, exists := m["source_url"]; exists {
+		result.SourceURL = srcURL
+	} else {
+		errs = append(errs, errors.New("missing required field: source_url"))
+	}
 
-	// Convert imageWidth
-	if width, exists := m["image_width"]; exists {
-		if w, err := strconv.Atoi(width); err == nil {
-			result.ImageWidth = w
+	if rendURL, exists := m["rendered_url"]; exists {
+		result.RenderedURL = rendURL
+	} else {
+		errs = append(errs, errors.New("missing required field: rendered_url"))
+	}
+
+	// Required integer fields
+	if year, exists := m["year"]; exists {
+		if y, err := strconv.Atoi(year); err == nil {
+			result.Year = y
 		} else {
-			errors = append(errors, fmt.Sprintf("invalid image_width: %s", err))
+			errs = append(errs, fmt.Errorf("invalid year: %s", err))
 		}
 	} else {
-		errors = append(errors, "missing required field: image_width")
+		errs = append(errs, errors.New("missing required field: year"))
 	}
 
-	// Convert imageHeight
-	if height, exists := m["image_height"]; exists {
-		if h, err := strconv.Atoi(height); err == nil {
-			result.ImageHeight = h
+	if weekday, exists := m["week_day"]; exists {
+		if wd, err := strconv.Atoi(weekday); err == nil {
+			result.WeekDay = wd
 		} else {
-			errors = append(errors, fmt.Sprintf("invalid image_height: %s", err))
+			errs = append(errs, fmt.Errorf("invalid week_day: %s", err))
 		}
 	} else {
-		errors = append(errors, "missing required field: image_height")
+		errs = append(errs, errors.New("missing required field: week_day"))
 	}
 
-	// Optional pageTitle
-	if title, exists := m["page_title"]; exists {
-		result.PageTitle = &title
+	if weeknumber, exists := m["week_number"]; exists {
+		if wn, err := strconv.Atoi(weeknumber); err == nil {
+			result.WeekNumber = wn
+		} else {
+			errs = append(errs, fmt.Errorf("invalid week_number: %s", err))
+		}
+	} else {
+		errs = append(errs, errors.New("missing required field: week_number"))
 	}
 
-	// Return errors if any occurred
-	if len(errors) > 0 {
-		return result, fmt.Errorf("validation errors: %v", errors)
+	// Return errs if any occurred
+	if len(errs) > 0 {
+		return result, errs
 	}
 
 	return result, nil
