@@ -29,7 +29,7 @@ func (h *DiffHandler) CreateDiff(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "Invalid request body")
 	}
 
-	result, err := h.diffService.CreateDiff(c.Context(), req)
+	result, err := h.diffService.GetDiffAnalysis(c.Context(), req)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}

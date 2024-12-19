@@ -32,19 +32,31 @@ func NewScreenshotHandler(screenshotService interfaces.ScreenshotService, logger
 func (h *ScreenshotHandler) CreateScreenshot(c *fiber.Ctx) error {
 	h.logger.Debug("creating new screenshot")
 
-	var opts models.ScreenshotRequestOptions
-	if err := c.BodyParser(&opts); err != nil {
+	var sOpts models.ScreenshotRequestOptions
+	if err := c.BodyParser(&sOpts); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "Invalid request body")
 	}
 
-	result, _, _, err := h.screenshotService.CaptureScreenshot(c.Context(), opts)
+	screenshotResult, err := h.screenshotService.GetCurrentImage(c.Context(), true, sOpts)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+
+	hOpts := models.ScreenshotHTMLRequestOptions{
+		URL: screenshotResult.Metadata.RenderedURL,
+	}
+
+	contentResult, err := h.screenshotService.GetCurrentHTMLContent(c.Context(), true, hOpts)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
 	return c.JSON(fiber.Map{
 		"status": "success",
-		"data":   result,
+		"data": map[string]interface{}{
+			"image":   screenshotResult,
+			"content": contentResult,
+		},
 	})
 }
 
@@ -60,7 +72,7 @@ func (h *ScreenshotHandler) GetScreenshotImage(c *fiber.Ctx) error {
 
 	h.logger.Debug("getting screenshot image", zap.Any("url", opts.URL), zap.Any("year", opts.Year), zap.Any("week_number", opts.WeekNumber), zap.Any("week_day", opts.WeekDay))
 
-	result, err := h.screenshotService.GetScreenshotImage(c.Context(), opts.URL, *opts.Year, *opts.WeekNumber, *opts.WeekDay)
+	result, err := h.screenshotService.GetImage(c.Context(), opts.URL, *opts.Year, *opts.WeekNumber, *opts.WeekDay)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
@@ -80,16 +92,14 @@ func (h *ScreenshotHandler) GetScreenshotContent(c *fiber.Ctx) error {
 
 	h.logger.Debug("getting screenshot image", zap.Any("url", opts.URL), zap.Any("year", opts.Year), zap.Any("week_number", opts.WeekNumber), zap.Any("week_day", opts.WeekDay))
 
-	result, err := h.screenshotService.GetScreenshotContent(c.Context(), opts.URL, *opts.Year, *opts.WeekNumber, *opts.WeekDay)
+	result, err := h.screenshotService.GetHTMLContent(c.Context(), opts.URL, *opts.Year, *opts.WeekNumber, *opts.WeekDay)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
 
-	h.addScreenshotMetadataToHeaders(c, result.Metadata)
-
 	return c.JSON(fiber.Map{
 		"status": result.Status,
-		"data":   result.Content,
+		"data":   result,
 	})
 }
 
@@ -113,18 +123,22 @@ func (h *ScreenshotHandler) ListScreenshots(c *fiber.Ctx) error {
 }
 
 // addScreenshotMetadataToHeaders adds the screenshot metadata to the response headers
-func (h *ScreenshotHandler) addScreenshotMetadataToHeaders(c *fiber.Ctx, metadata *models.ScreenshotMetadata) {
+func (h *ScreenshotHandler) addScreenshotMetadataToHeaders(c *fiber.Ctx, screenshotResult *models.ScreenshotImageResponse) {
+	if screenshotResult == nil {
+		return
+	}
+	c.Set("x-image-height", fmt.Sprintf("%v", screenshotResult.ImageHeight))
+	c.Set("x-image-width", fmt.Sprintf("%v", screenshotResult.ImageWidth))
+
+	metadata := screenshotResult.Metadata
 	if metadata == nil {
 		return
 	}
 	c.Set("x-source-url", metadata.SourceURL)
-	c.Set("x-fetched-at", metadata.FetchedAt)
-	c.Set("x-screenshot-service", metadata.ScreenshotService)
-	c.Set("x-image-height", fmt.Sprintf("%v", metadata.ImageHeight))
-	c.Set("x-image-width", fmt.Sprintf("%v", metadata.ImageWidth))
-	if metadata.PageTitle != nil {
-		c.Set("x-page-title", *metadata.PageTitle)
-	}
+	c.Set("x-rendered-url", metadata.RenderedURL)
+	c.Set("x-screenshot-year", fmt.Sprintf("%v", metadata.Year))
+	c.Set("x-screenshot-week-number", fmt.Sprintf("%v", metadata.WeekNumber))
+	c.Set("x-screenshot-week-day", fmt.Sprintf("%v", metadata.WeekDay))
 }
 
 // sendPNGResponse sends a PNG response with the screenshot image
@@ -146,7 +160,7 @@ func (h *ScreenshotHandler) sendPNGResponse(c *fiber.Ctx, result *models.Screens
 	c.Set("Content-Type", "image/png")
 
 	// Add the screenshot metadata to the response headers
-	h.addScreenshotMetadataToHeaders(c, result.Metadata)
+	h.addScreenshotMetadataToHeaders(c, result)
 
 	// Send the PNG byte array as the response
 	return c.Send(pngBytes)
