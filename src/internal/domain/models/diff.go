@@ -1,5 +1,7 @@
 package models
 
+import "image"
+
 // -----------------------	Weekly Diff Report	------------------------------
 
 // WeeklyReportRequest represents parameters for generating a weekly report for a list of URLs for a competitor
@@ -102,4 +104,16 @@ type URLDiffAnalysis struct {
 	Product     []string `json:"product"`
 	Positioning []string `json:"positioning"`
 	Partnership []string `json:"partnership"`
+}
+
+type ImageResponseDiff struct {
+	Delta   float64          `json:"delta"`
+	Img     image.Image      `json:"img"`
+	Summary *URLDiffAnalysis `json:"summary"`
+}
+
+type HTMLContentResponseDiff struct {
+	Delta       float64          `json:"delta"`
+	HTMLContent string           `json:"htmlContent"`
+	Summary     *URLDiffAnalysis `json:"summary"`
 }

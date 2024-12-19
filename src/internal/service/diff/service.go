@@ -2,7 +2,6 @@ package diff
 
 import (
 	"context"
-	"image"
 
 	"github.com/wizenheimer/iris/src/internal/domain/interfaces"
 	"github.com/wizenheimer/iris/src/internal/domain/models"
@@ -37,7 +36,7 @@ func NewDiffService(
 
 // CreateDiff creates a diff for between any 2 versions of a URL
 // This is used when both versions are available in the storage via screenshotService
-func (d *diffService) CreateDiff(ctx context.Context, req models.URLDiffRequest) (*models.URLDiffAnalysis, error) {
+func (d *diffService) GetDiffAnalysis(ctx context.Context, req models.URLDiffRequest) (*models.URLDiffAnalysis, error) {
 	d.logger.Debug("creating diff", zap.Any("url", req.URL), zap.Any("week_day_1", req.WeekDay1), zap.Any("week_number_1", req.WeekNumber1), zap.Any("week_day_2", req.WeekDay2), zap.Any("week_number_2", req.WeekNumber2))
 	// Implementation
 	return nil, nil
@@ -51,36 +50,30 @@ func (d *diffService) CreateReport(ctx context.Context, req models.WeeklyReportR
 	return nil, nil
 }
 
-// CreateCurrentDiffFromScreenshotImages creates a diff between two screenshots
-// This is used when the screenshots are available in memory
-// Once the diff is created, it is saved to the storage
-func (d *diffService) CreateCurrentDiffFromScreenshotImages(ctx context.Context, url string, screenshot1, screenshot2 image.Image) (*models.URLDiffAnalysis, error) {
-	d.logger.Debug("creating diff from screenshot images", zap.Any("url", url))
-	d.logger.Debug("saving diff to storage", zap.Any("url", url))
+// CompareImageResponse compares 2 image responses and returns the ImageResponseDiff
+func (d *diffService) CompareImageResponse(ctx context.Context, img1, img2 *models.ScreenshotImageResponse) (*models.ImageResponseDiff, error) {
+	d.logger.Debug("comparing image responses", zap.Any("image_1", img1), zap.Any("image_2", img2))
 	// Implementation
-	return &models.URLDiffAnalysis{
-		Branding:    make([]string, 0),
-		Integration: make([]string, 0),
-		Pricing:     make([]string, 0),
-		Product:     make([]string, 0),
-		Positioning: make([]string, 0),
-		Partnership: make([]string, 0),
-	}, nil
+	return nil, nil
 }
 
-// CreateCurrentDiffFromScreenshotContents creates a diff between two screenshots
-// This is used when the screenshots are available in memory
-// Once the diff is created, it is saved to the storage
-func (d *diffService) CreateCurrentDiffFromScreenshotContents(ctx context.Context, url, content1, content2 string) (*models.URLDiffAnalysis, error) {
-	d.logger.Debug("creating diff from screenshot contents", zap.Any("url", url))
-	d.logger.Debug("saving diff to storage", zap.Any("url", url))
+// CompareHTMLContentResponse compares 2 HTML content responses and returns the HTMLContentResponseDiff
+func (d *diffService) CompareHTMLContentResponse(ctx context.Context, content1, content2 *models.ScreenshotHTMLContentResponse) (*models.HTMLContentResponseDiff, error) {
+	d.logger.Debug("comparing HTML content responses", zap.Any("content_1", content1), zap.Any("content_2", content2))
 	// Implementation
-	return &models.URLDiffAnalysis{
-		Branding:    make([]string, 0),
-		Integration: make([]string, 0),
-		Pricing:     make([]string, 0),
-		Product:     make([]string, 0),
-		Positioning: make([]string, 0),
-		Partnership: make([]string, 0),
-	}, nil
+	return nil, nil
+}
+
+// CompareScreenshotContents compares the contents of 2 screenshots and returns the URLDiffAnalysis
+func (d *diffService) CompareScreenshotContents(ctx context.Context, content1, content2 *models.ScreenshotHTMLContentResponse) (*models.URLDiffAnalysis, error) {
+	d.logger.Debug("comparing screenshot contents", zap.Any("content_1", content1), zap.Any("content_2", content2))
+	// Implementation
+	return nil, nil
+}
+
+// CompareScreenshotImages compares the images of 2 screenshots and returns the URLDiffAnalysis
+func (d *diffService) CompareScreenshotImages(ctx context.Context, img1, img2 *models.ScreenshotImageResponse) (*models.URLDiffAnalysis, error) {
+	d.logger.Debug("comparing screenshot images", zap.Any("image_1", img1), zap.Any("image_2", img2))
+	// Implementation
+	return nil, nil
 }
