@@ -47,12 +47,13 @@ type DatabaseConfig struct {
 }
 
 type StorageConfig struct {
-	Type      string // "local" or "r2"
-	AccessKey string
-	SecretKey string
-	Bucket    string
-	Region    string
-	AccountId string
+	BaseEndpoint string // s3 base endpoint (for r2 it's infered from the account id)
+	Type         string // "local" or "r2"
+	AccessKey    string
+	SecretKey    string
+	Bucket       string
+	Region       string
+	AccountId    string
 }
 
 type ServicesConfig struct {
@@ -160,6 +161,8 @@ func LoadDatabaseConfig() DatabaseConfig {
 
 func LoadStorageConfig() StorageConfig {
 	return StorageConfig{
+		// BaseEndpoint is set to the value of the STORAGE_BASE_ENDPOINT environment variable, or "" if the variable is not set.
+		BaseEndpoint: GetEnv("STORAGE_BASE_ENDPOINT", "", parser.StrParser),
 		// Type is set to the value of the STORAGE_TYPE environment variable, or "local" if the variable is not set.
 		Type: GetEnv("STORAGE_TYPE", "local", parser.StrParser),
 		// AccessKey is set to the value of the STORAGE_ACCESS_KEY environment variable, or "" if the variable is not set.
