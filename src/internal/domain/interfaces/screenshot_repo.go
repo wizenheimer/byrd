@@ -2,25 +2,24 @@ package interfaces
 
 import (
 	"context"
-	"image"
 
 	"github.com/wizenheimer/iris/src/internal/domain/models"
 )
 
 type ScreenshotRepository interface {
 	// StoreScreenshotImage stores screenshot image in the storage
-	StoreScreenshotImage(ctx context.Context, data image.Image, path string, metadata models.ScreenshotMetadata) error
+	StoreScreenshotImage(ctx context.Context, data models.ScreenshotImageResponse, path string) error
 
 	// StoreScreenshotContent stores screenshot content in the storage
-	StoreScreenshotContent(ctx context.Context, content string, path string, metadata models.ScreenshotMetadata) error
+	StoreScreenshotHTMLContent(ctx context.Context, data models.ScreenshotHTMLContentResponse, path string) error
 
 	// GetContent retrieves a text content from the storage
 	// Serialize the content to a string and return it
-	GetScreenshotContent(ctx context.Context, path string) (string, models.ScreenshotMetadata, error)
+	GetScreenshotHTMLContent(ctx context.Context, path string) (models.ScreenshotHTMLContentResponse, []error)
 
 	// GetScreenshot retrieves a screenshot from the storage
 	// Deserialize the content to an image and return it
-	GetScreenshotImage(ctx context.Context, path string) (image.Image, models.ScreenshotMetadata, error)
+	GetScreenshotImage(ctx context.Context, path string) (models.ScreenshotImageResponse, []error)
 
 	// Get retrieves a binary from the storage
 	// Return the binary content and the metadata
