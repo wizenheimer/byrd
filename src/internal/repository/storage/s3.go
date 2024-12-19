@@ -16,10 +16,11 @@ import (
 	"github.com/wizenheimer/iris/src/internal/domain/interfaces"
 	"github.com/wizenheimer/iris/src/internal/domain/models"
 	"github.com/wizenheimer/iris/src/pkg/logger"
+	"github.com/wizenheimer/iris/src/pkg/utils/ptr"
 	"go.uber.org/zap"
 )
 
-// S3Storage is a storage repository that uses S3 as the backend
+// s3Storage is a storage repository that uses S3 as the backend
 type s3Storage struct {
 	// client is the S3 client
 	client *s3.Client
@@ -30,16 +31,15 @@ type s3Storage struct {
 }
 
 // NewS3Storage creates a new S3 storage repository
-// It requires the access key, secret key, bucket name, account ID, and a logger
-func NewS3Storage(accessKey, secretKey, bucket, accountID, session, region string, logger *logger.Logger) (interfaces.ScreenshotRepository, error) {
+func NewS3Storage(baseEndpoint, accessKey, secretKey, bucket, region string, logger *logger.Logger) (interfaces.ScreenshotRepository, error) {
 	if logger == nil {
-		return nil, fmt.Errorf("can't initialize r2, logger is required")
+		return nil, fmt.Errorf("can't initialize S3, logger is required")
 	}
 
-	logger.Debug("creating new r2 storage", zap.Any("bucket", bucket))
+	logger.Debug("creating new S3 storage", zap.Any("bucket", bucket))
 
 	cfg, err := config.LoadDefaultConfig(context.TODO(),
-		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accessKey, secretKey, session)),
+		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accessKey, secretKey, "")),
 		config.WithRegion(region),
 	)
 	if err != nil {
@@ -47,7 +47,7 @@ func NewS3Storage(accessKey, secretKey, bucket, accountID, session, region strin
 	}
 
 	client := s3.NewFromConfig(cfg, func(o *s3.Options) {
-		o.BaseEndpoint = aws.String(fmt.Sprintf("https://%s.r2.cloudflarestorage.com", accountID))
+		o.BaseEndpoint = aws.String(baseEndpoint)
 	})
 
 	return &s3Storage{
@@ -58,21 +58,24 @@ func NewS3Storage(accessKey, secretKey, bucket, accountID, session, region strin
 }
 
 // StoreScreenshot stores a screenshot in S3 storage
-func (s *s3Storage) StoreScreenshotImage(ctx context.Context, data image.Image, path string, metadata models.ScreenshotMetadata) error {
+func (s *s3Storage) StoreScreenshotImage(ctx context.Context, data models.ScreenshotImageResponse, path string) error {
 	s.logger.Debug("storing screenshot",
 		zap.String("path", path))
 
 	buf := new(bytes.Buffer)
-	if err := encodeImage(data, buf); err != nil {
+	if err := encodeImage(data.Image, buf); err != nil {
 		return fmt.Errorf("failed to encode image: %w", err)
 	}
+
+	// Convert to bytes.Reader for seekable reading
+	reader := bytes.NewReader(buf.Bytes())
 
 	_, err := s.client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket:      aws.String(s.bucket),
 		Key:         aws.String(path),
-		Body:        buf,
+		Body:        reader,
 		ContentType: aws.String("image/png"),
-		Metadata:    metadata.ToMap(),
+		Metadata:    data.Metadata.ToMap(),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to upload image: %w", err)
@@ -82,15 +85,15 @@ func (s *s3Storage) StoreScreenshotImage(ctx context.Context, data image.Image, 
 }
 
 // StoreContent stores text content in S3 storage
-func (s *s3Storage) StoreScreenshotContent(ctx context.Context, content string, path string, metadata models.ScreenshotMetadata) error {
+func (s *s3Storage) StoreScreenshotHTMLContent(ctx context.Context, data models.ScreenshotHTMLContentResponse, path string) error {
 	s.logger.Debug("storing content", zap.String("path", path))
 
 	_, err := s.client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket:      aws.String(s.bucket),
 		Key:         aws.String(path),
-		Body:        strings.NewReader(content),
+		Body:        strings.NewReader(data.HTMLContent),
 		ContentType: aws.String("text/plain"),
-		Metadata:    metadata.ToMap(),
+		Metadata:    data.Metadata.ToMap(),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to upload content: %w", err)
@@ -100,42 +103,61 @@ func (s *s3Storage) StoreScreenshotContent(ctx context.Context, content string, 
 }
 
 // GetContent retrieves text content from S3 storage
-func (s *s3Storage) GetScreenshotContent(ctx context.Context, path string) (string, models.ScreenshotMetadata, error) {
-	s.logger.Debug("getting content", zap.String("path", path))
+func (s *s3Storage) GetScreenshotHTMLContent(ctx context.Context, path string) (models.ScreenshotHTMLContentResponse, []error) {
+	errs := []error{}
 
 	data, metadata, err := s.Get(ctx, path)
 	if err != nil {
-		return "", models.ScreenshotMetadata{}, err
+		return models.ScreenshotHTMLContentResponse{}, append(errs, err)
 	}
 
-	screenshotMetadata, err := models.ScreenshotMetadataFromMap(metadata)
-	if err != nil {
-		return "", models.ScreenshotMetadata{}, err
+	screenshotMetadata, errs := models.ScreenshotMetadataFromMap(metadata)
+	if errs != nil {
+		return models.ScreenshotHTMLContentResponse{}, errs
 	}
 
-	return string(data), screenshotMetadata, nil
+	resp := models.ScreenshotHTMLContentResponse{
+		Status:      "success",
+		HTMLContent: string(data),
+		Metadata:    &screenshotMetadata,
+	}
+
+	return resp, nil
+
 }
 
 // GetScreenshot retrieves a screenshot from S3 storage
-func (s *s3Storage) GetScreenshotImage(ctx context.Context, path string) (image.Image, models.ScreenshotMetadata, error) {
-	s.logger.Debug("getting screenshot", zap.String("path", path))
+func (s *s3Storage) GetScreenshotImage(ctx context.Context, path string) (models.ScreenshotImageResponse, []error) {
 
 	data, metadata, err := s.Get(ctx, path)
 	if err != nil {
-		return nil, models.ScreenshotMetadata{}, err
+		return models.ScreenshotImageResponse{}, []error{err}
 	}
 
 	img, _, err := image.Decode(bytes.NewReader(data))
 	if err != nil {
-		return nil, models.ScreenshotMetadata{}, fmt.Errorf("failed to decode image: %w", err)
+		return models.ScreenshotImageResponse{}, []error{fmt.Errorf("failed to decode image: %w", err)}
 	}
 
-	screenshotMetadata, err := models.ScreenshotMetadataFromMap(metadata)
+	screenshotMetadata, errs := models.ScreenshotMetadataFromMap(metadata)
+	if errs != nil {
+		return models.ScreenshotImageResponse{}, errs
+	}
+
+	imgWidth, imgHeight, err := getImageDimensions(img)
 	if err != nil {
-		return nil, models.ScreenshotMetadata{}, err
+		return models.ScreenshotImageResponse{}, []error{err}
 	}
 
-	return img, screenshotMetadata, nil
+	resp := models.ScreenshotImageResponse{
+		Status:      "success",
+		Image:       img,
+		Metadata:    &screenshotMetadata,
+		ImageHeight: ptr.To(imgHeight),
+		ImageWidth:  ptr.To(imgWidth),
+	}
+
+	return resp, nil
 }
 
 // Get retrieves binary data from S3 storage
@@ -174,22 +196,8 @@ func (s *s3Storage) Delete(ctx context.Context, path string) error {
 	return nil
 }
 
+// Listlists the latest content (images or text) for a given URL
 func (s *s3Storage) List(ctx context.Context, prefix string, maxItems int) ([]models.ScreenshotListResponse, error) {
-	// hash, err := path.GenerateURLHash(url)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed to generate URL hash: %w", err)
-	// }
-
-	// var prefix string
-	// switch contentType {
-	// case "image", "screenshot":
-	// 	prefix = "images/"
-	// case "content", "text":
-	// 	prefix = "text/"
-	// default:
-	// 	return nil, fmt.Errorf("invalid content type: %s", contentType)
-	// }
-
 	input := &s3.ListObjectsV2Input{
 		Bucket:  aws.String(s.bucket),
 		Prefix:  aws.String(prefix),

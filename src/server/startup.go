@@ -221,11 +221,10 @@ func setupScreenshotService(cfg *config.Config, screenshotHTTPClient client.HTTP
 		storageRepo, err = storage.NewLocalStorage(cfg.Storage.Bucket, logger)
 	case "s3":
 		storageRepo, err = storage.NewS3Storage(
+			cfg.Storage.BaseEndpoint,
 			cfg.Storage.AccessKey,
 			cfg.Storage.SecretKey,
 			cfg.Storage.Bucket,
-			cfg.Storage.AccountId,
-			"", // session is empty
 			cfg.Storage.Region,
 			logger,
 		)
