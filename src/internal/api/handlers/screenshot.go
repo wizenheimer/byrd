@@ -43,7 +43,8 @@ func (h *ScreenshotHandler) CreateScreenshot(c *fiber.Ctx) error {
 	}
 
 	hOpts := models.ScreenshotHTMLRequestOptions{
-		URL: screenshotResult.Metadata.RenderedURL,
+		SourceURL:   sOpts.URL,
+		RenderedURL: screenshotResult.Metadata.RenderedURL,
 	}
 
 	contentResult, err := h.screenshotService.GetCurrentHTMLContent(c.Context(), true, hOpts)
