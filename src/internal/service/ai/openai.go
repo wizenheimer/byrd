@@ -1,9 +1,16 @@
 package ai
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"image"
+	"image/png"
 
-	"github.com/wizenheimer/iris/src/internal/client"
+	"github.com/openai/openai-go"
+	"github.com/openai/openai-go/option"
 	"github.com/wizenheimer/iris/src/internal/domain/interfaces"
 	"github.com/wizenheimer/iris/src/internal/domain/models"
 	"github.com/wizenheimer/iris/src/pkg/logger"
@@ -11,32 +18,51 @@ import (
 )
 
 type openAIService struct {
-	apiKey     string
-	httpClient client.HTTPClient
-	logger     *logger.Logger
+	client *openai.Client
+	logger *logger.Logger
 }
 
-func NewOpenAIService(apiKey string, httpClient client.HTTPClient, logger *logger.Logger) (interfaces.AIService, error) {
+func NewOpenAIService(apiKey string, logger *logger.Logger) (interfaces.AIService, error) {
 	logger.Debug("creating new openAI service")
-	return &openAIService{
-		apiKey:     apiKey,
-		httpClient: httpClient,
-		logger:     logger.WithFields(map[string]interface{}{"module": "ai_service"}),
-	}, nil
+	client := openai.NewClient(
+		option.WithAPIKey(
+			apiKey,
+		),
+		option.WithMaxRetries(
+			3,
+		),
+	)
+
+	s := openAIService{
+		client: client,
+		logger: logger.WithFields(map[string]interface{}{"module": "ai_service"}),
+	}
+
+	return &s, s.validate()
 }
 
 // AnalyzeContentDifferences analyzes the content differences between two versions of a URL
-func (s *openAIService) AnalyzeContentDifferences(ctx context.Context, content1, content2 string) (*models.URLDiffAnalysis, error) {
-	s.logger.Debug("analyzing content differences", zap.Any("content1_len", len(content1)), zap.Any("content2_len", len(content2)))
-	// Implementation
-	return nil, nil
+func (s *openAIService) AnalyzeContentDifferences(ctx context.Context, version1, version2 string, profileString string) (*models.DynamicChanges, error) {
+	s.logger.Debug("analyzing content differences", zap.String("version1", version1), zap.String("version2", version2), zap.String("profile", profileString))
+
+	chat, err := s.prepareTextCompletion(ctx, version1, version2, profileString)
+	if err != nil {
+		return nil, fmt.Errorf("failed to prepare chat completion: %v", err)
+	}
+
+	return s.parseCompletion(chat)
 }
 
 // AnalyzeVisualDifferences analyzes the visual differences between two screenshots
-func (s *openAIService) AnalyzeVisualDifferences(ctx context.Context, screenshot1, screenshot2 []byte) (*models.URLDiffAnalysis, error) {
-	s.logger.Debug("analyzing visual differences")
-	// Implementation
-	return nil, nil
+func (s *openAIService) AnalyzeVisualDifferences(ctx context.Context, screenshot1, screenshot2 image.Image, profileString string) (*models.DynamicChanges, error) {
+	s.logger.Debug("analyzing visual differences", zap.String("profile", profileString))
+
+	chat, err := s.prepareImageCompletion(ctx, screenshot1, screenshot2, profileString)
+	if err != nil {
+		return nil, fmt.Errorf("failed to prepare chat completion: %v", err)
+	}
+
+	return s.parseCompletion(chat)
 }
 
 // EnrichReport enriches a weekly report with AI-generated summaries
@@ -44,4 +70,157 @@ func (s *openAIService) EnrichReport(ctx context.Context, report *models.WeeklyR
 	s.logger.Debug("enriching report", zap.Any("report", report))
 	// Implementation
 	return nil
+}
+
+func (s *openAIService) Close() {
+	s.logger.Debug("closing openAI service")
+}
+
+// Check if the client is valid by sending a test request
+func (s *openAIService) validate() error {
+	_, err := s.client.Chat.Completions.New(context.TODO(), openai.ChatCompletionNewParams{
+		Messages: openai.F([]openai.ChatCompletionMessageParamUnion{
+			openai.UserMessage("Yo"),
+		}),
+		Model:     openai.F(openai.ChatModelGPT4o),
+		MaxTokens: openai.Int(3),
+	})
+
+	return err
+}
+
+func (s *openAIService) prepareTextCompletion(ctx context.Context, version1, version2 string, profileString string) (*openai.ChatCompletion, error) {
+	profile, err := getMonitoringProfile(profileString)
+	if err != nil {
+		s.logger.Debug("failed to get monitoring profile", zap.Error(err))
+		profile = DefaultUpdates
+	}
+
+	opts := s.prepareCompareOptions(&profile)
+
+	userPrompt := fmt.Sprintf("Compare these two versions of content and identify changes:\n\nVersion 1:\n%s\n\nVersion 2:\n%s", version1, version2)
+
+	schema := models.GenerateDynamicSchema(profile.Fields)
+	schemaParam := openai.ResponseFormatJSONSchemaJSONSchemaParam{
+		Name:        openai.F("dynamic_intelligence_tracking"),
+		Description: openai.F("Track changes in specified intelligence categories"),
+		Schema:      openai.F(schema),
+		Strict:      openai.Bool(true),
+	}
+
+	chat, err := s.client.Chat.Completions.New(ctx, openai.ChatCompletionNewParams{
+		Messages: openai.F([]openai.ChatCompletionMessageParamUnion{
+			openai.SystemMessage(opts.SystemPrompt),
+			openai.UserMessage(userPrompt),
+		}),
+		ResponseFormat: openai.F[openai.ChatCompletionNewParamsResponseFormatUnion](
+			openai.ResponseFormatJSONSchemaParam{
+				Type:       openai.F(openai.ResponseFormatJSONSchemaTypeJSONSchema),
+				JSONSchema: openai.F(schemaParam),
+			},
+		),
+		Model:       openai.F(opts.Model),
+		Temperature: openai.F(opts.Temperature),
+		MaxTokens:   openai.F(opts.MaxTokens),
+	})
+
+	return chat, err
+}
+
+func (s *openAIService) prepareImageCompletion(ctx context.Context, version1, version2 image.Image, profileString string) (*openai.ChatCompletion, error) {
+	profile, err := getMonitoringProfile(profileString)
+	if err != nil {
+		s.logger.Debug("failed to get monitoring profile", zap.Error(err))
+		profile = DefaultUpdates
+	}
+
+	// convert images to base64
+	version1Base64, err := imageToBase64URL(version1)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert image to base64: %v", err)
+	}
+
+	version2Base64, err := imageToBase64URL(version2)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert image to base64: %v", err)
+	}
+
+	opts := s.prepareCompareOptions(&profile)
+
+	userPrompt := "Carefully compare these two versions of images and identify changes"
+
+	schema := models.GenerateDynamicSchema(profile.Fields)
+	schemaParam := openai.ResponseFormatJSONSchemaJSONSchemaParam{
+		Name:        openai.F("dynamic_intelligence_tracking"),
+		Description: openai.F("Track changes in specified intelligence categories"),
+		Schema:      openai.F(schema),
+		Strict:      openai.Bool(true),
+	}
+
+	chat, err := s.client.Chat.Completions.New(ctx, openai.ChatCompletionNewParams{
+		Messages: openai.F([]openai.ChatCompletionMessageParamUnion{
+			openai.SystemMessage(opts.SystemPrompt),
+			openai.UserMessageParts(
+				openai.TextPart(userPrompt),
+				openai.ImagePart(version1Base64),
+				openai.ImagePart(version2Base64),
+			),
+		}),
+		ResponseFormat: openai.F[openai.ChatCompletionNewParamsResponseFormatUnion](
+			openai.ResponseFormatJSONSchemaParam{
+				Type:       openai.F(openai.ResponseFormatJSONSchemaTypeJSONSchema),
+				JSONSchema: openai.F(schemaParam),
+			},
+		),
+		Model:       openai.F(opts.Model),
+		Temperature: openai.F(opts.Temperature),
+		MaxTokens:   openai.F(opts.MaxTokens),
+	})
+
+	return chat, err
+}
+
+func (s *openAIService) parseCompletion(chat *openai.ChatCompletion) (*models.DynamicChanges, error) {
+	if chat.Choices[0].Message.Refusal != "" {
+		return nil, fmt.Errorf("refusal: %s", chat.Choices[0].Message.Refusal)
+	}
+
+	changes := &models.DynamicChanges{
+		Fields: make(map[string]interface{}),
+	}
+
+	err := json.Unmarshal([]byte(chat.Choices[0].Message.Content), changes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal changes: %v", err)
+	}
+
+	return changes, nil
+}
+
+func (s *openAIService) prepareCompareOptions(profile *models.Profile) models.CompareOptions {
+	return models.CompareOptions{
+		SystemPrompt: models.BuildCompetitorSystemPrompt(profile.Fields),
+		Model:        openai.ChatModelGPT4oMini,
+		Temperature:  0.7,
+		MaxTokens:    2048,
+	}
+}
+
+func imageToBase64URL(img image.Image) (string, error) {
+	// Create a buffer to store the image
+	var buf bytes.Buffer
+
+	// Encode the image in PNG format to the buffer
+	err := png.Encode(&buf, img)
+	if err != nil {
+		return "", fmt.Errorf("failed to encode image: %v", err)
+	}
+
+	// Convert the buffer bytes to base64 string
+	base64Str := base64.StdEncoding.EncodeToString(buf.Bytes())
+
+	// Add prefix for base64 URL
+	base64Str = "data:image/png;base64," + base64Str
+
+	return base64Str, nil
 }
