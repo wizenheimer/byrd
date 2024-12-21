@@ -7,9 +7,9 @@ import (
 )
 
 type DiffRepository interface {
-	// SaveDiff saves the diff analysis for the given URL
-	SaveDiff(ctx context.Context, url string, diff *models.URLDiffAnalysis) error
+	// Set saves the diff analysis for the given URL
+	Set(ctx context.Context, req models.URLDiffRequest, diff *models.DynamicChanges) error
 
-	// GetDiff retrieves the diff analysis for the given URL, week day, and week number
-	GetDiff(ctx context.Context, url, weekDay, weekNumber string) (*models.URLDiffAnalysis, error)
+	// Get retrieves the diff analysis for the given URL, week day, and week number
+	Get(ctx context.Context, req models.URLDiffRequest) (*models.DynamicChanges, error)
 }

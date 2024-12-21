@@ -1,7 +1,5 @@
 package models
 
-import "image"
-
 // -----------------------	Weekly Diff Report	------------------------------
 
 // WeeklyReportRequest represents parameters for generating a weekly report for a list of URLs for a competitor
@@ -88,32 +86,10 @@ type URLDiffRequest struct {
 	URL string `json:"url" validate:"required,url"`
 
 	// From timestamp
-	WeekDay1    string `json:"weekDay1" validate:"required"`
-	WeekNumber1 string `json:"weekNumber1,omitempty"`
+	WeekDay1    int `json:"weekDay1" validate:"required"`
+	WeekNumber1 int `json:"weekNumber1,omitempty"`
 
 	// To timestamp
-	WeekDay2    string `json:"weekDay2" validate:"required"`
-	WeekNumber2 string `json:"weekNumber2,omitempty"`
-}
-
-// URLDiffAnalysis represents differences found across all categories
-type URLDiffAnalysis struct {
-	Branding    []string `json:"branding"`
-	Integration []string `json:"integration"`
-	Pricing     []string `json:"pricing"`
-	Product     []string `json:"product"`
-	Positioning []string `json:"positioning"`
-	Partnership []string `json:"partnership"`
-}
-
-type ImageResponseDiff struct {
-	Delta   float64          `json:"delta"`
-	Img     image.Image      `json:"img"`
-	Summary *URLDiffAnalysis `json:"summary"`
-}
-
-type HTMLContentResponseDiff struct {
-	Delta       float64          `json:"delta"`
-	HTMLContent string           `json:"htmlContent"`
-	Summary     *URLDiffAnalysis `json:"summary"`
+	WeekDay2    int `json:"weekDay2" validate:"required"`
+	WeekNumber2 int `json:"weekNumber2,omitempty"`
 }

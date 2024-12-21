@@ -197,8 +197,10 @@ type ScreenshotRequestOptions struct {
 
 // ScreenshotHTMLRequestOptions defines all possible options for capturing html
 type ScreenshotHTMLRequestOptions struct {
-	// Target Options
-	URL string `json:"url"` // The URL of the website to take a screenshot of
+	// Source URL
+	SourceURL string `json:"source_url"`
+	// Rendered URL
+	RenderedURL string `json:"redered_url"` // The URL of the website to take a screenshot of
 }
 
 type GetScreenshotOptions struct {
