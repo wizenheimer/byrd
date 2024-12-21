@@ -14,11 +14,13 @@ type HandlerContainer struct {
 	NotificationHandler *handlers.NotificationHandler
 	URLHandler          *handlers.URLHandler
 	WorkflowHandler     *handlers.WorkflowHandler
+	AIHandler           *handlers.AIHandler
 }
 
 func NewHandlerContainer(
 	screenshotService interfaces.ScreenshotService,
 	urlService interfaces.URLService,
+	aiService interfaces.AIService,
 	diffService interfaces.DiffService,
 	competitorService interfaces.CompetitorService,
 	notificationService interfaces.NotificationService,
@@ -29,7 +31,9 @@ func NewHandlerContainer(
 		// Handlers for screenshot management
 		ScreenshotHandler: handlers.NewScreenshotHandler(screenshotService, logger),
 		// Handlers for URL management
-		URLHandler:          handlers.NewURLHandler(urlService, logger),
+		URLHandler: handlers.NewURLHandler(urlService, logger),
+		// Handlers for AI management
+		AIHandler:           handlers.NewAIHandler(aiService, logger),
 		DiffHandler:         handlers.NewDiffHandler(diffService, logger),
 		CompetitorHandler:   handlers.NewCompetitorHandler(competitorService, logger),
 		NotificationHandler: handlers.NewNotificationHandler(notificationService, logger),
@@ -47,6 +51,11 @@ func SetupRoutes(app *fiber.App, handlers *HandlerContainer) {
 	screenshot.Get("/", handlers.ScreenshotHandler.ListScreenshots)
 	screenshot.Get("/image", handlers.ScreenshotHandler.GetScreenshotImage)
 	screenshot.Get("/content", handlers.ScreenshotHandler.GetScreenshotContent)
+
+	// AI routes
+	ai := api.Group("/ai")
+	ai.Post("/content", handlers.AIHandler.AnalyzeContentDifferences)
+	ai.Post("/visual", handlers.AIHandler.AnalyzeVisualDifferences)
 
 	// URL routes
 	url := api.Group("/url")
