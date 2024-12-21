@@ -76,7 +76,16 @@ func (d *diffService) Compare(ctx context.Context, content1, content2 *models.Sc
 		return nil, fmt.Errorf("failed to process markdown content 2: %w", err)
 	}
 
-	aiAnalysis, err = d.aiService.AnalyzeContentDifferences(ctx, markdownContent1, markdownContent2, profileStr)
+	profileFields := []string{
+		"customers",
+		"messaging",
+		"product",
+		"pricing",
+		"partnerships",
+		"roadmap",
+	}
+
+	aiAnalysis, err = d.aiService.AnalyzeContentDifferences(ctx, markdownContent1, markdownContent2, profileFields)
 	if err != nil {
 		return nil, fmt.Errorf("failed to analyze content differences: %w", err)
 	}

@@ -27,18 +27,18 @@ const (
 
 // FieldConfig represents configuration for a single field
 type FieldConfig struct {
-	Name        string
-	Type        FieldType
-	Description string
-	EnumValues  []string      // Used for TypeStringEnum
-	Properties  []FieldConfig // Used for TypeObject
+	Name        string        `json:"name"`
+	Type        FieldType     `json:"type"`
+	Description string        `json:"description"`
+	EnumValues  []string      `json:"enum_values,omitempty"` // For enum type
+	Properties  []FieldConfig `json:"properties,omitempty"`  // For object type
 }
 
 // Profile represents a predefined set of fields to analyze
 type Profile struct {
-	Name        string
-	Description string
-	Fields      []FieldConfig
+	Name        string        `json:"name"`
+	Description string        `json:"description"`
+	Fields      []FieldConfig `json:"fields"`
 }
 
 // DynamicChanges is a wrapper around map[string]interface{} to store dynamic fields

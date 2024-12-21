@@ -3,6 +3,7 @@ package handlers
 import (
 	"image"
 	"io"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/wizenheimer/iris/src/internal/domain/interfaces"
@@ -69,17 +70,20 @@ func (h *AIHandler) AnalyzeContentDifferences(c *fiber.Ctx) error {
 	}
 
 	// Get profile from form values
-	profiles := form.Value["profile"]
+	profiles := form.Value["profile_fields"]
 	if len(profiles) == 0 {
-		return fiber.NewError(fiber.StatusBadRequest, "Profile is required")
+		return fiber.NewError(fiber.StatusBadRequest, "profile_fields is required")
 	}
-	profile := profiles[0]
+	profileFieldsString := profiles[0]
+
+	// Convert profile fields to slice
+	profileFields := strings.Split(profileFieldsString, ",")
 
 	result, err := h.aiService.AnalyzeContentDifferences(
 		c.Context(),
 		string(content1),
 		string(content2),
-		profile,
+		profileFields,
 	)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
@@ -137,13 +141,16 @@ func (h *AIHandler) AnalyzeVisualDifferences(c *fiber.Ctx) error {
 	}
 
 	// Get profile from form values
-	profiles := form.Value["profile"]
+	profiles := form.Value["profile_fields"]
 	if len(profiles) == 0 {
-		return fiber.NewError(fiber.StatusBadRequest, "Profile is required")
+		return fiber.NewError(fiber.StatusBadRequest, "profile_fields is required")
 	}
-	profile := profiles[0]
+	profileString := profiles[0]
 
-	result, err := h.aiService.AnalyzeVisualDifferences(c.Context(), img1, img2, profile)
+	// Convert profile fields to slice
+	profileFields := strings.Split(profileString, ",")
+
+	result, err := h.aiService.AnalyzeVisualDifferences(c.Context(), img1, img2, profileFields)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
