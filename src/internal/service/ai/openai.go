@@ -18,12 +18,12 @@ import (
 )
 
 type openAIService struct {
-	client *openai.Client
-	logger *logger.Logger
+	client  *openai.Client
+	logger  *logger.Logger
+	builder *ProfileBuilder
 }
 
 func NewOpenAIService(apiKey string, logger *logger.Logger) (interfaces.AIService, error) {
-	logger.Debug("creating new openAI service")
 	client := openai.NewClient(
 		option.WithAPIKey(
 			apiKey,
@@ -33,19 +33,36 @@ func NewOpenAIService(apiKey string, logger *logger.Logger) (interfaces.AIServic
 		),
 	)
 
+	fieldRegistry := NewFieldRegistry()
+	builder := NewProfileBuilder(fieldRegistry)
+
+	logger.Debug("creating new openAI service", zap.Any("available_fields", fieldRegistry.ListAvailableFields()))
+
 	s := openAIService{
-		client: client,
-		logger: logger.WithFields(map[string]interface{}{"module": "ai_service"}),
+		client:  client,
+		logger:  logger.WithFields(map[string]interface{}{"module": "ai_service"}),
+		builder: builder,
 	}
 
 	return &s, s.validate()
 }
 
 // AnalyzeContentDifferences analyzes the content differences between two versions of a URL
-func (s *openAIService) AnalyzeContentDifferences(ctx context.Context, version1, version2 string, profileString string) (*models.DynamicChanges, error) {
-	s.logger.Debug("analyzing content differences", zap.String("version1", version1), zap.String("version2", version2), zap.String("profile", profileString))
+func (s *openAIService) AnalyzeContentDifferences(ctx context.Context, version1, version2 string, fields []string) (*models.DynamicChanges, error) {
+	profileRequest := ProfileRequest{
+		Name:        "competitor_updates",
+		Description: "Carefully compare these two versions of content, identify and surface changes",
+		FieldNames:  fields,
+	}
 
-	chat, err := s.prepareTextCompletion(ctx, version1, version2, profileString)
+	profile, err := s.builder.BuildProfile(profileRequest, true)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build profile: %v", err)
+	}
+
+	s.logger.Debug("analyzing content differences", zap.String("version1", version1), zap.String("version2", version2), zap.Any("profile", profile.Fields), zap.Strings("requested_fields", fields))
+
+	chat, err := s.prepareTextCompletion(ctx, version1, version2, profile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepare chat completion: %v", err)
 	}
@@ -54,10 +71,19 @@ func (s *openAIService) AnalyzeContentDifferences(ctx context.Context, version1,
 }
 
 // AnalyzeVisualDifferences analyzes the visual differences between two screenshots
-func (s *openAIService) AnalyzeVisualDifferences(ctx context.Context, screenshot1, screenshot2 image.Image, profileString string) (*models.DynamicChanges, error) {
-	s.logger.Debug("analyzing visual differences", zap.String("profile", profileString))
+func (s *openAIService) AnalyzeVisualDifferences(ctx context.Context, screenshot1, screenshot2 image.Image, fields []string) (*models.DynamicChanges, error) {
+	profileRequest := ProfileRequest{
+		Name:        "competitor_updates",
+		Description: "Carefully compare and contrast visual changes in the webpage",
+		FieldNames:  fields,
+	}
 
-	chat, err := s.prepareImageCompletion(ctx, screenshot1, screenshot2, profileString)
+	profile, err := s.builder.BuildProfile(profileRequest, true)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build profile: %v", err)
+	}
+
+	chat, err := s.prepareImageCompletion(ctx, screenshot1, screenshot2, profile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepare chat completion: %v", err)
 	}
@@ -89,12 +115,7 @@ func (s *openAIService) validate() error {
 	return err
 }
 
-func (s *openAIService) prepareTextCompletion(ctx context.Context, version1, version2 string, profileString string) (*openai.ChatCompletion, error) {
-	profile, err := getMonitoringProfile(profileString)
-	if err != nil {
-		s.logger.Debug("failed to get monitoring profile", zap.Error(err))
-		profile = DefaultUpdates
-	}
+func (s *openAIService) prepareTextCompletion(ctx context.Context, version1, version2 string, profile models.Profile) (*openai.ChatCompletion, error) {
 
 	opts := s.prepareCompareOptions(&profile)
 
@@ -127,13 +148,7 @@ func (s *openAIService) prepareTextCompletion(ctx context.Context, version1, ver
 	return chat, err
 }
 
-func (s *openAIService) prepareImageCompletion(ctx context.Context, version1, version2 image.Image, profileString string) (*openai.ChatCompletion, error) {
-	profile, err := getMonitoringProfile(profileString)
-	if err != nil {
-		s.logger.Debug("failed to get monitoring profile", zap.Error(err))
-		profile = DefaultUpdates
-	}
-
+func (s *openAIService) prepareImageCompletion(ctx context.Context, version1, version2 image.Image, profile models.Profile) (*openai.ChatCompletion, error) {
 	// convert images to base64
 	version1Base64, err := imageToBase64URL(version1)
 	if err != nil {

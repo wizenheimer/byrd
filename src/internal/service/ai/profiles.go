@@ -1,8 +1,6 @@
 package ai
 
 import (
-	"fmt"
-
 	"github.com/wizenheimer/iris/src/internal/domain/models"
 )
 
@@ -296,34 +294,4 @@ var CareerPageUpdates = models.Profile{
 			Description: "New/removed job postings, hiring updates",
 		},
 	},
-}
-
-// getMonitoringProfile returns a predefined set of fields based on profile name
-func getMonitoringProfile(name string) (models.Profile, error) {
-	// Register all profiles
-	profiles := map[string]models.Profile{
-		"competitor_updates":  DefaultUpdates,
-		"product_updates":     ProductUpdates,
-		"customer_updates":    CustomerUpdates,
-		"partnership_updates": PartnershipUpdates,
-		"pricing_updates":     PricingUpdates,
-		"positioning_updates": PositioningUpdates,
-		"linkedin_updates":    LinkedInUpdates,
-		"twitter_updates":     TwitterUpdates,
-		"facebook_updates":    FacebookUpdates,
-		"instagram_updates":   InstagramUpdates,
-		"content_updates":     ContentUpdates,
-		"youtube_updates":     YouTubeUpdates,
-		"podcast_updates":     PodcastUpdates,
-		"dev_updates":         DevUpdates,
-		"security_updates":    SecurityUpdates,
-		"career_page_updates": CareerPageUpdates,
-	}
-
-	profile, exists := profiles[name]
-	if !exists {
-		return DefaultUpdates, fmt.Errorf("profile %s not found", name)
-	}
-
-	return profile, nil
 }
