@@ -23,16 +23,15 @@ func NewDiffRepository(db *sql.DB, logger *logger.Logger) (interfaces.DiffReposi
 	}, nil
 }
 
-// SaveDiff saves the diff analysis for a URL
-func (r *diffRepository) SaveDiff(ctx context.Context, url string, diff *models.URLDiffAnalysis) error {
-	r.logger.Debug("saving diff analysis", zap.String("url", url))
+// Set saves the diff analysis for a URL
+func (r *diffRepository) Set(ctx context.Context, req models.URLDiffRequest, diff *models.DynamicChanges) error {
 	// Implementation
 	return nil
 }
 
-// GetDiff retrieves the diff analysis for a URL, week day, and week number
-func (r *diffRepository) GetDiff(ctx context.Context, url, weekDay, weekNumber string) (*models.URLDiffAnalysis, error) {
-	r.logger.Debug("getting diff analysis", zap.String("url", url), zap.String("week_day", weekDay), zap.String("week_number", weekNumber))
+// Get retrieves the diff analysis for a URL, week day, and week number
+func (r *diffRepository) Get(ctx context.Context, req models.URLDiffRequest) (*models.DynamicChanges, error) {
+	r.logger.Debug("compairing diff", zap.Any("url", req.URL), zap.Any("week_day_1", req.WeekDay1), zap.Any("week_number_1", req.WeekNumber1), zap.Any("week_day_2", req.WeekDay2), zap.Any("week_number_2", req.WeekNumber2))
 	// Implementation
 	return nil, nil
 }
