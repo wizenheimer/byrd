@@ -50,7 +50,7 @@ func (s *screenshotService) prepareScreenshotImageResponse(resp *http.Response, 
 }
 
 // prepareHTMLContentResponse prepares the HTML content response from the HTTP response
-func (s *screenshotService) prepareScreenshotHTMLContentResponse(resp *http.Response, url string, year int, weekNumber int, weekDay int) (*models.ScreenshotHTMLContentResponse, error) {
+func (s *screenshotService) prepareScreenshotHTMLContentResponse(resp *http.Response, sourceURL, renderedURL string, year int, weekNumber int, weekDay int) (*models.ScreenshotHTMLContentResponse, error) {
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
@@ -67,8 +67,8 @@ func (s *screenshotService) prepareScreenshotHTMLContentResponse(resp *http.Resp
 		Status:      "success",
 		HTMLContent: htmlContent,
 		Metadata: &models.ScreenshotMetadata{
-			SourceURL:   url,
-			RenderedURL: url,
+			SourceURL:   sourceURL,
+			RenderedURL: renderedURL,
 			Year:        year,
 			WeekNumber:  weekNumber,
 			WeekDay:     weekDay,
@@ -181,7 +181,7 @@ func (s *screenshotService) prepareScreenshot(opts models.ScreenshotRequestOptio
 // prepareScreenshotHTML creates a request for the screenshot HTML
 func (s *screenshotService) prepareScreenshotHTML(opts models.ScreenshotHTMLRequestOptions) (*http.Response, error) {
 	// Get HTML content
-	htmlResp, err := http.Get(opts.URL)
+	htmlResp, err := http.Get(opts.RenderedURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get HTML content: %v", err)
 	}

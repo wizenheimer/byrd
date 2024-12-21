@@ -175,7 +175,7 @@ func (e *screenshotTaskExecutor) processURL(ctx context.Context, url models.URL)
 	defer cancel()
 
 	// Capture current screenshot
-	currentImgResp, currentHtmlContentResp, err := e.screenshotService.Refresh(urlContext, url.URL, models.ScreenshotRequestOptions{
+	_, currentHtmlContentResp, err := e.screenshotService.Refresh(urlContext, url.URL, models.ScreenshotRequestOptions{
 		URL: url.URL,
 	})
 	if err != nil {
@@ -183,23 +183,18 @@ func (e *screenshotTaskExecutor) processURL(ctx context.Context, url models.URL)
 	}
 
 	// Get previous screenshot for comparison
-	previousImgResp, previousHtmlContentResp, err := e.screenshotService.Retrieve(urlContext, url.URL)
+	_, previousHtmlContentResp, err := e.screenshotService.Retrieve(urlContext, url.URL)
 	if err != nil {
 		return err
 	}
 
 	// Compare screenshots
-	diffHTMLResp, err := e.diffService.CompareHTMLContentResponse(urlContext, currentHtmlContentResp, previousHtmlContentResp)
+	diffHTMLResp, err := e.diffService.Compare(urlContext, currentHtmlContentResp, previousHtmlContentResp, "competitor_analysis", true)
 	if err != nil {
 		return err
 	}
 
-	diffImgResp, err := e.diffService.CompareImageResponse(urlContext, currentImgResp, previousImgResp)
-	if err != nil {
-		return err
-	}
-
-	e.logger.Debug("diff results", zap.Any("html_diff", diffHTMLResp), zap.Any("img_diff", diffImgResp))
+	e.logger.Debug("diff analysis completed", zap.Any("url", url.URL), zap.Any("diff", diffHTMLResp))
 	return nil
 }
 
