@@ -12,14 +12,14 @@ import (
 type diffService struct {
 	diffRepo   interfaces.DiffRepository
 	aiService  interfaces.AIService
-	screenshot interfaces.ScreenshotService
+	// screenshot interfaces.ScreenshotService
 	logger     *logger.Logger
 }
 
 func NewDiffService(
 	diffRepo interfaces.DiffRepository,
 	aiService interfaces.AIService,
-	screenshot interfaces.ScreenshotService,
+	// screenshot interfaces.ScreenshotService,
 	logger *logger.Logger,
 ) (interfaces.DiffService, error) {
 	logger.Debug("creating new diff service")
@@ -28,7 +28,7 @@ func NewDiffService(
 	diffService := &diffService{
 		diffRepo:   diffRepo,
 		aiService:  aiService,
-		screenshot: screenshot,
+		// screenshot: screenshot,
 		logger:     logger.WithFields(map[string]interface{}{"module": "diff_service"}),
 	}
 	return diffService, nil

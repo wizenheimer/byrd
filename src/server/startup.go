@@ -43,18 +43,6 @@ func initializer(cfg *config.Config, sqlDb *sql.DB, logger *logger.Logger) (*rou
 	// This client will be used to make requests to the screenshot service
 	screenshotRateLimitedClient := client.NewRateLimitedClient(screenshotHttpClient, cfg.Services.ScreenshotServiceQPS)
 
-	aiClientOpts := []client.ClientOption{
-		client.WithLogger(logger),
-		client.WithAuth(client.BearerAuth{
-			Token: cfg.Services.OpenAIKey,
-		}),
-	}
-
-	aiHttpClient, err := client.NewClient(aiClientOpts...)
-	if err != nil {
-		return nil, err
-	}
-
 	commonClientOpts := []client.ClientOption{
 		client.WithLogger(logger),
 	}
@@ -75,7 +63,12 @@ func initializer(cfg *config.Config, sqlDb *sql.DB, logger *logger.Logger) (*rou
 		return nil, err
 	}
 
-	diffService, err := setupDiffService(cfg, sqlDb, screenshotRateLimitedClient, aiHttpClient, logger)
+	aiService, err := setupAIService(cfg, logger)
+	if err != nil {
+		return nil, err
+	}
+
+	diffService, err := setupDiffService(cfg, sqlDb, aiService, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -99,6 +92,7 @@ func initializer(cfg *config.Config, sqlDb *sql.DB, logger *logger.Logger) (*rou
 	handlers := routes.NewHandlerContainer(
 		screenshotService,
 		urlService,
+		aiService,
 		diffService,
 		competitorService,
 		notificationService,
@@ -276,25 +270,26 @@ func setupNotificationService(cfg *config.Config, httpClient client.HTTPClient, 
 	return notification.NewNotificationService(emailClient, templateManager, logger)
 }
 
-func setupDiffService(cfg *config.Config, sqlDb *sql.DB, screenshotHTTPClient, aiHTTPClient client.HTTPClient, logger *logger.Logger) (interfaces.DiffService, error) {
-	logger.Debug("setting up diff service", zap.Any("database", sqlDb.Stats()), zap.Any("service_config", cfg.Services), zap.Any("storage_config", cfg.Storage))
+func setupAIService(cfg *config.Config, logger *logger.Logger) (interfaces.AIService, error) {
+	logger.Debug("setting up AI service", zap.Any("service_config", cfg.Services))
 
-	screenshotService, err := setupScreenshotService(cfg, screenshotHTTPClient, logger)
-	if err != nil {
-		log.Fatalf("Failed to initialize screenshot service: %v", err)
-	}
-
-	aiService, err := ai.NewOpenAIService(cfg.Services.OpenAIKey, aiHTTPClient, logger)
+	aiService, err := ai.NewOpenAIService(cfg.Services.OpenAIKey, logger)
 	if err != nil {
 		log.Fatalf("Failed to initialize AI service: %v", err)
 	}
+
+	return aiService, nil
+}
+
+func setupDiffService(cfg *config.Config, sqlDb *sql.DB, aiService interfaces.AIService, logger *logger.Logger) (interfaces.DiffService, error) {
+	logger.Debug("setting up diff service", zap.Any("database", sqlDb.Stats()), zap.Any("service_config", cfg.Services), zap.Any("storage_config", cfg.Storage))
 
 	diffRepo, err := db.NewDiffRepository(sqlDb, logger)
 	if err != nil {
 		log.Fatalf("Failed to initialize diff repository: %v", err)
 	}
 
-	return diff.NewDiffService(diffRepo, aiService, screenshotService, logger)
+	return diff.NewDiffService(diffRepo, aiService, logger)
 }
 
 func setupCompetitorService(sqlDb *sql.DB, logger *logger.Logger) (interfaces.CompetitorService, error) {
