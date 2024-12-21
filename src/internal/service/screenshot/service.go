@@ -62,7 +62,8 @@ func (s *screenshotService) Refresh(ctx context.Context, url string, opts models
 	}
 
 	htmlOpts := models.ScreenshotHTMLRequestOptions{
-		URL: imgResp.Metadata.RenderedURL,
+		SourceURL:   opts.URL,
+		RenderedURL: imgResp.Metadata.RenderedURL,
 	}
 
 	htmlContentResp, err := s.GetCurrentHTMLContent(ctx, true, htmlOpts)
@@ -132,7 +133,7 @@ func (s *screenshotService) GetCurrentImage(ctx context.Context, save bool, opts
 // Or it will take a new screenshot and store it as html
 func (s *screenshotService) GetCurrentHTMLContent(ctx context.Context, save bool, opts models.ScreenshotHTMLRequestOptions) (*models.ScreenshotHTMLContentResponse, error) {
 	// Get screenshot if it exists
-	if htmlContentResp, err := s.getExistingHTMLContent(ctx, opts.URL); err == nil {
+	if htmlContentResp, err := s.getExistingHTMLContent(ctx, opts.RenderedURL); err == nil {
 		return htmlContentResp, nil
 	}
 
@@ -150,14 +151,14 @@ func (s *screenshotService) GetCurrentHTMLContent(ctx context.Context, save bool
 	}
 
 	// Parse the response
-	htmlContentResp, err := s.prepareScreenshotHTMLContentResponse(resp, opts.URL, currentYear, currentWeek, currentDay)
+	htmlContentResp, err := s.prepareScreenshotHTMLContentResponse(resp, opts.SourceURL, opts.RenderedURL, currentYear, currentWeek, currentDay)
 	if err != nil {
 		return nil, err
 	}
 
 	// Save the screenshot if required
 	if save {
-		currentPath, err := path.GetCurrentContentPath(opts.URL)
+		currentPath, err := path.GetCurrentContentPath(opts.SourceURL)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get current content path: %v", err)
 		}
