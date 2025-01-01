@@ -3,20 +3,20 @@ package notification
 import (
 	"context"
 
-	"github.com/wizenheimer/iris/src/internal/client"
 	"github.com/wizenheimer/iris/src/internal/config"
-	"github.com/wizenheimer/iris/src/internal/domain/models"
+	clf "github.com/wizenheimer/iris/src/internal/interfaces/client"
+	core_models "github.com/wizenheimer/iris/src/internal/models/core"
 	"github.com/wizenheimer/iris/src/pkg/logger"
 	"go.uber.org/zap"
 )
 
 type resendEmailClient struct {
 	authKey string
-	client  client.HTTPClient
+	client  clf.HTTPClient
 	logger  *logger.Logger
 }
 
-func NewResendEmailClient(config *config.Config, client client.HTTPClient, logger *logger.Logger) (client.EmailClient, error) {
+func NewResendEmailClient(config *config.Config, client clf.HTTPClient, logger *logger.Logger) (clf.EmailClient, error) {
 	logger.Debug("creating new resend email client")
 
 	return &resendEmailClient{
@@ -26,7 +26,7 @@ func NewResendEmailClient(config *config.Config, client client.HTTPClient, logge
 	}, nil
 }
 
-func (c *resendEmailClient) Send(ctx context.Context, params models.EmailParams) error {
+func (c *resendEmailClient) Send(ctx context.Context, params core_models.EmailParams) error {
 	c.logger.Debug("sending email", zap.Any("from", params.From), zap.Any("to", params.To), zap.Any("subject", params.Subject))
 	// Implementation
 	return nil

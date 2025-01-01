@@ -5,8 +5,15 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/wizenheimer/iris/src/internal/constants"
 )
+
+// WorkflowCheckpoint captures the current checkpoint of the workflow
+type WorkflowCheckpoint struct {
+	// BatchID is the batch ID of the current checkpoint
+	BatchID *uuid.UUID `json:"batch_id"`
+}
 
 // WorkflowType is an enum for the type of workflow
 type WorkflowType string

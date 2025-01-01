@@ -5,8 +5,9 @@ import (
 	"errors"
 
 	"github.com/google/uuid"
-	"github.com/wizenheimer/iris/src/internal/domain/interfaces"
-	"github.com/wizenheimer/iris/src/internal/domain/models"
+	repo "github.com/wizenheimer/iris/src/internal/interfaces/repository"
+	svc "github.com/wizenheimer/iris/src/internal/interfaces/service"
+	core_models "github.com/wizenheimer/iris/src/internal/models/core"
 	"github.com/wizenheimer/iris/src/pkg/logger"
 	"github.com/wizenheimer/iris/src/pkg/utils/path"
 	"github.com/wizenheimer/iris/src/pkg/utils/ptr"
@@ -16,7 +17,7 @@ import (
 // urlService is the service that provides URL management operations
 type urlService struct {
 	// urlRepository is an interface that provides URL management operations
-	urlRepository interfaces.URLRepository
+	urlRepository repo.URLRepository
 
 	// logger is a structured logger for logging
 	logger *logger.Logger
@@ -24,7 +25,7 @@ type urlService struct {
 
 // NewURLService creates a new URLService
 // It returns an error if the logger or urlRepository is nil
-func NewURLService(urlRepository interfaces.URLRepository, logger *logger.Logger) (interfaces.URLService, error) {
+func NewURLService(urlRepository repo.URLRepository, logger *logger.Logger) (svc.URLService, error) {
 	if logger == nil {
 		return nil, errors.New("logger is required")
 	}
@@ -42,7 +43,7 @@ func NewURLService(urlRepository interfaces.URLRepository, logger *logger.Logger
 // AddURL adds a new URL if it does not exist
 // If the URL already exists, it returns the existing URL without an error
 // It returns an error if the URL is invalid or if there is an error adding the URL
-func (s *urlService) AddURL(ctx context.Context, rawURL string) (*models.URL, error) {
+func (s *urlService) AddURL(ctx context.Context, rawURL string) (*core_models.URL, error) {
 	url, err := s.preprocessURL(rawURL)
 	if err != nil {
 		return nil, err
@@ -84,8 +85,8 @@ func (s *urlService) URLExists(ctx context.Context, rawURL string) (bool, error)
 // ListURLs lists all URLs in batches
 // It returns a channel that emits URLBatch objects
 // It returns a channel that emits errors
-func (s *urlService) ListURLs(ctx context.Context, batchSize int, lastSeenID *uuid.UUID) (<-chan models.URLBatch, <-chan error) {
-	result := make(chan models.URLBatch)
+func (s *urlService) ListURLs(ctx context.Context, batchSize int, lastSeenID *uuid.UUID) (<-chan core_models.URLBatch, <-chan error) {
+	result := make(chan core_models.URLBatch)
 	errc := make(chan error, 1) // buffer to prevent goroutine leak
 
 	go func() {

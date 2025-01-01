@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/wizenheimer/iris/src/internal/domain/interfaces"
-	"github.com/wizenheimer/iris/src/internal/domain/models"
+	interfaces "github.com/wizenheimer/iris/src/internal/interfaces/service"
+	models "github.com/wizenheimer/iris/src/internal/models/core"
 	"github.com/wizenheimer/iris/src/pkg/logger"
 	"github.com/wizenheimer/iris/src/pkg/utils/api"
 	"github.com/wizenheimer/iris/src/pkg/utils/ptr"

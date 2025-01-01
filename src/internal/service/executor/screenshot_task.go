@@ -5,17 +5,19 @@ import (
 	"sync"
 	"time"
 
-	"github.com/wizenheimer/iris/src/internal/domain/interfaces"
-	"github.com/wizenheimer/iris/src/internal/domain/models"
+	exc "github.com/wizenheimer/iris/src/internal/interfaces/executor"
+	svc "github.com/wizenheimer/iris/src/internal/interfaces/service"
+	core_models "github.com/wizenheimer/iris/src/internal/models/core"
+
 	"github.com/wizenheimer/iris/src/pkg/logger"
 	"go.uber.org/zap"
 )
 
 type screenshotTaskExecutor struct {
-	config            models.ExecutorConfig
-	urlService        interfaces.URLService
-	screenshotService interfaces.ScreenshotService
-	diffService       interfaces.DiffService
+	config            core_models.ExecutorConfig
+	urlService        svc.URLService
+	screenshotService svc.ScreenshotService
+	diffService       svc.DiffService
 	logger            *logger.Logger
 
 	activeTasks sync.Map // map[string]context.CancelFunc
@@ -27,12 +29,12 @@ type batchResults struct {
 }
 
 func NewScreenshotTaskExecutor(
-	urlService interfaces.URLService,
-	screenshotService interfaces.ScreenshotService,
-	diffService interfaces.DiffService,
+	urlService svc.URLService,
+	screenshotService svc.ScreenshotService,
+	diffService svc.DiffService,
 	logger *logger.Logger,
-) (interfaces.TaskExecutor, error) {
-	config, err := models.GetExecutorConfig(models.ScreenshotWorkflowType)
+) (exc.TaskExecutor, error) {
+	config, err := core_models.GetExecutorConfig(core_models.ScreenshotWorkflowType)
 	if err != nil {
 		return nil, err
 	}
@@ -48,9 +50,9 @@ func NewScreenshotTaskExecutor(
 	return taskExecutor, nil
 }
 
-func (e *screenshotTaskExecutor) Execute(ctx context.Context, task models.Task) (<-chan models.TaskUpdate, <-chan models.TaskError) {
-	updates := make(chan models.TaskUpdate, 1)
-	errors := make(chan models.TaskError, 1)
+func (e *screenshotTaskExecutor) Execute(ctx context.Context, task core_models.Task) (<-chan core_models.TaskUpdate, <-chan core_models.TaskError) {
+	updates := make(chan core_models.TaskUpdate, 1)
+	errors := make(chan core_models.TaskError, 1)
 
 	taskCtx, cancel := context.WithCancel(ctx)
 	e.activeTasks.Store(task.TaskID, cancel)
@@ -79,7 +81,7 @@ func (e *screenshotTaskExecutor) Execute(ctx context.Context, task models.Task) 
 						zap.Any("task_id", task.TaskID))
 					return
 				}
-				errors <- models.TaskError{
+				errors <- core_models.TaskError{
 					TaskID: task.TaskID,
 					Error:  err,
 					Time:   time.Now(),
@@ -94,9 +96,9 @@ func (e *screenshotTaskExecutor) Execute(ctx context.Context, task models.Task) 
 						zap.Any("completed", completed),
 						zap.Any("failed", failed))
 					// Send final update
-					updates <- models.TaskUpdate{
+					updates <- core_models.TaskUpdate{
 						TaskID:        task.TaskID,
-						Status:        models.TaskStatusComplete,
+						Status:        core_models.TaskStatusComplete,
 						Completed:     completed,
 						Failed:        failed,
 						NewCheckpoint: checkpoint,
@@ -117,15 +119,15 @@ func (e *screenshotTaskExecutor) Execute(ctx context.Context, task models.Task) 
 
 				// Update checkpoint with last URL's ID
 				if lastURL := batch.URLs[len(batch.URLs)-1]; lastURL.ID != nil {
-					checkpoint = models.WorkflowCheckpoint{
+					checkpoint = core_models.WorkflowCheckpoint{
 						BatchID: lastURL.ID,
 					}
 				}
 
 				// Send progress update
-				updates <- models.TaskUpdate{
+				updates <- core_models.TaskUpdate{
 					TaskID:        task.TaskID,
-					Status:        models.TaskStatusRunning,
+					Status:        core_models.TaskStatusRunning,
 					Completed:     completed,
 					Failed:        failed,
 					NewCheckpoint: checkpoint,
@@ -138,14 +140,14 @@ func (e *screenshotTaskExecutor) Execute(ctx context.Context, task models.Task) 
 	return updates, errors
 }
 
-func (e *screenshotTaskExecutor) processBatch(ctx context.Context, urls []models.URL) batchResults {
+func (e *screenshotTaskExecutor) processBatch(ctx context.Context, urls []core_models.URL) batchResults {
 	var results batchResults
 	var wg sync.WaitGroup
 	resultChan := make(chan bool, len(urls)) // true = success, false = failure
 
 	for _, url := range urls {
 		wg.Add(1)
-		go func(url models.URL) {
+		go func(url core_models.URL) {
 			defer wg.Done()
 
 			err := e.processURL(ctx, url)
@@ -169,13 +171,13 @@ func (e *screenshotTaskExecutor) processBatch(ctx context.Context, urls []models
 	return results
 }
 
-func (e *screenshotTaskExecutor) processURL(ctx context.Context, url models.URL) error {
+func (e *screenshotTaskExecutor) processURL(ctx context.Context, url core_models.URL) error {
 	// Create context with timeout for this URL
 	urlContext, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
 	// Capture current screenshot
-	_, currentHtmlContentResp, err := e.screenshotService.Refresh(urlContext, url.URL, models.ScreenshotRequestOptions{
+	_, currentHtmlContentResp, err := e.screenshotService.Refresh(urlContext, url.URL, core_models.ScreenshotRequestOptions{
 		URL: url.URL,
 	})
 	if err != nil {
@@ -215,7 +217,7 @@ func (e *screenshotTaskExecutor) Terminate(ctx context.Context) error {
 	return nil
 }
 
-func (e *screenshotTaskExecutor) cleanup(taskID string, updates chan<- models.TaskUpdate, errors chan<- models.TaskError) {
+func (e *screenshotTaskExecutor) cleanup(taskID string, updates chan<- core_models.TaskUpdate, errors chan<- core_models.TaskError) {
 	e.activeTasks.Delete(taskID)
 	close(updates)
 	close(errors)

@@ -4,8 +4,8 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/wizenheimer/iris/src/internal/domain/interfaces"
-	"github.com/wizenheimer/iris/src/internal/domain/models"
+	interfaces "github.com/wizenheimer/iris/src/internal/interfaces/repository"
+	core_models "github.com/wizenheimer/iris/src/internal/models/core"
 	"github.com/wizenheimer/iris/src/pkg/logger"
 	"go.uber.org/zap"
 )
@@ -23,13 +23,13 @@ func NewCompetitorRepository(db *sql.DB, logger *logger.Logger) (interfaces.Comp
 	}, nil
 }
 
-func (r *competitorRepository) Create(ctx context.Context, competitor *models.Competitor) error {
+func (r *competitorRepository) Create(ctx context.Context, competitor *core_models.Competitor) error {
 	r.logger.Debug("creating new competitor", zap.Any("competitor", competitor))
 	// Implementation
 	return nil
 }
 
-func (r *competitorRepository) Update(ctx context.Context, competitor *models.Competitor) error {
+func (r *competitorRepository) Update(ctx context.Context, competitor *core_models.Competitor) error {
 	r.logger.Debug("updating competitor", zap.Any("competitor", competitor))
 	// Implementation
 	return nil
@@ -40,19 +40,19 @@ func (r *competitorRepository) Delete(ctx context.Context, id int) error {
 	// Implementation
 	return nil
 }
-func (r *competitorRepository) GetByID(ctx context.Context, id int) (*models.Competitor, error) {
+func (r *competitorRepository) GetByID(ctx context.Context, id int) (*core_models.Competitor, error) {
 	r.logger.Debug("getting competitor by ID", zap.Int("id", id))
 	// Implementation
 	return nil, nil
 }
 
-func (r *competitorRepository) List(ctx context.Context, limit, offset int) ([]models.Competitor, int, error) {
+func (r *competitorRepository) List(ctx context.Context, limit, offset int) ([]core_models.Competitor, int, error) {
 	r.logger.Debug("listing competitors", zap.Int("limit", limit), zap.Int("offset", offset))
 	// Implementation
 	return nil, 0, nil
 }
 
-func (r *competitorRepository) FindByURLHash(ctx context.Context, hash string) ([]models.Competitor, error) {
+func (r *competitorRepository) FindByURLHash(ctx context.Context, hash string) ([]core_models.Competitor, error) {
 	r.logger.Debug("finding competitor by URL hash", zap.String("hash", hash))
 	// Implementation
 	return nil, nil

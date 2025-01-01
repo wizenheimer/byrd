@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
+	models "github.com/wizenheimer/iris/src/internal/models/core"
 )
 
 // WorkflowRequest is a request to start a workflow
 type WorkflowRequest struct {
 	// Type is the type of the workflow
-	Type *WorkflowType `json:"workflow_type"`
+	Type *models.WorkflowType `json:"workflow_type"`
 	// Year is the year of the workflow
 	Year *int `json:"year"`
 	// WeekNumber is the week number of the workflow
@@ -24,9 +24,9 @@ type WorkflowRequest struct {
 func (wr WorkflowRequest) Validate(safe bool) error {
 	if wr.Type == nil {
 		return fmt.Errorf("missing workflow type, got %v", wr.Type)
-	} else if *wr.Type != ScreenshotWorkflowType && *wr.Type != ReportWorkflowType {
+	} else if *wr.Type != models.ScreenshotWorkflowType && *wr.Type != models.ReportWorkflowType {
 		if safe {
-			*wr.Type = ScreenshotWorkflowType
+			*wr.Type = models.ScreenshotWorkflowType
 		} else {
 			return fmt.Errorf("invalid workflow type: %v", *wr.Type)
 		}
@@ -71,7 +71,7 @@ func (wr WorkflowRequest) Validate(safe bool) error {
 // WorkflowResponse is a response to a workflow request
 type WorkflowResponse struct {
 	// WorkflowID is the identifier of the workflow
-	WorkflowID WorkflowIdentifier `json:"workflow_id"`
+	WorkflowID models.WorkflowIdentifier `json:"workflow_id"`
 	// WorkflowState is the state of the workflow
 	WorkflowState WorkflowState `json:"workflow_state"`
 }
@@ -79,13 +79,7 @@ type WorkflowResponse struct {
 // WorkflowState captures the state of the workflow
 type WorkflowState struct {
 	// Status is the current status of the workflow
-	Status WorkflowStatus `json:"status"`
+	Status models.WorkflowStatus `json:"status"`
 	// Checkpoint is the current checkpoint of the workflow
-	Checkpoint WorkflowCheckpoint `json:"checkpoint"`
-}
-
-// WorkflowCheckpoint captures the current checkpoint of the workflow
-type WorkflowCheckpoint struct {
-	// BatchID is the batch ID of the current checkpoint
-	BatchID *uuid.UUID `json:"batch_id"`
+	Checkpoint models.WorkflowCheckpoint `json:"checkpoint"`
 }

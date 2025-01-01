@@ -1,9 +1,9 @@
-package client
+package interfaces
 
 import (
 	"context"
 
-	"github.com/wizenheimer/iris/src/internal/domain/models"
+	models "github.com/wizenheimer/iris/src/internal/models/core"
 )
 
 type EmailClient interface {

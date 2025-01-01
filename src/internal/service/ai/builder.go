@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/wizenheimer/iris/src/internal/domain/models"
+	core_models "github.com/wizenheimer/iris/src/internal/models/core"
 )
 
 // UserProfileRequest represents the user's request to create a profile
@@ -27,17 +27,17 @@ func NewProfileBuilder(registry *FieldRegistry) *ProfileBuilder {
 }
 
 // BuildProfileFromJSON builds a profile from a JSON request
-func (pb *ProfileBuilder) BuildProfileFromJSON(jsonData string) (models.Profile, error) {
+func (pb *ProfileBuilder) BuildProfileFromJSON(jsonData string) (core_models.Profile, error) {
 	var request ProfileRequest
 	if err := json.Unmarshal([]byte(jsonData), &request); err != nil {
-		return models.Profile{}, fmt.Errorf("invalid request JSON: %w", err)
+		return core_models.Profile{}, fmt.Errorf("invalid request JSON: %w", err)
 	}
 
 	return pb.BuildProfile(request, false)
 }
 
 // BuildProfile builds a profile from a request
-func (pb *ProfileBuilder) BuildProfile(request ProfileRequest, fallback bool) (models.Profile, error) {
+func (pb *ProfileBuilder) BuildProfile(request ProfileRequest, fallback bool) (core_models.Profile, error) {
 	if request.Name == "" {
 		return DefaultUpdates, fmt.Errorf("profile name is required")
 	}
@@ -53,16 +53,16 @@ func (pb *ProfileBuilder) BuildProfile(request ProfileRequest, fallback bool) (m
 		request.FieldNames = append(request.FieldNames, fieldName)
 	}
 
-	fields := make([]models.FieldConfig, 0, len(request.FieldNames))
+	fields := make([]core_models.FieldConfig, 0, len(request.FieldNames))
 	for _, fieldName := range request.FieldNames {
 		field, err := pb.registry.GetField(fieldName, fallback)
 		if err != nil {
-			return models.Profile{}, fmt.Errorf("error getting field '%s': %w", fieldName, err)
+			return core_models.Profile{}, fmt.Errorf("error getting field '%s': %w", fieldName, err)
 		}
 		fields = append(fields, field)
 	}
 
-	return models.Profile{
+	return core_models.Profile{
 		Name:        request.Name,
 		Description: request.Description,
 		Fields:      fields,

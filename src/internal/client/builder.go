@@ -12,6 +12,8 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+
+	clf "github.com/wizenheimer/iris/src/internal/interfaces/client"
 )
 
 // RequestBuilder helps construct HTTP requests
@@ -26,32 +28,32 @@ type RequestBuilder struct {
 	err         error
 }
 
-func (rb *RequestBuilder) Method(method string) *RequestBuilder {
+func (rb *RequestBuilder) Method(method string) clf.RequestBuilder {
 	rb.method = method
 	return rb
 }
 
-func (rb *RequestBuilder) BaseURL(baseURL string) *RequestBuilder {
+func (rb *RequestBuilder) BaseURL(baseURL string) clf.RequestBuilder {
 	rb.baseURL = baseURL
 	return rb
 }
 
-func (rb *RequestBuilder) Path(path string) *RequestBuilder {
+func (rb *RequestBuilder) Path(path string) clf.RequestBuilder {
 	rb.path = path
 	return rb
 }
 
-func (rb *RequestBuilder) QueryParam(key, value string) *RequestBuilder {
+func (rb *RequestBuilder) QueryParam(key, value string) clf.RequestBuilder {
 	rb.queryParams.Add(key, value)
 	return rb
 }
 
-func (rb *RequestBuilder) Header(key, value string) *RequestBuilder {
+func (rb *RequestBuilder) Header(key, value string) clf.RequestBuilder {
 	rb.headers[key] = value
 	return rb
 }
 
-func (rb *RequestBuilder) JSON(data interface{}) *RequestBuilder {
+func (rb *RequestBuilder) JSON(data interface{}) clf.RequestBuilder {
 	if rb.err != nil {
 		return rb
 	}
@@ -67,13 +69,13 @@ func (rb *RequestBuilder) JSON(data interface{}) *RequestBuilder {
 	return rb
 }
 
-func (rb *RequestBuilder) Form(data url.Values) *RequestBuilder {
+func (rb *RequestBuilder) Form(data url.Values) clf.RequestBuilder {
 	rb.body = strings.NewReader(data.Encode())
 	rb.headers["Content-Type"] = "application/x-www-form-urlencoded"
 	return rb
 }
 
-func (rb *RequestBuilder) MultipartForm(fn func(*multipart.Writer) error) *RequestBuilder {
+func (rb *RequestBuilder) MultipartForm(fn func(*multipart.Writer) error) clf.RequestBuilder {
 	if rb.err != nil {
 		return rb
 	}
@@ -96,7 +98,7 @@ func (rb *RequestBuilder) MultipartForm(fn func(*multipart.Writer) error) *Reque
 	return rb
 }
 
-func (rb *RequestBuilder) Context(ctx context.Context) *RequestBuilder {
+func (rb *RequestBuilder) Context(ctx context.Context) clf.RequestBuilder {
 	rb.ctx = ctx
 	return rb
 }
@@ -123,7 +125,7 @@ func (rb *RequestBuilder) Build() (*http.Request, error) {
 	return req, nil
 }
 
-func (rb *RequestBuilder) Execute(c HTTPClient) (*http.Response, error) {
+func (rb *RequestBuilder) Execute(c clf.HTTPClient) (*http.Response, error) {
 	req, err := rb.Build()
 	if err != nil {
 		return nil, err
@@ -132,7 +134,7 @@ func (rb *RequestBuilder) Execute(c HTTPClient) (*http.Response, error) {
 }
 
 // AddQueryParamsFromStruct adds query parameters from a struct using reflection
-func (rb *RequestBuilder) AddQueryParamsFromStruct(opts interface{}) *RequestBuilder {
+func (rb *RequestBuilder) AddQueryParamsFromStruct(opts interface{}) clf.RequestBuilder {
 	val := reflect.ValueOf(opts)
 	if val.Kind() == reflect.Ptr {
 		val = val.Elem()

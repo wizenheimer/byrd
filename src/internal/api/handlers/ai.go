@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/wizenheimer/iris/src/internal/domain/interfaces"
+	interfaces "github.com/wizenheimer/iris/src/internal/interfaces/service"
 	"github.com/wizenheimer/iris/src/pkg/logger"
 )
 

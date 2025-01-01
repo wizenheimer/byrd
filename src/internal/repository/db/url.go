@@ -5,8 +5,8 @@ import (
 	"database/sql"
 
 	"github.com/google/uuid"
-	"github.com/wizenheimer/iris/src/internal/domain/interfaces"
-	"github.com/wizenheimer/iris/src/internal/domain/models"
+	interfaces "github.com/wizenheimer/iris/src/internal/interfaces/repository"
+	core_models "github.com/wizenheimer/iris/src/internal/models/core"
 	"github.com/wizenheimer/iris/src/pkg/logger"
 	"go.uber.org/zap"
 )
@@ -24,7 +24,7 @@ func NewURLRepository(db *sql.DB, logger *logger.Logger) interfaces.URLRepositor
 }
 
 // AddURL: adds a new URL if it does not exist
-func (r *urlRepository) AddURL(ctx context.Context, url string) (*models.URL, error) {
+func (r *urlRepository) AddURL(ctx context.Context, url string) (*core_models.URL, error) {
 	r.logger.Debug("adding new URL", zap.String("url", url))
 
 	const query = `
@@ -32,7 +32,7 @@ func (r *urlRepository) AddURL(ctx context.Context, url string) (*models.URL, er
         VALUES ($1)
         RETURNING id, url, created_at`
 
-	var result models.URL
+	var result core_models.URL
 	err := r.db.QueryRowContext(ctx, query, url).Scan(
 		&result.ID,
 		&result.URL,
@@ -45,7 +45,7 @@ func (r *urlRepository) AddURL(ctx context.Context, url string) (*models.URL, er
 }
 
 // ListUrls: lists all URLs in batches
-func (r *urlRepository) ListURLs(ctx context.Context, batchSize int, lastSeenID *uuid.UUID) (*models.URLBatch, error) {
+func (r *urlRepository) ListURLs(ctx context.Context, batchSize int, lastSeenID *uuid.UUID) (*core_models.URLBatch, error) {
 	const query = `
         SELECT id, url, created_at
         FROM urls
@@ -59,9 +59,9 @@ func (r *urlRepository) ListURLs(ctx context.Context, batchSize int, lastSeenID 
 	}
 	defer rows.Close()
 
-	var urls []models.URL
+	var urls []core_models.URL
 	for rows.Next() {
-		var url models.URL
+		var url core_models.URL
 		err := rows.Scan(
 			&url.ID,
 			&url.URL,
@@ -76,7 +76,7 @@ func (r *urlRepository) ListURLs(ctx context.Context, batchSize int, lastSeenID 
 		return nil, err
 	}
 
-	result := &models.URLBatch{
+	result := &core_models.URLBatch{
 		URLs:    urls,
 		HasMore: false,
 	}
@@ -115,7 +115,7 @@ func (r *urlRepository) DeleteURL(ctx context.Context, url string) error {
 	return nil
 }
 
-func (r *urlRepository) URLExists(ctx context.Context, url string) (*models.URL, bool, error) {
+func (r *urlRepository) URLExists(ctx context.Context, url string) (*core_models.URL, bool, error) {
 	r.logger.Debug("checking if URL exists", zap.String("url", url))
 
 	const query = `
@@ -123,7 +123,7 @@ func (r *urlRepository) URLExists(ctx context.Context, url string) (*models.URL,
         FROM urls
         WHERE url = $1`
 
-	var result models.URL
+	var result core_models.URL
 	err := r.db.QueryRowContext(ctx, query, url).Scan(
 		&result.ID,
 		&result.URL,

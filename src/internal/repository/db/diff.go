@@ -4,8 +4,9 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/wizenheimer/iris/src/internal/domain/interfaces"
-	"github.com/wizenheimer/iris/src/internal/domain/models"
+	interfaces "github.com/wizenheimer/iris/src/internal/interfaces/repository"
+	api_models "github.com/wizenheimer/iris/src/internal/models/api"
+	core_models "github.com/wizenheimer/iris/src/internal/models/core"
 	"github.com/wizenheimer/iris/src/pkg/logger"
 	"go.uber.org/zap"
 )
@@ -24,13 +25,13 @@ func NewDiffRepository(db *sql.DB, logger *logger.Logger) (interfaces.DiffReposi
 }
 
 // Set saves the diff analysis for a URL
-func (r *diffRepository) Set(ctx context.Context, req models.URLDiffRequest, diff *models.DynamicChanges) error {
+func (r *diffRepository) Set(ctx context.Context, req api_models.URLDiffRequest, diff *core_models.DynamicChanges) error {
 	// Implementation
 	return nil
 }
 
 // Get retrieves the diff analysis for a URL, week day, and week number
-func (r *diffRepository) Get(ctx context.Context, req models.URLDiffRequest) (*models.DynamicChanges, error) {
+func (r *diffRepository) Get(ctx context.Context, req api_models.URLDiffRequest) (*core_models.DynamicChanges, error) {
 	r.logger.Debug("compairing diff", zap.Any("url", req.URL), zap.Any("week_day_1", req.WeekDay1), zap.Any("week_number_1", req.WeekNumber1), zap.Any("week_day_2", req.WeekDay2), zap.Any("week_number_2", req.WeekNumber2))
 	// Implementation
 	return nil, nil

@@ -3,24 +3,24 @@ package notification
 import (
 	"context"
 
-	"github.com/wizenheimer/iris/src/internal/client"
-	"github.com/wizenheimer/iris/src/internal/domain/interfaces"
-	"github.com/wizenheimer/iris/src/internal/domain/models"
+	clf "github.com/wizenheimer/iris/src/internal/interfaces/client"
+	svc "github.com/wizenheimer/iris/src/internal/interfaces/service"
+	core_models "github.com/wizenheimer/iris/src/internal/models/core"
 	"github.com/wizenheimer/iris/src/pkg/logger"
 	"go.uber.org/zap"
 )
 
 type notificationService struct {
-	emailClient client.EmailClient
+	emailClient clf.EmailClient
 	templates   *TemplateManager
 	logger      *logger.Logger
 }
 
 func NewNotificationService(
-	emailClient client.EmailClient,
+	emailClient clf.EmailClient,
 	templates *TemplateManager,
 	logger *logger.Logger,
-) (interfaces.NotificationService, error) {
+) (svc.NotificationService, error) {
 	logger.Debug("creating new notification service")
 
 	return &notificationService{
@@ -30,14 +30,14 @@ func NewNotificationService(
 	}, nil
 }
 
-func (s *notificationService) SendNotification(ctx context.Context, req models.NotificationRequest) (*models.NotificationResults, error) {
+func (s *notificationService) SendNotification(ctx context.Context, req core_models.NotificationRequest) (*core_models.NotificationResults, error) {
 	s.logger.Debug("sending notification", zap.Any("emails", req.Emails))
 	// Implementation
-	emailNotificationResults := models.EmailNotificationResults{
+	emailNotificationResults := core_models.EmailNotificationResults{
 		Successful: []string{},
 		Failed:     []string{},
 	}
-	return &models.NotificationResults{
+	return &core_models.NotificationResults{
 		EmailNotificationResults: emailNotificationResults,
 	}, nil
 }

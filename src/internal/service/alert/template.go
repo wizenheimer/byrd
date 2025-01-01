@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/wizenheimer/iris/src/internal/domain/models"
+	core_models "github.com/wizenheimer/iris/src/internal/models/core"
 	"go.uber.org/zap"
 )
 
@@ -24,7 +24,7 @@ const (
 type AlertTemplate struct {
 	TitleTemplate       string
 	DescriptionTemplate string
-	Severity            models.Severity
+	Severity            core_models.Severity
 }
 
 // AlertTemplates stores workflow-specific alert templates
@@ -33,54 +33,54 @@ var AlertTemplates = map[string]map[string]AlertTemplate{
 		"started": {
 			TitleTemplate:       "Screenshot Workflow Started - Week %d/%d",
 			DescriptionTemplate: "Screenshot capture workflow initiated for week %d of %d. Bucket: %d",
-			Severity:            models.SeverityInfo,
+			Severity:            core_models.SeverityInfo,
 		},
 		"completed": {
 			TitleTemplate:       "Screenshot Workflow Completed - Week %d/%d",
 			DescriptionTemplate: "Successfully completed screenshot captures for week %d of %d. Bucket: %d. Total processed: %s",
-			Severity:            models.SeverityInfo,
+			Severity:            core_models.SeverityInfo,
 		},
 		"failed": {
 			TitleTemplate:       "Screenshot Workflow Failed - Week %d/%d",
 			DescriptionTemplate: "Screenshot workflow failed for week %d of %d. Bucket: %d. Error: %s",
-			Severity:            models.SeverityError,
+			Severity:            core_models.SeverityError,
 		},
 		"cancelled": {
 			TitleTemplate:       "Screenshot Workflow Cancelled - Week %d/%d",
 			DescriptionTemplate: "Screenshot workflow cancelled for week %d of %d. Bucket: %d. Reason: %s",
-			Severity:            models.SeverityWarning,
+			Severity:            core_models.SeverityWarning,
 		},
 	},
 	"report": {
 		"started": {
 			TitleTemplate:       "Report Generation Started - Week %d/%d",
 			DescriptionTemplate: "Report generation initiated for week %d of %d. Bucket: %d",
-			Severity:            models.SeverityInfo,
+			Severity:            core_models.SeverityInfo,
 		},
 		"completed": {
 			TitleTemplate:       "Report Generation Completed - Week %d/%d",
 			DescriptionTemplate: "Successfully generated reports for week %d of %d. Bucket: %d. Total processed: %s",
-			Severity:            models.SeverityInfo,
+			Severity:            core_models.SeverityInfo,
 		},
 		"failed": {
 			TitleTemplate:       "Report Generation Failed - Week %d/%d",
 			DescriptionTemplate: "Report generation failed for week %d of %d. Bucket: %d. Error: %s",
-			Severity:            models.SeverityError,
+			Severity:            core_models.SeverityError,
 		},
 		"cancelled": {
 			TitleTemplate:       "Report Generation Cancelled - Week %d/%d",
 			DescriptionTemplate: "Report generation cancelled for week %d of %d. Bucket: %d. Reason: %s",
-			Severity:            models.SeverityWarning,
+			Severity:            core_models.SeverityWarning,
 		},
 	},
 }
 
 // workflowAlertClient implementation
-func (w *workflowAlertClient) prepareAlert(id models.WorkflowIdentifier, details map[string]string) (models.Alert, error) {
+func (w *workflowAlertClient) prepareAlert(id core_models.WorkflowIdentifier, details map[string]string) (core_models.Alert, error) {
 	// Determine alert type from details
 	alertType := w.getAlertTypeFromDetails(details)
 	if alertType == "" {
-		return models.Alert{}, fmt.Errorf("alert type not found in details")
+		return core_models.Alert{}, fmt.Errorf("alert type not found in details")
 	}
 
 	// Get workflow type as string
@@ -89,7 +89,7 @@ func (w *workflowAlertClient) prepareAlert(id models.WorkflowIdentifier, details
 	// Get template for this workflow type and alert type
 	template, err := w.getTemplate(workflowType, alertType)
 	if err != nil {
-		return models.Alert{}, err
+		return core_models.Alert{}, err
 	}
 
 	// Prepare format arguments for templates
@@ -102,7 +102,7 @@ func (w *workflowAlertClient) prepareAlert(id models.WorkflowIdentifier, details
 	// Prepare enriched metadata
 	metadata := w.enrichMetadata(id, details)
 
-	return models.Alert{
+	return core_models.Alert{
 		Title:       title,
 		Description: description,
 		Timestamp:   time.Now(),
@@ -143,7 +143,7 @@ func (w *workflowAlertClient) getAlertTypeFromDetails(details map[string]string)
 	return "started"
 }
 
-func (w *workflowAlertClient) prepareTemplateArgs(id models.WorkflowIdentifier, details map[string]string) []interface{} {
+func (w *workflowAlertClient) prepareTemplateArgs(id core_models.WorkflowIdentifier, details map[string]string) []interface{} {
 	// Common arguments for all templates
 	args := []interface{}{
 		*id.WeekNumber,
@@ -171,7 +171,7 @@ func (w *workflowAlertClient) prepareTemplateArgs(id models.WorkflowIdentifier, 
 	return args
 }
 
-func (w *workflowAlertClient) enrichMetadata(id models.WorkflowIdentifier, details map[string]string) map[string]string {
+func (w *workflowAlertClient) enrichMetadata(id core_models.WorkflowIdentifier, details map[string]string) map[string]string {
 	metadata := make(map[string]string)
 
 	// Add workflow identifier information
@@ -197,7 +197,7 @@ func (w *workflowAlertClient) enrichMetadata(id models.WorkflowIdentifier, detai
 // sendWorkflowAlert is a helper function to reduce code duplication
 func (w *workflowAlertClient) sendWorkflowAlert(
 	ctx context.Context,
-	id models.WorkflowIdentifier,
+	id core_models.WorkflowIdentifier,
 	eventType EventType,
 	details map[string]string,
 ) error {

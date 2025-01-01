@@ -4,25 +4,27 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/wizenheimer/iris/src/internal/domain/interfaces"
-	"github.com/wizenheimer/iris/src/internal/domain/models"
+	repo "github.com/wizenheimer/iris/src/internal/interfaces/repository"
+	svc "github.com/wizenheimer/iris/src/internal/interfaces/service"
+	api_models "github.com/wizenheimer/iris/src/internal/models/api"
+	core_models "github.com/wizenheimer/iris/src/internal/models/core"
 	"github.com/wizenheimer/iris/src/pkg/logger"
 	"go.uber.org/zap"
 )
 
 type diffService struct {
-	diffRepo  interfaces.DiffRepository
-	aiService interfaces.AIService
+	diffRepo  repo.DiffRepository
+	aiService svc.AIService
 	processor *MarkdownProcessor
 	logger    *logger.Logger
 }
 
 func NewDiffService(
-	diffRepo interfaces.DiffRepository,
-	aiService interfaces.AIService,
+	diffRepo repo.DiffRepository,
+	aiService svc.AIService,
 	// screenshot interfaces.ScreenshotService,
 	logger *logger.Logger,
-) (interfaces.DiffService, error) {
+) (svc.DiffService, error) {
 	logger.Debug("creating new diff service")
 
 	// Initialize markdown processor
@@ -43,7 +45,7 @@ func NewDiffService(
 
 // Get creates a diff for between any 2 versions of a URL
 // This is used when both versions are available in the storage via screenshotService
-func (d *diffService) Get(ctx context.Context, req models.URLDiffRequest) (*models.DynamicChanges, error) {
+func (d *diffService) Get(ctx context.Context, req api_models.URLDiffRequest) (*core_models.DynamicChanges, error) {
 	d.logger.Debug("creating diff", zap.Any("url", req.URL), zap.Any("week_day_1", req.WeekDay1), zap.Any("week_number_1", req.WeekNumber1), zap.Any("week_day_2", req.WeekDay2), zap.Any("week_number_2", req.WeekNumber2))
 	return d.diffRepo.Get(ctx, req)
 }
@@ -51,10 +53,10 @@ func (d *diffService) Get(ctx context.Context, req models.URLDiffRequest) (*mode
 // Compare compares the contents of 2 screenshots
 // This is used when the screenshots are available in memory
 // If the AI analysis is not available, it falls back to the default diff analysis
-func (d *diffService) Compare(ctx context.Context, content1, content2 *models.ScreenshotHTMLContentResponse, profileStr string, persist bool) (*models.DynamicChanges, error) {
+func (d *diffService) Compare(ctx context.Context, content1, content2 *core_models.ScreenshotHTMLContentResponse, profileStr string, persist bool) (*core_models.DynamicChanges, error) {
 	d.logger.Debug("comparing screenshot contents", zap.Any("content_1", len(content1.HTMLContent)), zap.Any("content_2", len(content2.HTMLContent)))
 	// Attempt to get the AI analysis for the screenshot contents if available
-	req := models.URLDiffRequest{
+	req := api_models.URLDiffRequest{
 		URL:         content1.Metadata.SourceURL,
 		WeekDay1:    content1.Metadata.WeekDay,
 		WeekNumber1: content1.Metadata.WeekNumber,

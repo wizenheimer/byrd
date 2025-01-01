@@ -4,8 +4,9 @@ import (
 	"io"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/wizenheimer/iris/src/internal/domain/interfaces"
-	"github.com/wizenheimer/iris/src/internal/domain/models"
+	interfaces "github.com/wizenheimer/iris/src/internal/interfaces/service"
+	api_models "github.com/wizenheimer/iris/src/internal/models/api"
+	core_models "github.com/wizenheimer/iris/src/internal/models/core"
 	"github.com/wizenheimer/iris/src/pkg/logger"
 	"github.com/wizenheimer/iris/src/pkg/utils/path"
 )
@@ -28,7 +29,7 @@ func NewDiffHandler(diffService interfaces.DiffService, logger *logger.Logger) *
 func (h *DiffHandler) Get(c *fiber.Ctx) error {
 	h.logger.Debug("creating new diff")
 
-	var req models.URLDiffRequest
+	var req api_models.URLDiffRequest
 	var err error
 	if err = c.BodyParser(&req); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "Invalid request body")
@@ -105,12 +106,12 @@ func (h *DiffHandler) Compare(c *fiber.Ctx) error {
 	profile := profiles[0]
 
 	// Compare contents
-	htmlContent1 := models.ScreenshotHTMLContentResponse{
+	htmlContent1 := core_models.ScreenshotHTMLContentResponse{
 		Status:      "success",
 		HTMLContent: string(content1),
 	}
 
-	htmlContent2 := models.ScreenshotHTMLContentResponse{
+	htmlContent2 := core_models.ScreenshotHTMLContentResponse{
 		Status:      "success",
 		HTMLContent: string(content2),
 	}

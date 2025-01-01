@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"time"
 
+	clf "github.com/wizenheimer/iris/src/internal/interfaces/client"
 	"github.com/wizenheimer/iris/src/pkg/logger"
 	"go.uber.org/zap"
 )
@@ -26,12 +27,11 @@ type Client struct {
 type ClientOption func(*Client)
 
 // NewClient creates a new Client with the given options
-func NewClient(options ...ClientOption) (HTTPClient, error) {
+func NewClient(options ...ClientOption) (clf.HTTPClient, error) {
 	c := &Client{
 		client: &http.Client{
 			Timeout: 30 * time.Second,
 		},
-		// headers: make(map[string]string),
 		retryCodes: []int{
 			http.StatusTooManyRequests,
 			http.StatusInternalServerError,
@@ -56,7 +56,9 @@ func NewClient(options ...ClientOption) (HTTPClient, error) {
 // Core implementation of Do method
 func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	if c.authMethod != nil {
-		c.logger.Debug("applying auth for request", zap.String("method", req.Method), zap.String("url", req.URL.String()))
+		c.logger.Debug("applying auth for request",
+			zap.String("method", req.Method),
+			zap.String("url", req.URL.String()))
 		c.authMethod.Apply(req)
 	}
 
@@ -64,17 +66,25 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	var err error
 
 	for attempt := 0; attempt <= c.maxRetries; attempt++ {
-		c.logger.Debug("executing request", zap.String("method", req.Method), zap.String("url", req.URL.String()), zap.Int("attempt", attempt))
+		c.logger.Debug("executing request",
+			zap.String("method", req.Method),
+			zap.String("url", req.URL.String()),
+			zap.Int("attempt", attempt))
 
 		resp, err = c.client.Do(req)
 		if err == nil && !containsStatusCode(c.retryCodes, resp.StatusCode) {
 			return resp, nil
-		} else {
-			c.logger.Debug("request failed", zap.String("method", req.Method), zap.String("url", req.URL.String()), zap.Int("attempt", attempt), zap.Error(err), zap.Int("status_code", resp.StatusCode))
 		}
 
+		c.logger.Debug("request failed",
+			zap.String("method", req.Method),
+			zap.String("url", req.URL.String()),
+			zap.Int("attempt", attempt),
+			zap.Error(err),
+			zap.Int("status_code", resp.StatusCode))
+
 		if attempt < c.maxRetries {
-			time.Sleep(time.Second * time.Duration(attempt+1)) // Exponential backoff
+			time.Sleep(time.Second * time.Duration(attempt+1))
 		}
 	}
 
@@ -82,7 +92,7 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 }
 
 // NewRequest creates a new RequestBuilder
-func (c *Client) NewRequest() *RequestBuilder {
+func (c *Client) NewRequest() clf.RequestBuilder {
 	return &RequestBuilder{
 		queryParams: url.Values{},
 		headers:     make(map[string]string),
@@ -91,19 +101,19 @@ func (c *Client) NewRequest() *RequestBuilder {
 }
 
 // Convenience methods
-func (c *Client) Get(path string) *RequestBuilder {
+func (c *Client) Get(path string) clf.RequestBuilder {
 	return c.NewRequest().Method(http.MethodGet).Path(path)
 }
 
-func (c *Client) Post(path string) *RequestBuilder {
+func (c *Client) Post(path string) clf.RequestBuilder {
 	return c.NewRequest().Method(http.MethodPost).Path(path)
 }
 
-func (c *Client) Put(path string) *RequestBuilder {
+func (c *Client) Put(path string) clf.RequestBuilder {
 	return c.NewRequest().Method(http.MethodPut).Path(path)
 }
 
-func (c *Client) Delete(path string) *RequestBuilder {
+func (c *Client) Delete(path string) clf.RequestBuilder {
 	return c.NewRequest().Method(http.MethodDelete).Path(path)
 }
 

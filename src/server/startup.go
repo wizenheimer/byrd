@@ -9,8 +9,10 @@ import (
 	"github.com/wizenheimer/iris/src/internal/api/routes"
 	"github.com/wizenheimer/iris/src/internal/client"
 	"github.com/wizenheimer/iris/src/internal/config"
-	"github.com/wizenheimer/iris/src/internal/domain/interfaces"
-	"github.com/wizenheimer/iris/src/internal/domain/models"
+	clf "github.com/wizenheimer/iris/src/internal/interfaces/client"
+	repo "github.com/wizenheimer/iris/src/internal/interfaces/repository"
+	svc "github.com/wizenheimer/iris/src/internal/interfaces/service"
+	core_models "github.com/wizenheimer/iris/src/internal/models/core"
 	"github.com/wizenheimer/iris/src/internal/repository/db"
 	"github.com/wizenheimer/iris/src/internal/repository/storage"
 	"github.com/wizenheimer/iris/src/internal/service/ai"
@@ -103,7 +105,7 @@ func initializer(cfg *config.Config, sqlDb *sql.DB, logger *logger.Logger) (*rou
 	return handlers, nil
 }
 
-func setupWorkflowService(cfg *config.Config, screenshotService interfaces.ScreenshotService, diffService interfaces.DiffService, urlService interfaces.URLService, logger *logger.Logger) (interfaces.WorkflowService, error) {
+func setupWorkflowService(cfg *config.Config, screenshotService svc.ScreenshotService, diffService svc.DiffService, urlService svc.URLService, logger *logger.Logger) (svc.WorkflowService, error) {
 	logger.Debug("setting up workflow service", zap.Any("workflow_config", cfg.Workflow))
 
 	if cfg.Workflow.RedisAddr == "" {
@@ -126,11 +128,11 @@ func setupWorkflowService(cfg *config.Config, screenshotService interfaces.Scree
 	}
 
 	// Create a new workflow alert client
-	clientConfig := models.DefaultSlackConfig()
+	clientConfig := core_models.DefaultSlackConfig()
 	clientConfig.Token = cfg.Workflow.SlackAlertToken
 	clientConfig.ChannelID = cfg.Workflow.SlackWorkflowChannelId
 
-	var alertClient interfaces.AlertClient
+	var alertClient clf.AlertClient
 	if cfg.Environment.EnvProfile == "development" {
 		logger.Debug("Using local workflow alert client")
 		alertClient = alert.NewLocalWorkflowClient(clientConfig, logger)
@@ -152,7 +154,7 @@ func setupWorkflowService(cfg *config.Config, screenshotService interfaces.Scree
 		return nil, err
 	}
 
-	screenshotWorkflowExecutor, err := executor.NewWorkflowExecutor(models.ScreenshotWorkflowType, workflowRepo, workflowAlertClient, screenshotTaskExecutor, logger)
+	screenshotWorkflowExecutor, err := executor.NewWorkflowExecutor(core_models.ScreenshotWorkflowType, workflowRepo, workflowAlertClient, screenshotTaskExecutor, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +167,7 @@ func setupWorkflowService(cfg *config.Config, screenshotService interfaces.Scree
 	return workflowService, nil
 }
 
-func setupURLService(sqlDb *sql.DB, logger *logger.Logger) (interfaces.URLService, error) {
+func setupURLService(sqlDb *sql.DB, logger *logger.Logger) (svc.URLService, error) {
 	logger.Debug("setting up URL service", zap.Any("database", sqlDb.Stats()))
 
 	urlRepo := db.NewURLRepository(sqlDb, logger)
@@ -173,7 +175,7 @@ func setupURLService(sqlDb *sql.DB, logger *logger.Logger) (interfaces.URLServic
 	return url.NewURLService(urlRepo, logger)
 }
 
-func setupScreenshotService(cfg *config.Config, screenshotHTTPClient client.HTTPClient, logger *logger.Logger) (interfaces.ScreenshotService, error) {
+func setupScreenshotService(cfg *config.Config, screenshotHTTPClient clf.HTTPClient, logger *logger.Logger) (svc.ScreenshotService, error) {
 	logger.Debug("setting up screenshot service", zap.Any("storage_config", cfg.Storage))
 
 	if logger == nil {
@@ -200,7 +202,7 @@ func setupScreenshotService(cfg *config.Config, screenshotHTTPClient client.HTTP
 		logger.Warn("Region is empty", zap.String("type", cfg.Storage.Type))
 	}
 
-	var storageRepo interfaces.ScreenshotRepository
+	var storageRepo repo.ScreenshotRepository
 	var err error
 	switch cfg.Storage.Type {
 	case "r2":
@@ -254,7 +256,7 @@ func setupScreenshotService(cfg *config.Config, screenshotHTTPClient client.HTTP
 	)
 }
 
-func setupNotificationService(cfg *config.Config, httpClient client.HTTPClient, logger *logger.Logger) (interfaces.NotificationService, error) {
+func setupNotificationService(cfg *config.Config, httpClient clf.HTTPClient, logger *logger.Logger) (svc.NotificationService, error) {
 	logger.Debug("setting up notification service", zap.Any("notification_config", cfg.Services))
 
 	emailClient, err := notification.NewResendEmailClient(cfg, httpClient, logger)
@@ -270,7 +272,7 @@ func setupNotificationService(cfg *config.Config, httpClient client.HTTPClient, 
 	return notification.NewNotificationService(emailClient, templateManager, logger)
 }
 
-func setupAIService(cfg *config.Config, logger *logger.Logger) (interfaces.AIService, error) {
+func setupAIService(cfg *config.Config, logger *logger.Logger) (svc.AIService, error) {
 	logger.Debug("setting up AI service", zap.Any("service_config", cfg.Services))
 
 	aiService, err := ai.NewOpenAIService(cfg.Services.OpenAIKey, logger)
@@ -281,7 +283,7 @@ func setupAIService(cfg *config.Config, logger *logger.Logger) (interfaces.AISer
 	return aiService, nil
 }
 
-func setupDiffService(cfg *config.Config, sqlDb *sql.DB, aiService interfaces.AIService, logger *logger.Logger) (interfaces.DiffService, error) {
+func setupDiffService(cfg *config.Config, sqlDb *sql.DB, aiService svc.AIService, logger *logger.Logger) (svc.DiffService, error) {
 	logger.Debug("setting up diff service", zap.Any("database", sqlDb.Stats()), zap.Any("service_config", cfg.Services), zap.Any("storage_config", cfg.Storage))
 
 	diffRepo, err := db.NewDiffRepository(sqlDb, logger)
@@ -292,7 +294,7 @@ func setupDiffService(cfg *config.Config, sqlDb *sql.DB, aiService interfaces.AI
 	return diff.NewDiffService(diffRepo, aiService, logger)
 }
 
-func setupCompetitorService(sqlDb *sql.DB, logger *logger.Logger) (interfaces.CompetitorService, error) {
+func setupCompetitorService(sqlDb *sql.DB, logger *logger.Logger) (svc.CompetitorService, error) {
 	logger.Debug("setting up competitor service", zap.Any("database", sqlDb.Stats()))
 
 	competitorRepo, err := db.NewCompetitorRepository(sqlDb, logger)

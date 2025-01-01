@@ -13,8 +13,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/wizenheimer/iris/src/internal/domain/interfaces"
-	"github.com/wizenheimer/iris/src/internal/domain/models"
+	interfaces "github.com/wizenheimer/iris/src/internal/interfaces/repository"
+	core_models "github.com/wizenheimer/iris/src/internal/models/core"
 	"github.com/wizenheimer/iris/src/pkg/logger"
 	"github.com/wizenheimer/iris/src/pkg/utils/ptr"
 	"go.uber.org/zap"
@@ -58,7 +58,7 @@ func NewS3Storage(baseEndpoint, accessKey, secretKey, bucket, region string, log
 }
 
 // StoreScreenshot stores a screenshot in S3 storage
-func (s *s3Storage) StoreScreenshotImage(ctx context.Context, data models.ScreenshotImageResponse, path string) error {
+func (s *s3Storage) StoreScreenshotImage(ctx context.Context, data core_models.ScreenshotImageResponse, path string) error {
 	s.logger.Debug("storing screenshot",
 		zap.String("path", path))
 
@@ -85,7 +85,7 @@ func (s *s3Storage) StoreScreenshotImage(ctx context.Context, data models.Screen
 }
 
 // StoreContent stores text content in S3 storage
-func (s *s3Storage) StoreScreenshotHTMLContent(ctx context.Context, data models.ScreenshotHTMLContentResponse, path string) error {
+func (s *s3Storage) StoreScreenshotHTMLContent(ctx context.Context, data core_models.ScreenshotHTMLContentResponse, path string) error {
 	s.logger.Debug("storing content", zap.String("path", path))
 
 	_, err := s.client.PutObject(ctx, &s3.PutObjectInput{
@@ -103,20 +103,20 @@ func (s *s3Storage) StoreScreenshotHTMLContent(ctx context.Context, data models.
 }
 
 // GetContent retrieves text content from S3 storage
-func (s *s3Storage) GetScreenshotHTMLContent(ctx context.Context, path string) (models.ScreenshotHTMLContentResponse, []error) {
+func (s *s3Storage) GetScreenshotHTMLContent(ctx context.Context, path string) (core_models.ScreenshotHTMLContentResponse, []error) {
 	errs := []error{}
 
 	data, metadata, err := s.Get(ctx, path)
 	if err != nil {
-		return models.ScreenshotHTMLContentResponse{}, append(errs, err)
+		return core_models.ScreenshotHTMLContentResponse{}, append(errs, err)
 	}
 
-	screenshotMetadata, errs := models.ScreenshotMetadataFromMap(metadata)
+	screenshotMetadata, errs := core_models.ScreenshotMetadataFromMap(metadata)
 	if errs != nil {
-		return models.ScreenshotHTMLContentResponse{}, errs
+		return core_models.ScreenshotHTMLContentResponse{}, errs
 	}
 
-	resp := models.ScreenshotHTMLContentResponse{
+	resp := core_models.ScreenshotHTMLContentResponse{
 		Status:      "success",
 		HTMLContent: string(data),
 		Metadata:    &screenshotMetadata,
@@ -127,29 +127,29 @@ func (s *s3Storage) GetScreenshotHTMLContent(ctx context.Context, path string) (
 }
 
 // GetScreenshot retrieves a screenshot from S3 storage
-func (s *s3Storage) GetScreenshotImage(ctx context.Context, path string) (models.ScreenshotImageResponse, []error) {
+func (s *s3Storage) GetScreenshotImage(ctx context.Context, path string) (core_models.ScreenshotImageResponse, []error) {
 
 	data, metadata, err := s.Get(ctx, path)
 	if err != nil {
-		return models.ScreenshotImageResponse{}, []error{err}
+		return core_models.ScreenshotImageResponse{}, []error{err}
 	}
 
 	img, _, err := image.Decode(bytes.NewReader(data))
 	if err != nil {
-		return models.ScreenshotImageResponse{}, []error{fmt.Errorf("failed to decode image: %w", err)}
+		return core_models.ScreenshotImageResponse{}, []error{fmt.Errorf("failed to decode image: %w", err)}
 	}
 
-	screenshotMetadata, errs := models.ScreenshotMetadataFromMap(metadata)
+	screenshotMetadata, errs := core_models.ScreenshotMetadataFromMap(metadata)
 	if errs != nil {
-		return models.ScreenshotImageResponse{}, errs
+		return core_models.ScreenshotImageResponse{}, errs
 	}
 
 	imgWidth, imgHeight, err := getImageDimensions(img)
 	if err != nil {
-		return models.ScreenshotImageResponse{}, []error{err}
+		return core_models.ScreenshotImageResponse{}, []error{err}
 	}
 
-	resp := models.ScreenshotImageResponse{
+	resp := core_models.ScreenshotImageResponse{
 		Status:      "success",
 		Image:       img,
 		Metadata:    &screenshotMetadata,
@@ -197,14 +197,14 @@ func (s *s3Storage) Delete(ctx context.Context, path string) error {
 }
 
 // Listlists the latest content (images or text) for a given URL
-func (s *s3Storage) List(ctx context.Context, prefix string, maxItems int) ([]models.ScreenshotListResponse, error) {
+func (s *s3Storage) List(ctx context.Context, prefix string, maxItems int) ([]core_models.ScreenshotListResponse, error) {
 	input := &s3.ListObjectsV2Input{
 		Bucket:  aws.String(s.bucket),
 		Prefix:  aws.String(prefix),
 		MaxKeys: aws.Int32(int32(maxItems)),
 	}
 
-	var results []models.ScreenshotListResponse
+	var results []core_models.ScreenshotListResponse
 
 	output, err := s.client.ListObjectsV2(ctx, input)
 	if err != nil {
@@ -212,7 +212,7 @@ func (s *s3Storage) List(ctx context.Context, prefix string, maxItems int) ([]mo
 	}
 
 	for _, obj := range output.Contents {
-		results = append(results, models.ScreenshotListResponse{
+		results = append(results, core_models.ScreenshotListResponse{
 			Key:          *obj.Key,
 			LastModified: *obj.LastModified,
 		})

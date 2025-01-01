@@ -3,18 +3,19 @@ package competitor
 import (
 	"context"
 
-	"github.com/wizenheimer/iris/src/internal/domain/interfaces"
-	"github.com/wizenheimer/iris/src/internal/domain/models"
+	repo "github.com/wizenheimer/iris/src/internal/interfaces/repository"
+	svc "github.com/wizenheimer/iris/src/internal/interfaces/service"
+	core_models "github.com/wizenheimer/iris/src/internal/models/core"
 	"github.com/wizenheimer/iris/src/pkg/logger"
 	"go.uber.org/zap"
 )
 
 type competitorService struct {
-	repo   interfaces.CompetitorRepository
+	repo   repo.CompetitorRepository
 	logger *logger.Logger
 }
 
-func NewCompetitorService(repo interfaces.CompetitorRepository, logger *logger.Logger) (interfaces.CompetitorService, error) {
+func NewCompetitorService(repo repo.CompetitorRepository, logger *logger.Logger) (svc.CompetitorService, error) {
 	logger.Debug("creating new competitor service")
 	return &competitorService{
 		repo:   repo,
@@ -22,7 +23,7 @@ func NewCompetitorService(repo interfaces.CompetitorRepository, logger *logger.L
 	}, nil
 }
 
-func (s *competitorService) Create(ctx context.Context, input models.CompetitorInput) (*models.Competitor, error) {
+func (s *competitorService) Create(ctx context.Context, input core_models.CompetitorInput) (*core_models.Competitor, error) {
 	s.logger.Debug("creating new competitor", zap.Any("input", input))
 	// TODO: Validate input
 	// TODO: Create competitor entity
@@ -30,7 +31,7 @@ func (s *competitorService) Create(ctx context.Context, input models.CompetitorI
 	return nil, nil
 }
 
-func (s *competitorService) Update(ctx context.Context, id int, input models.CompetitorInput) (*models.Competitor, error) {
+func (s *competitorService) Update(ctx context.Context, id int, input core_models.CompetitorInput) (*core_models.Competitor, error) {
 	s.logger.Debug("updating competitor", zap.Int("id", id), zap.Any("input", input))
 	// TODO: Validate input
 	// TODO: Check if competitor exists
@@ -46,13 +47,13 @@ func (s *competitorService) Delete(ctx context.Context, id int) error {
 	return nil
 }
 
-func (s *competitorService) Get(ctx context.Context, id int) (*models.Competitor, error) {
+func (s *competitorService) Get(ctx context.Context, id int) (*core_models.Competitor, error) {
 	s.logger.Debug("getting competitor by ID", zap.Int("id", id))
 	// TODO: Get competitor from repository
 	return nil, nil
 }
 
-func (s *competitorService) List(ctx context.Context, limit, offset int) ([]models.Competitor, int, error) {
+func (s *competitorService) List(ctx context.Context, limit, offset int) ([]core_models.Competitor, int, error) {
 	s.logger.Debug("listing competitors", zap.Int("limit", limit), zap.Int("offset", offset))
 	// TODO: Validate pagination parameters
 	// TODO: Get competitors from repository with pagination
@@ -60,7 +61,7 @@ func (s *competitorService) List(ctx context.Context, limit, offset int) ([]mode
 	return nil, 0, nil
 }
 
-func (s *competitorService) FindByURLHash(ctx context.Context, hash string) ([]models.Competitor, error) {
+func (s *competitorService) FindByURLHash(ctx context.Context, hash string) ([]core_models.Competitor, error) {
 	s.logger.Debug("finding competitor by URL hash", zap.String("hash", hash))
 	// TODO: Validate hash
 	// TODO: Find competitors by URL hash

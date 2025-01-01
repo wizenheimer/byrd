@@ -1,6 +1,8 @@
 package competitor
 
-import "github.com/wizenheimer/iris/src/internal/domain/models"
+import (
+	core_models "github.com/wizenheimer/iris/src/internal/models/core"
+)
 
 type CompetitorMapper struct{}
 
@@ -8,12 +10,12 @@ func NewCompetitorMapper() *CompetitorMapper {
 	return &CompetitorMapper{}
 }
 
-func (m *CompetitorMapper) ToDTO(entity *models.Competitor) *models.CompetitorDTO {
+func (m *CompetitorMapper) ToDTO(entity *core_models.Competitor) *core_models.CompetitorDTO {
 	if entity == nil {
 		return nil
 	}
 
-	return &models.CompetitorDTO{
+	return &core_models.CompetitorDTO{
 		ID:        entity.ID,
 		Name:      entity.Name,
 		Domain:    entity.Domain,
@@ -23,12 +25,12 @@ func (m *CompetitorMapper) ToDTO(entity *models.Competitor) *models.CompetitorDT
 	}
 }
 
-func (m *CompetitorMapper) ToEntity(dto *models.CompetitorInput) *models.Competitor {
+func (m *CompetitorMapper) ToEntity(dto *core_models.CompetitorInput) *core_models.Competitor {
 	if dto == nil {
 		return nil
 	}
 
-	return &models.Competitor{
+	return &core_models.Competitor{
 		Name:   dto.Name,
 		Domain: dto.Domain,
 		URLs:   dto.URLs,

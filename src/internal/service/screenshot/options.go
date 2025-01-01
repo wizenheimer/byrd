@@ -1,17 +1,17 @@
 package screenshot
 
 import (
-	"github.com/wizenheimer/iris/src/internal/client"
-	"github.com/wizenheimer/iris/src/internal/domain/interfaces"
-	"github.com/wizenheimer/iris/src/internal/domain/models"
+	clf "github.com/wizenheimer/iris/src/internal/interfaces/client"
+	repo "github.com/wizenheimer/iris/src/internal/interfaces/repository"
+	core_models "github.com/wizenheimer/iris/src/internal/models/core"
 )
 
 // ScreenshotServiceOption is a function type that modifies ScreenshotService
 type ScreenshotServiceOption func(*screenshotService)
 
 // defaultConfig returns the default configuration
-func defaultConfig() *models.ScreenshotServiceConfig {
-	return &models.ScreenshotServiceConfig{
+func defaultConfig() *core_models.ScreenshotServiceConfig {
+	return &core_models.ScreenshotServiceConfig{
 		// 40 requests per minute
 		QPS: 0.6,
 		// Default origin
@@ -20,14 +20,14 @@ func defaultConfig() *models.ScreenshotServiceConfig {
 }
 
 // WithStorage sets the storage repository
-func WithStorage(storage interfaces.ScreenshotRepository) ScreenshotServiceOption {
+func WithStorage(storage repo.ScreenshotRepository) ScreenshotServiceOption {
 	return func(s *screenshotService) {
 		s.storage = storage
 	}
 }
 
 // WithHTTPClient sets the HTTP client
-func WithHTTPClient(client client.HTTPClient) ScreenshotServiceOption {
+func WithHTTPClient(client clf.HTTPClient) ScreenshotServiceOption {
 	return func(s *screenshotService) {
 		s.httpClient = client
 	}
