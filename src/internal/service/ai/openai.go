@@ -12,7 +12,7 @@ import (
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
 	interfaces "github.com/wizenheimer/iris/src/internal/interfaces/service"
-	core_models "github.com/wizenheimer/iris/src/internal/models/core"
+	models "github.com/wizenheimer/iris/src/internal/models/core"
 	"github.com/wizenheimer/iris/src/pkg/logger"
 	"go.uber.org/zap"
 )
@@ -48,7 +48,7 @@ func NewOpenAIService(apiKey string, logger *logger.Logger) (interfaces.AIServic
 }
 
 // AnalyzeContentDifferences analyzes the content differences between two versions of a URL
-func (s *openAIService) AnalyzeContentDifferences(ctx context.Context, version1, version2 string, fields []string) (*core_models.DynamicChanges, error) {
+func (s *openAIService) AnalyzeContentDifferences(ctx context.Context, version1, version2 string, fields []string) (*models.DynamicChanges, error) {
 	profileRequest := ProfileRequest{
 		Name:        "competitor_updates",
 		Description: "Carefully compare these two versions of content, identify and surface changes",
@@ -71,7 +71,7 @@ func (s *openAIService) AnalyzeContentDifferences(ctx context.Context, version1,
 }
 
 // AnalyzeVisualDifferences analyzes the visual differences between two screenshots
-func (s *openAIService) AnalyzeVisualDifferences(ctx context.Context, screenshot1, screenshot2 image.Image, fields []string) (*core_models.DynamicChanges, error) {
+func (s *openAIService) AnalyzeVisualDifferences(ctx context.Context, screenshot1, screenshot2 image.Image, fields []string) (*models.DynamicChanges, error) {
 	profileRequest := ProfileRequest{
 		Name:        "competitor_updates",
 		Description: "Carefully compare and contrast visual changes in the webpage",
@@ -91,13 +91,6 @@ func (s *openAIService) AnalyzeVisualDifferences(ctx context.Context, screenshot
 	return s.parseCompletion(chat)
 }
 
-// EnrichReport enriches a weekly report with AI-generated summaries
-func (s *openAIService) EnrichReport(ctx context.Context, report *core_models.WeeklyReport) error {
-	s.logger.Debug("enriching report", zap.Any("report", report))
-	// Implementation
-	return nil
-}
-
 func (s *openAIService) Close() {
 	s.logger.Debug("closing openAI service")
 }
@@ -115,13 +108,13 @@ func (s *openAIService) validate() error {
 	return err
 }
 
-func (s *openAIService) prepareTextCompletion(ctx context.Context, version1, version2 string, profile core_models.Profile) (*openai.ChatCompletion, error) {
+func (s *openAIService) prepareTextCompletion(ctx context.Context, version1, version2 string, profile models.Profile) (*openai.ChatCompletion, error) {
 
 	opts := s.prepareCompareOptions(&profile)
 
 	userPrompt := fmt.Sprintf("Compare these two versions of content and identify changes:\n\nVersion 1:\n%s\n\nVersion 2:\n%s", version1, version2)
 
-	schema := core_models.GenerateDynamicSchema(profile.Fields)
+	schema := models.GenerateDynamicSchema(profile.Fields)
 	schemaParam := openai.ResponseFormatJSONSchemaJSONSchemaParam{
 		Name:        openai.F("dynamic_intelligence_tracking"),
 		Description: openai.F("Track changes in specified intelligence categories"),
@@ -148,7 +141,7 @@ func (s *openAIService) prepareTextCompletion(ctx context.Context, version1, ver
 	return chat, err
 }
 
-func (s *openAIService) prepareImageCompletion(ctx context.Context, version1, version2 image.Image, profile core_models.Profile) (*openai.ChatCompletion, error) {
+func (s *openAIService) prepareImageCompletion(ctx context.Context, version1, version2 image.Image, profile models.Profile) (*openai.ChatCompletion, error) {
 	// convert images to base64
 	version1Base64, err := imageToBase64URL(version1)
 	if err != nil {
@@ -164,7 +157,7 @@ func (s *openAIService) prepareImageCompletion(ctx context.Context, version1, ve
 
 	userPrompt := "Carefully compare these two versions of images and identify changes"
 
-	schema := core_models.GenerateDynamicSchema(profile.Fields)
+	schema := models.GenerateDynamicSchema(profile.Fields)
 	schemaParam := openai.ResponseFormatJSONSchemaJSONSchemaParam{
 		Name:        openai.F("dynamic_intelligence_tracking"),
 		Description: openai.F("Track changes in specified intelligence categories"),
@@ -195,12 +188,12 @@ func (s *openAIService) prepareImageCompletion(ctx context.Context, version1, ve
 	return chat, err
 }
 
-func (s *openAIService) parseCompletion(chat *openai.ChatCompletion) (*core_models.DynamicChanges, error) {
+func (s *openAIService) parseCompletion(chat *openai.ChatCompletion) (*models.DynamicChanges, error) {
 	if chat.Choices[0].Message.Refusal != "" {
 		return nil, fmt.Errorf("refusal: %s", chat.Choices[0].Message.Refusal)
 	}
 
-	changes := &core_models.DynamicChanges{
+	changes := &models.DynamicChanges{
 		Fields: make(map[string]interface{}),
 	}
 
@@ -212,9 +205,9 @@ func (s *openAIService) parseCompletion(chat *openai.ChatCompletion) (*core_mode
 	return changes, nil
 }
 
-func (s *openAIService) prepareCompareOptions(profile *core_models.Profile) core_models.CompareOptions {
-	return core_models.CompareOptions{
-		SystemPrompt: core_models.BuildCompetitorSystemPrompt(profile.Fields),
+func (s *openAIService) prepareCompareOptions(profile *models.Profile) models.CompareOptions {
+	return models.CompareOptions{
+		SystemPrompt: models.BuildCompetitorSystemPrompt(profile.Fields),
 		Model:        openai.ChatModelGPT4oMini,
 		Temperature:  0.7,
 		MaxTokens:    2048,

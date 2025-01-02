@@ -3,44 +3,25 @@ package executor
 import (
 	"context"
 	"fmt"
-	"sync"
 
 	"github.com/google/uuid"
 	clf "github.com/wizenheimer/iris/src/internal/interfaces/client"
 	exc "github.com/wizenheimer/iris/src/internal/interfaces/executor"
 	repo "github.com/wizenheimer/iris/src/internal/interfaces/repository"
-	api_models "github.com/wizenheimer/iris/src/internal/models/api"
-	core_models "github.com/wizenheimer/iris/src/internal/models/core"
+	api "github.com/wizenheimer/iris/src/internal/models/api"
+	models "github.com/wizenheimer/iris/src/internal/models/core"
 	"github.com/wizenheimer/iris/src/pkg/logger"
 	"go.uber.org/zap"
 )
 
-type workflowExecutor struct {
-	workflowType core_models.WorkflowType
-	config       core_models.ExecutorConfig
-	repository   repo.WorkflowRepository
-	alertClient  clf.WorkflowAlertClient
-	taskExecutor exc.TaskExecutor
-	logger       *logger.Logger
-
-	activeWorkflows sync.Map // map[string]*workflowContext
-}
-
-type workflowContext struct {
-	cancel context.CancelFunc
-	task   core_models.Task
-	state  api_models.WorkflowState
-	mutex  sync.RWMutex
-}
-
 func NewWorkflowExecutor(
-	wfType core_models.WorkflowType,
+	wfType models.WorkflowType,
 	repository repo.WorkflowRepository,
 	alertClient clf.WorkflowAlertClient,
 	taskExecutor exc.TaskExecutor,
 	logger *logger.Logger,
 ) (exc.WorkflowExecutor, error) {
-	config, err := core_models.GetExecutorConfig(wfType)
+	config, err := models.GetExecutorConfig(wfType)
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +40,7 @@ func NewWorkflowExecutor(
 
 func (e *workflowExecutor) Initialize(ctx context.Context) error {
 	// Iterate over all active workflows
-	workflowList, err := e.repository.List(ctx, core_models.WorkflowStatusRunning, e.workflowType)
+	workflowList, err := e.repository.List(ctx, models.WorkflowStatusRunning, e.workflowType)
 	if err != nil {
 		return fmt.Errorf("failed to list active workflows: %w", err)
 	}
@@ -81,7 +62,7 @@ func (e *workflowExecutor) Initialize(ctx context.Context) error {
 	return nil
 }
 
-func (e *workflowExecutor) Restart(ctx context.Context, workflowID core_models.WorkflowIdentifier, errChan chan error) {
+func (e *workflowExecutor) Restart(ctx context.Context, workflowID models.WorkflowIdentifier, errChan chan error) {
 	// Create task ID
 	taskID := uuid.New().String()
 
@@ -92,7 +73,7 @@ func (e *workflowExecutor) Restart(ctx context.Context, workflowID core_models.W
 		return
 	}
 
-	task := core_models.Task{
+	task := models.Task{
 		TaskID:     taskID,
 		WorkflowID: workflowID,
 		Checkpoint: state.Checkpoint,
@@ -104,8 +85,8 @@ func (e *workflowExecutor) Restart(ctx context.Context, workflowID core_models.W
 	wfCtx := &workflowContext{
 		cancel: cancel,
 		task:   task,
-		state: api_models.WorkflowState{
-			Status: core_models.WorkflowStatusRunning,
+		state: api.WorkflowState{
+			Status: models.WorkflowStatusRunning,
 		},
 	}
 
@@ -123,14 +104,14 @@ func (e *workflowExecutor) Restart(ctx context.Context, workflowID core_models.W
 	go e.executeWorkflow(workflowCtx, wfCtx)
 }
 
-func (e *workflowExecutor) Start(ctx context.Context, workflowID core_models.WorkflowIdentifier) error {
+func (e *workflowExecutor) Start(ctx context.Context, workflowID models.WorkflowIdentifier) error {
 	// Create task ID
 	taskID := uuid.New().String()
 
 	// Create workflow context
 	workflowCtx, cancel := context.WithCancel(ctx)
 
-	task := core_models.Task{
+	task := models.Task{
 		TaskID:     taskID,
 		WorkflowID: workflowID,
 	}
@@ -138,8 +119,8 @@ func (e *workflowExecutor) Start(ctx context.Context, workflowID core_models.Wor
 	wfCtx := &workflowContext{
 		cancel: cancel,
 		task:   task,
-		state: api_models.WorkflowState{
-			Status: core_models.WorkflowStatusRunning,
+		state: api.WorkflowState{
+			Status: models.WorkflowStatusRunning,
 		},
 	}
 
@@ -164,7 +145,7 @@ func (e *workflowExecutor) Start(ctx context.Context, workflowID core_models.Wor
 	return nil
 }
 
-func (e *workflowExecutor) Stop(ctx context.Context, workflowID core_models.WorkflowIdentifier) error {
+func (e *workflowExecutor) Stop(ctx context.Context, workflowID models.WorkflowIdentifier) error {
 	var foundCtx *workflowContext
 
 	// Find the workflow context
@@ -186,7 +167,7 @@ func (e *workflowExecutor) Stop(ctx context.Context, workflowID core_models.Work
 
 	// Update state
 	foundCtx.mutex.Lock()
-	foundCtx.state.Status = core_models.WorkflowStatusAborted
+	foundCtx.state.Status = models.WorkflowStatusAborted
 	foundCtx.mutex.Unlock()
 
 	// Update repository
@@ -204,19 +185,19 @@ func (e *workflowExecutor) Stop(ctx context.Context, workflowID core_models.Work
 	return nil
 }
 
-func (e *workflowExecutor) List(ctx context.Context, status core_models.WorkflowStatus, wfType core_models.WorkflowType) ([]api_models.WorkflowState, error) {
+func (e *workflowExecutor) List(ctx context.Context, status models.WorkflowStatus, wfType models.WorkflowType) ([]api.WorkflowState, error) {
 	workflowList, err := e.repository.List(ctx, status, wfType)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list workflows: %w", err)
 	}
-	workflowStateList := make([]api_models.WorkflowState, 0, len(workflowList))
+	workflowStateList := make([]api.WorkflowState, 0, len(workflowList))
 	for _, workflow := range workflowList {
 		workflowStateList = append(workflowStateList, workflow.WorkflowState)
 	}
 	return workflowStateList, nil
 }
 
-func (e *workflowExecutor) Get(ctx context.Context, workflowID core_models.WorkflowIdentifier) (api_models.WorkflowState, error) {
+func (e *workflowExecutor) Get(ctx context.Context, workflowID models.WorkflowIdentifier) (api.WorkflowState, error) {
 	return e.repository.GetState(ctx, workflowID)
 }
 
@@ -245,7 +226,7 @@ func (e *workflowExecutor) executeWorkflow(ctx context.Context, wfCtx *workflowC
 	}
 }
 
-func (e *workflowExecutor) handleTaskUpdate(ctx context.Context, wfCtx *workflowContext, update core_models.TaskUpdate) {
+func (e *workflowExecutor) handleTaskUpdate(ctx context.Context, wfCtx *workflowContext, update models.TaskUpdate) {
 	wfCtx.mutex.Lock()
 	wfCtx.state.Checkpoint = update.NewCheckpoint
 	wfCtx.mutex.Unlock()
@@ -255,9 +236,9 @@ func (e *workflowExecutor) handleTaskUpdate(ctx context.Context, wfCtx *workflow
 	}
 }
 
-func (e *workflowExecutor) handleTaskError(ctx context.Context, wfCtx *workflowContext, taskErr core_models.TaskError) {
+func (e *workflowExecutor) handleTaskError(ctx context.Context, wfCtx *workflowContext, taskErr models.TaskError) {
 	wfCtx.mutex.Lock()
-	wfCtx.state.Status = core_models.WorkflowStatusFailed
+	wfCtx.state.Status = models.WorkflowStatusFailed
 	wfCtx.mutex.Unlock()
 
 	if err := e.repository.SetState(ctx, wfCtx.task.WorkflowID, wfCtx.state); err != nil {
@@ -275,7 +256,7 @@ func (e *workflowExecutor) handleTaskError(ctx context.Context, wfCtx *workflowC
 
 func (e *workflowExecutor) handleWorkflowCompletion(ctx context.Context, wfCtx *workflowContext) {
 	wfCtx.mutex.Lock()
-	wfCtx.state.Status = core_models.WorkflowStatusCompleted
+	wfCtx.state.Status = models.WorkflowStatusCompleted
 	wfCtx.mutex.Unlock()
 
 	if err := e.repository.SetState(ctx, wfCtx.task.WorkflowID, wfCtx.state); err != nil {
@@ -291,7 +272,7 @@ func (e *workflowExecutor) handleWorkflowCompletion(ctx context.Context, wfCtx *
 
 func (e *workflowExecutor) handleWorkflowCancellation(ctx context.Context, wfCtx *workflowContext) {
 	wfCtx.mutex.Lock()
-	wfCtx.state.Status = core_models.WorkflowStatusAborted
+	wfCtx.state.Status = models.WorkflowStatusAborted
 	wfCtx.mutex.Unlock()
 
 	if err := e.repository.SetState(ctx, wfCtx.task.WorkflowID, wfCtx.state); err != nil {

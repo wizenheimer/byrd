@@ -9,7 +9,7 @@ import (
 	"reflect"
 	"strconv"
 
-	core_models "github.com/wizenheimer/iris/src/internal/models/core"
+	models "github.com/wizenheimer/iris/src/internal/models/core"
 	"github.com/wizenheimer/iris/src/pkg/utils/parser"
 	"github.com/wizenheimer/iris/src/pkg/utils/path"
 	"github.com/wizenheimer/iris/src/pkg/utils/ptr"
@@ -17,7 +17,7 @@ import (
 )
 
 // prepareImageResponse prepares the image response from the HTTP response
-func (s *screenshotService) prepareScreenshotImageResponse(resp *http.Response, url string, year int, weekNumber int, weekDay int) (*core_models.ScreenshotImageResponse, error) {
+func (s *screenshotService) prepareScreenshotImageResponse(resp *http.Response, url string, year int, weekNumber int, weekDay int) (*models.ScreenshotImageResponse, error) {
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
@@ -32,10 +32,10 @@ func (s *screenshotService) prepareScreenshotImageResponse(resp *http.Response, 
 		return nil, fmt.Errorf("no content URL found in headers")
 	}
 
-	screenshotResponse := core_models.ScreenshotImageResponse{
+	screenshotResponse := models.ScreenshotImageResponse{
 		Status: "success",
 		Image:  img,
-		Metadata: &core_models.ScreenshotMetadata{
+		Metadata: &models.ScreenshotMetadata{
 			SourceURL:   url,
 			RenderedURL: renderedURL,
 			Year:        year,
@@ -50,7 +50,7 @@ func (s *screenshotService) prepareScreenshotImageResponse(resp *http.Response, 
 }
 
 // prepareHTMLContentResponse prepares the HTML content response from the HTTP response
-func (s *screenshotService) prepareScreenshotHTMLContentResponse(resp *http.Response, sourceURL, renderedURL string, year int, weekNumber int, weekDay int) (*core_models.ScreenshotHTMLContentResponse, error) {
+func (s *screenshotService) prepareScreenshotHTMLContentResponse(resp *http.Response, sourceURL, renderedURL string, year int, weekNumber int, weekDay int) (*models.ScreenshotHTMLContentResponse, error) {
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
@@ -63,10 +63,10 @@ func (s *screenshotService) prepareScreenshotHTMLContentResponse(resp *http.Resp
 
 	htmlContent := string(htmlBytes)
 
-	htmlResponse := core_models.ScreenshotHTMLContentResponse{
+	htmlResponse := models.ScreenshotHTMLContentResponse{
 		Status:      "success",
 		HTMLContent: htmlContent,
-		Metadata: &core_models.ScreenshotMetadata{
+		Metadata: &models.ScreenshotMetadata{
 			SourceURL:   sourceURL,
 			RenderedURL: renderedURL,
 			Year:        year,
@@ -124,13 +124,13 @@ func parseImageFromResponse(resp *http.Response) (image.Image, int, int, error) 
 
 // getExistingScreenshotImage retrieves the existing screenshot image from the storage
 // and returns the image and metadata
-func (s *screenshotService) getExistingScreenshotImage(ctx context.Context, url string) (*core_models.ScreenshotImageResponse, error) {
+func (s *screenshotService) getExistingScreenshotImage(ctx context.Context, url string) (*models.ScreenshotImageResponse, error) {
 	screenshotPath, err := path.GetCurrentScreenshotPath(url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current screenshot path: %v", err)
 	}
 
-	var screenshotImageResp core_models.ScreenshotImageResponse
+	var screenshotImageResp models.ScreenshotImageResponse
 
 	screenshotImageResp, errs := s.storage.GetScreenshotImage(ctx, screenshotPath)
 	if errs != nil {
@@ -141,13 +141,13 @@ func (s *screenshotService) getExistingScreenshotImage(ctx context.Context, url 
 
 // getExistingHTMLContent retrieves the existing screenshot content from the storage
 // and returns the content and metadata
-func (s *screenshotService) getExistingHTMLContent(ctx context.Context, url string) (*core_models.ScreenshotHTMLContentResponse, error) {
+func (s *screenshotService) getExistingHTMLContent(ctx context.Context, url string) (*models.ScreenshotHTMLContentResponse, error) {
 	contentPath, err := path.GetCurrentContentPath(url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current content path: %v", err)
 	}
 
-	var screenshotContentResponse core_models.ScreenshotHTMLContentResponse
+	var screenshotContentResponse models.ScreenshotHTMLContentResponse
 
 	screenshotContentResponse, errs := s.storage.GetScreenshotHTMLContent(ctx, contentPath)
 	if errs != nil {
@@ -159,7 +159,7 @@ func (s *screenshotService) getExistingHTMLContent(ctx context.Context, url stri
 
 // prepareScreenshot creates a request for the screenshot API
 // and returns the response
-func (s *screenshotService) prepareScreenshot(opts core_models.ScreenshotRequestOptions) (*http.Response, error) {
+func (s *screenshotService) prepareScreenshot(opts models.ScreenshotRequestOptions) (*http.Response, error) {
 	// Get default options
 	defaultOpt := getDefaultScreenshotRequestOptions()
 
@@ -179,7 +179,7 @@ func (s *screenshotService) prepareScreenshot(opts core_models.ScreenshotRequest
 }
 
 // prepareScreenshotHTML creates a request for the screenshot HTML
-func (s *screenshotService) prepareScreenshotHTML(opts core_models.ScreenshotHTMLRequestOptions) (*http.Response, error) {
+func (s *screenshotService) prepareScreenshotHTML(opts models.ScreenshotHTMLRequestOptions) (*http.Response, error) {
 	// Get HTML content
 	htmlResp, err := http.Get(opts.RenderedURL)
 	if err != nil {
@@ -195,15 +195,15 @@ func (s *screenshotService) prepareScreenshotHTML(opts core_models.ScreenshotHTM
 }
 
 // getDefaultScreenshotRequestOptions returns the default options for the screenshot request
-func getDefaultScreenshotRequestOptions() core_models.ScreenshotRequestOptions {
+func getDefaultScreenshotRequestOptions() models.ScreenshotRequestOptions {
 	// Get default options
-	defaultOpt := core_models.ScreenshotRequestOptions{
+	defaultOpt := models.ScreenshotRequestOptions{
 		// Capture options
 		Format:                ptr.To("png"),
 		ImageQuality:          ptr.To(80),
 		CaptureBeyondViewport: ptr.To(true),
 		FullPage:              ptr.To(true),
-		FullPageAlgorithm:     ptr.To(core_models.FullPageAlgorithmDefault),
+		FullPageAlgorithm:     ptr.To(models.FullPageAlgorithmDefault),
 
 		// Resource blocking options
 		BlockAds:                 ptr.To(true),
@@ -216,9 +216,9 @@ func getDefaultScreenshotRequestOptions() core_models.ScreenshotRequestOptions {
 		Delay:             ptr.To(0),
 		Timeout:           ptr.To(60),
 		NavigationTimeout: ptr.To(30),
-		WaitUntil: []core_models.WaitUntilOption{
-			core_models.WaitUntilNetworkIdle2,
-			core_models.WaitUntilNetworkIdle0,
+		WaitUntil: []models.WaitUntilOption{
+			models.WaitUntilNetworkIdle2,
+			models.WaitUntilNetworkIdle0,
 		},
 
 		// Styling options
@@ -236,7 +236,7 @@ func getDefaultScreenshotRequestOptions() core_models.ScreenshotRequestOptions {
 }
 
 // MergeOptions merges the provided options with default options
-func mergeScreenshotRequestOptions(defaults, override core_models.ScreenshotRequestOptions) core_models.ScreenshotRequestOptions {
+func mergeScreenshotRequestOptions(defaults, override models.ScreenshotRequestOptions) models.ScreenshotRequestOptions {
 	result := defaults
 
 	// Use reflection to handle all fields

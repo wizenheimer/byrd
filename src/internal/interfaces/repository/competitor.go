@@ -3,16 +3,28 @@ package interfaces
 import (
 	"context"
 
+	"github.com/google/uuid"
 	models "github.com/wizenheimer/iris/src/internal/models/core"
 )
 
+// CompetitorRepository is the interface that provides competitor operations
+// This is used to interact with the competitor repository
+
 type CompetitorRepository interface {
-	Create(ctx context.Context, competitor *models.Competitor) error
-	Update(ctx context.Context, competitor *models.Competitor) error
-	Delete(ctx context.Context, id int) error
-	GetByID(ctx context.Context, id int) (*models.Competitor, error)
-	List(ctx context.Context, limit, offset int) ([]models.Competitor, int, error)
-	FindByURLHash(ctx context.Context, hash string) ([]models.Competitor, error)
-	AddURL(ctx context.Context, competitorID int, url string) error
-	RemoveURL(ctx context.Context, competitorID int, url string) error
+	// CreateCompetitors creates competitors in a workspace
+	CreateCompetitors(ctx context.Context, workspaceID uuid.UUID, competitorNames []string) ([]models.Competitor, error)
+
+	// GetCompetitor gets a competitor by its ID
+	GetCompetitor(ctx context.Context, competitorID uuid.UUID) (models.Competitor, error)
+
+	// ListWorkspaceCompetitors lists all competitors in a workspace
+	ListWorkspaceCompetitors(ctx context.Context, workspaceID string, limit, offset int) ([]models.Competitor, error)
+
+	// RemoveWorkspaceCompetitor removes a competitor from a workspace
+	// When competitorIDs are nil, all competitors are removed from the workspace
+	RemoveWorkspaceCompetitors(ctx context.Context, workspaceID uuid.UUID, competitorIDs []uuid.UUID) []error
+
+	// WorkspaceCompetitorExists checks if a competitor exists in a workspace
+	// This is optimized for quick lookups over the competitor table
+	WorkspaceCompetitorExists(ctx context.Context, workspaceID string, competitorID string) (bool, error)
 }

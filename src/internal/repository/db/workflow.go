@@ -9,8 +9,8 @@ import (
 
 	"github.com/redis/go-redis/v9"
 	interfaces "github.com/wizenheimer/iris/src/internal/interfaces/repository"
-	api_models "github.com/wizenheimer/iris/src/internal/models/api"
-	core_models "github.com/wizenheimer/iris/src/internal/models/core"
+	api "github.com/wizenheimer/iris/src/internal/models/api"
+	models "github.com/wizenheimer/iris/src/internal/models/core"
 	"github.com/wizenheimer/iris/src/pkg/logger"
 	"go.uber.org/zap"
 )
@@ -48,7 +48,13 @@ func validateClient(ctx context.Context, client *redis.Client) error {
 	return nil
 }
 
-func (r *workflowRepository) SetState(ctx context.Context, wi core_models.WorkflowIdentifier, ws api_models.WorkflowState) error {
+func (r *workflowRepository) InitializeWorkflow(ctx context.Context, wi models.WorkflowIdentifier) error {
+	// TODO: Persist the triggered state in db
+
+	return nil
+}
+
+func (r *workflowRepository) SetState(ctx context.Context, wi models.WorkflowIdentifier, ws api.WorkflowState) error {
 	key := r.generateKey(wi)
 
 	data, err := json.Marshal(ws)
@@ -63,39 +69,39 @@ func (r *workflowRepository) SetState(ctx context.Context, wi core_models.Workfl
 	return nil
 }
 
-func (r *workflowRepository) GetState(ctx context.Context, wi core_models.WorkflowIdentifier) (api_models.WorkflowState, error) {
+func (r *workflowRepository) GetState(ctx context.Context, wi models.WorkflowIdentifier) (api.WorkflowState, error) {
 	key := r.generateKey(wi)
 
 	data, err := r.client.Get(ctx, key).Bytes()
 	if err != nil {
 		if err == redis.Nil {
-			return api_models.WorkflowState{}, fmt.Errorf("workflow not found: %s", key)
+			return api.WorkflowState{}, fmt.Errorf("workflow not found: %s", key)
 		}
-		return api_models.WorkflowState{}, fmt.Errorf("failed to get state: %w", err)
+		return api.WorkflowState{}, fmt.Errorf("failed to get state: %w", err)
 	}
 
-	var state api_models.WorkflowState
+	var state api.WorkflowState
 	if err := json.Unmarshal(data, &state); err != nil {
-		return api_models.WorkflowState{}, fmt.Errorf("failed to unmarshal state: %w", err)
+		return api.WorkflowState{}, fmt.Errorf("failed to unmarshal state: %w", err)
 	}
 
 	return state, nil
 }
 
-func (r *workflowRepository) SetCheckpoint(ctx context.Context, wi core_models.WorkflowIdentifier, status core_models.WorkflowStatus, checkpoint core_models.WorkflowCheckpoint) error {
-	state := api_models.WorkflowState{
+func (r *workflowRepository) SetCheckpoint(ctx context.Context, wi models.WorkflowIdentifier, status models.WorkflowStatus, checkpoint models.WorkflowCheckpoint) error {
+	state := api.WorkflowState{
 		Status:     status,
 		Checkpoint: checkpoint,
 	}
 	return r.SetState(ctx, wi, state)
 }
 
-func (r *workflowRepository) List(ctx context.Context, status core_models.WorkflowStatus, wfType core_models.WorkflowType) ([]api_models.WorkflowResponse, error) {
+func (r *workflowRepository) List(ctx context.Context, status models.WorkflowStatus, wfType models.WorkflowType) ([]api.WorkflowResponse, error) {
 	r.logger.Debug("listing workflows",
 		zap.String("status", string(status)),
 		zap.String("type", string(wfType)))
 
-	var responses []api_models.WorkflowResponse
+	var responses []api.WorkflowResponse
 	var cursor uint64
 	pattern := fmt.Sprintf("%s%s:*", workflowKeyPrefix, string(wfType))
 
@@ -134,7 +140,7 @@ func (r *workflowRepository) List(ctx context.Context, status core_models.Workfl
 				continue
 			}
 
-			var state api_models.WorkflowState
+			var state api.WorkflowState
 			if err := json.Unmarshal(data, &state); err != nil {
 				r.logger.Error("failed to unmarshal state",
 					zap.String("key", key),
@@ -152,8 +158,8 @@ func (r *workflowRepository) List(ctx context.Context, status core_models.Workfl
 				zap.Any("identifier", identifier),
 				zap.Any("state", state))
 
-			responses = append(responses, api_models.WorkflowResponse{
-				WorkflowID: core_models.WorkflowIdentifier{
+			responses = append(responses, api.WorkflowResponse{
+				WorkflowID: models.WorkflowIdentifier{
 					Type:       &wfType, // Use the input type
 					Year:       identifier.Year,
 					WeekNumber: identifier.WeekNumber,
@@ -172,28 +178,28 @@ func (r *workflowRepository) List(ctx context.Context, status core_models.Workfl
 	return responses, nil
 }
 
-func (r *workflowRepository) parseKey(key string) (core_models.WorkflowIdentifier, error) {
+func (r *workflowRepository) parseKey(key string) (models.WorkflowIdentifier, error) {
 	// Remove prefix
 	key = strings.TrimPrefix(key, workflowKeyPrefix)
 
 	// Split the key parts
 	parts := strings.Split(key, ":")
 	if len(parts) != 4 {
-		return core_models.WorkflowIdentifier{}, fmt.Errorf("invalid key format: %s", key)
+		return models.WorkflowIdentifier{}, fmt.Errorf("invalid key format: %s", key)
 	}
 
 	// Parse values
-	workflowType := core_models.WorkflowType(parts[0])
+	workflowType := models.WorkflowType(parts[0])
 
 	var year, weekNum, weekDay int
 	if _, err := fmt.Sscanf(parts[1], "%d", &year); err != nil {
-		return core_models.WorkflowIdentifier{}, fmt.Errorf("invalid year: %s", parts[1])
+		return models.WorkflowIdentifier{}, fmt.Errorf("invalid year: %s", parts[1])
 	}
 	if _, err := fmt.Sscanf(parts[2], "%d", &weekNum); err != nil {
-		return core_models.WorkflowIdentifier{}, fmt.Errorf("invalid week number: %s", parts[2])
+		return models.WorkflowIdentifier{}, fmt.Errorf("invalid week number: %s", parts[2])
 	}
 	if _, err := fmt.Sscanf(parts[3], "%d", &weekDay); err != nil {
-		return core_models.WorkflowIdentifier{}, fmt.Errorf("invalid week day: %s", parts[3])
+		return models.WorkflowIdentifier{}, fmt.Errorf("invalid week day: %s", parts[3])
 	}
 
 	// Create new variables for the pointers
@@ -203,7 +209,7 @@ func (r *workflowRepository) parseKey(key string) (core_models.WorkflowIdentifie
 	weekDayCopy := weekDay
 
 	// Return identifier with proper pointer values
-	return core_models.WorkflowIdentifier{
+	return models.WorkflowIdentifier{
 		Type:       &wfTypeCopy,
 		Year:       &yearCopy,
 		WeekNumber: &weekNumCopy,
@@ -211,7 +217,7 @@ func (r *workflowRepository) parseKey(key string) (core_models.WorkflowIdentifie
 	}, nil
 }
 
-func (r *workflowRepository) generateKey(wi core_models.WorkflowIdentifier) string {
+func (r *workflowRepository) generateKey(wi models.WorkflowIdentifier) string {
 	if wi.Type == nil || wi.Year == nil || wi.WeekNumber == nil || wi.WeekDay == nil {
 		r.logger.Error("invalid workflow identifier - nil values",
 			zap.Any("identifier", wi))

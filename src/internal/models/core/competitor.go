@@ -1,27 +1,30 @@
 package models
 
-import "time"
+import (
+	"time"
 
+	"github.com/google/uuid"
+)
+
+type CompetitorStatus string
+
+const (
+	CompetitorStatusActive   CompetitorStatus = "active"
+	CompetitorStatusInactive CompetitorStatus = "inactive"
+)
+
+// Competitor is a competitor in the competitor table
 type Competitor struct {
-	ID        int       `json:"id"`
-	Domain    string    `json:"domain"`
-	Name      string    `json:"name"`
-	URLs      []string  `json:"urls"`
+	// ID is the competitor's unique identifier
+	ID uuid.UUID `json:"id"`
+	// WorkspaceID is the workspace's unique identifier
+	WorkspaceID uuid.UUID `json:"workspace_id"`
+	// Name is the competitor's name, this is automatically generated from the Page's URL
+	Name string `json:"name"`
+	// Status is the competitor's status
+	Status CompetitorStatus `json:"status"`
+	// CreatedAt is the time the competitor was created
 	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-}
-
-type CompetitorInput struct {
-	Name   string   `json:"name" validate:"required"`
-	Domain string   `json:"domain" validate:"required"`
-	URLs   []string `json:"urls" validate:"required,min=1,dive,url"`
-}
-
-type CompetitorDTO struct {
-	ID        int       `json:"id"`
-	Name      string    `json:"name"`
-	Domain    string    `json:"domain"`
-	URLs      []string  `json:"urls"`
-	CreatedAt time.Time `json:"created_at"`
+	// UpdatedAt is the time the competitor was last updated
 	UpdatedAt time.Time `json:"updated_at"`
 }

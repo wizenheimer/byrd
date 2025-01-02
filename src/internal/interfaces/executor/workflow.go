@@ -3,7 +3,7 @@ package executor
 import (
 	"context"
 
-	api_models "github.com/wizenheimer/iris/src/internal/models/api"
+	api "github.com/wizenheimer/iris/src/internal/models/api"
 	models "github.com/wizenheimer/iris/src/internal/models/core"
 )
 
@@ -22,8 +22,8 @@ type WorkflowExecutor interface {
 	Restart(ctx context.Context, workflowID models.WorkflowIdentifier, errChan chan error)
 
 	// List returns the list of workflows
-	List(ctx context.Context, ws models.WorkflowStatus, wt models.WorkflowType) ([]api_models.WorkflowState, error)
+	List(ctx context.Context, ws models.WorkflowStatus, wt models.WorkflowType) ([]api.WorkflowState, error)
 
 	// GetState returns the stored state of the workflow
-	Get(ctx context.Context, wi models.WorkflowIdentifier) (api_models.WorkflowState, error)
+	Get(ctx context.Context, wi models.WorkflowIdentifier) (api.WorkflowState, error)
 }

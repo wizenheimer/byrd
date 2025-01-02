@@ -9,7 +9,7 @@ import (
 
 	"github.com/slack-go/slack"
 	clf "github.com/wizenheimer/iris/src/internal/interfaces/client"
-	core_models "github.com/wizenheimer/iris/src/internal/models/core"
+	models "github.com/wizenheimer/iris/src/internal/models/core"
 	"github.com/wizenheimer/iris/src/pkg/logger"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
@@ -20,7 +20,7 @@ type slackAlertClient struct {
 	// client for Slack
 	client *slack.Client
 	// config for Slack
-	config core_models.SlackConfig
+	config models.SlackConfig
 	// logger for logging
 	logger *logger.Logger
 	// Rate limiter for Slack API
@@ -30,7 +30,7 @@ type slackAlertClient struct {
 	recent map[string]time.Time
 }
 
-func NewSlackAlertClient(config core_models.SlackConfig, logger *logger.Logger) (clf.AlertClient, error) {
+func NewSlackAlertClient(config models.SlackConfig, logger *logger.Logger) (clf.AlertClient, error) {
 	if config.Token == "" || config.ChannelID == "" {
 		return nil, fmt.Errorf("slack token and channel ID are required")
 	}
@@ -52,7 +52,7 @@ func NewSlackAlertClient(config core_models.SlackConfig, logger *logger.Logger) 
 	return client, nil
 }
 
-func (s *slackAlertClient) Send(ctx context.Context, alert core_models.Alert) error {
+func (s *slackAlertClient) Send(ctx context.Context, alert models.Alert) error {
 	// Rate limiting
 	if err := s.limiter.Wait(ctx); err != nil {
 		return fmt.Errorf("rate limit exceeded: %w", err)
@@ -76,7 +76,7 @@ func (s *slackAlertClient) Send(ctx context.Context, alert core_models.Alert) er
 	return nil
 }
 
-func (s *slackAlertClient) sendWithRetries(ctx context.Context, alert core_models.Alert) error {
+func (s *slackAlertClient) sendWithRetries(ctx context.Context, alert models.Alert) error {
 	attachment := s.createAttachment(alert)
 
 	for attempt := 0; attempt <= s.config.RetryCount; attempt++ {
@@ -148,7 +148,7 @@ func (s *slackAlertClient) cleanupLoop() {
 	}
 }
 
-func (s *slackAlertClient) createAttachment(alert core_models.Alert) slack.Attachment {
+func (s *slackAlertClient) createAttachment(alert models.Alert) slack.Attachment {
 	color := s.config.ColorMapping[alert.Severity]
 
 	fields := make([]slack.AttachmentField, 0)
@@ -171,7 +171,7 @@ func (s *slackAlertClient) createAttachment(alert core_models.Alert) slack.Attac
 	}
 }
 
-func (s *slackAlertClient) SendBatch(ctx context.Context, alerts []core_models.Alert) error {
+func (s *slackAlertClient) SendBatch(ctx context.Context, alerts []models.Alert) error {
 	for _, alert := range alerts {
 		if err := s.Send(ctx, alert); err != nil {
 			return fmt.Errorf("failed to send batch alert: %w", err)

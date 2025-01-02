@@ -3,15 +3,15 @@ package screenshot
 import (
 	clf "github.com/wizenheimer/iris/src/internal/interfaces/client"
 	repo "github.com/wizenheimer/iris/src/internal/interfaces/repository"
-	core_models "github.com/wizenheimer/iris/src/internal/models/core"
+	models "github.com/wizenheimer/iris/src/internal/models/core"
 )
 
 // ScreenshotServiceOption is a function type that modifies ScreenshotService
 type ScreenshotServiceOption func(*screenshotService)
 
 // defaultConfig returns the default configuration
-func defaultConfig() *core_models.ScreenshotServiceConfig {
-	return &core_models.ScreenshotServiceConfig{
+func defaultConfig() *models.ScreenshotServiceConfig {
+	return &models.ScreenshotServiceConfig{
 		// 40 requests per minute
 		QPS: 0.6,
 		// Default origin

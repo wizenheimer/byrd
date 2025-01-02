@@ -5,8 +5,8 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	interfaces "github.com/wizenheimer/iris/src/internal/interfaces/service"
-	api_models "github.com/wizenheimer/iris/src/internal/models/api"
-	core_models "github.com/wizenheimer/iris/src/internal/models/core"
+	api "github.com/wizenheimer/iris/src/internal/models/api"
+	models "github.com/wizenheimer/iris/src/internal/models/core"
 	"github.com/wizenheimer/iris/src/pkg/logger"
 	"go.uber.org/zap"
 )
@@ -25,7 +25,7 @@ func NewWorkflowHandler(workflowService interfaces.WorkflowService, logger *logg
 }
 
 func (wh *WorkflowHandler) StartWorkflow(c *fiber.Ctx) error {
-	var workflowRequest api_models.WorkflowRequest
+	var workflowRequest api.WorkflowRequest
 	if err := c.BodyParser(&workflowRequest); err != nil {
 		wh.logger.Error("failed to parse request body", zap.Error(err))
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "failed to parse request body"})
@@ -40,7 +40,7 @@ func (wh *WorkflowHandler) StartWorkflow(c *fiber.Ctx) error {
 }
 
 func (wh *WorkflowHandler) StopWorkflow(c *fiber.Ctx) error {
-	var workflowRequest api_models.WorkflowRequest
+	var workflowRequest api.WorkflowRequest
 	if err := c.BodyParser(&workflowRequest); err != nil {
 		wh.logger.Error("failed to parse request body", zap.Error(err))
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "failed to parse request body"})
@@ -54,7 +54,7 @@ func (wh *WorkflowHandler) StopWorkflow(c *fiber.Ctx) error {
 }
 
 func (wh *WorkflowHandler) GetWorkflow(c *fiber.Ctx) error {
-	var workflowRequest api_models.WorkflowRequest
+	var workflowRequest api.WorkflowRequest
 	if err := c.BodyParser(&workflowRequest); err != nil {
 		wh.logger.Error("failed to parse request body", zap.Error(err))
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "failed to parse request body"})
@@ -70,14 +70,14 @@ func (wh *WorkflowHandler) GetWorkflow(c *fiber.Ctx) error {
 
 func (wh *WorkflowHandler) ListWorkflows(c *fiber.Ctx) error {
 	workflowStatusString := c.Query("workflow_status")
-	workflowStatus, err := core_models.ParseWorkflowStatus(workflowStatusString)
+	workflowStatus, err := models.ParseWorkflowStatus(workflowStatusString)
 	if err != nil {
 		wh.logger.Error("failed to parse workflow status", zap.Error(err))
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "failed to parse workflow status"})
 	}
 
 	workflowTypeString := c.Query("workflow_type")
-	workflowType, err := core_models.ParseWorkflowType(workflowTypeString)
+	workflowType, err := models.ParseWorkflowType(workflowTypeString)
 	if err != nil {
 		wh.logger.Error("failed to parse workflow type", zap.Error(err))
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "failed to parse workflow type"})

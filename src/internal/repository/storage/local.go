@@ -13,7 +13,7 @@ import (
 	"strings"
 
 	interfaces "github.com/wizenheimer/iris/src/internal/interfaces/repository"
-	core_models "github.com/wizenheimer/iris/src/internal/models/core"
+	models "github.com/wizenheimer/iris/src/internal/models/core"
 	"github.com/wizenheimer/iris/src/pkg/logger"
 	"github.com/wizenheimer/iris/src/pkg/utils/ptr"
 	"go.uber.org/zap"
@@ -62,9 +62,9 @@ func (s *localStorage) getMetadataPath(path string) string {
 }
 
 // saveMetadata saves metadata to a separate file
-func (s *localStorage) saveMetadata(path string, metadata *core_models.ScreenshotMetadata) error {
+func (s *localStorage) saveMetadata(path string, metadata *models.ScreenshotMetadata) error {
 	if metadata == nil {
-		metadata = &core_models.ScreenshotMetadata{}
+		metadata = &models.ScreenshotMetadata{}
 	}
 
 	data, err := json.Marshal(metadata)
@@ -81,26 +81,26 @@ func (s *localStorage) saveMetadata(path string, metadata *core_models.Screensho
 }
 
 // loadMetadata loads metadata from the metadata file
-func (s *localStorage) loadMetadata(path string) (core_models.ScreenshotMetadata, error) {
+func (s *localStorage) loadMetadata(path string) (models.ScreenshotMetadata, error) {
 	metadataPath := s.getMetadataPath(path)
 	data, err := os.ReadFile(metadataPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return core_models.ScreenshotMetadata{}, nil
+			return models.ScreenshotMetadata{}, nil
 		}
-		return core_models.ScreenshotMetadata{}, fmt.Errorf("failed to read metadata: %w", err)
+		return models.ScreenshotMetadata{}, fmt.Errorf("failed to read metadata: %w", err)
 	}
 
-	var metadata core_models.ScreenshotMetadata
+	var metadata models.ScreenshotMetadata
 	if err := json.Unmarshal(data, &metadata); err != nil {
-		return core_models.ScreenshotMetadata{}, fmt.Errorf("failed to unmarshal metadata: %w", err)
+		return models.ScreenshotMetadata{}, fmt.Errorf("failed to unmarshal metadata: %w", err)
 	}
 
 	return metadata, nil
 }
 
 // StoreScreenshot stores a screenshot in the local storage
-func (s *localStorage) StoreScreenshotImage(ctx context.Context, data core_models.ScreenshotImageResponse, path string) error {
+func (s *localStorage) StoreScreenshotImage(ctx context.Context, data models.ScreenshotImageResponse, path string) error {
 	s.logger.Debug("storing screenshot", zap.String("path", path))
 
 	if err := s.ensurePath(path); err != nil {
@@ -122,7 +122,7 @@ func (s *localStorage) StoreScreenshotImage(ctx context.Context, data core_model
 }
 
 // StoreContent stores a text content in the local storage
-func (s *localStorage) StoreScreenshotHTMLContent(ctx context.Context, data core_models.ScreenshotHTMLContentResponse, path string) error {
+func (s *localStorage) StoreScreenshotHTMLContent(ctx context.Context, data models.ScreenshotHTMLContentResponse, path string) error {
 	s.logger.Debug("storing content", zap.String("path", path))
 
 	if err := s.ensurePath(path); err != nil {
@@ -138,20 +138,20 @@ func (s *localStorage) StoreScreenshotHTMLContent(ctx context.Context, data core
 }
 
 // GetContent retrieves a text content from the local storage
-func (s *localStorage) GetScreenshotHTMLContent(ctx context.Context, path string) (core_models.ScreenshotHTMLContentResponse, []error) {
+func (s *localStorage) GetScreenshotHTMLContent(ctx context.Context, path string) (models.ScreenshotHTMLContentResponse, []error) {
 	s.logger.Debug("getting content", zap.String("path", path))
 
 	data, metadata, err := s.Get(ctx, path)
 	if err != nil {
-		return core_models.ScreenshotHTMLContentResponse{}, []error{err}
+		return models.ScreenshotHTMLContentResponse{}, []error{err}
 	}
 
-	screenshotMetadata, errs := core_models.ScreenshotMetadataFromMap(metadata)
+	screenshotMetadata, errs := models.ScreenshotMetadataFromMap(metadata)
 	if errs != nil {
-		return core_models.ScreenshotHTMLContentResponse{}, errs
+		return models.ScreenshotHTMLContentResponse{}, errs
 	}
 
-	screenshotResp := core_models.ScreenshotHTMLContentResponse{
+	screenshotResp := models.ScreenshotHTMLContentResponse{
 		Status:      "success",
 		HTMLContent: string(data),
 		Metadata:    &screenshotMetadata,
@@ -161,30 +161,30 @@ func (s *localStorage) GetScreenshotHTMLContent(ctx context.Context, path string
 }
 
 // GetScreenshot retrieves a screenshot from the local storage
-func (s *localStorage) GetScreenshotImage(ctx context.Context, path string) (core_models.ScreenshotImageResponse, []error) {
+func (s *localStorage) GetScreenshotImage(ctx context.Context, path string) (models.ScreenshotImageResponse, []error) {
 	s.logger.Debug("getting screenshot", zap.String("path", path))
 
 	data, metadata, err := s.Get(ctx, path)
 	if err != nil {
-		return core_models.ScreenshotImageResponse{}, []error{err}
+		return models.ScreenshotImageResponse{}, []error{err}
 	}
 
 	img, _, err := image.Decode(bytes.NewReader(data))
 	if err != nil {
-		return core_models.ScreenshotImageResponse{}, []error{fmt.Errorf("failed to decode image: %w", err)}
+		return models.ScreenshotImageResponse{}, []error{fmt.Errorf("failed to decode image: %w", err)}
 	}
 
-	screenshotMetadata, errs := core_models.ScreenshotMetadataFromMap(metadata)
+	screenshotMetadata, errs := models.ScreenshotMetadataFromMap(metadata)
 	if errs != nil {
-		return core_models.ScreenshotImageResponse{}, errs
+		return models.ScreenshotImageResponse{}, errs
 	}
 
 	imw, imh, err := getImageDimensions(img)
 	if err != nil {
-		return core_models.ScreenshotImageResponse{}, []error{err}
+		return models.ScreenshotImageResponse{}, []error{err}
 	}
 
-	screenshotResp := core_models.ScreenshotImageResponse{
+	screenshotResp := models.ScreenshotImageResponse{
 		Status:      "success",
 		Image:       img,
 		Metadata:    &screenshotMetadata,
@@ -229,13 +229,13 @@ func (s *localStorage) Delete(ctx context.Context, path string) error {
 	return nil
 }
 
-func (s *localStorage) List(ctx context.Context, prefix string, maxItems int) ([]core_models.ScreenshotListResponse, error) {
+func (s *localStorage) List(ctx context.Context, prefix string, maxItems int) ([]models.ScreenshotListResponse, error) {
 	s.logger.Debug("listing files",
 		zap.String("prefix", prefix),
 		zap.Int("maxItems", maxItems))
 
 	fullPrefix := filepath.Join(s.directory, prefix)
-	var results []core_models.ScreenshotListResponse
+	var results []models.ScreenshotListResponse
 
 	// Walk through the directory
 	err := filepath.WalkDir(fullPrefix, func(path string, d fs.DirEntry, err error) error {
@@ -270,7 +270,7 @@ func (s *localStorage) List(ctx context.Context, prefix string, maxItems int) ([
 			return fmt.Errorf("failed to get file info: %w", err)
 		}
 
-		results = append(results, core_models.ScreenshotListResponse{
+		results = append(results, models.ScreenshotListResponse{
 			Key:          relPath,
 			LastModified: info.ModTime(),
 		})

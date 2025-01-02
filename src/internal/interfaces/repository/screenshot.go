@@ -3,23 +3,26 @@ package interfaces
 import (
 	"context"
 
-	core_models "github.com/wizenheimer/iris/src/internal/models/core"
+	models "github.com/wizenheimer/iris/src/internal/models/core"
 )
+
+// ScreenshotRepository is the interface that provides screenshot operations
+// This is used to interact with the screenshot repository
 
 type ScreenshotRepository interface {
 	// StoreScreenshotImage stores screenshot image in the storage
-	StoreScreenshotImage(ctx context.Context, data core_models.ScreenshotImageResponse, path string) error
+	StoreScreenshotImage(ctx context.Context, data models.ScreenshotImageResponse, path string) error
 
 	// StoreScreenshotContent stores screenshot content in the storage
-	StoreScreenshotHTMLContent(ctx context.Context, data core_models.ScreenshotHTMLContentResponse, path string) error
+	StoreScreenshotHTMLContent(ctx context.Context, data models.ScreenshotHTMLContentResponse, path string) error
 
 	// GetContent retrieves a text content from the storage
 	// Serialize the content to a string and return it
-	GetScreenshotHTMLContent(ctx context.Context, path string) (core_models.ScreenshotHTMLContentResponse, []error)
+	GetScreenshotHTMLContent(ctx context.Context, path string) (models.ScreenshotHTMLContentResponse, []error)
 
 	// GetScreenshot retrieves a screenshot from the storage
 	// Deserialize the content to an image and return it
-	GetScreenshotImage(ctx context.Context, path string) (core_models.ScreenshotImageResponse, []error)
+	GetScreenshotImage(ctx context.Context, path string) (models.ScreenshotImageResponse, []error)
 
 	// Get retrieves a binary from the storage
 	// Return the binary content and the metadata
@@ -31,5 +34,5 @@ type ScreenshotRepository interface {
 
 	// List lists the latest content matching the prefix
 	// Return a list of ScreenshotListResponse objects or an error
-	List(ctx context.Context, prefix string, maxItems int) ([]core_models.ScreenshotListResponse, error)
+	List(ctx context.Context, prefix string, maxItems int) ([]models.ScreenshotListResponse, error)
 }

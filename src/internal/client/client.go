@@ -17,7 +17,7 @@ import (
 // Client implements the HTTPClient interface
 type Client struct {
 	client     *http.Client
-	authMethod AuthMethod
+	authMethod clf.AuthMethod
 	retryCodes []int
 	maxRetries int
 	logger     *logger.Logger

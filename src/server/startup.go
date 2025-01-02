@@ -5,30 +5,20 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/redis/go-redis/v9"
 	"github.com/wizenheimer/iris/src/internal/api/routes"
 	"github.com/wizenheimer/iris/src/internal/client"
 	"github.com/wizenheimer/iris/src/internal/config"
 	clf "github.com/wizenheimer/iris/src/internal/interfaces/client"
 	repo "github.com/wizenheimer/iris/src/internal/interfaces/repository"
 	svc "github.com/wizenheimer/iris/src/internal/interfaces/service"
-	core_models "github.com/wizenheimer/iris/src/internal/models/core"
-	"github.com/wizenheimer/iris/src/internal/repository/db"
 	"github.com/wizenheimer/iris/src/internal/repository/storage"
 	"github.com/wizenheimer/iris/src/internal/service/ai"
-	"github.com/wizenheimer/iris/src/internal/service/alert"
-	"github.com/wizenheimer/iris/src/internal/service/competitor"
-	"github.com/wizenheimer/iris/src/internal/service/diff"
-	"github.com/wizenheimer/iris/src/internal/service/executor"
-	"github.com/wizenheimer/iris/src/internal/service/notification"
 	"github.com/wizenheimer/iris/src/internal/service/screenshot"
-	"github.com/wizenheimer/iris/src/internal/service/url"
-	"github.com/wizenheimer/iris/src/internal/service/workflow"
 	"github.com/wizenheimer/iris/src/pkg/logger"
 	"go.uber.org/zap"
 )
 
-func initializer(cfg *config.Config, sqlDb *sql.DB, logger *logger.Logger) (*routes.HandlerContainer, error) {
+func initializer(cfg *config.Config, _ *sql.DB, logger *logger.Logger) (*routes.HandlerContainer, error) {
 	// Initialize HTTP client for services
 	screenshotClientOpts := []client.ClientOption{
 		client.WithLogger(logger),
@@ -45,22 +35,8 @@ func initializer(cfg *config.Config, sqlDb *sql.DB, logger *logger.Logger) (*rou
 	// This client will be used to make requests to the screenshot service
 	screenshotRateLimitedClient := client.NewRateLimitedClient(screenshotHttpClient, cfg.Services.ScreenshotServiceQPS)
 
-	commonClientOpts := []client.ClientOption{
-		client.WithLogger(logger),
-	}
-
-	commonHttpClient, err := client.NewClient(commonClientOpts...)
-	if err != nil {
-		return nil, err
-	}
-
 	// Initialize services
 	screenshotService, err := setupScreenshotService(cfg, screenshotRateLimitedClient, logger)
-	if err != nil {
-		return nil, err
-	}
-
-	notificationService, err := setupNotificationService(cfg, commonHttpClient, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -70,109 +46,14 @@ func initializer(cfg *config.Config, sqlDb *sql.DB, logger *logger.Logger) (*rou
 		return nil, err
 	}
 
-	diffService, err := setupDiffService(cfg, sqlDb, aiService, logger)
-	if err != nil {
-		return nil, err
-	}
-
-	competitorService, err := setupCompetitorService(sqlDb, logger)
-	if err != nil {
-		return nil, err
-	}
-
-	urlService, err := setupURLService(sqlDb, logger)
-	if err != nil {
-		return nil, err
-	}
-
-	workflowService, err := setupWorkflowService(cfg, screenshotService, diffService, urlService, logger)
-	if err != nil {
-		return nil, err
-	}
-
 	// Initialize handlers
 	handlers := routes.NewHandlerContainer(
 		screenshotService,
-		urlService,
 		aiService,
-		diffService,
-		competitorService,
-		notificationService,
-		workflowService,
 		logger,
 	)
 
 	return handlers, nil
-}
-
-func setupWorkflowService(cfg *config.Config, screenshotService svc.ScreenshotService, diffService svc.DiffService, urlService svc.URLService, logger *logger.Logger) (svc.WorkflowService, error) {
-	logger.Debug("setting up workflow service", zap.Any("workflow_config", cfg.Workflow))
-
-	if cfg.Workflow.RedisAddr == "" {
-		logger.Warn("Redis URL is empty")
-	}
-
-	// Create a new redis client
-	redisClient := redis.NewClient(
-		&redis.Options{
-			Addr:     cfg.Workflow.RedisAddr,
-			Password: cfg.Workflow.RedisPassword,
-			DB:       cfg.Workflow.RedisDB,
-		},
-	)
-
-	// Create a new workflow repository
-	workflowRepo, err := db.NewWorkflowRepository(redisClient, logger)
-	if err != nil {
-		return nil, err
-	}
-
-	// Create a new workflow alert client
-	clientConfig := core_models.DefaultSlackConfig()
-	clientConfig.Token = cfg.Workflow.SlackAlertToken
-	clientConfig.ChannelID = cfg.Workflow.SlackWorkflowChannelId
-
-	var alertClient clf.AlertClient
-	if cfg.Environment.EnvProfile == "development" {
-		logger.Debug("Using local workflow alert client")
-		alertClient = alert.NewLocalWorkflowClient(clientConfig, logger)
-	} else {
-		slackWorkflowClient, err := alert.NewSlackAlertClient(clientConfig, logger)
-		if err != nil {
-			return nil, err
-		}
-		alertClient = slackWorkflowClient
-	}
-
-	workflowAlertClient, err := alert.NewWorkflowAlertClient(alertClient, logger)
-	if err != nil {
-		return nil, err
-	}
-
-	screenshotTaskExecutor, err := executor.NewScreenshotTaskExecutor(urlService, screenshotService, diffService, logger)
-	if err != nil {
-		return nil, err
-	}
-
-	screenshotWorkflowExecutor, err := executor.NewWorkflowExecutor(core_models.ScreenshotWorkflowType, workflowRepo, workflowAlertClient, screenshotTaskExecutor, logger)
-	if err != nil {
-		return nil, err
-	}
-
-	workflowService, err := workflow.NewWorkflowService(logger, workflowRepo, screenshotWorkflowExecutor, screenshotWorkflowExecutor)
-	if err != nil {
-		return nil, err
-	}
-
-	return workflowService, nil
-}
-
-func setupURLService(sqlDb *sql.DB, logger *logger.Logger) (svc.URLService, error) {
-	logger.Debug("setting up URL service", zap.Any("database", sqlDb.Stats()))
-
-	urlRepo := db.NewURLRepository(sqlDb, logger)
-
-	return url.NewURLService(urlRepo, logger)
 }
 
 func setupScreenshotService(cfg *config.Config, screenshotHTTPClient clf.HTTPClient, logger *logger.Logger) (svc.ScreenshotService, error) {
@@ -256,22 +137,6 @@ func setupScreenshotService(cfg *config.Config, screenshotHTTPClient clf.HTTPCli
 	)
 }
 
-func setupNotificationService(cfg *config.Config, httpClient clf.HTTPClient, logger *logger.Logger) (svc.NotificationService, error) {
-	logger.Debug("setting up notification service", zap.Any("notification_config", cfg.Services))
-
-	emailClient, err := notification.NewResendEmailClient(cfg, httpClient, logger)
-	if err != nil {
-		log.Fatalf("Failed to initialize email client: %v", err)
-	}
-
-	templateManager, err := notification.NewTemplateManager(logger)
-	if err != nil {
-		log.Fatalf("Failed to initialize template manager: %v", err)
-	}
-
-	return notification.NewNotificationService(emailClient, templateManager, logger)
-}
-
 func setupAIService(cfg *config.Config, logger *logger.Logger) (svc.AIService, error) {
 	logger.Debug("setting up AI service", zap.Any("service_config", cfg.Services))
 
@@ -281,26 +146,4 @@ func setupAIService(cfg *config.Config, logger *logger.Logger) (svc.AIService, e
 	}
 
 	return aiService, nil
-}
-
-func setupDiffService(cfg *config.Config, sqlDb *sql.DB, aiService svc.AIService, logger *logger.Logger) (svc.DiffService, error) {
-	logger.Debug("setting up diff service", zap.Any("database", sqlDb.Stats()), zap.Any("service_config", cfg.Services), zap.Any("storage_config", cfg.Storage))
-
-	diffRepo, err := db.NewDiffRepository(sqlDb, logger)
-	if err != nil {
-		log.Fatalf("Failed to initialize diff repository: %v", err)
-	}
-
-	return diff.NewDiffService(diffRepo, aiService, logger)
-}
-
-func setupCompetitorService(sqlDb *sql.DB, logger *logger.Logger) (svc.CompetitorService, error) {
-	logger.Debug("setting up competitor service", zap.Any("database", sqlDb.Stats()))
-
-	competitorRepo, err := db.NewCompetitorRepository(sqlDb, logger)
-	if err != nil {
-		log.Fatalf("Failed to initialize competitor repository: %v", err)
-	}
-
-	return competitor.NewCompetitorService(competitorRepo, logger)
 }

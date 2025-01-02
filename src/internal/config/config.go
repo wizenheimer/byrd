@@ -57,6 +57,7 @@ type StorageConfig struct {
 }
 
 type ServicesConfig struct {
+	ClerkAPIKey             string
 	ScreenshotServiceAPIKey string
 	ScreenshotServiceOrigin string
 	ScreenshotServiceQPS    float64
@@ -180,6 +181,8 @@ func LoadStorageConfig() StorageConfig {
 
 func LoadServicesConfig() ServicesConfig {
 	return ServicesConfig{
+		// ClerkAPIKey is set to the value of the CLERK_API_KEY environment variable, or "" if the variable is not set.
+		ClerkAPIKey: GetEnv("CLERK_API_KEY", "", parser.StrParser),
 		// ScreenshotServiceAPIKey is set to the value of the SCREENSHOT_API_KEY environment variable, or "" if the variable is not set.
 		ScreenshotServiceAPIKey: GetEnv("SCREENSHOT_API_KEY", "", parser.StrParser),
 		// ScreenshotServiceOrigin is set to the value of the SCREENSHOT_API_ORIGIN environment variable, or "" if the variable is not set.

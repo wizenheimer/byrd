@@ -4,21 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sync"
 
 	exc "github.com/wizenheimer/iris/src/internal/interfaces/executor"
 	repo "github.com/wizenheimer/iris/src/internal/interfaces/repository"
 	svc "github.com/wizenheimer/iris/src/internal/interfaces/service"
-	api_models "github.com/wizenheimer/iris/src/internal/models/api"
-	core_models "github.com/wizenheimer/iris/src/internal/models/core"
+	api "github.com/wizenheimer/iris/src/internal/models/api"
+	models "github.com/wizenheimer/iris/src/internal/models/core"
 	"github.com/wizenheimer/iris/src/pkg/logger"
 )
-
-type workflowService struct {
-	executors  sync.Map // map[WorkflowType]WorkflowExecutor
-	logger     *logger.Logger
-	repository repo.WorkflowRepository
-}
 
 func NewWorkflowService(logger *logger.Logger, repository repo.WorkflowRepository, screenshotWorkflowExecutor, reportWorkflowExecutor exc.WorkflowExecutor) (svc.WorkflowService, error) {
 	if logger == nil {
@@ -31,8 +24,8 @@ func NewWorkflowService(logger *logger.Logger, repository repo.WorkflowRepositor
 	}
 
 	// Register executors
-	ws.registerExecutor(core_models.ScreenshotWorkflowType, screenshotWorkflowExecutor)
-	ws.registerExecutor(core_models.ReportWorkflowType, reportWorkflowExecutor)
+	ws.registerExecutor(models.ScreenshotWorkflowType, screenshotWorkflowExecutor)
+	ws.registerExecutor(models.ReportWorkflowType, reportWorkflowExecutor)
 
 	// Initialize the workflow service
 	if errors := ws.Initialize(context.Background()); len(errors) > 0 {
@@ -58,34 +51,34 @@ func (s *workflowService) Initialize(ctx context.Context) []error {
 	return errors
 }
 
-func (s *workflowService) StartWorkflow(ctx context.Context, req api_models.WorkflowRequest) (api_models.WorkflowResponse, error) {
+func (s *workflowService) StartWorkflow(ctx context.Context, req api.WorkflowRequest) (api.WorkflowResponse, error) {
 	if err := s.validateRequest(&req); err != nil {
-		return api_models.WorkflowResponse{}, err
+		return api.WorkflowResponse{}, err
 	}
 
 	executor, err := s.getExecutor(*req.Type)
 	if err != nil {
-		return api_models.WorkflowResponse{}, err
+		return api.WorkflowResponse{}, err
 	}
 
-	workflowID := core_models.WorkflowIdentifier(req)
+	workflowID := models.WorkflowIdentifier(req)
 
 	if err := executor.Start(ctx, workflowID); err != nil {
-		return api_models.WorkflowResponse{}, err
+		return api.WorkflowResponse{}, err
 	}
 
 	state, err := executor.Get(ctx, workflowID)
 	if err != nil {
-		return api_models.WorkflowResponse{}, err
+		return api.WorkflowResponse{}, err
 	}
 
-	return api_models.WorkflowResponse{
+	return api.WorkflowResponse{
 		WorkflowID:    workflowID,
 		WorkflowState: state,
 	}, nil
 }
 
-func (s *workflowService) StopWorkflow(ctx context.Context, req api_models.WorkflowRequest) error {
+func (s *workflowService) StopWorkflow(ctx context.Context, req api.WorkflowRequest) error {
 	if err := s.validateRequest(&req); err != nil {
 		return err
 	}
@@ -95,34 +88,34 @@ func (s *workflowService) StopWorkflow(ctx context.Context, req api_models.Workf
 		return err
 	}
 
-	workflowID := core_models.WorkflowIdentifier(req)
+	workflowID := models.WorkflowIdentifier(req)
 
 	return executor.Stop(ctx, workflowID)
 }
 
-func (s *workflowService) GetWorkflow(ctx context.Context, req api_models.WorkflowRequest) (api_models.WorkflowResponse, error) {
+func (s *workflowService) GetWorkflow(ctx context.Context, req api.WorkflowRequest) (api.WorkflowResponse, error) {
 	if err := s.validateRequest(&req); err != nil {
-		return api_models.WorkflowResponse{}, err
+		return api.WorkflowResponse{}, err
 	}
 
 	executor, err := s.getExecutor(*req.Type)
 	if err != nil {
-		return api_models.WorkflowResponse{}, err
+		return api.WorkflowResponse{}, err
 	}
 
-	workflowID := core_models.WorkflowIdentifier(req)
+	workflowID := models.WorkflowIdentifier(req)
 
 	state, err := executor.Get(ctx, workflowID)
 	if err != nil {
-		return api_models.WorkflowResponse{}, err
+		return api.WorkflowResponse{}, err
 	}
 
-	return api_models.WorkflowResponse{
+	return api.WorkflowResponse{
 		WorkflowID:    workflowID,
 		WorkflowState: state,
 	}, nil
 }
 
-func (s *workflowService) ListWorkflows(ctx context.Context, status core_models.WorkflowStatus, wfType core_models.WorkflowType) ([]api_models.WorkflowResponse, error) {
+func (s *workflowService) ListWorkflows(ctx context.Context, status models.WorkflowStatus, wfType models.WorkflowType) ([]api.WorkflowResponse, error) {
 	return s.repository.List(ctx, status, wfType)
 }
