@@ -52,5 +52,5 @@ func GetClerkClaimsFromContext(c *fiber.Ctx) (*clerk.SessionClaims, error) {
 
 func StoreSessionInfoInContext(c *fiber.Ctx, claims *clerk.SessionClaims) {
 	c.Locals(UserIDContextKey, claims.Subject)
-	c.Locals(UserIDContextKey, claims)
+	c.Locals(ClaimsContextKey, claims)
 }
