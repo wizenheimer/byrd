@@ -11,7 +11,7 @@ import (
 	svc "github.com/wizenheimer/iris/src/internal/interfaces/service"
 	models "github.com/wizenheimer/iris/src/internal/models/core"
 	"github.com/wizenheimer/iris/src/pkg/logger"
-	"github.com/wizenheimer/iris/src/pkg/utils/path"
+	"github.com/wizenheimer/iris/src/pkg/utils"
 	"go.uber.org/zap"
 )
 
@@ -95,7 +95,7 @@ func (s *screenshotService) GetCurrentImage(ctx context.Context, save bool, opts
 		return nil, err
 	}
 
-	currentYear, currentWeek, currentDayString := path.GetCurrentTimeComponents(false)
+	currentYear, currentWeek, currentDayString := utils.GetCurrentTimeComponents(false)
 	currentDay, err := strconv.Atoi(currentDayString)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert current day to int: %v", err)
@@ -109,7 +109,7 @@ func (s *screenshotService) GetCurrentImage(ctx context.Context, save bool, opts
 
 	// Save the screenshot if required
 	if save {
-		currentPath, err := path.GetCurrentScreenshotPath(opts.URL)
+		currentPath, err := utils.GetCurrentScreenshotPath(opts.URL)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get current screenshot path: %v", err)
 		}
@@ -136,7 +136,7 @@ func (s *screenshotService) GetCurrentHTMLContent(ctx context.Context, save bool
 	}
 
 	// Get current time components
-	currentYear, currentWeek, currentDayString := path.GetCurrentTimeComponents(false)
+	currentYear, currentWeek, currentDayString := utils.GetCurrentTimeComponents(false)
 	currentDay, err := strconv.Atoi(currentDayString)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert current day to int: %v", err)
@@ -150,7 +150,7 @@ func (s *screenshotService) GetCurrentHTMLContent(ctx context.Context, save bool
 
 	// Save the screenshot if required
 	if save {
-		currentPath, err := path.GetCurrentContentPath(opts.SourceURL)
+		currentPath, err := utils.GetCurrentContentPath(opts.SourceURL)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get current content path: %v", err)
 		}
@@ -164,7 +164,7 @@ func (s *screenshotService) GetCurrentHTMLContent(ctx context.Context, save bool
 
 // GetPreviousImage retrieves previous screenshot image from the storage
 func (s *screenshotService) GetPreviousImage(ctx context.Context, url string) (*models.ScreenshotImageResponse, error) {
-	screenshotPath, err := path.GetPreviousScreenshotPath(url)
+	screenshotPath, err := utils.GetPreviousScreenshotPath(url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get previous screenshot path: %v", err)
 	}
@@ -179,7 +179,7 @@ func (s *screenshotService) GetPreviousImage(ctx context.Context, url string) (*
 
 // GetPreviousScreenshotContent retrieves previous screenshot content from the storage
 func (s *screenshotService) GetPreviousHTMLContent(ctx context.Context, url string) (*models.ScreenshotHTMLContentResponse, error) {
-	contentPath, err := path.GetPreviousContentPath(url)
+	contentPath, err := utils.GetPreviousContentPath(url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get previous content path: %v", err)
 	}
@@ -198,7 +198,7 @@ func (s *screenshotService) GetPreviousHTMLContent(ctx context.Context, url stri
 // The URL is used to generate the path to the image
 // The week number and week day are used to generate the path to the image
 func (s *screenshotService) GetImage(ctx context.Context, url string, year int, weekNumber int, weekDay int) (*models.ScreenshotImageResponse, error) {
-	screenshotPath, err := path.GetScreenshotPath(url, year, weekNumber, weekDay)
+	screenshotPath, err := utils.GetScreenshotPath(url, year, weekNumber, weekDay)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get screenshot path: %v", err)
 	}
@@ -215,7 +215,7 @@ func (s *screenshotService) GetImage(ctx context.Context, url string, year int, 
 // The URL is used to generate the path to the image
 // The week number and week day are used to generate the path to the image
 func (s *screenshotService) GetHTMLContent(ctx context.Context, url string, year int, weekNumber int, weekDay int) (*models.ScreenshotHTMLContentResponse, error) {
-	contentPath, err := path.GetContentPath(url, year, weekNumber, weekDay)
+	contentPath, err := utils.GetContentPath(url, year, weekNumber, weekDay)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get content path: %v", err)
 	}
@@ -230,7 +230,7 @@ func (s *screenshotService) GetHTMLContent(ctx context.Context, url string, year
 
 // ListScreenshots lists the screenshots for a given URL
 func (s *screenshotService) ListScreenshots(ctx context.Context, url string, contentType string, maxItems int) ([]models.ScreenshotListResponse, error) {
-	prefix, err := path.GetListingPrefixFromContentType(url, contentType)
+	prefix, err := utils.GetListingPrefixFromContentType(url, contentType)
 	if err != nil || prefix == nil {
 		return nil, fmt.Errorf("failed to get listing prefix: %v", err)
 	}

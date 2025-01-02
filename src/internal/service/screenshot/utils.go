@@ -10,9 +10,7 @@ import (
 	"strconv"
 
 	models "github.com/wizenheimer/iris/src/internal/models/core"
-	"github.com/wizenheimer/iris/src/pkg/utils/parser"
-	"github.com/wizenheimer/iris/src/pkg/utils/path"
-	"github.com/wizenheimer/iris/src/pkg/utils/ptr"
+	"github.com/wizenheimer/iris/src/pkg/utils"
 	"go.uber.org/zap"
 )
 
@@ -42,8 +40,8 @@ func (s *screenshotService) prepareScreenshotImageResponse(resp *http.Response, 
 			WeekNumber:  weekNumber,
 			WeekDay:     weekDay,
 		},
-		ImageHeight: ptr.To(height),
-		ImageWidth:  ptr.To(width),
+		ImageHeight: utils.ToPtr(height),
+		ImageWidth:  utils.ToPtr(width),
 	}
 
 	return &screenshotResponse, nil
@@ -90,7 +88,7 @@ func parseImageFromResponse(resp *http.Response) (image.Image, int, int, error) 
 		// "image/jpg", // Not supported
 	}
 
-	if !parser.Contains(imageContentTypes, resp.Header.Get("Content-Type")) {
+	if !utils.Contains(imageContentTypes, resp.Header.Get("Content-Type")) {
 		return nil, -1, -1, fmt.Errorf("unexpected content type: %s", resp.Header.Get("Content-Type"))
 	}
 
@@ -125,7 +123,7 @@ func parseImageFromResponse(resp *http.Response) (image.Image, int, int, error) 
 // getExistingScreenshotImage retrieves the existing screenshot image from the storage
 // and returns the image and metadata
 func (s *screenshotService) getExistingScreenshotImage(ctx context.Context, url string) (*models.ScreenshotImageResponse, error) {
-	screenshotPath, err := path.GetCurrentScreenshotPath(url)
+	screenshotPath, err := utils.GetCurrentScreenshotPath(url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current screenshot path: %v", err)
 	}
@@ -142,7 +140,7 @@ func (s *screenshotService) getExistingScreenshotImage(ctx context.Context, url 
 // getExistingHTMLContent retrieves the existing screenshot content from the storage
 // and returns the content and metadata
 func (s *screenshotService) getExistingHTMLContent(ctx context.Context, url string) (*models.ScreenshotHTMLContentResponse, error) {
-	contentPath, err := path.GetCurrentContentPath(url)
+	contentPath, err := utils.GetCurrentContentPath(url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current content path: %v", err)
 	}
@@ -199,37 +197,37 @@ func getDefaultScreenshotRequestOptions() models.ScreenshotRequestOptions {
 	// Get default options
 	defaultOpt := models.ScreenshotRequestOptions{
 		// Capture options
-		Format:                ptr.To("png"),
-		ImageQuality:          ptr.To(80),
-		CaptureBeyondViewport: ptr.To(true),
-		FullPage:              ptr.To(true),
-		FullPageAlgorithm:     ptr.To(models.FullPageAlgorithmDefault),
+		Format:                utils.ToPtr("png"),
+		ImageQuality:          utils.ToPtr(80),
+		CaptureBeyondViewport: utils.ToPtr(true),
+		FullPage:              utils.ToPtr(true),
+		FullPageAlgorithm:     utils.ToPtr(models.FullPageAlgorithmDefault),
 
 		// Resource blocking options
-		BlockAds:                 ptr.To(true),
-		BlockCookieBanners:       ptr.To(true),
-		BlockBannersByHeuristics: ptr.To(true),
-		BlockTrackers:            ptr.To(true),
-		BlockChats:               ptr.To(true),
+		BlockAds:                 utils.ToPtr(true),
+		BlockCookieBanners:       utils.ToPtr(true),
+		BlockBannersByHeuristics: utils.ToPtr(true),
+		BlockTrackers:            utils.ToPtr(true),
+		BlockChats:               utils.ToPtr(true),
 
 		// Wait and delay options
-		Delay:             ptr.To(0),
-		Timeout:           ptr.To(60),
-		NavigationTimeout: ptr.To(30),
+		Delay:             utils.ToPtr(0),
+		Timeout:           utils.ToPtr(60),
+		NavigationTimeout: utils.ToPtr(30),
 		WaitUntil: []models.WaitUntilOption{
 			models.WaitUntilNetworkIdle2,
 			models.WaitUntilNetworkIdle0,
 		},
 
 		// Styling options
-		DarkMode:      ptr.To(false),
-		ReducedMotion: ptr.To(true),
+		DarkMode:      utils.ToPtr(false),
+		ReducedMotion: utils.ToPtr(true),
 
 		// Response options
-		MetadataImageSize:      ptr.To(true),
-		MetadataPageTitle:      ptr.To(true),
-		MetadataContent:        ptr.To(true),
-		MetadataHttpStatusCode: ptr.To(true),
+		MetadataImageSize:      utils.ToPtr(true),
+		MetadataPageTitle:      utils.ToPtr(true),
+		MetadataContent:        utils.ToPtr(true),
+		MetadataHttpStatusCode: utils.ToPtr(true),
 	}
 
 	return defaultOpt

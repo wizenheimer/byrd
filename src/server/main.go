@@ -10,7 +10,6 @@ import (
 	"github.com/wizenheimer/iris/src/internal/api/routes"
 	"github.com/wizenheimer/iris/src/internal/config"
 	"github.com/wizenheimer/iris/src/pkg/logger"
-	"github.com/wizenheimer/iris/src/pkg/utils/database"
 	"go.uber.org/zap"
 )
 
@@ -48,7 +47,7 @@ func main() {
 	}()
 
 	// Initialize database
-	sqlDb, err := database.Init(cfg)
+	sqlDb, err := setupDB(cfg)
 	if err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 		return

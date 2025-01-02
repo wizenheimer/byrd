@@ -15,7 +15,7 @@ import (
 	interfaces "github.com/wizenheimer/iris/src/internal/interfaces/repository"
 	models "github.com/wizenheimer/iris/src/internal/models/core"
 	"github.com/wizenheimer/iris/src/pkg/logger"
-	"github.com/wizenheimer/iris/src/pkg/utils/ptr"
+	"github.com/wizenheimer/iris/src/pkg/utils"
 	"go.uber.org/zap"
 )
 
@@ -188,8 +188,8 @@ func (s *localStorage) GetScreenshotImage(ctx context.Context, path string) (mod
 		Status:      "success",
 		Image:       img,
 		Metadata:    &screenshotMetadata,
-		ImageWidth:  ptr.To(imw),
-		ImageHeight: ptr.To(imh),
+		ImageWidth:  utils.ToPtr(imw),
+		ImageHeight: utils.ToPtr(imh),
 	}
 
 	return screenshotResp, nil

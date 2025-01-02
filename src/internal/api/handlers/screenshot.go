@@ -8,8 +8,7 @@ import (
 	interfaces "github.com/wizenheimer/iris/src/internal/interfaces/service"
 	models "github.com/wizenheimer/iris/src/internal/models/core"
 	"github.com/wizenheimer/iris/src/pkg/logger"
-	"github.com/wizenheimer/iris/src/pkg/utils/api"
-	"github.com/wizenheimer/iris/src/pkg/utils/ptr"
+	"github.com/wizenheimer/iris/src/pkg/utils"
 	"go.uber.org/zap"
 )
 
@@ -150,7 +149,7 @@ func (h *ScreenshotHandler) sendPNGResponse(c *fiber.Ctx, result *models.Screens
 	}
 
 	// WritePNGResponse writes the image to a PNG byte array
-	pngBytes, err := api.WritePNGResponse(
+	pngBytes, err := utils.WritePNGResponse(
 		result.Image,
 	)
 	if err != nil {
@@ -176,12 +175,12 @@ func (h *ScreenshotHandler) handleTimeDefaults(opts *models.GetScreenshotOptions
 	currentWeekDay := int(now.Weekday())
 
 	if opts.Year == nil {
-		opts.Year = ptr.To(currentYear)
+		opts.Year = utils.ToPtr(currentYear)
 	}
 	if opts.WeekNumber == nil {
-		opts.WeekNumber = ptr.To(currentWeek)
+		opts.WeekNumber = utils.ToPtr(currentWeek)
 	}
 	if opts.WeekDay == nil {
-		opts.WeekDay = ptr.To(currentWeekDay)
+		opts.WeekDay = utils.ToPtr(currentWeekDay)
 	}
 }

@@ -14,5 +14,5 @@ func SetupMiddleware(app *fiber.App) {
 	// Log requests
 	app.Use(logger.New())
 	// Handle Auth
-	app.Use(AuthMiddleware)
+	// app.Use(AuthMiddleware)
 }

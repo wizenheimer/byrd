@@ -147,3 +147,40 @@ func setupAIService(cfg *config.Config, logger *logger.Logger) (svc.AIService, e
 
 	return aiService, nil
 }
+
+func setupDB(cfg *config.Config) (*sql.DB, error) {
+	// Prepare connection string
+	connString := prepareConnectionString(cfg)
+
+	// initialize db connection
+	return sql.Open(cfg.Database.Driver, connString)
+}
+
+func prepareConnectionString(cfg *config.Config) string {
+	if cfg.Database.ConnectionString != "" {
+		return cfg.Database.ConnectionString
+	}
+
+	// Determine the environment
+	var sslMode string
+	switch cfg.Environment.EnvProfile {
+	case "development":
+		// Set up development environment
+		sslMode = "disable"
+	case "production":
+		// Set up production environment
+		sslMode = "require"
+	default:
+		// Set up default environment
+		sslMode = "disable"
+	}
+
+	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s",
+		cfg.Database.User,
+		cfg.Database.Password,
+		cfg.Database.Host,
+		cfg.Database.Port,
+		cfg.Database.Database,
+		sslMode,
+	)
+}

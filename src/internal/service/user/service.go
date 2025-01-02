@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 	api "github.com/wizenheimer/iris/src/internal/models/api"
 	models "github.com/wizenheimer/iris/src/internal/models/core"
-	email_utils "github.com/wizenheimer/iris/src/pkg/utils/email"
+	"github.com/wizenheimer/iris/src/pkg/utils"
 )
 
 func (us *userService) CreateWorkspaceOwner(ctx context.Context, clerk *clerk.User, workspaceID uuid.UUID) (*models.User, error) {
@@ -27,7 +27,7 @@ func (us *userService) CreateWorkspaceOwner(ctx context.Context, clerk *clerk.Us
 	}
 
 	if name == "" {
-		name = email_utils.GenerateNameFromEmail(email)
+		name = utils.GenerateNameFromEmail(email)
 	}
 
 	userID, err := uuid.NewUUID()

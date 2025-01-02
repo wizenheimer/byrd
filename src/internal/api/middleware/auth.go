@@ -11,18 +11,6 @@ import (
 	interfaces "github.com/wizenheimer/iris/src/internal/interfaces/service"
 )
 
-func AuthMiddleware(c *fiber.Ctx) error {
-	token := c.Get("Authorization")
-	if token == "" {
-		return fiber.NewError(fiber.StatusUnauthorized, "Missing authorization token")
-	}
-
-	// Validate token
-	// Implementation here
-
-	return c.Next()
-}
-
 type AuthorizationMiddleware struct {
 	workspaceService interfaces.WorkspaceService
 }

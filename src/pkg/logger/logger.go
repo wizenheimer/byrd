@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/wizenheimer/iris/src/internal/config"
-	"github.com/wizenheimer/iris/src/pkg/utils/parser"
+	"github.com/wizenheimer/iris/src/pkg/utils"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -41,8 +41,8 @@ func NewLogger(cfg LoggerConfig) (*Logger, error) {
 		cfg.ErrorPaths = append([]string{"stderr", logFile}, cfg.ErrorPaths...)
 
 		// Remove duplicates from OutputPaths and ErrorPaths
-		cfg.OutputPaths = parser.DeduplicateElements(cfg.OutputPaths)
-		cfg.ErrorPaths = parser.DeduplicateElements(cfg.ErrorPaths)
+		cfg.OutputPaths = utils.DeduplicateElements(cfg.OutputPaths)
+		cfg.ErrorPaths = utils.DeduplicateElements(cfg.ErrorPaths)
 	}
 
 	// Convert LogLevel to zapcore.Level

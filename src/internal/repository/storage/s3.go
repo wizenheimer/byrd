@@ -16,7 +16,7 @@ import (
 	interfaces "github.com/wizenheimer/iris/src/internal/interfaces/repository"
 	models "github.com/wizenheimer/iris/src/internal/models/core"
 	"github.com/wizenheimer/iris/src/pkg/logger"
-	"github.com/wizenheimer/iris/src/pkg/utils/ptr"
+	"github.com/wizenheimer/iris/src/pkg/utils"
 	"go.uber.org/zap"
 )
 
@@ -153,8 +153,8 @@ func (s *s3Storage) GetScreenshotImage(ctx context.Context, path string) (models
 		Status:      "success",
 		Image:       img,
 		Metadata:    &screenshotMetadata,
-		ImageHeight: ptr.To(imgHeight),
-		ImageWidth:  ptr.To(imgWidth),
+		ImageHeight: utils.ToPtr(imgHeight),
+		ImageWidth:  utils.ToPtr(imgWidth),
 	}
 
 	return resp, nil
