@@ -11,7 +11,6 @@ require (
 	github.com/gofiber/fiber/v2 v2.52.5
 	github.com/invopop/jsonschema v0.12.0
 	github.com/joho/godotenv v1.5.1
-	github.com/lib/pq v1.10.9
 	github.com/openai/openai-go v0.1.0-alpha.40
 	github.com/slack-go/slack v0.15.0
 	go.uber.org/zap v1.27.0
