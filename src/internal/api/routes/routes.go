@@ -20,6 +20,7 @@ type HandlerContainer struct {
 func NewHandlerContainer(
 	screenshotService interfaces.ScreenshotService,
 	aiService interfaces.AIService,
+	userService interfaces.UserService,
 	workspaceService interfaces.WorkspaceService,
 	logger *logger.Logger,
 ) *HandlerContainer {
@@ -29,7 +30,7 @@ func NewHandlerContainer(
 		// Handlers for AI management
 		AIHandler: handlers.NewAIHandler(aiService, logger),
 		// Handlers for user management
-		UserHandler: handlers.NewUserHandler(),
+		UserHandler: handlers.NewUserHandler(userService, logger),
 		// Handlers for workspace management
 		WorkspaceHandler: handlers.NewWorkspaceHandler(
 			workspaceService,

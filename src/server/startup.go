@@ -81,6 +81,7 @@ func initializer(cfg *config.Config, sqldb *sql.DB, logger *logger.Logger) (*rou
 	handlers := routes.NewHandlerContainer(
 		screenshotService,
 		aiService,
+		userService,
 		workspaceService,
 		logger,
 	)
