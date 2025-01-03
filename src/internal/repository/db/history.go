@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"strings"
@@ -11,6 +10,7 @@ import (
 	_ "github.com/lib/pq"
 	repo "github.com/wizenheimer/iris/src/internal/interfaces/repository"
 	models "github.com/wizenheimer/iris/src/internal/models/core"
+	"github.com/wizenheimer/iris/src/internal/repository/transaction"
 	"github.com/wizenheimer/iris/src/pkg/logger"
 )
 
@@ -22,27 +22,20 @@ var (
 )
 
 type historyRepo struct {
-	db     *sql.DB
+	tm     *transaction.TxManager
 	logger *logger.Logger
 }
 
-func NewPageHistoryRepository(db *sql.DB, logger *logger.Logger) repo.PageHistoryRepository {
+func NewPageHistoryRepository(tm *transaction.TxManager, logger *logger.Logger) repo.PageHistoryRepository {
 	return &historyRepo{
-		db:     db,
+		tm:     tm,
 		logger: logger.WithFields(map[string]interface{}{"module": "history_repository"}),
 	}
 }
 
 // CreatePageHistory creates a new page history entry
 func (r *historyRepo) CreatePageHistory(ctx context.Context, pageID uuid.UUID, pageHistory models.PageHistory) (models.PageHistory, error) {
-	tx, err := r.db.BeginTx(ctx, &sql.TxOptions{
-		Isolation: sql.LevelRepeatableRead,
-		ReadOnly:  false,
-	})
-	if err != nil {
-		return models.PageHistory{}, fmt.Errorf("failed to begin transaction: %w", err)
-	}
-	defer tx.Rollback()
+	runner := r.tm.GetRunner(ctx)
 
 	query := `
 		INSERT INTO page_history (
@@ -63,7 +56,7 @@ func (r *historyRepo) CreatePageHistory(ctx context.Context, pageID uuid.UUID, p
 				  created_at
 	`
 
-	row := tx.QueryRowContext(ctx, query,
+	row := runner.QueryRowContext(ctx, query,
 		pageID,
 		pageHistory.WeekNumber1,
 		pageHistory.WeekNumber2,
@@ -77,7 +70,7 @@ func (r *historyRepo) CreatePageHistory(ctx context.Context, pageID uuid.UUID, p
 	)
 
 	var created models.PageHistory
-	err = row.Scan(
+	err := row.Scan(
 		&created.ID,
 		&created.PageID,
 		&created.WeekNumber1,
@@ -95,15 +88,13 @@ func (r *historyRepo) CreatePageHistory(ctx context.Context, pageID uuid.UUID, p
 		return models.PageHistory{}, fmt.Errorf("failed to create page history: %w", err)
 	}
 
-	if err := tx.Commit(); err != nil {
-		return models.PageHistory{}, fmt.Errorf("failed to commit transaction: %w", err)
-	}
-
 	return created, nil
 }
 
 // ListPageHistory lists page history for a page with optional pagination
 func (r *historyRepo) ListPageHistory(ctx context.Context, pageID uuid.UUID, limit, offset *int) ([]models.PageHistory, error) {
+	runner := r.tm.GetRunner(ctx)
+
 	// Build the query with optional pagination
 	query := `
 		SELECT id, page_id, week_number_1, week_number_2, year_number_1, year_number_2,
@@ -124,7 +115,7 @@ func (r *historyRepo) ListPageHistory(ctx context.Context, pageID uuid.UUID, lim
 		args = append(args, *limit, *offset)
 	}
 
-	rows, err := r.db.QueryContext(ctx, query, args...)
+	rows, err := runner.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list page history: %w", err)
 	}
@@ -170,14 +161,7 @@ func (r *historyRepo) RemovePageHistory(ctx context.Context, pageIDs []uuid.UUID
 		return []error{ErrInvalidPageIDs}
 	}
 
-	tx, err := r.db.BeginTx(ctx, &sql.TxOptions{
-		Isolation: sql.LevelRepeatableRead,
-		ReadOnly:  false,
-	})
-	if err != nil {
-		return []error{fmt.Errorf("failed to begin transaction: %w", err)}
-	}
-	defer tx.Rollback()
+	runner := r.tm.GetRunner(ctx)
 
 	// Create placeholders for the IN clause
 	placeholders := make([]string, len(pageIDs))
@@ -192,7 +176,7 @@ func (r *historyRepo) RemovePageHistory(ctx context.Context, pageIDs []uuid.UUID
 		WHERE page_id IN (%s)
 	`, strings.Join(placeholders, ","))
 
-	result, err := tx.ExecContext(ctx, query, args...)
+	result, err := runner.ExecContext(ctx, query, args...)
 	if err != nil {
 		return []error{fmt.Errorf("failed to remove page history: %w", err)}
 	}
@@ -206,15 +190,13 @@ func (r *historyRepo) RemovePageHistory(ctx context.Context, pageIDs []uuid.UUID
 		return []error{ErrNoPageHistory}
 	}
 
-	if err := tx.Commit(); err != nil {
-		return []error{fmt.Errorf("failed to commit transaction: %w", err)}
-	}
-
 	return nil
 }
 
 // PageHistoryExists checks if a page history exists with specific criteria
 func (r *historyRepo) PageHistoryExists(ctx context.Context, pageID string, weekNumber1, weekNumber2, yearNumber1, yearNumber2 int, bucketID1, bucketID2 string) (bool, error) {
+	runner := r.tm.GetRunner(ctx)
+
 	query := `
 		SELECT EXISTS(
 			SELECT 1
@@ -230,7 +212,7 @@ func (r *historyRepo) PageHistoryExists(ctx context.Context, pageID string, week
 	`
 
 	var exists bool
-	err := r.db.QueryRowContext(ctx, query,
+	err := runner.QueryRowContext(ctx, query,
 		pageID, weekNumber1, weekNumber2, yearNumber1, yearNumber2, bucketID1, bucketID2,
 	).Scan(&exists)
 	if err != nil {

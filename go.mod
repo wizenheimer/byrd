@@ -9,6 +9,7 @@ require (
 	github.com/clerk/clerk-sdk-go/v2 v2.2.0
 	github.com/go-playground/validator/v10 v10.23.0
 	github.com/gofiber/fiber/v2 v2.52.5
+	github.com/gosimple/slug v1.15.0
 	github.com/invopop/jsonschema v0.12.0
 	github.com/joho/godotenv v1.5.1
 	github.com/openai/openai-go v0.1.0-alpha.40
@@ -29,6 +30,7 @@ require (
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/go-jose/go-jose/v3 v3.0.3 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
+	github.com/gosimple/unidecode v1.0.1 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/tidwall/gjson v1.14.4 // indirect
 	github.com/tidwall/match v1.1.1 // indirect

@@ -11,6 +11,7 @@ import (
 	_ "github.com/lib/pq"
 	repo "github.com/wizenheimer/iris/src/internal/interfaces/repository"
 	models "github.com/wizenheimer/iris/src/internal/models/core"
+	"github.com/wizenheimer/iris/src/internal/repository/transaction"
 	"github.com/wizenheimer/iris/src/pkg/logger"
 )
 
@@ -24,13 +25,13 @@ var (
 )
 
 type pageRepo struct {
-	db     *sql.DB
+	tm     *transaction.TxManager
 	logger *logger.Logger
 }
 
-func NewPageRepository(db *sql.DB, logger *logger.Logger) repo.PageRepository {
+func NewPageRepository(tm *transaction.TxManager, logger *logger.Logger) repo.PageRepository {
 	return &pageRepo{
-		db:     db,
+		tm:     tm,
 		logger: logger.WithFields(map[string]interface{}{"module": "page_repository"}),
 	}
 }
@@ -41,14 +42,7 @@ func (r *pageRepo) AddPagesToCompetitor(ctx context.Context, competitorID uuid.U
 		return nil, []error{errors.New("no pages provided")}
 	}
 
-	tx, err := r.db.BeginTx(ctx, &sql.TxOptions{
-		Isolation: sql.LevelRepeatableRead,
-		ReadOnly:  false,
-	})
-	if err != nil {
-		return nil, []error{fmt.Errorf("failed to begin transaction: %w", err)}
-	}
-	defer tx.Rollback()
+	runner := r.tm.GetRunner(ctx)
 
 	// Build batch insert query
 	valueStrings := make([]string, 0, len(pages))
@@ -69,7 +63,7 @@ func (r *pageRepo) AddPagesToCompetitor(ctx context.Context, competitorID uuid.U
 		RETURNING id, competitor_id, url, capture_profile, diff_profile, last_checked_at, status, created_at, updated_at
 	`, strings.Join(valueStrings, ","))
 
-	rows, err := tx.QueryContext(ctx, query, valueArgs...)
+	rows, err := runner.QueryContext(ctx, query, valueArgs...)
 	if err != nil {
 		return nil, []error{fmt.Errorf("failed to insert pages: %w", err)}
 	}
@@ -99,23 +93,13 @@ func (r *pageRepo) AddPagesToCompetitor(ctx context.Context, competitorID uuid.U
 		return nil, []error{fmt.Errorf("error iterating over rows: %w", err)}
 	}
 
-	if err := tx.Commit(); err != nil {
-		return nil, []error{fmt.Errorf("failed to commit transaction: %w", err)}
-	}
-
 	return createdPages, nil
 }
 
 // RemovePagesFromCompetitor removes pages from a competitor
 func (r *pageRepo) RemovePagesFromCompetitor(ctx context.Context, competitorID uuid.UUID, pageIDs []uuid.UUID) []error {
-	tx, err := r.db.BeginTx(ctx, &sql.TxOptions{
-		Isolation: sql.LevelRepeatableRead,
-		ReadOnly:  false,
-	})
-	if err != nil {
-		return []error{fmt.Errorf("failed to begin transaction: %w", err)}
-	}
-	defer tx.Rollback()
+
+	runner := r.tm.GetRunner(ctx)
 
 	var query string
 	var args []interface{}
@@ -142,7 +126,7 @@ func (r *pageRepo) RemovePagesFromCompetitor(ctx context.Context, competitorID u
 		`, strings.Join(placeholders, ","))
 	}
 
-	result, err := tx.ExecContext(ctx, query, args...)
+	result, err := runner.ExecContext(ctx, query, args...)
 	if err != nil {
 		return []error{fmt.Errorf("failed to remove pages: %w", err)}
 	}
@@ -156,15 +140,13 @@ func (r *pageRepo) RemovePagesFromCompetitor(ctx context.Context, competitorID u
 		return []error{ErrNoCompetitorPages}
 	}
 
-	if err := tx.Commit(); err != nil {
-		return []error{fmt.Errorf("failed to commit transaction: %w", err)}
-	}
-
 	return nil
 }
 
 // ListCompetitorPages gets the pages for a competitor with optional pagination
 func (r *pageRepo) ListCompetitorPages(ctx context.Context, competitorID uuid.UUID, limit, offset *int) ([]models.Page, error) {
+	runner := r.tm.GetRunner(ctx)
+
 	query := `
 		SELECT id, competitor_id, url, capture_profile, diff_profile, last_checked_at, status, created_at, updated_at
 		FROM pages
@@ -181,7 +163,7 @@ func (r *pageRepo) ListCompetitorPages(ctx context.Context, competitorID uuid.UU
 		args = append(args, *limit, *offset)
 	}
 
-	rows, err := r.db.QueryContext(ctx, query, args...)
+	rows, err := runner.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list competitor pages: %w", err)
 	}
@@ -224,6 +206,8 @@ func (r *pageRepo) ListActivePages(ctx context.Context, batchSize int, lastPageI
 		return models.ActivePageBatch{}, ErrInvalidBatchSize
 	}
 
+	runner := r.tm.GetRunner(ctx)
+
 	query := `
 		SELECT id, competitor_id, url, capture_profile, diff_profile, last_checked_at, status, created_at, updated_at
 		FROM pages
@@ -241,7 +225,7 @@ func (r *pageRepo) ListActivePages(ctx context.Context, batchSize int, lastPageI
 		LIMIT %d
 	`, batchSize+1) // Get one extra to determine if there are more pages
 
-	rows, err := r.db.QueryContext(ctx, query, args...)
+	rows, err := runner.QueryContext(ctx, query, args...)
 	if err != nil {
 		return models.ActivePageBatch{}, fmt.Errorf("failed to list active pages: %w", err)
 	}
@@ -286,6 +270,8 @@ func (r *pageRepo) ListActivePages(ctx context.Context, batchSize int, lastPageI
 
 // GetCompetitorPage gets a page for a competitor
 func (r *pageRepo) GetCompetitorPage(ctx context.Context, competitorID, pageID uuid.UUID) (models.Page, error) {
+	runner := r.tm.GetRunner(ctx)
+
 	query := `
 		SELECT id, competitor_id, url, capture_profile, diff_profile, last_checked_at, status, created_at, updated_at
 		FROM pages
@@ -293,7 +279,7 @@ func (r *pageRepo) GetCompetitorPage(ctx context.Context, competitorID, pageID u
 	`
 
 	var page models.Page
-	err := r.db.QueryRowContext(ctx, query, pageID, competitorID).Scan(
+	err := runner.QueryRowContext(ctx, query, pageID, competitorID).Scan(
 		&page.ID,
 		&page.CompetitorID,
 		&page.URL,
@@ -317,18 +303,11 @@ func (r *pageRepo) GetCompetitorPage(ctx context.Context, competitorID, pageID u
 
 // UpdateCompetitorPage updates a page for a competitor
 func (r *pageRepo) UpdateCompetitorPage(ctx context.Context, competitorID, pageID uuid.UUID, page models.PageProps) (models.Page, error) {
-	tx, err := r.db.BeginTx(ctx, &sql.TxOptions{
-		Isolation: sql.LevelRepeatableRead,
-		ReadOnly:  false,
-	})
-	if err != nil {
-		return models.Page{}, fmt.Errorf("failed to begin transaction: %w", err)
-	}
-	defer tx.Rollback()
+	runner := r.tm.GetRunner(ctx)
 
 	// Verify the page belongs to the competitor
 	var exists bool
-	err = tx.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM pages WHERE id = $1 AND competitor_id = $2)", pageID, competitorID).Scan(&exists)
+	err := runner.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM pages WHERE id = $1 AND competitor_id = $2)", pageID, competitorID).Scan(&exists)
 	if err != nil {
 		return models.Page{}, fmt.Errorf("failed to verify page ownership: %w", err)
 	}
@@ -344,7 +323,7 @@ func (r *pageRepo) UpdateCompetitorPage(ctx context.Context, competitorID, pageI
 	`
 
 	var updatedPage models.Page
-	err = tx.QueryRowContext(ctx, query,
+	err = runner.QueryRowContext(ctx, query,
 		page.URL,
 		page.CaptureProfile,
 		page.DiffProfile,
@@ -367,10 +346,6 @@ func (r *pageRepo) UpdateCompetitorPage(ctx context.Context, competitorID, pageI
 	}
 	if err != nil {
 		return models.Page{}, fmt.Errorf("failed to update page: %w", err)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return models.Page{}, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
 	return updatedPage, nil

@@ -2,14 +2,16 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/gosimple/slug"
 	_ "github.com/lib/pq"
 	models "github.com/wizenheimer/iris/src/internal/models/core"
+	"github.com/wizenheimer/iris/src/internal/repository/transaction"
+	"github.com/wizenheimer/iris/src/pkg/logger"
 )
 
 var (
@@ -19,42 +21,26 @@ var (
 )
 
 type workspaceRepo struct {
-	db *sql.DB
+	tm     *transaction.TxManager
+	logger *logger.Logger
 }
 
-func NewWorkspaceRepository(db *sql.DB) *workspaceRepo {
+func NewWorkspaceRepository(tm *transaction.TxManager, logger *logger.Logger) *workspaceRepo {
 	return &workspaceRepo{
-		db: db,
+		tm:     tm,
+		logger: logger.WithFields(map[string]interface{}{"module": "workspace_repository"}),
 	}
 }
 
 // generateSlug creates a URL-friendly slug from workspace name
 func generateSlug(name string) string {
-	// Convert to lowercase and replace spaces with hyphens
-	slug := strings.ToLower(name)
-	slug = strings.ReplaceAll(slug, " ", "-")
-
-	// Remove any characters that aren't alphanumeric or hyphens
-	slug = strings.Map(func(r rune) rune {
-		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-' {
-			return r
-		}
-		return -1
-	}, slug)
-
-	return slug
+	name += uuid.NewString()
+	return slug.Make(name)
 }
 
 // CreateWorkspace creates a new workspace
 func (r *workspaceRepo) CreateWorkspace(ctx context.Context, workspaceName, billingEmail string) (models.Workspace, error) {
-	tx, err := r.db.BeginTx(ctx, &sql.TxOptions{
-		Isolation: sql.LevelSerializable,
-		ReadOnly:  false,
-	})
-	if err != nil {
-		return models.Workspace{}, fmt.Errorf("failed to begin transaction: %w", err)
-	}
-	defer tx.Rollback()
+	runner := r.tm.GetRunner(ctx)
 
 	// Generate initial slug
 	baseSlug := generateSlug(workspaceName)
@@ -63,7 +49,7 @@ func (r *workspaceRepo) CreateWorkspace(ctx context.Context, workspaceName, bill
 	// Handle potential slug collisions
 	for i := 1; ; i++ {
 		var exists bool
-		err := tx.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM workspaces WHERE slug = $1)", slug).Scan(&exists)
+		err := runner.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM workspaces WHERE slug = $1)", slug).Scan(&exists)
 		if err != nil {
 			return models.Workspace{}, fmt.Errorf("failed to check slug existence: %w", err)
 		}
@@ -81,7 +67,7 @@ func (r *workspaceRepo) CreateWorkspace(ctx context.Context, workspaceName, bill
 	`
 
 	var workspace models.Workspace
-	err = tx.QueryRowContext(ctx, query,
+	err := runner.QueryRowContext(ctx, query,
 		workspaceName,
 		slug,
 		billingEmail,
@@ -100,10 +86,6 @@ func (r *workspaceRepo) CreateWorkspace(ctx context.Context, workspaceName, bill
 		return models.Workspace{}, fmt.Errorf("failed to create workspace: %w", err)
 	}
 
-	if err := tx.Commit(); err != nil {
-		return models.Workspace{}, fmt.Errorf("failed to commit transaction: %w", err)
-	}
-
 	return workspace, nil
 }
 
@@ -112,6 +94,8 @@ func (r *workspaceRepo) GetWorkspaces(ctx context.Context, workspaceIDs []uuid.U
 	if len(workspaceIDs) == 0 {
 		return nil, []error{errors.New("no workspace IDs provided")}
 	}
+
+	runner := r.tm.GetRunner(ctx)
 
 	// Create placeholders for the IN clause
 	placeholders := make([]string, len(workspaceIDs))
@@ -127,7 +111,7 @@ func (r *workspaceRepo) GetWorkspaces(ctx context.Context, workspaceIDs []uuid.U
 		WHERE id IN (%s)
 	`, strings.Join(placeholders, ","))
 
-	rows, err := r.db.QueryContext(ctx, query, args...)
+	rows, err := runner.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, []error{fmt.Errorf("failed to get workspaces: %w", err)}
 	}
@@ -171,8 +155,10 @@ func (r *workspaceRepo) GetWorkspaces(ctx context.Context, workspaceIDs []uuid.U
 
 // WorkspaceExists checks if a workspace exists
 func (r *workspaceRepo) WorkspaceExists(ctx context.Context, workspaceID uuid.UUID) (bool, error) {
+	runner := r.tm.GetRunner(ctx)
+
 	var exists bool
-	err := r.db.QueryRowContext(ctx,
+	err := runner.QueryRowContext(ctx,
 		"SELECT EXISTS(SELECT 1 FROM workspaces WHERE id = $1)",
 		workspaceID,
 	).Scan(&exists)
@@ -186,7 +172,9 @@ func (r *workspaceRepo) WorkspaceExists(ctx context.Context, workspaceID uuid.UU
 
 // UpdateWorkspaceBillingEmail updates the billing email
 func (r *workspaceRepo) UpdateWorkspaceBillingEmail(ctx context.Context, workspaceID uuid.UUID, billingEmail string) error {
-	result, err := r.db.ExecContext(ctx, `
+	runner := r.tm.GetRunner(ctx)
+
+	result, err := runner.ExecContext(ctx, `
 		UPDATE workspaces
 		SET billing_email = $1, updated_at = CURRENT_TIMESTAMP
 		WHERE id = $2
@@ -210,14 +198,7 @@ func (r *workspaceRepo) UpdateWorkspaceBillingEmail(ctx context.Context, workspa
 
 // UpdateWorkspaceName updates the workspace name
 func (r *workspaceRepo) UpdateWorkspaceName(ctx context.Context, workspaceID uuid.UUID, workspaceName string) error {
-	tx, err := r.db.BeginTx(ctx, &sql.TxOptions{
-		Isolation: sql.LevelSerializable,
-		ReadOnly:  false,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
-	}
-	defer tx.Rollback()
+	runner := r.tm.GetRunner(ctx)
 
 	// Generate and verify unique slug
 	baseSlug := generateSlug(workspaceName)
@@ -225,7 +206,7 @@ func (r *workspaceRepo) UpdateWorkspaceName(ctx context.Context, workspaceID uui
 
 	for i := 1; ; i++ {
 		var exists bool
-		err := tx.QueryRowContext(ctx,
+		err := runner.QueryRowContext(ctx,
 			"SELECT EXISTS(SELECT 1 FROM workspaces WHERE slug = $1 AND id != $2)",
 			slug, workspaceID,
 		).Scan(&exists)
@@ -238,7 +219,7 @@ func (r *workspaceRepo) UpdateWorkspaceName(ctx context.Context, workspaceID uui
 		slug = fmt.Sprintf("%s-%d", baseSlug, i)
 	}
 
-	result, err := tx.ExecContext(ctx, `
+	result, err := runner.ExecContext(ctx, `
 		UPDATE workspaces
 		SET name = $1, slug = $2, updated_at = CURRENT_TIMESTAMP
 		WHERE id = $3
@@ -257,16 +238,14 @@ func (r *workspaceRepo) UpdateWorkspaceName(ctx context.Context, workspaceID uui
 		return ErrWorkspaceNotFound
 	}
 
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("failed to commit transaction: %w", err)
-	}
-
 	return nil
 }
 
 // UpdateWorkspaceStatus updates the workspace status
 func (r *workspaceRepo) UpdateWorkspaceStatus(ctx context.Context, workspaceID uuid.UUID, status models.WorkspaceStatus) error {
-	result, err := r.db.ExecContext(ctx, `
+	runner := r.tm.GetRunner(ctx)
+
+	result, err := runner.ExecContext(ctx, `
 		UPDATE workspaces
 		SET status = $1, updated_at = CURRENT_TIMESTAMP
 		WHERE id = $2
@@ -290,14 +269,7 @@ func (r *workspaceRepo) UpdateWorkspaceStatus(ctx context.Context, workspaceID u
 
 // UpdateWorkspace updates the workspace details
 func (r *workspaceRepo) UpdateWorkspace(ctx context.Context, workspaceID uuid.UUID, workspaceReq models.WorkspaceProps) error {
-	tx, err := r.db.BeginTx(ctx, &sql.TxOptions{
-		Isolation: sql.LevelSerializable,
-		ReadOnly:  false,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
-	}
-	defer tx.Rollback()
+	runner := r.tm.GetRunner(ctx)
 
 	// Generate and verify unique slug
 	baseSlug := generateSlug(workspaceReq.Name)
@@ -305,7 +277,7 @@ func (r *workspaceRepo) UpdateWorkspace(ctx context.Context, workspaceID uuid.UU
 
 	for i := 1; ; i++ {
 		var exists bool
-		err := tx.QueryRowContext(ctx,
+		err := runner.QueryRowContext(ctx,
 			"SELECT EXISTS(SELECT 1 FROM workspaces WHERE slug = $1 AND id != $2)",
 			slug, workspaceID,
 		).Scan(&exists)
@@ -318,7 +290,7 @@ func (r *workspaceRepo) UpdateWorkspace(ctx context.Context, workspaceID uuid.UU
 		slug = fmt.Sprintf("%s-%d", baseSlug, i)
 	}
 
-	result, err := tx.ExecContext(ctx, `
+	result, err := runner.ExecContext(ctx, `
 		UPDATE workspaces
 		SET name = $1,
 			slug = $2,
@@ -338,10 +310,6 @@ func (r *workspaceRepo) UpdateWorkspace(ctx context.Context, workspaceID uuid.UU
 
 	if rowsAffected == 0 {
 		return ErrWorkspaceNotFound
-	}
-
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
 	return nil
