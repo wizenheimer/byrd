@@ -12,7 +12,7 @@ import (
 
 type CompetitorRepository interface {
 	// CreateCompetitors creates competitors in a workspace
-	CreateCompetitors(ctx context.Context, workspaceID uuid.UUID, competitorNames []string) ([]models.Competitor, error)
+	CreateCompetitors(ctx context.Context, workspaceID uuid.UUID, competitorNames []string) ([]models.Competitor, []error)
 
 	// GetCompetitor gets a competitor by its ID
 	GetCompetitor(ctx context.Context, competitorID uuid.UUID) (models.Competitor, error)
