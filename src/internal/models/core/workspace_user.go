@@ -26,9 +26,12 @@ type WorkspaceUser struct {
 	// Embeds the User struct
 	User
 
+	// WorkspaceID is the ID of the workspace
+	WorkspaceID string `json:"workspace_id"`
+
 	// Role is the user's role in the workspace
 	Role UserWorkspaceRole `json:"role"`
 
 	// Status is the user's status in the workspace
-	Status UserWorkspaceStatus `json:"status"`
+	WorkspaceUserStatus UserWorkspaceStatus `json:"status"`
 }
