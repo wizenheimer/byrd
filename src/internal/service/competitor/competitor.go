@@ -62,7 +62,7 @@ func (cs *competitorService) PageExists(ctx context.Context, competitorID, pageI
 }
 
 func (cs *competitorService) ListWorkspaceCompetitors(ctx context.Context, workspaceID uuid.UUID, param api.PaginationParams) ([]api.GetWorkspaceCompetitorResponse, error) {
-	competitors, err := cs.competitorRepository.ListWorkspaceCompetitors(ctx, workspaceID.String(), param.GetLimit(), param.GetOffset())
+	competitors, err := cs.competitorRepository.ListWorkspaceCompetitors(ctx, workspaceID, param.GetLimit(), param.GetOffset())
 	if err != nil {
 		return nil, err
 	}

@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-	api "github.com/wizenheimer/iris/src/internal/models/api"
 	models "github.com/wizenheimer/iris/src/internal/models/core"
 )
 
@@ -13,7 +12,7 @@ import (
 
 type PageRepository interface {
 	// AddPagesToCompetitor adds pages to a competitor
-	AddPagesToCompetitor(ctx context.Context, competitorID uuid.UUID, pages []api.CreatePageRequest) ([]models.Page, []error)
+	AddPagesToCompetitor(ctx context.Context, competitorID uuid.UUID, pages []models.PageProps) ([]models.Page, []error)
 
 	// RemovePagesFromCompetitor removes pages from a competitor
 	// When pageIDs are nil, all pages are removed from the competitor
@@ -34,5 +33,5 @@ type PageRepository interface {
 	GetCompetitorPage(ctx context.Context, competitorID, pageID uuid.UUID) (models.Page, error)
 
 	// UpdateCompetitorPage updates a page for a competitor
-	UpdateCompetitorPage(ctx context.Context, competitorID, pageID uuid.UUID, page api.UpdatePageRequest) (models.Page, error)
+	UpdateCompetitorPage(ctx context.Context, competitorID, pageID uuid.UUID, page models.PageProps) (models.Page, error)
 }

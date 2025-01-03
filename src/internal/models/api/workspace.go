@@ -22,13 +22,7 @@ type WorkspaceCreationResponse struct {
 }
 
 // WorkspaceUpdateRequest is the request to update a workspace
-type WorkspaceUpdateRequest struct {
-	// Name is the name of the workspace
-	Name string `json:"name"`
-
-	// BillingEmail is the email address to which billing information is sent
-	BillingEmail string `json:"billing_email"`
-}
+type WorkspaceUpdateRequest = models.WorkspaceProps
 
 // WorkspaceMembersListingParams is the parameters for listing workspace members
 type WorkspaceMembersListingParams struct {

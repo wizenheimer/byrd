@@ -29,3 +29,12 @@ type Workspace struct {
 	// UpdatedAt is the timestamp when the workspace was last updated
 	UpdatedAt time.Time `json:"updated_at"`
 }
+
+// WorkspaceProps records essential properties of a workspace
+type WorkspaceProps struct {
+	// Name is the name of the workspace
+	Name string `json:"name"`
+
+	// BillingEmail is the email address to which billing information is sent
+	BillingEmail string `json:"billing_email"`
+}

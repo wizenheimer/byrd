@@ -13,7 +13,7 @@ import (
 type PageHistoryRepository interface {
 	// CreatePageHistory creates a new page history
 	// The page history is created with the provided page ID and page history
-	CreatePageHistory(ctx context.Context, pageID string, pageHistory models.PageHistory) (models.PageHistory, error)
+	CreatePageHistory(ctx context.Context, pageID uuid.UUID, pageHistory models.PageHistory) (models.PageHistory, error)
 
 	// PageHistoryExists checks if a page history exists
 	// This is optimized for quick lookups over the page history table

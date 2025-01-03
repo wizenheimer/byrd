@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-	api "github.com/wizenheimer/iris/src/internal/models/api"
 	models "github.com/wizenheimer/iris/src/internal/models/core"
 )
 
@@ -38,5 +37,5 @@ type WorkspaceRepository interface {
 
 	// UpdateWorkspace is used to update the workspace
 	// This is used to update the workspace details
-	UpdateWorkspace(ctx context.Context, workspaceReq api.WorkspaceUpdateRequest) error
+	UpdateWorkspace(ctx context.Context, workspaceReq models.WorkspaceProps) error
 }

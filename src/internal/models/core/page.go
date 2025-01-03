@@ -60,3 +60,17 @@ type ActivePageBatch struct {
 	// LastSeen is the last seen page
 	LastSeen *uuid.UUID `json:"last_seen,omitempty"`
 }
+
+// PageProps is struct for essential page properties
+type PageProps struct {
+	// URL is the page's URL
+	URL string `json:"url" validate:"required,url"`
+
+	// CaptureProfile is the profile used to capture the page
+	// This is optional and defaults to an default capture profile
+	CaptureProfile map[string]interface{} `json:"capture_profile"`
+
+	// DiffProfile is the profile used to diff the page
+	// This is optional and defaults to an default diff profile
+	DiffProfile map[string]interface{} `json:"diff_profile"`
+}

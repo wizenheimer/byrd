@@ -38,23 +38,25 @@ func NewHandlerContainer(
 
 // SetupRoutes sets up the routes for the application
 // This includes public and private routes
-func SetupRoutes(app *fiber.App, handlers *HandlerContainer) {
-	setupPublicRoutes(app, handlers)
+func SetupRoutes(app *fiber.App, handlers *HandlerContainer, logger *logger.Logger) {
+	authMiddleware := middleware.NewAuthenticatedMiddleware(logger)
+
+	setupPublicRoutes(app, handlers, authMiddleware)
 
 	if config.IsDevelopment() {
-		setupPrivateRoutes(app, handlers)
+		setupPrivateRoutes(app, handlers, authMiddleware)
 	}
 
 }
 
 // setupPublicRoutes sets up the public routes for the application
-func setupPublicRoutes(app *fiber.App, h *HandlerContainer) {
+func setupPublicRoutes(app *fiber.App, h *HandlerContainer, authMiddleware *middleware.AuthenticatedMiddleware) {
 	// Public routes for production and development
-	public := app.Group("/api/v1")
+	public := app.Group("/api/public/v1")
 
 	// Workspace routes
 	wh := h.WorkspaceHandler
-	workspace := public.Group("/workspace", middleware.ClerkAuthenticationMiddleware)
+	workspace := public.Group("/workspace", authMiddleware.AuthenticationMiddleware)
 
 	// <------- Workspace Management Routes ------->
 	// Create a new workspace
@@ -98,37 +100,55 @@ func setupPublicRoutes(app *fiber.App, h *HandlerContainer) {
 	// Update page in a competitor
 	workspace.Put("/:id/competitors/:competitorId/pages/:pageId", wh.UpdatePageInCompetitor)
 
-	// <------- Workflow Management Routes ------->
-	// Workflow routes
-	workflow := public.Group("/workflow")
-	workflow.Post("/", h.WorkflowHandler.StartWorkflow)
-	workflow.Delete("/", h.WorkflowHandler.StopWorkflow)
-	workflow.Get("/", h.WorkflowHandler.GetWorkflow)
-	workflow.Get("/list", h.WorkflowHandler.ListWorkflows)
-
 	// <------- User Management Routes ------->
 	// User routes
 	uh := h.UserHandler
-	user := public.Group("/user", middleware.ClerkAuthenticationMiddleware)
+	user := public.Group("/user", authMiddleware.AuthenticationMiddleware)
 	// Delete Account
 	user.Delete("/", uh.DeleteAccount)
 }
 
 // setupPrivateRoutes sets up the private routes for the application
-func setupPrivateRoutes(app *fiber.App, handlers *HandlerContainer) {
+func setupPrivateRoutes(app *fiber.App, h *HandlerContainer, authMiddleware *middleware.AuthenticatedMiddleware) {
 	// Private routes for development
-	private := app.Group("/dev/v1")
+	private := app.Group("/api/private/v1")
 
+	// <------- Auth validation routes ------->
+	// User routes
+	uh := h.UserHandler
+	user := private.Group("/auth", authMiddleware.AuthenticationMiddleware)
+	// Validate token
+	user.Get("/validate", uh.ValidateToken)
+
+	// <------- Workflow Management Routes ------->
+	// Workflow routes
+	workflow := private.Group("/workflow")
+	// Start a new workflow
+	workflow.Post("/", h.WorkflowHandler.StartWorkflow)
+	// Stop a workflow
+	workflow.Delete("/", h.WorkflowHandler.StopWorkflow)
+	// List workflows
+	workflow.Get("/", h.WorkflowHandler.ListWorkflows)
+	// Get a workflow
+	workflow.Get("/:id", h.WorkflowHandler.GetWorkflow)
+
+	// <------- Screenshot Management Routes ------->
 	// Screenshot routes
 	screenshot := private.Group("/screenshot")
-	screenshot.Post("/", handlers.ScreenshotHandler.CreateScreenshot)
-	screenshot.Get("/", handlers.ScreenshotHandler.ListScreenshots)
-	screenshot.Get("/image", handlers.ScreenshotHandler.GetScreenshotImage)
-	screenshot.Get("/content", handlers.ScreenshotHandler.GetScreenshotContent)
+	// Create a new screenshot
+	screenshot.Post("/", h.ScreenshotHandler.CreateScreenshot)
+	// List screenshots
+	screenshot.Get("/", h.ScreenshotHandler.ListScreenshots)
+	// Get existing screenshot image
+	screenshot.Get("/image", h.ScreenshotHandler.GetScreenshotImage)
+	// Get existing screenshot content
+	screenshot.Get("/content", h.ScreenshotHandler.GetScreenshotContent)
 
 	// AI routes
 	ai := private.Group("/ai")
-	ai.Post("/content", handlers.AIHandler.AnalyzeContentDifferences)
-	ai.Post("/visual", handlers.AIHandler.AnalyzeVisualDifferences)
+	// Analyze content differences
+	ai.Post("/content", h.AIHandler.AnalyzeContentDifferences)
+	// Analyze visual differences
+	ai.Post("/visual", h.AIHandler.AnalyzeVisualDifferences)
 
 }

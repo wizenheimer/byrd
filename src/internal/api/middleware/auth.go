@@ -1,23 +1,26 @@
 package middleware
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/clerk/clerk-sdk-go/v2/jwt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/wizenheimer/iris/src/internal/api/auth"
-	interfaces "github.com/wizenheimer/iris/src/internal/interfaces/service"
+	svc "github.com/wizenheimer/iris/src/internal/interfaces/service"
+	"github.com/wizenheimer/iris/src/pkg/logger"
+	"go.uber.org/zap"
 )
 
 type AuthorizationMiddleware struct {
-	workspaceService interfaces.WorkspaceService
+	workspaceService svc.WorkspaceService
+	logger           *logger.Logger
 }
 
-func NewWorkspaceRoleMiddleware(ws interfaces.WorkspaceService) *AuthorizationMiddleware {
+func NewAuthorizationMiddleware(ws svc.WorkspaceService, logger *logger.Logger) *AuthorizationMiddleware {
 	return &AuthorizationMiddleware{
 		workspaceService: ws,
+		logger:           logger,
 	}
 }
 
@@ -85,12 +88,23 @@ func (m *AuthorizationMiddleware) RequireWorkspaceMembership(c *fiber.Ctx) error
 	return c.Next()
 }
 
+type AuthenticatedMiddleware struct {
+	logger *logger.Logger
+}
+
+func NewAuthenticatedMiddleware(logger *logger.Logger) *AuthenticatedMiddleware {
+	return &AuthenticatedMiddleware{
+		logger: logger,
+	}
+}
+
 // ClerkAuthenticationMiddleware to verify Clerk JWT Token
-func ClerkAuthenticationMiddleware(c *fiber.Ctx) error {
+func (m *AuthenticatedMiddleware) AuthenticationMiddleware(c *fiber.Ctx) error {
 	// Get token from Authorization header
 	authHeader := c.Get("Authorization")
 	if authHeader == "" {
-		return c.JSON(fiber.Map{
+		m.logger.Debug("No authorization header", zap.Any("status", fiber.StatusUnauthorized))
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"success": false,
 			"message": "No authorization header"})
 	}
@@ -98,7 +112,8 @@ func ClerkAuthenticationMiddleware(c *fiber.Ctx) error {
 	// Parse Bearer token
 	tokenParts := strings.Split(authHeader, " ")
 	if len(tokenParts) != 2 || tokenParts[0] != "Bearer" {
-		return c.JSON(fiber.Map{
+		m.logger.Debug("Invalid authorization header format", zap.Any("status", fiber.StatusUnauthorized), zap.Any("tokenParts", tokenParts), zap.Any("len", len(tokenParts)))
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"success": false,
 			"message": "Invalid authorization header format"})
 	}
@@ -108,9 +123,10 @@ func ClerkAuthenticationMiddleware(c *fiber.Ctx) error {
 		Token: tokenParts[1],
 	})
 	if err != nil {
-		return c.JSON(fiber.Map{
+		m.logger.Debug("Invalid token", zap.Any("status", fiber.StatusUnauthorized), zap.Any("error", err.Error()))
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"success": false,
-			"message": fmt.Sprintf("Invalid token: %v", err),
+			"message": err.Error(),
 		})
 	}
 
