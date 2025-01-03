@@ -5,6 +5,7 @@ import (
 	"os"
 	"runtime/debug"
 
+	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/gofiber/fiber/v2"
 	"github.com/wizenheimer/iris/src/internal/api/middleware"
 	"github.com/wizenheimer/iris/src/internal/api/routes"
@@ -20,6 +21,9 @@ func main() {
 		log.Fatal("Failed to load configuration", zap.Error(err))
 		return
 	}
+
+	// Initialize Clerk with the secret key
+	clerk.SetKey(cfg.Services.ClerkAPIKey)
 
 	// Initialize logger
 	loggerConfig := logger.PrepareLoggerConfig(cfg)
@@ -70,7 +74,7 @@ func main() {
 	middleware.SetupMiddleware(app)
 
 	// Setup routes
-	routes.SetupRoutes(app, handlers)
+	routes.SetupRoutes(app, handlers, logger)
 
 	// Start server in a goroutine
 	serverError := make(chan error, 1)

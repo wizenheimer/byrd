@@ -3,7 +3,8 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"log"
+
+	_ "github.com/lib/pq"
 
 	"github.com/wizenheimer/iris/src/internal/api/routes"
 	"github.com/wizenheimer/iris/src/internal/client"
@@ -142,7 +143,7 @@ func setupAIService(cfg *config.Config, logger *logger.Logger) (svc.AIService, e
 
 	aiService, err := ai.NewOpenAIService(cfg.Services.OpenAIKey, logger)
 	if err != nil {
-		log.Fatalf("Failed to initialize AI service: %v", err)
+		logger.Fatal("Failed to initialize AI service: %v", zap.Any("error", err))
 	}
 
 	return aiService, nil
