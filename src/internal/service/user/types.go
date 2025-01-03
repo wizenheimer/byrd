@@ -3,6 +3,7 @@ package user
 import (
 	repo "github.com/wizenheimer/iris/src/internal/interfaces/repository"
 	svc "github.com/wizenheimer/iris/src/internal/interfaces/service"
+	"github.com/wizenheimer/iris/src/pkg/logger"
 )
 
 // compile time check if the interface is implemented
@@ -12,4 +13,5 @@ var _ svc.UserService = (*userService)(nil)
 // TODO: rethink retrieval methods
 type userService struct {
 	userRepository repo.UserRepository
+	logger         *logger.Logger
 }

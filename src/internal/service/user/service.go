@@ -6,10 +6,20 @@ import (
 
 	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/google/uuid"
+	repo "github.com/wizenheimer/iris/src/internal/interfaces/repository"
+	svc "github.com/wizenheimer/iris/src/internal/interfaces/service"
 	api "github.com/wizenheimer/iris/src/internal/models/api"
 	models "github.com/wizenheimer/iris/src/internal/models/core"
+	"github.com/wizenheimer/iris/src/pkg/logger"
 	"github.com/wizenheimer/iris/src/pkg/utils"
 )
+
+func NewUserService(userRepository repo.UserRepository, logger *logger.Logger) svc.UserService {
+	return &userService{
+		userRepository: userRepository,
+		logger:         logger,
+	}
+}
 
 func (us *userService) CreateWorkspaceOwner(ctx context.Context, clerk *clerk.User, workspaceID uuid.UUID) (*models.User, error) {
 	if clerk.PrimaryEmailAddressID == nil {

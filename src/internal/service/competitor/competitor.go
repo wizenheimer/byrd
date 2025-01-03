@@ -4,9 +4,20 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	repo "github.com/wizenheimer/iris/src/internal/interfaces/repository"
+	svc "github.com/wizenheimer/iris/src/internal/interfaces/service"
 	api "github.com/wizenheimer/iris/src/internal/models/api"
 	models "github.com/wizenheimer/iris/src/internal/models/core"
+	"github.com/wizenheimer/iris/src/pkg/logger"
 )
+
+func NewCompetitorService(competitorRepository repo.CompetitorRepository, pageService svc.PageService, logger *logger.Logger) svc.CompetitorService {
+	return &competitorService{
+		competitorRepository: competitorRepository,
+		pageService:          pageService,
+		logger:               logger,
+	}
+}
 
 func (cs *competitorService) CreateCompetitor(ctx context.Context, workspaceID uuid.UUID, competitorReq api.CreateCompetitorRequest) (api.CreateWorkspaceCompetitorResponse, []error) {
 	var competitorNames []string

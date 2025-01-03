@@ -7,9 +7,21 @@ import (
 	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/google/uuid"
 
+	repo "github.com/wizenheimer/iris/src/internal/interfaces/repository"
+	svc "github.com/wizenheimer/iris/src/internal/interfaces/service"
 	api "github.com/wizenheimer/iris/src/internal/models/api"
 	models "github.com/wizenheimer/iris/src/internal/models/core"
+	"github.com/wizenheimer/iris/src/pkg/logger"
 )
+
+func NewWorkspaceService(workspaceRepo repo.WorkspaceRepository, competitorService svc.CompetitorService, userService svc.UserService, logger *logger.Logger) svc.WorkspaceService {
+	return &workspaceService{
+		workspaceRepo:     workspaceRepo,
+		competitorService: competitorService,
+		userService:       userService,
+		logger:            logger,
+	}
+}
 
 func (ws *workspaceService) CreateWorkspace(ctx context.Context, workspaceOwner *clerk.User, workspaceReq api.WorkspaceCreationRequest) (*models.Workspace, error) {
 
@@ -125,7 +137,7 @@ func (ws *workspaceService) UpdateWorkspace(ctx context.Context, workspaceID uui
 		BillingEmail: req.BillingEmail,
 	}
 
-	return ws.workspaceRepo.UpdateWorkspace(ctx, workspaceReq)
+	return ws.workspaceRepo.UpdateWorkspace(ctx, workspaceID, workspaceReq)
 }
 
 func (ws *workspaceService) DeleteWorkspace(ctx context.Context, workspaceID uuid.UUID) (models.WorkspaceStatus, error) {

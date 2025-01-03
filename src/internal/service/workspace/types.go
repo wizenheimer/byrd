@@ -3,12 +3,14 @@ package workspace
 import (
 	repo "github.com/wizenheimer/iris/src/internal/interfaces/repository"
 	svc "github.com/wizenheimer/iris/src/internal/interfaces/service"
+	"github.com/wizenheimer/iris/src/pkg/logger"
 )
 
 type workspaceService struct {
 	workspaceRepo     repo.WorkspaceRepository
 	competitorService svc.CompetitorService
 	userService       svc.UserService
+	logger            *logger.Logger
 }
 
 // compile time check if the interface is implemented

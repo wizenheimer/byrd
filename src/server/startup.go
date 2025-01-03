@@ -12,14 +12,22 @@ import (
 	clf "github.com/wizenheimer/iris/src/internal/interfaces/client"
 	repo "github.com/wizenheimer/iris/src/internal/interfaces/repository"
 	svc "github.com/wizenheimer/iris/src/internal/interfaces/service"
+	"github.com/wizenheimer/iris/src/internal/repository/db"
 	"github.com/wizenheimer/iris/src/internal/repository/storage"
+	"github.com/wizenheimer/iris/src/internal/repository/transaction"
 	"github.com/wizenheimer/iris/src/internal/service/ai"
+	"github.com/wizenheimer/iris/src/internal/service/competitor"
+	"github.com/wizenheimer/iris/src/internal/service/diff"
+	"github.com/wizenheimer/iris/src/internal/service/history"
+	"github.com/wizenheimer/iris/src/internal/service/page"
 	"github.com/wizenheimer/iris/src/internal/service/screenshot"
+	"github.com/wizenheimer/iris/src/internal/service/user"
+	"github.com/wizenheimer/iris/src/internal/service/workspace"
 	"github.com/wizenheimer/iris/src/pkg/logger"
 	"go.uber.org/zap"
 )
 
-func initializer(cfg *config.Config, _ *sql.DB, logger *logger.Logger) (*routes.HandlerContainer, error) {
+func initializer(cfg *config.Config, sqldb *sql.DB, logger *logger.Logger) (*routes.HandlerContainer, error) {
 	// Initialize HTTP client for services
 	screenshotClientOpts := []client.ClientOption{
 		client.WithLogger(logger),
@@ -47,10 +55,33 @@ func initializer(cfg *config.Config, _ *sql.DB, logger *logger.Logger) (*routes.
 		return nil, err
 	}
 
+	diffService, err := diff.NewDiffService(aiService, logger)
+	if err != nil {
+		return nil, err
+	}
+
+	// Intialize transaction manager
+	tm := transaction.NewTxManager(sqldb)
+
+	// Intialize repository
+	competitorRepo := db.NewCompetitorRepository(tm, logger)
+	workspaceRepo := db.NewWorkspaceRepository(tm, logger)
+	userRepo := db.NewUserRepository(tm, logger)
+	pageRepo := db.NewPageRepository(tm, logger)
+	historyRepo := db.NewPageHistoryRepository(tm, logger)
+
+	// Initialize services
+	historyService := history.NewPageHistoryService(historyRepo, screenshotService, diffService, logger)
+	pageService := page.NewPageService(pageRepo, historyService, logger)
+	competitorService := competitor.NewCompetitorService(competitorRepo, pageService, logger)
+	userService := user.NewUserService(userRepo, logger)
+	workspaceService := workspace.NewWorkspaceService(workspaceRepo, competitorService, userService, logger)
+
 	// Initialize handlers
 	handlers := routes.NewHandlerContainer(
 		screenshotService,
 		aiService,
+		workspaceService,
 		logger,
 	)
 

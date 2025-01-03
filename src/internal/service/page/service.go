@@ -4,9 +4,20 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	repo "github.com/wizenheimer/iris/src/internal/interfaces/repository"
+	svc "github.com/wizenheimer/iris/src/internal/interfaces/service"
 	api "github.com/wizenheimer/iris/src/internal/models/api"
 	models "github.com/wizenheimer/iris/src/internal/models/core"
+	"github.com/wizenheimer/iris/src/pkg/logger"
 )
+
+func NewPageService(pageRepo repo.PageRepository, pageHistoryService svc.PageHistoryService, logger *logger.Logger) svc.PageService {
+	return &pageService{
+		pageRepo:           pageRepo,
+		pageHistoryService: pageHistoryService,
+		logger:             logger,
+	}
+}
 
 func (ps *pageService) CreatePage(ctx context.Context, competitorID uuid.UUID, pageReq []api.CreatePageRequest) ([]models.Page, []error) {
 	return ps.pageRepo.AddPagesToCompetitor(ctx, competitorID, pageReq)

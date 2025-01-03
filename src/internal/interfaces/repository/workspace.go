@@ -37,5 +37,5 @@ type WorkspaceRepository interface {
 
 	// UpdateWorkspace is used to update the workspace
 	// This is used to update the workspace details
-	UpdateWorkspace(ctx context.Context, workspaceReq models.WorkspaceProps) error
+	UpdateWorkspace(ctx context.Context, workspaceID uuid.UUID, workspaceReq models.WorkspaceProps) error
 }
