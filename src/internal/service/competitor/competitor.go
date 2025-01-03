@@ -18,7 +18,7 @@ func (cs *competitorService) CreateCompetitor(ctx context.Context, workspaceID u
 
 	createdCompetitors, err := cs.competitorRepository.CreateCompetitors(ctx, workspaceID, competitorNames)
 	if err != nil {
-		return api.CreateWorkspaceCompetitorResponse{}, []error{err}
+		return api.CreateWorkspaceCompetitorResponse{}, err
 	}
 
 	return api.CreateWorkspaceCompetitorResponse{
