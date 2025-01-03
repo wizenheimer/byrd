@@ -64,41 +64,41 @@ func setupPublicRoutes(app *fiber.App, h *HandlerContainer, authMiddleware *midd
 	// List workspaces for a user
 	workspace.Get("/", wh.ListWorkspaces)
 	// Get a workspace by ID
-	workspace.Get("/:id", wh.GetWorkspace)
+	workspace.Get("/:workspaceID", wh.GetWorkspace)
 	// Update a workspace by ID
-	workspace.Put("/:id", wh.UpdateWorkspace)
+	workspace.Put("/:workspaceID", wh.UpdateWorkspace)
 	// Delete a workspace by ID
-	workspace.Delete("/:id", wh.DeleteWorkspace)
+	workspace.Delete("/:workspaceID", wh.DeleteWorkspace)
 
 	// <------- Workspace User Management Routes ------->
 	// Exit a workspace by ID
-	workspace.Post("/:id/exit", wh.ExitWorkspace)
+	workspace.Post("/:workspaceID/exit", wh.ExitWorkspace)
 	// Join a workspace by ID
-	workspace.Post("/:id/join", wh.JoinWorkspace)
+	workspace.Post("/:workspaceID/join", wh.JoinWorkspace)
 	// List users for a workspace
-	workspace.Get("/:id/users", wh.ListWorkspaceUsers)
+	workspace.Get("/:workspaceID/users", wh.ListWorkspaceUsers)
 	// Add user to a workspace
-	workspace.Post("/:id/users", wh.AddUserToWorkspace)
+	workspace.Post("/:workspaceID/users", wh.AddUserToWorkspace)
 	// Remove user from a workspace
-	workspace.Delete("/:id/users/:userId", wh.RemoveUserFromWorkspace)
+	workspace.Delete("/:workspaceID/users/:userId", wh.RemoveUserFromWorkspace)
 	// Update user role in a workspace
-	workspace.Put("/:id/users/:userId", wh.UpdateUserRoleInWorkspace)
+	workspace.Put("/:workspaceID/users/:userId", wh.UpdateUserRoleInWorkspace)
 
 	// <------- Workspace Competitor Management Routes ------->
 	// Create competitor for a workspace
-	workspace.Post("/:id/competitors", wh.CreateCompetitorForWorkspace)
+	workspace.Post("/:workspaceID/competitors", wh.CreateCompetitorForWorkspace)
 	// Add page to a competitor
-	workspace.Post("/:id/competitors/:competitorId/pages", wh.AddPageToCompetitor)
+	workspace.Post("/:workspaceID/competitors/:competitorID/pages", wh.AddPageToCompetitor)
 	// List workspace competitors
-	workspace.Get("/:id/competitors", wh.ListWorkspaceCompetitors)
+	workspace.Get("/:workspaceID/competitors", wh.ListWorkspaceCompetitors)
 	// List page history
-	workspace.Get("/:id/competitors/:competitorId/pages/:pageId/history", wh.ListPageHistory)
+	workspace.Get("/:workspaceID/competitors/:competitorID/pages/:pageID/history", wh.ListPageHistory)
 	// Remove page from a competitor
-	workspace.Delete("/:id/competitors/:competitorId/pages/:pageId", wh.RemovePageFromCompetitor)
+	workspace.Delete("/:workspaceID/competitors/:competitorID/pages/:pageID", wh.RemovePageFromCompetitor)
 	// Remove competitor from a workspace
-	workspace.Delete("/:id/competitors/:competitorId", wh.RemoveCompetitorFromWorkspace)
+	workspace.Delete("/:workspaceID/competitors/:competitorID", wh.RemoveCompetitorFromWorkspace)
 	// Update page in a competitor
-	workspace.Put("/:id/competitors/:competitorId/pages/:pageId", wh.UpdatePageInCompetitor)
+	workspace.Put("/:workspaceID/competitors/:competitorID/pages/:pageID", wh.UpdatePageInCompetitor)
 
 	// <------- User Management Routes ------->
 	// User routes
