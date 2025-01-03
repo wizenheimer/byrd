@@ -1,88 +1,270 @@
--- Enable UUID extension
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
--- Enum for user roles in workspaces
-CREATE TYPE workspace_role AS ENUM ('owner', 'admin', 'member');
--- Enum for billing plans
-CREATE TYPE billing_plan AS ENUM ('trial', 'starter', 'scaleup', 'enterprise');
--- Users table
-CREATE TABLE users (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    email VARCHAR(255) UNIQUE NOT NULL,
-    name VARCHAR(100) NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
--- Workspaces table
-CREATE TABLE workspaces (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name VARCHAR(100) NOT NULL,
-    billing_plan billing_plan NOT NULL DEFAULT 'trial',
-    max_competitors INT,
-    max_urls_per_competitor INT,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
--- Junction table for users and workspaces with roles
-CREATE TABLE workspace_users (
-    workspace_id UUID REFERENCES workspaces(id) ON DELETE CASCADE,
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    role workspace_role NOT NULL DEFAULT 'member',
-    joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    PRIMARY KEY (workspace_id, user_id)
-);
--- Competitors table
-CREATE TABLE competitors (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    workspace_id UUID REFERENCES workspaces(id) ON DELETE CASCADE,
-    name VARCHAR(100) NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
--- URLs table
-CREATE TABLE urls (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    url TEXT NOT NULL UNIQUE,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
--- Junction table for competitors and URLs
-CREATE TABLE competitor_urls (
-    competitor_id UUID REFERENCES competitors(id) ON DELETE CASCADE,
-    url_id UUID REFERENCES urls(id) ON DELETE CASCADE,
-    is_active BOOLEAN NOT NULL DEFAULT true,
-    -- Single status field to control monitoring
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    PRIMARY KEY (competitor_id, url_id)
-);
--- Diffs table to store changes
-CREATE TABLE diffs (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    url_id UUID REFERENCES urls(id) ON DELETE CASCADE,
-    detected_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    changes JSONB NOT NULL,
-    diff_type VARCHAR(50),
-    -- e.g., 'content', 'visual'
-    change_percentage DECIMAL(5, 2),
-    -- Stores percentage of change (e.g., 25.50 for 25.5%)
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
--- Add indexes for common queries
-CREATE INDEX idx_workspace_users_user_id ON workspace_users(user_id);
-CREATE INDEX idx_competitors_workspace_id ON competitors(workspace_id);
-CREATE INDEX idx_competitor_urls_url_id ON competitor_urls(url_id);
-CREATE INDEX idx_diffs_url_id ON diffs(url_id);
-CREATE INDEX idx_diffs_detected_at ON diffs(detected_at);
--- Add triggers for updated_at timestamps
-CREATE OR REPLACE FUNCTION update_updated_at_column() RETURNS TRIGGER AS $$ BEGIN NEW.updated_at = NOW();
-RETURN NEW;
-END;
-$$ language 'plpgsql';
-CREATE TRIGGER update_users_updated_at BEFORE
-UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_workspaces_updated_at BEFORE
-UPDATE ON workspaces FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_competitors_updated_at BEFORE
-UPDATE ON competitors FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_urls_updated_at BEFORE
-UPDATE ON urls FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+-- Insert workspaces
+INSERT INTO workspaces (name, slug, billing_email, status)
+VALUES (
+        'Acme Corporation',
+        'acme-corp',
+        'billing@acme.com',
+        'active'
+    ),
+    (
+        'TechStart Inc',
+        'techstart',
+        'finance@techstart.io',
+        'active'
+    ),
+    (
+        'Global Systems',
+        'global-sys',
+        'accounts@globalsys.com',
+        'active'
+    ),
+    (
+        'Dev Labs',
+        'dev-labs',
+        'billing@devlabs.tech',
+        'inactive'
+    );
+-- Insert users
+INSERT INTO users (clerk_id, email, name, status)
+VALUES (
+        'clk_123',
+        'john.doe@example.com',
+        'John Doe',
+        'active'
+    ),
+    (
+        'clk_124',
+        'jane.smith@example.com',
+        'Jane Smith',
+        'active'
+    ),
+    (
+        'clk_125',
+        'bob.wilson@example.com',
+        'Bob Wilson',
+        'active'
+    ),
+    (
+        'clk_126',
+        'alice.cooper@example.com',
+        'Alice Cooper',
+        'pending'
+    ),
+    (
+        'clk_127',
+        'charlie.brown@example.com',
+        'Charlie Brown',
+        'active'
+    ),
+    (
+        NULL,
+        'pending.user@example.com',
+        'Pending User',
+        'pending'
+    ),
+    (
+        NULL,
+        'invited.user@example.com',
+        'Invited User',
+        'pending'
+    );
+-- Insert workspace_users (using subqueries to get IDs)
+INSERT INTO workspace_users (workspace_id, user_id, role, status)
+SELECT w.id,
+    u.id,
+    role_status.role::user_workspace_role,
+    role_status.status::user_workspace_status
+FROM (
+        SELECT 'Acme Corporation' as workspace_name,
+            'john.doe@example.com' as email,
+            'admin' as role,
+            'active' as status
+        UNION ALL
+        SELECT 'Acme Corporation',
+            'jane.smith@example.com',
+            'user',
+            'active'
+        UNION ALL
+        SELECT 'TechStart Inc',
+            'bob.wilson@example.com',
+            'admin',
+            'active'
+        UNION ALL
+        SELECT 'TechStart Inc',
+            'alice.cooper@example.com',
+            'viewer',
+            'pending'
+        UNION ALL
+        SELECT 'Global Systems',
+            'charlie.brown@example.com',
+            'admin',
+            'active'
+        UNION ALL
+        SELECT 'Global Systems',
+            'pending.user@example.com',
+            'user',
+            'pending'
+    ) as role_status
+    JOIN workspaces w ON w.name = role_status.workspace_name
+    JOIN users u ON u.email = role_status.email;
+-- Insert competitors
+INSERT INTO competitors (workspace_id, name, status)
+SELECT w.id,
+    comp.name,
+    comp.status::competitor_status
+FROM (
+        SELECT 'Acme Corporation' as workspace_name,
+            'Competitor A' as name,
+            'active' as status
+        UNION ALL
+        SELECT 'Acme Corporation',
+            'Competitor B',
+            'active'
+        UNION ALL
+        SELECT 'TechStart Inc',
+            'Competitor C',
+            'active'
+        UNION ALL
+        SELECT 'TechStart Inc',
+            'Competitor D',
+            'inactive'
+        UNION ALL
+        SELECT 'Global Systems',
+            'Competitor E',
+            'active'
+    ) as comp
+    JOIN workspaces w ON w.name = comp.workspace_name;
+-- Insert pages
+INSERT INTO pages (
+        competitor_id,
+        url,
+        capture_profile,
+        diff_profile,
+        last_checked_at,
+        status
+    )
+SELECT c.id,
+    page_data.url,
+    page_data.capture_profile::jsonb,
+    page_data.diff_profile::jsonb,
+    CASE
+        WHEN page_data.status = 'active' THEN NOW() - (random() * interval '7 days')
+        ELSE NULL
+    END as last_checked_at,
+    page_data.status::page_status
+FROM (
+        SELECT 'Competitor A' as competitor_name,
+            'https://competitor-a.com/products' as url,
+            '{"viewport": {"width": 1920, "height": 1080}, "waitUntil": "networkidle0"}' as capture_profile,
+            '{"threshold": 0.1, "ignoreSelectors": [".ads", ".dynamic-content"]}' as diff_profile,
+            'active' as status
+        UNION ALL
+        SELECT 'Competitor A',
+            'https://competitor-a.com/pricing',
+            '{"viewport": {"width": 1920, "height": 1080}}',
+            '{"threshold": 0.2}',
+            'active'
+        UNION ALL
+        SELECT 'Competitor B',
+            'https://competitor-b.com/features',
+            '{"viewport": {"width": 1366, "height": 768}}',
+            '{"threshold": 0.15}',
+            'active'
+        UNION ALL
+        SELECT 'Competitor C',
+            'https://competitor-c.com/about',
+            '{"viewport": {"width": 1440, "height": 900}}',
+            '{"threshold": 0.1}',
+            'inactive'
+    ) as page_data
+    JOIN competitors c ON c.name = page_data.competitor_name;
+-- Insert page_history
+INSERT INTO page_history (
+        page_id,
+        week_number_1,
+        week_number_2,
+        year_number_1,
+        year_number_2,
+        bucket_id_1,
+        bucket_id_2,
+        diff_content,
+        screenshot_url_1,
+        screenshot_url_2
+    )
+SELECT p.id,
+    EXTRACT(
+        WEEK
+        FROM CURRENT_DATE - interval '1 week'
+    )::integer,
+    EXTRACT(
+        WEEK
+        FROM CURRENT_DATE
+    )::integer,
+    EXTRACT(
+        YEAR
+        FROM CURRENT_DATE - interval '1 week'
+    )::integer,
+    EXTRACT(
+        YEAR
+        FROM CURRENT_DATE
+    )::integer,
+    'bucket_' || (random() * 1000)::integer,
+    'bucket_' || (random() * 1000)::integer,
+    '{"changes": ["header.logo", "pricing.table"], "similarity": 0.85}'::jsonb,
+    'https://storage.example.com/screenshots/' || p.id || '/week_' || EXTRACT(
+        WEEK
+        FROM CURRENT_DATE - interval '1 week'
+    )::integer || '.png',
+    'https://storage.example.com/screenshots/' || p.id || '/week_' || EXTRACT(
+        WEEK
+        FROM CURRENT_DATE
+    )::integer || '.png'
+FROM pages p
+WHERE p.status = 'active'
+    AND random() < 0.7;
+-- Only create history for some pages
+-- Insert additional history entries for some pages (older entries)
+INSERT INTO page_history (
+        page_id,
+        week_number_1,
+        week_number_2,
+        year_number_1,
+        year_number_2,
+        bucket_id_1,
+        bucket_id_2,
+        diff_content,
+        screenshot_url_1,
+        screenshot_url_2
+    )
+SELECT p.id,
+    EXTRACT(
+        WEEK
+        FROM CURRENT_DATE - interval '2 weeks'
+    )::integer,
+    EXTRACT(
+        WEEK
+        FROM CURRENT_DATE - interval '1 week'
+    )::integer,
+    EXTRACT(
+        YEAR
+        FROM CURRENT_DATE - interval '2 weeks'
+    )::integer,
+    EXTRACT(
+        YEAR
+        FROM CURRENT_DATE - interval '1 week'
+    )::integer,
+    'bucket_' || (random() * 1000)::integer,
+    'bucket_' || (random() * 1000)::integer,
+    '{"changes": ["footer.links", "content.main"], "similarity": 0.92}'::jsonb,
+    'https://storage.example.com/screenshots/' || p.id || '/week_' || EXTRACT(
+        WEEK
+        FROM CURRENT_DATE - interval '2 weeks'
+    )::integer || '.png',
+    'https://storage.example.com/screenshots/' || p.id || '/week_' || EXTRACT(
+        WEEK
+        FROM CURRENT_DATE - interval '1 week'
+    )::integer || '.png'
+FROM pages p
+WHERE p.status = 'active'
+    AND random() < 0.5;
+-- Only create older history for some pages
