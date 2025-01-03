@@ -133,7 +133,10 @@ func (tm *TxManager) runSingleTx(ctx context.Context, opts *TxOptions, fn func(c
 	// Handle panic and rollback
 	defer func() {
 		if p := recover(); p != nil {
-			tx.Rollback()
+			err := tx.Rollback()
+			if err != nil {
+				panic(fmt.Errorf("error rolling back transaction: %v (original panic: %v)", err, p))
+			}
 			panic(p) // re-throw panic after rollback
 		}
 	}()

@@ -808,9 +808,9 @@ func (r *userRepo) ClerkUserIsAdmin(ctx context.Context, workspaceID uuid.UUID, 
 // ClerkUserIsMember checks if a clerk user is a member of the workspace
 func (r *userRepo) ClerkUserIsMember(ctx context.Context, workspaceID uuid.UUID, clerkID string) (bool, error) {
 	// Get a transaction runner
-    runner := r.tm.GetRunner(ctx)
+	runner := r.tm.GetRunner(ctx)
 
-    query := `
+	query := `
 		SELECT EXISTS(
 			SELECT 1
 			FROM workspace_users wu
