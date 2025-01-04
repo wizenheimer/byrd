@@ -317,37 +317,58 @@ func (r *userRepo) AddUsersToWorkspace(ctx context.Context, userIDs []uuid.UUID,
 }
 
 // RemoveUsersFromWorkspace removes users from a workspace
+// When userIDs is nil, all users are removed from the workspace
 func (r *userRepo) RemoveUsersFromWorkspace(ctx context.Context, userIDs []uuid.UUID, workspaceID uuid.UUID) []error {
 	// Get a transaction runner
 	runner := r.tm.GetRunner(ctx)
 
-	// Create placeholders for the IN clause
-	placeholders := make([]string, len(userIDs))
-	args := make([]interface{}, 0, len(userIDs)+1)
-	args = append(args, workspaceID)
+	var query string
+	var args []interface{}
 
-	for i, id := range userIDs {
-		placeholders[i] = fmt.Sprintf("$%d", i+2)
-		args = append(args, id)
+	if userIDs == nil {
+		// Remove all users from workspace
+		query = `
+            WITH updated AS (
+                UPDATE workspace_users
+                SET status = 'inactive',
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE workspace_id = $1
+                RETURNING user_id
+            )
+            SELECT COUNT(*) FROM updated
+        `
+		args = []interface{}{workspaceID}
+	} else {
+		// Remove specific users from workspace
+		placeholders := make([]string, len(userIDs))
+		args = make([]interface{}, 0, len(userIDs)+1)
+		args = append(args, workspaceID)
+
+		for i := range userIDs {
+			placeholders[i] = fmt.Sprintf("$%d", i+2)
+			args = append(args, userIDs[i])
+		}
+
+		query = fmt.Sprintf(`
+            WITH updated AS (
+                UPDATE workspace_users
+                SET status = 'inactive',
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE workspace_id = $1
+                AND user_id IN (%s)
+                RETURNING user_id
+            )
+            SELECT COUNT(*) FROM updated
+        `, strings.Join(placeholders, ","))
 	}
 
-	query := fmt.Sprintf(`
-		UPDATE workspace_users
-		SET status = 'inactive', updated_at = CURRENT_TIMESTAMP
-		WHERE workspace_id = $1 AND user_id IN (%s)
-	`, strings.Join(placeholders, ","))
-
-	result, err := runner.ExecContext(ctx, query, args...)
+	var count int64
+	err := runner.QueryRowContext(ctx, query, args...).Scan(&count)
 	if err != nil {
 		return []error{fmt.Errorf("failed to remove users from workspace: %w", err)}
 	}
 
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return []error{fmt.Errorf("failed to get affected rows: %w", err)}
-	}
-
-	if rowsAffected == 0 {
+	if count == 0 {
 		return []error{ErrWorkspaceUserNotFound}
 	}
 

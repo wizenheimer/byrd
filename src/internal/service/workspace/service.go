@@ -25,31 +25,34 @@ func NewWorkspaceService(workspaceRepo repo.WorkspaceRepository, competitorServi
 }
 
 func (ws *workspaceService) CreateWorkspace(ctx context.Context, workspaceOwner *clerk.User, workspaceReq api.WorkspaceCreationRequest) (*models.Workspace, error) {
+	// Step 1: Create a workspace
 
-	// Create a new workspace
+	// Generate a workspace name
 	workspaceName := utils.GenerateWorkspaceName(workspaceOwner)
 	billingEmail, err := utils.GetClerkUserEmail(workspaceOwner)
 	if err != nil {
 		return nil, err
 	}
 
+	// Create a workspace using the workspace name and billing email
 	workspace, err := ws.workspaceRepo.CreateWorkspace(ctx, workspaceName, billingEmail)
 	if err != nil {
 		return nil, err
 	}
 
-	// Create workspace owner
+	// Step 2: Associate the workspace with the clerkUser
 	_, err = ws.userService.CreateWorkspaceOwner(ctx, workspaceOwner, workspace.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Add other users to the workspace
+	// Step 3: Invite users to the workspace
 	emailMap := make(map[string]bool)
 	emailMap[billingEmail] = true
 
 	var invitedUsers []api.InviteUserToWorkspaceRequest
 	for _, user := range workspaceReq.WorkspaceUserCreationRequest {
+		// Ensure the owner is not invited again
 		if _, ok := emailMap[user.Email]; ok {
 			continue
 		}
@@ -62,6 +65,7 @@ func (ws *workspaceService) CreateWorkspace(ctx context.Context, workspaceOwner 
 		emailMap[user.Email] = true
 	}
 
+	// Batch invite users to the workspace
 	batchResponse := ws.userService.AddUserToWorkspace(ctx, workspace.ID, invitedUsers)
 	for _, response := range batchResponse {
 		// TODO: non-fatal error handling
@@ -70,7 +74,7 @@ func (ws *workspaceService) CreateWorkspace(ctx context.Context, workspaceOwner 
 		}
 	}
 
-	// Create a competitor for the workspace
+	// Step 4: Create a competitor for the workspace
 	// Flatten the competitor request to create a competitor
 	for _, pages := range workspaceReq.CompetitorCreationRequest.Pages {
 		competitorReq := api.CreateCompetitorRequest{
@@ -88,6 +92,7 @@ func (ws *workspaceService) CreateWorkspace(ctx context.Context, workspaceOwner 
 }
 
 func (ws *workspaceService) ListUserWorkspaces(ctx context.Context, workspaceMember *clerk.User) ([]models.Workspace, error) {
+	// List workspaces for a user
 	workspaceIDs, err := ws.userService.ListUserWorkspaces(ctx, workspaceMember)
 	if err != nil {
 		return nil, err
@@ -110,8 +115,11 @@ func (ws *workspaceService) GetWorkspace(ctx context.Context, workspaceID uuid.U
 	}
 
 	if len(workspaces) == 0 {
-		// return nil, domain.ErrWorkspaceNotFound
 		return nil, errors.New("workspace not found")
+	}
+
+	if workspaces[0].Status == models.WorkspaceStatusInactive {
+		return nil, errors.New("workspace is inactive")
 	}
 
 	return &workspaces[0], nil
@@ -146,9 +154,14 @@ func (ws *workspaceService) UpdateWorkspace(ctx context.Context, workspaceID uui
 }
 
 func (ws *workspaceService) DeleteWorkspace(ctx context.Context, workspaceID uuid.UUID) (models.WorkspaceStatus, error) {
+	// Get existing workspace
 	workspace, err := ws.GetWorkspace(ctx, workspaceID)
 	if err != nil {
 		return models.WorkspaceStatusInactive, err
+	}
+
+	if workspace.Status == models.WorkspaceStatusInactive {
+		return models.WorkspaceStatusInactive, errors.New("workspace is already inactive")
 	}
 
 	// Handle workspace user deletion

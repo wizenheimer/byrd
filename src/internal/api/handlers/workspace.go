@@ -115,7 +115,7 @@ func (wh *WorkspaceHandler) GetWorkspace(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
 			Error:   "InternalServerError",
 			Code:    fiber.StatusInternalServerError,
-			Message: "Failed to get workspace",
+			Message: err.Error(),
 		})
 	}
 
@@ -139,6 +139,14 @@ func (wh *WorkspaceHandler) UpdateWorkspace(c *fiber.Ctx) error {
 			Error:   "InvalidRequest",
 			Code:    fiber.StatusBadRequest,
 			Message: "Invalid request body",
+		})
+	}
+
+	if err := utils.SetDefaultsAndValidate(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
+			Error:   "InvalidRequest",
+			Code:    fiber.StatusBadRequest,
+			Message: err.Error(),
 		})
 	}
 
@@ -196,9 +204,9 @@ func (wh *WorkspaceHandler) DeleteWorkspace(c *fiber.Ctx) error {
 		// 	})
 		default:
 			return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
-				Error:   "InternalServerError",
+				Error:   "Failed to delete workspace",
 				Code:    fiber.StatusInternalServerError,
-				Message: "Failed to delete workspace",
+				Message: err.Error(),
 			})
 		}
 	}

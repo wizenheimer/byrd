@@ -36,5 +36,5 @@ type WorkspaceProps struct {
 	Name string `json:"name"`
 
 	// BillingEmail is the email address to which billing information is sent
-	BillingEmail string `json:"billing_email"`
+	BillingEmail string `json:"billing_email" validate:"email"`
 }

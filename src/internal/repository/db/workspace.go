@@ -155,12 +155,13 @@ func (r *workspaceRepo) GetWorkspaces(ctx context.Context, workspaceIDs []uuid.U
 }
 
 // WorkspaceExists checks if a workspace exists
+// And is active
 func (r *workspaceRepo) WorkspaceExists(ctx context.Context, workspaceID uuid.UUID) (bool, error) {
 	runner := r.tm.GetRunner(ctx)
 
 	var exists bool
 	err := runner.QueryRowContext(ctx,
-		"SELECT EXISTS(SELECT 1 FROM workspaces WHERE id = $1)",
+		"SELECT EXISTS(SELECT 1 FROM workspaces WHERE id = $1 AND status = 'active')",
 		workspaceID,
 	).Scan(&exists)
 
