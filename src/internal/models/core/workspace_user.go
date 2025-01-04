@@ -33,5 +33,19 @@ type WorkspaceUser struct {
 	Role UserWorkspaceRole `json:"role"`
 
 	// Status is the user's status in the workspace
-	WorkspaceUserStatus UserWorkspaceStatus `json:"status"`
+	WorkspaceUserStatus UserWorkspaceStatus `json:"workspace_status"`
+}
+
+// WorkspaceUserProps is the properties for creating a workspace user
+type WorkspaceUserProps struct {
+	// Email is the email address of the user to create
+	Email string `json:"email" validate:"required,email"`
+
+	// Role is the role of the user in the workspace
+	// If not specified, defaults to "user"
+	Role UserWorkspaceRole `json:"role" validate:"required,oneof=admin user viewer" default:"user"`
+
+	// Status is the status of the user in the workspace
+	// If not specified, defaults to "pending"
+	Status UserWorkspaceStatus `json:"status" validate:"required,oneof=pending active inactive" default:"pending"`
 }

@@ -254,7 +254,7 @@ func (wh *WorkspaceHandler) ExitWorkspace(c *fiber.Ctx) error {
 			return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
 				Error:   "InternalServerError",
 				Code:    fiber.StatusInternalServerError,
-				Message: "Failed to exit workspace",
+				Message: err.Error(),
 			})
 		}
 	}
@@ -365,6 +365,16 @@ func (wh *WorkspaceHandler) AddUserToWorkspace(c *fiber.Ctx) error {
 		})
 	}
 
+	for index := range reqs {
+		if err := utils.SetDefaultsAndValidate(&reqs[index]); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
+				Error:   "InvalidRequest",
+				Code:    fiber.StatusBadRequest,
+				Message: err.Error(),
+			})
+		}
+	}
+
 	clerkUser, err := auth.GetClerkUserFromContext(c)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(ErrorResponse{
@@ -423,7 +433,7 @@ func (wh *WorkspaceHandler) RemoveUserFromWorkspace(c *fiber.Ctx) error {
 			return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
 				Error:   "InternalServerError",
 				Code:    fiber.StatusInternalServerError,
-				Message: "Failed to remove user from workspace",
+				Message: err.Error(),
 			})
 		}
 	}
@@ -496,7 +506,7 @@ func (wh *WorkspaceHandler) UpdateUserRoleInWorkspace(c *fiber.Ctx) error {
 			return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
 				Error:   "InternalServerError",
 				Code:    fiber.StatusInternalServerError,
-				Message: "Failed to update user role",
+				Message: err.Error(),
 			})
 		}
 	}

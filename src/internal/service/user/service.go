@@ -11,6 +11,7 @@ import (
 	models "github.com/wizenheimer/iris/src/internal/models/core"
 	"github.com/wizenheimer/iris/src/pkg/logger"
 	"github.com/wizenheimer/iris/src/pkg/utils"
+	"go.uber.org/zap"
 )
 
 func NewUserService(userRepository repo.UserRepository, logger *logger.Logger) svc.UserService {
@@ -46,7 +47,15 @@ func (us *userService) CreateWorkspaceOwner(ctx context.Context, clerk *clerk.Us
 		return nil, err
 	}
 
-	_, errs := us.userRepository.AddUsersToWorkspace(ctx, []uuid.UUID{user.ID}, models.UserRoleAdmin, models.UserWorkspaceStatusActive, workspaceID)
+	addUsers := []models.WorkspaceUserProps{
+		{
+			Email:  email,
+			Role:   models.UserRoleAdmin,
+			Status: models.UserWorkspaceStatusActive,
+		},
+	}
+
+	_, errs := us.userRepository.AddUsersToWorkspace(ctx, addUsers, workspaceID)
 	if len(errs) > 0 {
 		return nil, errs[0]
 	}
@@ -56,35 +65,11 @@ func (us *userService) CreateWorkspaceOwner(ctx context.Context, clerk *clerk.Us
 
 func (us *userService) AddUserToWorkspace(ctx context.Context, workspaceID uuid.UUID, invitedUsers []api.InviteUserToWorkspaceRequest) []api.CreateWorkspaceUserResponse {
 	if len(invitedUsers) == 0 {
-		return []api.CreateWorkspaceUserResponse{
-			{
-				User:  nil,
-				Error: nil,
-			},
-		}
+		return []api.CreateWorkspaceUserResponse{}
 	}
+
 	var responses []api.CreateWorkspaceUserResponse
-	var emails []string
-	for _, user := range invitedUsers {
-		emails = append(emails, user.Email)
-	}
-
-	users, errs := us.userRepository.GetOrCreateUserByEmail(ctx, emails)
-	if len(errs) > 0 {
-		for _, err := range errs {
-			responses = append(responses, api.CreateWorkspaceUserResponse{
-				Error: err,
-			})
-		}
-		return responses
-	}
-
-	userIDs := make([]uuid.UUID, len(users))
-	for i, user := range users {
-		userIDs[i] = user.ID
-	}
-
-	workspaceUsers, errs := us.userRepository.AddUsersToWorkspace(ctx, userIDs, models.UserRoleUser, models.UserWorkspaceStatusPending, workspaceID)
+	workspaceUsers, errs := us.userRepository.AddUsersToWorkspace(ctx, invitedUsers, workspaceID)
 	if len(errs) > 0 {
 		for _, err := range errs {
 			responses = append(responses, api.CreateWorkspaceUserResponse{
@@ -144,13 +129,21 @@ func (us *userService) UpdateWorkspaceUserRole(ctx context.Context, userID, work
 	return us.userRepository.GetWorkspaceUser(ctx, workspaceID, userID)
 }
 
-func (us *userService) RemoveWorkspaceUsers(ctx context.Context, userIDs []uuid.UUID, workspaceID uuid.UUID) []error {
-	return us.userRepository.RemoveUsersFromWorkspace(ctx, userIDs, workspaceID)
+func (us *userService) UpdateWorkspaceUserStatus(ctx context.Context, userID, workspaceID uuid.UUID, status models.UserWorkspaceStatus) error {
+	userIDs := []uuid.UUID{userID}
+	_, errs := us.userRepository.UpdateWorkspaceUserStatus(ctx, workspaceID, userIDs, status)
+	if len(errs) > 0 {
+		return errs[0]
+	}
+
+	return nil
 }
 
-func (us *userService) AddWorkspaceUsers(ctx context.Context, userIDs []uuid.UUID, role models.UserWorkspaceRole, status models.UserWorkspaceStatus, workspaceID uuid.UUID) []error {
-	_, errs := us.userRepository.AddUsersToWorkspace(ctx, userIDs, role, status, workspaceID)
-	return errs
+func (us *userService) RemoveWorkspaceUsers(ctx context.Context, userIDs []uuid.UUID, workspaceID uuid.UUID) []error {
+
+	us.logger.Debug("Removing users from workspace", zap.Any("userIDs", userIDs), zap.Any("workspaceID", workspaceID))
+
+	return us.userRepository.RemoveUsersFromWorkspace(ctx, userIDs, workspaceID)
 }
 
 func (us *userService) GetWorkspaceUserCountByRole(ctx context.Context, workspaceID uuid.UUID) (int, int, error) {
@@ -167,7 +160,11 @@ func (us *userService) SyncUser(ctx context.Context, clerk *clerk.User) error {
 		return err
 	}
 
-	return us.userRepository.SyncUser(ctx, user.ID, clerk)
+	if err := us.userRepository.SyncUser(ctx, user.ID, clerk); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (us *userService) DeleteUser(ctx context.Context, clerk *clerk.User) error {

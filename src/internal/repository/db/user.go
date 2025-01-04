@@ -80,6 +80,8 @@ func (r *userRepo) GetUserByUserID(ctx context.Context, userID uuid.UUID) (model
 func (r *userRepo) GetUserByEmail(ctx context.Context, email string) (models.User, error) {
 	runner := r.tm.GetRunner(ctx)
 
+	email = utils.NormalizeEmail(email)
+
 	query := `
 		SELECT id, clerk_id, email, name, status, created_at, updated_at
 		FROM users
@@ -110,6 +112,8 @@ func (r *userRepo) GetUserByEmail(ctx context.Context, email string) (models.Use
 // GetClerkUser gets a user by clerkID or clerkEmail
 func (r *userRepo) GetClerkUser(ctx context.Context, clerkID string, clerkEmail string) (models.User, error) {
 	runner := r.tm.GetRunner(ctx)
+
+	clerkEmail = utils.NormalizeEmail(clerkEmail)
 
 	query := `
 		SELECT id, clerk_id, email, name, status, created_at, updated_at
@@ -149,6 +153,10 @@ func (r *userRepo) GetOrCreateUser(ctx context.Context, partialUser models.User)
 		FROM users
 		WHERE clerk_id = $1 OR email = $2
 	`
+
+	if partialUser.Email != nil {
+		partialUser.Email = utils.ToPtr(utils.NormalizeEmail(*partialUser.Email))
+	}
 
 	var user models.User
 	err := runner.QueryRowContext(ctx, query, partialUser.ClerkID, partialUser.Email).Scan(
@@ -210,6 +218,10 @@ func (r *userRepo) GetOrCreateUserByEmail(ctx context.Context, emails []string) 
 	for _, email := range emails {
 		// Try to get existing user
 		var user models.User
+
+		// Normalize email
+		user.Email = utils.ToPtr(utils.NormalizeEmail(email))
+
 		err := runner.QueryRowContext(ctx, `
 			SELECT id, clerk_id, email, name, status, created_at, updated_at
 			FROM users
@@ -261,21 +273,40 @@ func (r *userRepo) GetOrCreateUserByEmail(ctx context.Context, emails []string) 
 // -----------------------------------------------------------
 
 // AddUsersToWorkspace adds users to a workspace
-func (r *userRepo) AddUsersToWorkspace(ctx context.Context, userIDs []uuid.UUID, role models.UserWorkspaceRole, status models.UserWorkspaceStatus, workspaceID uuid.UUID) ([]models.WorkspaceUser, []error) {
-	// Get a transaction runner
+func (r *userRepo) AddUsersToWorkspace(ctx context.Context, workspaceUserProps []models.WorkspaceUserProps, workspaceID uuid.UUID) ([]models.WorkspaceUser, []error) {
 	runner := r.tm.GetRunner(ctx)
+	var errors []error
+	emailToUserID := make(map[string]uuid.UUID)
 
-	// Prepare batch insert with 4 values per row (workspace_id, user_id, role, status)
-	valueStrings := make([]string, len(userIDs))
-	valueArgs := make([]interface{}, 0, len(userIDs)*4)
-	for i, userID := range userIDs {
-		// Update to include 4 parameters per row
+	// Get or create users for each email
+	emails := make([]string, len(workspaceUserProps))
+	for i, props := range workspaceUserProps {
+		emails[i] = props.Email
+	}
+
+	users, errs := r.GetOrCreateUserByEmail(ctx, emails)
+	if len(errs) > 0 {
+		return nil, errs
+	}
+
+	for _, user := range users {
+		emailToUserID[*user.Email] = user.ID
+	}
+
+	if len(errors) > 0 {
+		return nil, errors
+	}
+
+	valueStrings := make([]string, len(workspaceUserProps))
+	valueArgs := make([]interface{}, 0, len(workspaceUserProps)*4)
+
+	for i, props := range workspaceUserProps {
 		valueStrings[i] = fmt.Sprintf("($%d, $%d, $%d, $%d)", i*4+1, i*4+2, i*4+3, i*4+4)
 		valueArgs = append(valueArgs,
 			workspaceID,
-			userID,
-			role,
-			status,
+			emailToUserID[props.Email],
+			props.Role,
+			props.Status, // Now using the status from props
 		)
 	}
 
@@ -301,11 +332,23 @@ func (r *userRepo) AddUsersToWorkspace(ctx context.Context, userIDs []uuid.UUID,
 			&wu.WorkspaceID,
 			&wu.ID, // user_id
 			&wu.Role,
-			&wu.Status,
+			&wu.WorkspaceUserStatus,
 		)
 		if err != nil {
 			return nil, []error{fmt.Errorf("failed to scan workspace user: %w", err)}
 		}
+
+		// Populate the user fields
+		user, err := r.GetUserByUserID(ctx, wu.ID)
+		if err != nil {
+			return nil, []error{fmt.Errorf("failed to get user by ID: %w", err)}
+		}
+
+		wu.ClerkID = user.ClerkID
+		wu.Email = user.Email
+		wu.Name = user.Name
+		wu.Status = user.Status
+
 		workspaceUsers = append(workspaceUsers, wu)
 	}
 
@@ -362,6 +405,10 @@ func (r *userRepo) RemoveUsersFromWorkspace(ctx context.Context, userIDs []uuid.
         `, strings.Join(placeholders, ","))
 	}
 
+	r.logger.Debug("Removing users from workspace",
+		zap.String("query", query),
+		zap.Any("args", args))
+
 	var count int64
 	err := runner.QueryRowContext(ctx, query, args...).Scan(&count)
 	if err != nil {
@@ -381,12 +428,21 @@ func (r *userRepo) GetWorkspaceUser(ctx context.Context, workspaceID, userID uui
 	runner := r.tm.GetRunner(ctx)
 
 	query := `
-		SELECT u.id, u.clerk_id, u.email, u.name, u.status,
-			   wu.role, wu.status as workspace_status,
-			   u.created_at, u.updated_at
+		SELECT
+			u.id,
+			u.clerk_id,
+			u.email,
+			u.name,
+			u.status,
+			wu.role,
+			wu.workspace_id,
+			wu.status AS workspace_status,
+			u.created_at,
+			u.updated_at
 		FROM users u
 		JOIN workspace_users wu ON u.id = wu.user_id
-		WHERE wu.workspace_id = $1 AND wu.user_id = $2
+		WHERE wu.workspace_id = $1
+		AND wu.user_id = $2
 	`
 
 	var wu models.WorkspaceUser
@@ -397,10 +453,16 @@ func (r *userRepo) GetWorkspaceUser(ctx context.Context, workspaceID, userID uui
 		&wu.Name,
 		&wu.Status,
 		&wu.Role,
-		&wu.WorkspaceUserStatus,
+		&wu.WorkspaceID,
+		&wu.WorkspaceUserStatus, // matches the AS workspace_status in query
 		&wu.CreatedAt,
 		&wu.UpdatedAt,
 	)
+
+	r.logger.Debug("Getting workspace user",
+		zap.String("query", query),
+		zap.Any("args", []interface{}{workspaceID, userID}),
+		zap.Any("workspace_user", wu))
 
 	if err == sql.ErrNoRows {
 		return models.WorkspaceUser{}, ErrWorkspaceUserNotFound
@@ -416,6 +478,8 @@ func (r *userRepo) GetWorkspaceUser(ctx context.Context, workspaceID, userID uui
 func (r *userRepo) GetWorkspaceClerkUser(ctx context.Context, workspaceID uuid.UUID, clerkID, clerkEmail string) (models.WorkspaceUser, error) {
 	// Get a transaction runner
 	runner := r.tm.GetRunner(ctx)
+
+	clerkEmail = utils.NormalizeEmail(clerkEmail)
 
 	query := `
 		SELECT u.id, u.clerk_id, u.email, u.name, u.status,
@@ -455,7 +519,7 @@ func (r *userRepo) ListWorkspaceUsers(ctx context.Context, workspaceID uuid.UUID
 	runner := r.tm.GetRunner(ctx)
 
 	query := `
-		SELECT u.id, u.clerk_id, u.email, u.name, u.status,
+		SELECT u.id, u.clerk_id, u.email, u.name, u.status, wu.workspace_id,
 			   wu.role, wu.status as workspace_status,
 			   u.created_at, u.updated_at
 		FROM users u
@@ -479,6 +543,7 @@ func (r *userRepo) ListWorkspaceUsers(ctx context.Context, workspaceID uuid.UUID
 			&wu.Email,
 			&wu.Name,
 			&wu.Status,
+			&wu.WorkspaceID,
 			&wu.Role,
 			&wu.WorkspaceUserStatus,
 			&wu.CreatedAt,
@@ -503,25 +568,33 @@ func (r *userRepo) ListWorkspaceUsers(ctx context.Context, workspaceID uuid.UUID
 
 // ListUserWorkspaces lists all workspaces of a user
 func (r *userRepo) ListUserWorkspaces(ctx context.Context, userID uuid.UUID) ([]uuid.UUID, error) {
-	// Get a transaction runner
 	runner := r.tm.GetRunner(ctx)
 
 	query := `
-		SELECT workspace_id
-		FROM workspace_users
-		WHERE user_id = $1 AND status = 'active'
-		ORDER BY created_at DESC
-	`
+        WITH workspace_list AS (
+            SELECT wu.workspace_id
+            FROM workspace_users wu
+            WHERE wu.user_id = $1 AND wu.status = 'active'
+            ORDER BY wu.created_at DESC
+        )
+        SELECT wl.workspace_id
+        FROM workspace_list wl
+    `
 
-	r.logger.Debug("Listing user workspaces", zap.String("user_id", userID.String()), zap.String("query", query))
+	r.logger.Debug("Listing user workspaces",
+		zap.String("user_id", userID.String()),
+		zap.String("query", query))
 
 	rows, err := runner.QueryContext(ctx, query, userID)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return []uuid.UUID{}, nil // Return empty slice instead of nil
+		}
 		return nil, fmt.Errorf("failed to list user workspaces: %w", err)
 	}
 	defer rows.Close()
 
-	var workspaces []uuid.UUID
+	workspaces := make([]uuid.UUID, 0) // Initialize with empty slice instead of nil
 	for rows.Next() {
 		var workspaceID uuid.UUID
 		if err := rows.Scan(&workspaceID); err != nil {
@@ -534,7 +607,7 @@ func (r *userRepo) ListUserWorkspaces(ctx context.Context, userID uuid.UUID) ([]
 		return nil, fmt.Errorf("error iterating over rows: %w", err)
 	}
 
-	return workspaces, nil
+	return workspaces, nil // Will return empty slice if no rows found
 }
 
 // UpdateWorkspaceUserRole updates the role of users in the workspace
@@ -671,10 +744,12 @@ func (r *userRepo) SyncUser(ctx context.Context, userID uuid.UUID, clerkUser *cl
 		return err
 	}
 
+	userFullName := utils.GetClerkUserFullName(clerkUser)
+
 	result, err := runner.ExecContext(ctx, query,
 		clerkUser.ID,
 		userEmail,
-		fmt.Sprintf("%s %s", *clerkUser.FirstName, *clerkUser.LastName),
+		userFullName,
 		models.AccountStatusActive,
 		userID,
 	)

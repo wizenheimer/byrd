@@ -93,7 +93,7 @@ func (r *workspaceRepo) CreateWorkspace(ctx context.Context, workspaceName, bill
 // GetWorkspaces gets multiple workspaces by their IDs
 func (r *workspaceRepo) GetWorkspaces(ctx context.Context, workspaceIDs []uuid.UUID) ([]models.Workspace, []error) {
 	if len(workspaceIDs) == 0 {
-		return nil, []error{errors.New("no workspace IDs provided")}
+		return []models.Workspace{}, nil
 	}
 
 	runner := r.tm.GetRunner(ctx)

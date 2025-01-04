@@ -57,15 +57,13 @@ type UserService interface {
 	// It can update the user's role in the workspace
 	UpdateWorkspaceUserRole(ctx context.Context, userID, workspaceID uuid.UUID, role models.UserWorkspaceRole) (models.WorkspaceUser, error)
 
+	UpdateWorkspaceUserStatus(ctx context.Context, userID, workspaceID uuid.UUID, status models.UserWorkspaceStatus) error
+
 	// RemoveUserFromWorkspace removes users from a workspace
 	// It returns an error if the users could not be removed
 	// It returns nil if the users were removed successfully
 	// When the userIDs are nil, it removes all users from the workspace
 	RemoveWorkspaceUsers(ctx context.Context, userIDs []uuid.UUID, workspaceID uuid.UUID) []error
-
-	// AddWorkspaceUsers adds users to a workspace
-	// It returns an error if the users could not be added
-	AddWorkspaceUsers(ctx context.Context, userIDs []uuid.UUID, role models.UserWorkspaceRole, status models.UserWorkspaceStatus, workspaceID uuid.UUID) []error
 
 	// GetWorkspaceUserCount gets the count of users in a workspace
 	// It returns the count of users in the workspace

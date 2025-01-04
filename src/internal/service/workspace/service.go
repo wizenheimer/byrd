@@ -230,7 +230,7 @@ func (ws *workspaceService) LeaveWorkspace(ctx context.Context, workspaceMember 
 		return errors.New("cannot leave workspace as the only admin")
 	}
 
-	users := []uuid.UUID{workspace.ID}
+	users := []uuid.UUID{workspaceUser.ID}
 	errs := ws.userService.RemoveWorkspaceUsers(ctx, users, workspace.ID)
 	if len(errs) > 0 {
 		return errs[0]
@@ -256,12 +256,16 @@ func (ws *workspaceService) RemoveUserFromWorkspace(ctx context.Context, workspa
 		return err
 	}
 
-	workspaceUser, err := ws.userService.GetWorkspaceUserByID(ctx, workspaceMemberID, workspaceMemberID)
+	workspaceUser, err := ws.userService.GetWorkspaceUserByID(ctx, workspaceMemberID, workspaceID)
 	if err != nil {
 		return err
 	}
 
-	errs := ws.userService.RemoveWorkspaceUsers(ctx, []uuid.UUID{workspaceUser.ID}, workspace.ID)
+	if workspaceUser.WorkspaceUserStatus == models.UserWorkspaceStatusInactive {
+		return errors.New("user is not invited to the workspace")
+	}
+
+	errs := ws.userService.RemoveWorkspaceUsers(ctx, []uuid.UUID{workspaceMemberID}, workspace.ID)
 	if len(errs) > 0 {
 		return errs[0]
 	}
@@ -290,11 +294,14 @@ func (ws *workspaceService) JoinWorkspace(ctx context.Context, invitedMember *cl
 		return err
 	}
 
-	if workspaceUser.WorkspaceUserStatus != models.UserWorkspaceStatusActive {
-		_, err := ws.userService.UpdateWorkspaceUserRole(ctx, workspaceUser.ID, workspaceID, models.UserRoleUser)
-		if err != nil {
-			return err
-		}
+	// The user was removed from the workspace, requires re-invite
+	if workspaceUser.WorkspaceUserStatus == models.UserWorkspaceStatusInactive {
+		return errors.New("user is not invited to the workspace")
+	}
+
+	// Activate the user in the workspace
+	if err := ws.userService.UpdateWorkspaceUserStatus(ctx, workspaceUser.ID, workspaceID, models.UserWorkspaceStatusActive); err != nil {
+		return err
 	}
 
 	return nil

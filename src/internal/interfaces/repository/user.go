@@ -41,7 +41,7 @@ type UserRepository interface {
 	// -----------------------------------------------------------
 
 	// AddUsersToWorkspace adds a batch of users to workspace
-	AddUsersToWorkspace(ctx context.Context, userIDs []uuid.UUID, role models.UserWorkspaceRole, status models.UserWorkspaceStatus, workspaceID uuid.UUID) ([]models.WorkspaceUser, []error)
+	AddUsersToWorkspace(ctx context.Context, workspaceUserProps []models.WorkspaceUserProps, workspaceID uuid.UUID) ([]models.WorkspaceUser, []error)
 
 	// RemoveUsersFromWorkspace removes a batch of users from a workspace
 	RemoveUsersFromWorkspace(ctx context.Context, userIDs []uuid.UUID, workspaceID uuid.UUID) []error

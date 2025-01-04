@@ -44,3 +44,14 @@ type User struct {
 	// UpdatedAt is the time the user was last updated
 	UpdatedAt time.Time `json:"updated_at"`
 }
+
+type UserProps struct {
+	// Email is the email address of the user to create
+	Email string `json:"email" validate:"required,email"`
+
+	// Name is the name of the user to create
+	Name string `json:"name" validate:"required"`
+
+	// Status is the status of the user to create
+	Status AccountStatus `json:"status" validate:"required,oneof=pending active inactive"`
+}

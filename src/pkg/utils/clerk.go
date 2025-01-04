@@ -2,9 +2,14 @@ package utils
 
 import (
 	"errors"
+	"strings"
 
 	"github.com/clerk/clerk-sdk-go/v2"
 )
+
+func NormalizeEmail(email string) string {
+	return strings.ToLower(strings.Trim(email, " "))
+}
 
 func GetClerkUserEmail(clerkUser *clerk.User) (string, error) {
 	if clerkUser.PrimaryEmailAddressID == nil {
@@ -14,7 +19,7 @@ func GetClerkUserEmail(clerkUser *clerk.User) (string, error) {
 	primaryEmailAddress := *clerkUser.PrimaryEmailAddressID
 	for _, email := range clerkUser.EmailAddresses {
 		if email.ID == primaryEmailAddress {
-			return email.EmailAddress, nil
+			return NormalizeEmail(email.EmailAddress), nil
 		}
 	}
 
