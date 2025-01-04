@@ -8,6 +8,8 @@ import (
 	api "github.com/wizenheimer/iris/src/internal/models/api"
 	models "github.com/wizenheimer/iris/src/internal/models/core"
 	"github.com/wizenheimer/iris/src/pkg/logger"
+	"github.com/wizenheimer/iris/src/pkg/utils"
+	"go.uber.org/zap"
 )
 
 type WorkspaceHandler struct {
@@ -36,6 +38,14 @@ func (wh *WorkspaceHandler) CreateWorkspace(c *fiber.Ctx) error {
 		})
 	}
 
+	if err := utils.SetDefaultsAndValidate(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
+			Error:   "InvalidRequest",
+			Code:    fiber.StatusBadRequest,
+			Message: err.Error(),
+		})
+	}
+
 	clerkUser, err := auth.GetClerkUserFromContext(c)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(ErrorResponse{
@@ -47,6 +57,7 @@ func (wh *WorkspaceHandler) CreateWorkspace(c *fiber.Ctx) error {
 
 	workspace, err := wh.workspaceService.CreateWorkspace(c.Context(), clerkUser, req)
 	if err != nil {
+		wh.logger.Error("Failed to create workspace", zap.Error(err))
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
 			Error:   "InternalServerError",
 			Code:    fiber.StatusInternalServerError,
@@ -65,16 +76,16 @@ func (wh *WorkspaceHandler) ListWorkspaces(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(ErrorResponse{
 			Error:   "Unauthorized",
 			Code:    fiber.StatusUnauthorized,
-			Message: "Unauthorized",
+			Message: err.Error(),
 		})
 	}
 
 	workspaces, err := wh.workspaceService.ListUserWorkspaces(c.Context(), clerkUser)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
-			Error:   "InternalServerError",
+			Error:   "Failed to list workspaces",
 			Code:    fiber.StatusInternalServerError,
-			Message: "Failed to list workspaces",
+			Message: err.Error(),
 		})
 	}
 

@@ -6,7 +6,7 @@ import (
 )
 
 // GenerateNameFromEmail extracts a readable name from an email address
-func GenerateNameFromEmail(email string) string {
+func generateNameFromEmail(email string) string {
 	// Get the part before @ symbol
 	localPart := strings.Split(email, "@")[0]
 
