@@ -68,9 +68,9 @@ type PageProps struct {
 
 	// CaptureProfile is the profile used to capture the page
 	// This is optional and defaults to an default capture profile
-	CaptureProfile map[string]interface{} `json:"capture_profile"`
+	CaptureProfile map[string]interface{} `json:"capture_profile" default:"{}"`
 
 	// DiffProfile is the profile used to diff the page
 	// This is optional and defaults to an default diff profile
-	DiffProfile map[string]interface{} `json:"diff_profile"`
+	DiffProfile map[string]interface{} `json:"diff_profile" default:"{}"`
 }

@@ -6,7 +6,7 @@ import models "github.com/wizenheimer/iris/src/internal/models/core"
 // A new competitor is created for each page in the list
 type CreateCompetitorRequest struct {
 	// PageURLs is the list of page URLs
-	Pages []CreatePageRequest `json:"pages" validate:"required"`
+	Pages []CreatePageRequest `json:"pages" validate:"required,dive"`
 }
 
 // CreateCompetitorResponse is the response to create a competitor

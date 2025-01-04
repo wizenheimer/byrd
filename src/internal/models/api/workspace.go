@@ -5,11 +5,11 @@ import models "github.com/wizenheimer/iris/src/internal/models/core"
 // WorkspaceCreationRequest is the request to create a workspace
 type WorkspaceCreationRequest struct {
 	// Competitor is the competitors to create the workspace for
-	CompetitorCreationRequest CreateCompetitorRequest `json:"competitors"`
+	CompetitorCreationRequest CreateCompetitorRequest `json:"competitors" validate:"required"`
 
 	// Users is the users to create the workspace for
 	// This excludes the user who is creating the workspace
-	WorkspaceUserCreationRequest []CreateWorkspaceUserRequest `json:"users"`
+	WorkspaceUserCreationRequest []CreateWorkspaceUserRequest `json:"users" validate:"dive"`
 }
 
 // WorkspaceCreationResponse is the response to create a workspace

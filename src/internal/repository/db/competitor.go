@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	_ "github.com/lib/pq"
@@ -46,13 +47,14 @@ func (r *competitorRepo) CreateCompetitors(ctx context.Context, workspaceID uuid
 	// Prepare the batch insert query
 	valueStrings := make([]string, len(competitorNames))
 	valueArgs := make([]interface{}, 0, len(competitorNames)*2)
+	now := time.Now()
 	for i, name := range competitorNames {
-		valueStrings[i] = fmt.Sprintf("($%d, $%d)", i*2+1, i*2+2)
-		valueArgs = append(valueArgs, workspaceID, name)
+		valueStrings[i] = fmt.Sprintf("($%d, $%d, 'active', $%d, $%d)", i*4+1, i*4+2, i*4+3, i*4+4)
+		valueArgs = append(valueArgs, workspaceID, name, now, now)
 	}
 
 	query := fmt.Sprintf(`
-		INSERT INTO competitors (workspace_id, name, status)
+		INSERT INTO competitors (workspace_id, name, status, created_at, updated_at)
 		VALUES %s
 		RETURNING id, workspace_id, name, status, created_at, updated_at
 	`, strings.Join(valueStrings, ","))
@@ -85,11 +87,6 @@ func (r *competitorRepo) CreateCompetitors(ctx context.Context, workspaceID uuid
 	if err = rows.Err(); err != nil {
 		return nil, []error{fmt.Errorf("error iterating over rows: %w", err)}
 	}
-
-	// Commit the transaction
-	// if err := tx.Commit(); err != nil {
-	// 	return nil, []error{fmt.Errorf("failed to commit transaction: %w", err)}
-	// }
 
 	return competitors, nil
 }

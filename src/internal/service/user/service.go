@@ -2,7 +2,6 @@ package user
 
 import (
 	"context"
-	"errors"
 
 	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/google/uuid"
@@ -22,23 +21,12 @@ func NewUserService(userRepository repo.UserRepository, logger *logger.Logger) s
 }
 
 func (us *userService) CreateWorkspaceOwner(ctx context.Context, clerk *clerk.User, workspaceID uuid.UUID) (*models.User, error) {
-	if clerk.PrimaryEmailAddressID == nil {
-		return nil, errors.New("PrimaryEmailAddressID is required")
+	email, err := utils.GetClerkUserEmail(clerk)
+	if err != nil {
+		return nil, err
 	}
 
-	email := *clerk.PrimaryEmailAddressID
-
-	var name string
-	if clerk.FirstName != nil {
-		name = *clerk.FirstName
-	}
-	if clerk.LastName != nil {
-		name += " " + *clerk.LastName
-	}
-
-	if name == "" {
-		name = utils.GenerateNameFromEmail(email)
-	}
+	name := utils.GetClerkUserFullName(clerk)
 
 	userID, err := uuid.NewUUID()
 	if err != nil {
@@ -58,10 +46,23 @@ func (us *userService) CreateWorkspaceOwner(ctx context.Context, clerk *clerk.Us
 		return nil, err
 	}
 
+	_, errs := us.userRepository.AddUsersToWorkspace(ctx, []uuid.UUID{user.ID}, models.UserRoleAdmin, models.UserWorkspaceStatusActive, workspaceID)
+	if len(errs) > 0 {
+		return nil, errs[0]
+	}
+
 	return &user, nil
 }
 
 func (us *userService) AddUserToWorkspace(ctx context.Context, workspaceID uuid.UUID, invitedUsers []api.InviteUserToWorkspaceRequest) []api.CreateWorkspaceUserResponse {
+	if len(invitedUsers) == 0 {
+		return []api.CreateWorkspaceUserResponse{
+			{
+				User:  nil,
+				Error: nil,
+			},
+		}
+	}
 	var responses []api.CreateWorkspaceUserResponse
 	var emails []string
 	for _, user := range invitedUsers {
@@ -83,7 +84,7 @@ func (us *userService) AddUserToWorkspace(ctx context.Context, workspaceID uuid.
 		userIDs[i] = user.ID
 	}
 
-	workspaceUsers, errs := us.userRepository.AddUsersToWorkspace(ctx, userIDs, workspaceID)
+	workspaceUsers, errs := us.userRepository.AddUsersToWorkspace(ctx, userIDs, models.UserRoleUser, models.UserWorkspaceStatusPending, workspaceID)
 	if len(errs) > 0 {
 		for _, err := range errs {
 			responses = append(responses, api.CreateWorkspaceUserResponse{
@@ -103,11 +104,12 @@ func (us *userService) AddUserToWorkspace(ctx context.Context, workspaceID uuid.
 }
 
 func (us *userService) GetWorkspaceUser(ctx context.Context, clerk *clerk.User, workspaceID uuid.UUID) (models.WorkspaceUser, error) {
-	if clerk.PrimaryEmailAddressID == nil {
-		return models.WorkspaceUser{}, errors.New("PrimaryEmailAddressID is required")
+	userEmail, err := utils.GetClerkUserEmail(clerk)
+	if err != nil {
+		return models.WorkspaceUser{}, err
 	}
 
-	return us.userRepository.GetWorkspaceClerkUser(ctx, workspaceID, clerk.ID, *clerk.PrimaryEmailAddressID)
+	return us.userRepository.GetWorkspaceClerkUser(ctx, workspaceID, clerk.ID, userEmail)
 }
 
 func (us *userService) GetWorkspaceUserByID(ctx context.Context, userID, workspaceID uuid.UUID) (models.WorkspaceUser, error) {
@@ -119,11 +121,12 @@ func (us *userService) ListWorkspaceUsers(ctx context.Context, workspaceID uuid.
 }
 
 func (us *userService) ListUserWorkspaces(ctx context.Context, clerk *clerk.User) ([]uuid.UUID, error) {
-	if clerk.PrimaryEmailAddressID == nil {
-		return nil, errors.New("PrimaryEmailAddressID is required")
+	primaryEmail, err := utils.GetClerkUserEmail(clerk)
+	if err != nil {
+		return nil, err
 	}
 
-	user, err := us.userRepository.GetClerkUser(ctx, clerk.ID, *clerk.PrimaryEmailAddressID)
+	user, err := us.userRepository.GetClerkUser(ctx, clerk.ID, primaryEmail)
 	if err != nil {
 		return nil, err
 	}
@@ -145,8 +148,8 @@ func (us *userService) RemoveWorkspaceUsers(ctx context.Context, userIDs []uuid.
 	return us.userRepository.RemoveUsersFromWorkspace(ctx, userIDs, workspaceID)
 }
 
-func (us *userService) AddWorkspaceUsers(ctx context.Context, userIDs []uuid.UUID, workspaceID uuid.UUID) []error {
-	_, errs := us.userRepository.AddUsersToWorkspace(ctx, userIDs, workspaceID)
+func (us *userService) AddWorkspaceUsers(ctx context.Context, userIDs []uuid.UUID, role models.UserWorkspaceRole, status models.UserWorkspaceStatus, workspaceID uuid.UUID) []error {
+	_, errs := us.userRepository.AddUsersToWorkspace(ctx, userIDs, role, status, workspaceID)
 	return errs
 }
 
@@ -155,10 +158,11 @@ func (us *userService) GetWorkspaceUserCountByRole(ctx context.Context, workspac
 }
 
 func (us *userService) SyncUser(ctx context.Context, clerk *clerk.User) error {
-	if clerk.PrimaryEmailAddressID == nil {
-		return errors.New("PrimaryEmailAddress can't be nil")
+	primaryEmail, err := utils.GetClerkUserEmail(clerk)
+	if err != nil {
+		return err
 	}
-	user, err := us.userRepository.GetClerkUser(ctx, clerk.ID, *clerk.PrimaryEmailAddressID)
+	user, err := us.userRepository.GetClerkUser(ctx, clerk.ID, primaryEmail)
 	if err != nil {
 		return err
 	}
@@ -167,10 +171,11 @@ func (us *userService) SyncUser(ctx context.Context, clerk *clerk.User) error {
 }
 
 func (us *userService) DeleteUser(ctx context.Context, clerk *clerk.User) error {
-	if clerk.PrimaryEmailAddressID == nil {
-		return errors.New("PrimaryEmailAddress can't be nil")
+	primaryEmail, err := utils.GetClerkUserEmail(clerk)
+	if err != nil {
+		return err
 	}
-	user, err := us.userRepository.GetClerkUser(ctx, clerk.ID, *clerk.PrimaryEmailAddressID)
+	user, err := us.userRepository.GetClerkUser(ctx, clerk.ID, primaryEmail)
 	if err != nil {
 		return err
 	}

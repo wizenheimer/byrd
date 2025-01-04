@@ -14,6 +14,8 @@ import (
 	models "github.com/wizenheimer/iris/src/internal/models/core"
 	"github.com/wizenheimer/iris/src/internal/repository/transaction"
 	"github.com/wizenheimer/iris/src/pkg/logger"
+	"github.com/wizenheimer/iris/src/pkg/utils"
+	"go.uber.org/zap"
 )
 
 var (
@@ -195,7 +197,8 @@ func (r *userRepo) GetOrCreateUser(ctx context.Context, partialUser models.User)
 // GetOrCreateUserByEmail creates users if they do not exist
 func (r *userRepo) GetOrCreateUserByEmail(ctx context.Context, emails []string) ([]models.User, []error) {
 	if len(emails) == 0 {
-		return nil, []error{errors.New("no emails provided")}
+		r.logger.Debug("no emails provided", zap.Any("emails", emails))
+		return nil, nil
 	}
 
 	// Get a transaction runner
@@ -258,24 +261,32 @@ func (r *userRepo) GetOrCreateUserByEmail(ctx context.Context, emails []string) 
 // -----------------------------------------------------------
 
 // AddUsersToWorkspace adds users to a workspace
-func (r *userRepo) AddUsersToWorkspace(ctx context.Context, userIDs []uuid.UUID, workspaceID uuid.UUID) ([]models.WorkspaceUser, []error) {
+func (r *userRepo) AddUsersToWorkspace(ctx context.Context, userIDs []uuid.UUID, role models.UserWorkspaceRole, status models.UserWorkspaceStatus, workspaceID uuid.UUID) ([]models.WorkspaceUser, []error) {
 	// Get a transaction runner
 	runner := r.tm.GetRunner(ctx)
 
-	// Prepare batch insert
+	// Prepare batch insert with 4 values per row (workspace_id, user_id, role, status)
 	valueStrings := make([]string, len(userIDs))
-	valueArgs := make([]interface{}, 0, len(userIDs)*2)
+	valueArgs := make([]interface{}, 0, len(userIDs)*4)
 	for i, userID := range userIDs {
-		valueStrings[i] = fmt.Sprintf("($%d, $%d)", i*2+1, i*2+2)
-		valueArgs = append(valueArgs, workspaceID, userID)
+		// Update to include 4 parameters per row
+		valueStrings[i] = fmt.Sprintf("($%d, $%d, $%d, $%d)", i*4+1, i*4+2, i*4+3, i*4+4)
+		valueArgs = append(valueArgs,
+			workspaceID,
+			userID,
+			role,
+			status,
+		)
 	}
 
 	insertQuery := fmt.Sprintf(`
-		INSERT INTO workspace_users (workspace_id, user_id)
-		VALUES %s
-		ON CONFLICT (workspace_id, user_id) DO NOTHING
-		RETURNING workspace_id, user_id, role, status
-	`, strings.Join(valueStrings, ","))
+        INSERT INTO workspace_users (workspace_id, user_id, role, status)
+        VALUES %s
+        ON CONFLICT (workspace_id, user_id) DO UPDATE
+        SET role = EXCLUDED.role,
+            status = EXCLUDED.status
+        RETURNING workspace_id, user_id, role, status
+    `, strings.Join(valueStrings, ","))
 
 	rows, err := runner.QueryContext(ctx, insertQuery, valueArgs...)
 	if err != nil {
@@ -481,6 +492,8 @@ func (r *userRepo) ListUserWorkspaces(ctx context.Context, userID uuid.UUID) ([]
 		ORDER BY created_at DESC
 	`
 
+	r.logger.Debug("Listing user workspaces", zap.String("user_id", userID.String()), zap.String("query", query))
+
 	rows, err := runner.QueryContext(ctx, query, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list user workspaces: %w", err)
@@ -632,9 +645,14 @@ func (r *userRepo) SyncUser(ctx context.Context, userID uuid.UUID, clerkUser *cl
 		WHERE id = $5
 	`
 
+	userEmail, err := utils.GetClerkUserEmail(clerkUser)
+	if err != nil {
+		return err
+	}
+
 	result, err := runner.ExecContext(ctx, query,
 		clerkUser.ID,
-		clerkUser.PrimaryEmailAddressID,
+		userEmail,
 		fmt.Sprintf("%s %s", *clerkUser.FirstName, *clerkUser.LastName),
 		models.AccountStatusActive,
 		userID,

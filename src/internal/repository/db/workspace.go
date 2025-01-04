@@ -35,7 +35,7 @@ func NewWorkspaceRepository(tm *transaction.TxManager, logger *logger.Logger) re
 
 // generateSlug creates a URL-friendly slug from workspace name
 func generateSlug(name string) string {
-	name += uuid.NewString()
+	name += "-" + uuid.NewString()
 	return slug.Make(name)
 }
 

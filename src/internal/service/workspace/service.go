@@ -12,6 +12,7 @@ import (
 	api "github.com/wizenheimer/iris/src/internal/models/api"
 	models "github.com/wizenheimer/iris/src/internal/models/core"
 	"github.com/wizenheimer/iris/src/pkg/logger"
+	"github.com/wizenheimer/iris/src/pkg/utils"
 )
 
 func NewWorkspaceService(workspaceRepo repo.WorkspaceRepository, competitorService svc.CompetitorService, userService svc.UserService, logger *logger.Logger) svc.WorkspaceService {
@@ -26,8 +27,12 @@ func NewWorkspaceService(workspaceRepo repo.WorkspaceRepository, competitorServi
 func (ws *workspaceService) CreateWorkspace(ctx context.Context, workspaceOwner *clerk.User, workspaceReq api.WorkspaceCreationRequest) (*models.Workspace, error) {
 
 	// Create a new workspace
-	workspaceName := *workspaceOwner.FirstName + "'s Workspace"
-	billingEmail := *workspaceOwner.PrimaryEmailAddressID
+	workspaceName := utils.GenerateWorkspaceName(workspaceOwner)
+	billingEmail, err := utils.GetClerkUserEmail(workspaceOwner)
+	if err != nil {
+		return nil, err
+	}
+
 	workspace, err := ws.workspaceRepo.CreateWorkspace(ctx, workspaceName, billingEmail)
 	if err != nil {
 		return nil, err
@@ -41,7 +46,7 @@ func (ws *workspaceService) CreateWorkspace(ctx context.Context, workspaceOwner 
 
 	// Add other users to the workspace
 	emailMap := make(map[string]bool)
-	emailMap[*workspaceOwner.PrimaryEmailAddressID] = true
+	emailMap[billingEmail] = true
 
 	var invitedUsers []api.InviteUserToWorkspaceRequest
 	for _, user := range workspaceReq.WorkspaceUserCreationRequest {
@@ -268,14 +273,15 @@ func (ws *workspaceService) JoinWorkspace(ctx context.Context, invitedMember *cl
 	}
 
 	workspaceUser, err := ws.userService.GetWorkspaceUser(ctx, invitedMember, workspaceID)
-
 	if err != nil {
 		return err
 	}
 
-	errs := ws.userService.AddWorkspaceUsers(ctx, []uuid.UUID{workspaceUser.ID}, workspace.ID)
-	if len(errs) > 0 {
-		return errs[0]
+	if workspaceUser.WorkspaceUserStatus != models.UserWorkspaceStatusActive {
+		_, err := ws.userService.UpdateWorkspaceUserRole(ctx, workspaceUser.ID, workspaceID, models.UserRoleUser)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

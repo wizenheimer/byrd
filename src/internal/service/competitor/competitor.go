@@ -9,6 +9,7 @@ import (
 	api "github.com/wizenheimer/iris/src/internal/models/api"
 	models "github.com/wizenheimer/iris/src/internal/models/core"
 	"github.com/wizenheimer/iris/src/pkg/logger"
+	"go.uber.org/zap"
 )
 
 func NewCompetitorService(competitorRepository repo.CompetitorRepository, pageService svc.PageService, logger *logger.Logger) svc.CompetitorService {
@@ -16,6 +17,7 @@ func NewCompetitorService(competitorRepository repo.CompetitorRepository, pageSe
 		competitorRepository: competitorRepository,
 		pageService:          pageService,
 		logger:               logger,
+		nameFinder:           NewCompanyNameFinder(logger),
 	}
 }
 
@@ -23,8 +25,11 @@ func (cs *competitorService) CreateCompetitor(ctx context.Context, workspaceID u
 	var competitorNames []string
 
 	for _, page := range competitorReq.Pages {
-		// TODO: add competitor name
-		competitorNames = append(competitorNames, page.URL)
+		urls := []string{page.URL}
+
+		competitorName := cs.nameFinder.ProcessURLs(urls)
+
+		competitorNames = append(competitorNames, competitorName)
 	}
 
 	createdCompetitors, err := cs.competitorRepository.CreateCompetitors(ctx, workspaceID, competitorNames)
@@ -32,6 +37,14 @@ func (cs *competitorService) CreateCompetitor(ctx context.Context, workspaceID u
 		return api.CreateWorkspaceCompetitorResponse{}, err
 	}
 
+	for i, page := range competitorReq.Pages {
+		cs.logger.Debug("Creating page for competitor", zap.Any("competitor", createdCompetitors[i]), zap.Any("page", page))
+		_, errs := cs.pageService.CreatePage(ctx, createdCompetitors[i].ID, []api.CreatePageRequest{page})
+		if len(errs) > 0 {
+			// TODO: non-fatal error, log and continue
+			return api.CreateWorkspaceCompetitorResponse{}, errs
+		}
+	}
 	return api.CreateWorkspaceCompetitorResponse{
 		Competitors: createdCompetitors,
 	}, nil

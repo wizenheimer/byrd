@@ -9,6 +9,7 @@ import (
 type competitorService struct {
 	competitorRepository repo.CompetitorRepository
 	pageService          svc.PageService
+	nameFinder           *CompanyNameFinder
 	logger               *logger.Logger
 }
 

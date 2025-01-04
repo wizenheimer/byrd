@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -48,19 +49,28 @@ func (r *pageRepo) AddPagesToCompetitor(ctx context.Context, competitorID uuid.U
 	valueStrings := make([]string, 0, len(pages))
 	valueArgs := make([]interface{}, 0, len(pages)*4)
 	for i, page := range pages {
-		valueStrings = append(valueStrings, fmt.Sprintf("($%d, $%d, $%d, $%d)",
-			i*4+1, i*4+2, i*4+3, i*4+4))
+		valueStrings = append(valueStrings, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d)",
+			i*5+1, i*5+2, i*5+3, i*5+4, i*5+5))
+		captureProfileJSON, err := json.Marshal(page.CaptureProfile)
+		if err != nil {
+			return nil, []error{fmt.Errorf("failed to marshal capture profile: %w", err)}
+		}
+		diffProfileJSON, err := json.Marshal(page.DiffProfile)
+		if err != nil {
+			return nil, []error{fmt.Errorf("failed to marshal diff profile: %w", err)}
+		}
 		valueArgs = append(valueArgs,
 			competitorID,
 			page.URL,
-			page.CaptureProfile,
-			page.DiffProfile)
+			captureProfileJSON,
+			diffProfileJSON,
+			models.PageStatusActive) // Default status for new pages
 	}
 
 	query := fmt.Sprintf(`
 		INSERT INTO pages (competitor_id, url, capture_profile, diff_profile, status)
 		VALUES %s
-		RETURNING id, competitor_id, url, capture_profile, diff_profile, last_checked_at, status, created_at, updated_at
+		RETURNING id, competitor_id, url, capture_profile::jsonb, diff_profile::jsonb, last_checked_at, status, created_at, updated_at
 	`, strings.Join(valueStrings, ","))
 
 	rows, err := runner.QueryContext(ctx, query, valueArgs...)
@@ -69,28 +79,9 @@ func (r *pageRepo) AddPagesToCompetitor(ctx context.Context, competitorID uuid.U
 	}
 	defer rows.Close()
 
-	createdPages := make([]models.Page, 0, len(pages))
-	for rows.Next() {
-		var page models.Page
-		err := rows.Scan(
-			&page.ID,
-			&page.CompetitorID,
-			&page.URL,
-			&page.CaptureProfile,
-			&page.DiffProfile,
-			&page.LastCheckedAt,
-			&page.Status,
-			&page.CreatedAt,
-			&page.UpdatedAt,
-		)
-		if err != nil {
-			return nil, []error{fmt.Errorf("failed to scan page: %w", err)}
-		}
-		createdPages = append(createdPages, page)
-	}
-
-	if err = rows.Err(); err != nil {
-		return nil, []error{fmt.Errorf("error iterating over rows: %w", err)}
+	createdPages, err := scanPages(rows)
+	if err != nil {
+		return nil, []error{fmt.Errorf("failed to scan pages: %w", err)}
 	}
 
 	return createdPages, nil
@@ -150,7 +141,7 @@ func (r *pageRepo) ListCompetitorPages(ctx context.Context, competitorID uuid.UU
 	query := `
 		SELECT id, competitor_id, url, capture_profile, diff_profile, last_checked_at, status, created_at, updated_at
 		FROM pages
-		WHERE competitor_id = $1
+		WHERE competitor_id = $1 AND status = 'active'
 		ORDER BY created_at DESC
 	`
 	args := []interface{}{competitorID}
@@ -169,28 +160,9 @@ func (r *pageRepo) ListCompetitorPages(ctx context.Context, competitorID uuid.UU
 	}
 	defer rows.Close()
 
-	var pages []models.Page
-	for rows.Next() {
-		var page models.Page
-		err := rows.Scan(
-			&page.ID,
-			&page.CompetitorID,
-			&page.URL,
-			&page.CaptureProfile,
-			&page.DiffProfile,
-			&page.LastCheckedAt,
-			&page.Status,
-			&page.CreatedAt,
-			&page.UpdatedAt,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan page: %w", err)
-		}
-		pages = append(pages, page)
-	}
-
-	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating over rows: %w", err)
+	pages, err := scanPages(rows)
+	if err != nil {
+		return nil, fmt.Errorf("failed to scan pages: %w", err)
 	}
 
 	if len(pages) == 0 {
@@ -232,27 +204,9 @@ func (r *pageRepo) ListActivePages(ctx context.Context, batchSize int, lastPageI
 	defer rows.Close()
 
 	var pages []models.Page
-	for rows.Next() {
-		var page models.Page
-		err := rows.Scan(
-			&page.ID,
-			&page.CompetitorID,
-			&page.URL,
-			&page.CaptureProfile,
-			&page.DiffProfile,
-			&page.LastCheckedAt,
-			&page.Status,
-			&page.CreatedAt,
-			&page.UpdatedAt,
-		)
-		if err != nil {
-			return models.ActivePageBatch{}, fmt.Errorf("failed to scan page: %w", err)
-		}
-		pages = append(pages, page)
-	}
-
-	if err = rows.Err(); err != nil {
-		return models.ActivePageBatch{}, fmt.Errorf("error iterating over rows: %w", err)
+	pages, err = scanPages(rows)
+	if err != nil {
+		return models.ActivePageBatch{}, fmt.Errorf("failed to scan pages: %w", err)
 	}
 
 	result := models.ActivePageBatch{
@@ -278,27 +232,13 @@ func (r *pageRepo) GetCompetitorPage(ctx context.Context, competitorID, pageID u
 		WHERE id = $1 AND competitor_id = $2
 	`
 
-	var page models.Page
-	err := runner.QueryRowContext(ctx, query, pageID, competitorID).Scan(
-		&page.ID,
-		&page.CompetitorID,
-		&page.URL,
-		&page.CaptureProfile,
-		&page.DiffProfile,
-		&page.LastCheckedAt,
-		&page.Status,
-		&page.CreatedAt,
-		&page.UpdatedAt,
-	)
-
-	if err == sql.ErrNoRows {
-		return models.Page{}, ErrPageNotFound
-	}
-	if err != nil {
-		return models.Page{}, fmt.Errorf("failed to get page: %w", err)
+	row := runner.QueryRowContext(ctx, query, pageID, competitorID)
+	page, err := scanPage(row)
+	if err != nil || page == nil {
+		return models.Page{}, fmt.Errorf("failed to get competitor page: %w", err)
 	}
 
-	return page, nil
+	return *page, nil
 }
 
 // UpdateCompetitorPage updates a page for a competitor
@@ -322,31 +262,86 @@ func (r *pageRepo) UpdateCompetitorPage(ctx context.Context, competitorID, pageI
 		RETURNING id, competitor_id, url, capture_profile, diff_profile, last_checked_at, status, created_at, updated_at
 	`
 
-	var updatedPage models.Page
-	err = runner.QueryRowContext(ctx, query,
+	row := runner.QueryRowContext(ctx, query,
 		page.URL,
 		page.CaptureProfile,
 		page.DiffProfile,
 		pageID,
 		competitorID,
-	).Scan(
-		&updatedPage.ID,
-		&updatedPage.CompetitorID,
-		&updatedPage.URL,
-		&updatedPage.CaptureProfile,
-		&updatedPage.DiffProfile,
-		&updatedPage.LastCheckedAt,
-		&updatedPage.Status,
-		&updatedPage.CreatedAt,
-		&updatedPage.UpdatedAt,
 	)
-
-	if err == sql.ErrNoRows {
-		return models.Page{}, ErrPageNotFound
-	}
-	if err != nil {
+	updatedPage, err := scanPage(row)
+	if err != nil || updatedPage == nil {
 		return models.Page{}, fmt.Errorf("failed to update page: %w", err)
 	}
 
-	return updatedPage, nil
+	return *updatedPage, nil
+}
+
+// scanPage scans a single row into a Page object
+func scanPage(row dbScanner) (*models.Page, error) {
+	var page models.Page
+	var captureProfileBytes, diffProfileBytes []byte
+
+	err := row.Scan(
+		&page.ID,
+		&page.CompetitorID,
+		&page.URL,
+		&captureProfileBytes,
+		&diffProfileBytes,
+		&page.LastCheckedAt,
+		&page.Status,
+		&page.CreatedAt,
+		&page.UpdatedAt,
+	)
+	if err == sql.ErrNoRows {
+		return nil, ErrPageNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to scan page: %w", err)
+	}
+
+	// Initialize empty maps if needed
+	if page.CaptureProfile == nil {
+		page.CaptureProfile = make(map[string]interface{})
+	}
+	if page.DiffProfile == nil {
+		page.DiffProfile = make(map[string]interface{})
+	}
+
+	// Unmarshal JSONB data into maps
+	if len(captureProfileBytes) > 0 {
+		if err := json.Unmarshal(captureProfileBytes, &page.CaptureProfile); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal capture profile: %w", err)
+		}
+	}
+	if len(diffProfileBytes) > 0 {
+		if err := json.Unmarshal(diffProfileBytes, &page.DiffProfile); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal diff profile: %w", err)
+		}
+	}
+
+	return &page, nil
+}
+
+// scanPages scans multiple rows into a slice of Page objects
+func scanPages(rows *sql.Rows) ([]models.Page, error) {
+	var pages []models.Page
+	for rows.Next() {
+		page, err := scanPage(rows)
+		if err != nil {
+			return nil, err
+		}
+		pages = append(pages, *page)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating over rows: %w", err)
+	}
+
+	return pages, nil
+}
+
+// dbScanner is an interface that abstracts the Scan method
+// This allows us to use the same scanning logic for both sql.Row and sql.Rows
+type dbScanner interface {
+	Scan(dest ...interface{}) error
 }

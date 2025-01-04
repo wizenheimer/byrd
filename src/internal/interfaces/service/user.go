@@ -65,7 +65,7 @@ type UserService interface {
 
 	// AddWorkspaceUsers adds users to a workspace
 	// It returns an error if the users could not be added
-	AddWorkspaceUsers(ctx context.Context, userIDs []uuid.UUID, workspaceID uuid.UUID) []error
+	AddWorkspaceUsers(ctx context.Context, userIDs []uuid.UUID, role models.UserWorkspaceRole, status models.UserWorkspaceStatus, workspaceID uuid.UUID) []error
 
 	// GetWorkspaceUserCount gets the count of users in a workspace
 	// It returns the count of users in the workspace
