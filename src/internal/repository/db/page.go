@@ -89,37 +89,44 @@ func (r *pageRepo) AddPagesToCompetitor(ctx context.Context, competitorID uuid.U
 
 // RemovePagesFromCompetitor removes pages from a competitor
 func (r *pageRepo) RemovePagesFromCompetitor(ctx context.Context, competitorID uuid.UUID, pageIDs []uuid.UUID) []error {
-
 	runner := r.tm.GetRunner(ctx)
 
 	var query string
 	var args []interface{}
 
-	if len(pageIDs) == 0 {
-		// Remove all pages for the competitor
-		query = "DELETE FROM pages WHERE competitor_id = $1"
-		args = []interface{}{competitorID}
+	if pageIDs == nil {
+		// Soft delete all active pages for the competitor
+		query = `
+			UPDATE pages
+			SET status = $2, updated_at = CURRENT_TIMESTAMP
+			WHERE competitor_id = $1 AND status = $3
+		`
+		args = []interface{}{competitorID, models.PageStatusInactive, models.PageStatusActive}
 	} else {
-		// Remove specific pages
+		// Soft delete specific active pages
 		placeholders := make([]string, len(pageIDs))
-		args = make([]interface{}, len(pageIDs)+1)
+		args = make([]interface{}, len(pageIDs)+3) // +3 for competitorID, new status, and current status
 		args[0] = competitorID
+		args[1] = models.PageStatusInactive
+		args[2] = models.PageStatusActive
 
 		for i, id := range pageIDs {
-			placeholders[i] = fmt.Sprintf("$%d", i+2)
-			args[i+1] = id
+			placeholders[i] = fmt.Sprintf("$%d", i+4) // Start from $4 since we have 3 fixed params
+			args[i+3] = id
 		}
 
 		query = fmt.Sprintf(`
-			DELETE FROM pages
+			UPDATE pages
+			SET status = $2, updated_at = CURRENT_TIMESTAMP
 			WHERE competitor_id = $1
+			AND status = $3
 			AND id IN (%s)
 		`, strings.Join(placeholders, ","))
 	}
 
 	result, err := runner.ExecContext(ctx, query, args...)
 	if err != nil {
-		return []error{fmt.Errorf("failed to remove pages: %w", err)}
+		return []error{fmt.Errorf("failed to soft delete pages: %w", err)}
 	}
 
 	rowsAffected, err := result.RowsAffected()
@@ -145,13 +152,26 @@ func (r *pageRepo) ListCompetitorPages(ctx context.Context, competitorID uuid.UU
 		ORDER BY created_at DESC
 	`
 	args := []interface{}{competitorID}
+	paramCount := 1
 
-	if limit != nil && offset != nil {
-		if *limit < 0 || *offset < 0 {
+	// Only add LIMIT if limit is provided and valid
+	if limit != nil {
+		if *limit < 0 {
 			return nil, ErrInvalidPagination
 		}
-		query += " LIMIT $2 OFFSET $3"
-		args = append(args, *limit, *offset)
+		paramCount++
+		query += fmt.Sprintf(" LIMIT $%d", paramCount)
+		args = append(args, *limit)
+	}
+
+	// Only add OFFSET if offset is provided and valid
+	if offset != nil {
+		if *offset < 0 {
+			return nil, ErrInvalidPagination
+		}
+		paramCount++
+		query += fmt.Sprintf(" OFFSET $%d", paramCount)
+		args = append(args, *offset)
 	}
 
 	rows, err := runner.QueryContext(ctx, query, args...)
@@ -242,6 +262,7 @@ func (r *pageRepo) GetCompetitorPage(ctx context.Context, competitorID, pageID u
 }
 
 // UpdateCompetitorPage updates a page for a competitor
+// UpdateCompetitorPage updates a page for a competitor
 func (r *pageRepo) UpdateCompetitorPage(ctx context.Context, competitorID, pageID uuid.UUID, page models.PageProps) (models.Page, error) {
 	runner := r.tm.GetRunner(ctx)
 
@@ -255,6 +276,17 @@ func (r *pageRepo) UpdateCompetitorPage(ctx context.Context, competitorID, pageI
 		return models.Page{}, ErrCompetitorMismatch
 	}
 
+	// Marshal the maps to JSON
+	captureProfileJSON, err := json.Marshal(page.CaptureProfile)
+	if err != nil {
+		return models.Page{}, fmt.Errorf("failed to marshal capture profile: %w", err)
+	}
+
+	diffProfileJSON, err := json.Marshal(page.DiffProfile)
+	if err != nil {
+		return models.Page{}, fmt.Errorf("failed to marshal diff profile: %w", err)
+	}
+
 	query := `
 		UPDATE pages
 		SET url = $1, capture_profile = $2, diff_profile = $3, updated_at = CURRENT_TIMESTAMP
@@ -264,11 +296,12 @@ func (r *pageRepo) UpdateCompetitorPage(ctx context.Context, competitorID, pageI
 
 	row := runner.QueryRowContext(ctx, query,
 		page.URL,
-		page.CaptureProfile,
-		page.DiffProfile,
+		captureProfileJSON, // Using the marshaled JSON instead of the raw map
+		diffProfileJSON,    // Using the marshaled JSON instead of the raw map
 		pageID,
 		competitorID,
 	)
+
 	updatedPage, err := scanPage(row)
 	if err != nil || updatedPage == nil {
 		return models.Page{}, fmt.Errorf("failed to update page: %w", err)

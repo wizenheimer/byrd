@@ -585,6 +585,16 @@ func (wh *WorkspaceHandler) AddPageToCompetitor(c *fiber.Ctx) error {
 		})
 	}
 
+	for index := range pages {
+		if err := utils.SetDefaultsAndValidate(&pages[index]); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
+				Error:   "InvalidRequest",
+				Code:    fiber.StatusBadRequest,
+				Message: err.Error(),
+			})
+		}
+	}
+
 	clerkUser, err := auth.GetClerkUserFromContext(c)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(ErrorResponse{
@@ -642,7 +652,7 @@ func (wh *WorkspaceHandler) ListWorkspaceCompetitors(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
 			Error:   "InternalServerError",
 			Code:    fiber.StatusInternalServerError,
-			Message: "Failed to list competitors",
+			Message: err.Error(),
 		})
 	}
 
@@ -687,11 +697,8 @@ func (wh *WorkspaceHandler) ListPageHistory(c *fiber.Ctx) error {
 		})
 	}
 
-	limit := c.QueryInt("limit", 10)
-	offset := c.QueryInt("offset", 0)
-
-	pageNumber := offset/limit + 1
-	pageSize := limit
+	pageNumber := c.QueryInt("pageNumber", 10)
+	pageSize := c.QueryInt("pageSize", 0)
 
 	params := api.PaginationParams{
 		Page:     pageNumber,
@@ -703,7 +710,7 @@ func (wh *WorkspaceHandler) ListPageHistory(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
 			Error:   "InternalServerError",
 			Code:    fiber.StatusInternalServerError,
-			Message: "Failed to list page history",
+			Message: err.Error(),
 		})
 	}
 
@@ -783,7 +790,7 @@ func (wh *WorkspaceHandler) RemoveCompetitorFromWorkspace(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
 			Error:   "InternalServerError",
 			Code:    fiber.StatusInternalServerError,
-			Message: "Failed to remove competitor",
+			Message: err.Error(),
 		})
 	}
 
@@ -823,7 +830,7 @@ func (wh *WorkspaceHandler) UpdatePageInCompetitor(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
 			Error:   "InternalServerError",
 			Code:    fiber.StatusInternalServerError,
-			Message: "Failed to update page",
+			Message: err.Error(),
 		})
 	}
 

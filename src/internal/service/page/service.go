@@ -49,9 +49,12 @@ func (ps *pageService) UpdatePage(ctx context.Context, competitorID uuid.UUID, p
 }
 
 func (ps *pageService) ListCompetitorPages(ctx context.Context, competitorID uuid.UUID, param *api.PaginationParams) ([]models.Page, error) {
-	limit := param.GetLimit()
-	offet := param.GetOffset()
-	return ps.pageRepo.ListCompetitorPages(ctx, competitorID, &limit, &offet)
+	if param == nil {
+		return ps.pageRepo.ListCompetitorPages(ctx, competitorID, nil, nil)
+	}
+
+	limit, offset := param.GetLimit(), param.GetOffset()
+	return ps.pageRepo.ListCompetitorPages(ctx, competitorID, &limit, &offset)
 }
 
 func (ps *pageService) ListActivePages(ctx context.Context, batchSize int, lastPageID *uuid.UUID) (<-chan []models.Page, <-chan error) {

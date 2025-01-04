@@ -6,6 +6,7 @@ import (
 
 	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 
 	repo "github.com/wizenheimer/iris/src/internal/interfaces/repository"
 	svc "github.com/wizenheimer/iris/src/internal/interfaces/service"
@@ -403,6 +404,8 @@ func (ws *workspaceService) ListWorkspaceCompetitors(ctx context.Context, clerkU
 	if err != nil {
 		return nil, err
 	}
+
+	ws.logger.Debug("listing workspace competitors", zap.Any("workspace", workspace), zap.Any("params", params), zap.Any("competitorService", ws.competitorService == nil))
 
 	competitorsWithPages, err := ws.competitorService.ListWorkspaceCompetitors(ctx, workspace.ID, params)
 	if err != nil {

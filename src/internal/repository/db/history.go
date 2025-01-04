@@ -149,7 +149,7 @@ func (r *historyRepo) ListPageHistory(ctx context.Context, pageID uuid.UUID, lim
 	}
 
 	if len(history) == 0 {
-		return nil, ErrNoPageHistory
+		return []models.PageHistory{}, nil
 	}
 
 	return history, nil
