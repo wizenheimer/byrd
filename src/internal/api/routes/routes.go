@@ -69,11 +69,11 @@ func setupPublicRoutes(app *fiber.App, h *HandlerContainer, authMiddleware *midd
 	// List workspaces for a user
 	workspace.Get("/", wh.ListWorkspaces)
 	// Get a workspace by ID
-	workspace.Get("/:workspaceID", wh.GetWorkspace)
+	workspace.Get("/:workspaceID/", wh.GetWorkspace)
 	// Update a workspace by ID
-	workspace.Put("/:workspaceID", wh.UpdateWorkspace)
+	workspace.Put("/:workspaceID/", wh.UpdateWorkspace)
 	// Delete a workspace by ID
-	workspace.Delete("/:workspaceID", wh.DeleteWorkspace)
+	workspace.Delete("/:workspaceID/", wh.DeleteWorkspace)
 
 	// <------- Workspace User Management Routes ------->
 	// Exit a workspace by ID

@@ -24,6 +24,7 @@ import (
 	"github.com/wizenheimer/iris/src/internal/service/user"
 	"github.com/wizenheimer/iris/src/internal/service/workspace"
 	"github.com/wizenheimer/iris/src/pkg/logger"
+	"github.com/wizenheimer/iris/src/pkg/utils"
 	"go.uber.org/zap"
 )
 
@@ -43,6 +44,9 @@ func initializer(cfg *config.Config, sqldb *sql.DB, logger *logger.Logger) (*rou
 	// Create a new rate limited client
 	// This client will be used to make requests to the screenshot service
 	screenshotRateLimitedClient := client.NewRateLimitedClient(screenshotHttpClient, cfg.Services.ScreenshotServiceQPS)
+
+	// Initialize validator
+	utils.InitializeValidator()
 
 	// Initialize services
 	screenshotService, err := setupScreenshotService(cfg, screenshotRateLimitedClient, logger)
