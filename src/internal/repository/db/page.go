@@ -17,12 +17,24 @@ import (
 )
 
 var (
-	ErrPageNotFound       = errors.New("page not found")
-	ErrNoCompetitorPages  = errors.New("no pages found for competitor")
-	ErrInvalidBatchSize   = errors.New("invalid batch size")
-	ErrInvalidPageProps   = errors.New("invalid page properties")
-	ErrPageUpdateFailed   = errors.New("failed to update page")
-	ErrCompetitorMismatch = errors.New("page does not belong to competitor")
+	// ---- validation errors -----
+	ErrPagesUnspecified                = errors.New("pages unspecified for competitor")
+	ErrFailedToMarshallCaptureProfile  = errors.New("failed to marshal capture profile for page")
+	ErrFailedToUnmarshalCaptureProfile = errors.New("failed to unmarshal capture profile for page")
+	ErrFailedToMarshallDiffProfile     = errors.New("failed to marshal diff profile for page")
+	ErrFailedToUnmarshalDiffProfile    = errors.New("failed to unmarshal diff profile for page")
+	ErrInvalidBatchSize                = errors.New("invalid batch size")
+
+	// ---- non fatal errors ----
+	ErrFailedToConfirmPageRemoval = errors.New("failed to confirm page removal")
+
+	// ---- remapped errors ----
+	// case 1 : remapping an existing error
+	// case 2 : remapping a non error scenario to an error
+	ErrNoCompetitorPages = errors.New("no pages found for the competitor")
+	ErrPageNotFound      = errors.New("page not found")
+    ErrFailedToScanPages              = errors.New("failed to scan pages from pages table")
+    ErrFailedToIterateOverPagesForScan = errors.New("failed to scan pages from pages table")
 )
 
 type pageRepo struct {
@@ -40,7 +52,7 @@ func NewPageRepository(tm *transaction.TxManager, logger *logger.Logger) repo.Pa
 // AddPagesToCompetitor adds pages to a competitor
 func (r *pageRepo) AddPagesToCompetitor(ctx context.Context, competitorID uuid.UUID, pages []models.PageProps) ([]models.Page, []error) {
 	if len(pages) == 0 {
-		return nil, []error{errors.New("no pages provided")}
+		return nil, []error{ErrPagesUnspecified}
 	}
 
 	runner := r.tm.GetRunner(ctx)
@@ -51,14 +63,17 @@ func (r *pageRepo) AddPagesToCompetitor(ctx context.Context, competitorID uuid.U
 	for i, page := range pages {
 		valueStrings = append(valueStrings, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d)",
 			i*5+1, i*5+2, i*5+3, i*5+4, i*5+5))
+
 		captureProfileJSON, err := json.Marshal(page.CaptureProfile)
 		if err != nil {
-			return nil, []error{fmt.Errorf("failed to marshal capture profile: %w", err)}
+			return nil, []error{err, ErrFailedToMarshallCaptureProfile}
 		}
+
 		diffProfileJSON, err := json.Marshal(page.DiffProfile)
 		if err != nil {
-			return nil, []error{fmt.Errorf("failed to marshal diff profile: %w", err)}
+			return nil, []error{err, ErrFailedToMarshallDiffProfile}
 		}
+
 		valueArgs = append(valueArgs,
 			competitorID,
 			page.URL,
@@ -75,13 +90,13 @@ func (r *pageRepo) AddPagesToCompetitor(ctx context.Context, competitorID uuid.U
 
 	rows, err := runner.QueryContext(ctx, query, valueArgs...)
 	if err != nil {
-		return nil, []error{fmt.Errorf("failed to insert pages: %w", err)}
+		return nil, []error{err}
 	}
 	defer rows.Close()
 
 	createdPages, err := scanPages(rows)
 	if err != nil {
-		return nil, []error{fmt.Errorf("failed to scan pages: %w", err)}
+		return nil, []error{err}
 	}
 
 	return createdPages, nil
@@ -126,23 +141,29 @@ func (r *pageRepo) RemovePagesFromCompetitor(ctx context.Context, competitorID u
 
 	result, err := runner.ExecContext(ctx, query, args...)
 	if err != nil {
-		return []error{fmt.Errorf("failed to soft delete pages: %w", err)}
+		return []error{
+			err,
+		}
 	}
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		return []error{fmt.Errorf("failed to get affected rows: %w", err)}
+		return []error{
+			ErrFailedToConfirmPageRemoval,
+		}
 	}
 
 	if rowsAffected == 0 {
-		return []error{ErrNoCompetitorPages}
+		return []error{
+			ErrNoCompetitorPages,
+		}
 	}
 
 	return nil
 }
 
 // ListCompetitorPages gets the pages for a competitor with optional pagination
-func (r *pageRepo) ListCompetitorPages(ctx context.Context, competitorID uuid.UUID, limit, offset *int) ([]models.Page, error) {
+func (r *pageRepo) ListCompetitorPages(ctx context.Context, competitorID uuid.UUID, limit, offset *int) ([]models.Page, []error) {
 	runner := r.tm.GetRunner(ctx)
 
 	query := `
@@ -157,7 +178,7 @@ func (r *pageRepo) ListCompetitorPages(ctx context.Context, competitorID uuid.UU
 	// Only add LIMIT if limit is provided and valid
 	if limit != nil {
 		if *limit < 0 {
-			return nil, ErrInvalidPagination
+			return nil, []error{ErrInvalidLimit}
 		}
 		paramCount++
 		query += fmt.Sprintf(" LIMIT $%d", paramCount)
@@ -167,7 +188,7 @@ func (r *pageRepo) ListCompetitorPages(ctx context.Context, competitorID uuid.UU
 	// Only add OFFSET if offset is provided and valid
 	if offset != nil {
 		if *offset < 0 {
-			return nil, ErrInvalidPagination
+			return nil, []error{ErrInvalidOffset}
 		}
 		paramCount++
 		query += fmt.Sprintf(" OFFSET $%d", paramCount)
@@ -176,17 +197,17 @@ func (r *pageRepo) ListCompetitorPages(ctx context.Context, competitorID uuid.UU
 
 	rows, err := runner.QueryContext(ctx, query, args...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list competitor pages: %w", err)
+		return nil, []error{err}
 	}
 	defer rows.Close()
 
 	pages, err := scanPages(rows)
 	if err != nil {
-		return nil, fmt.Errorf("failed to scan pages: %w", err)
+		return nil, []error{err}
 	}
 
 	if len(pages) == 0 {
-		return nil, ErrNoCompetitorPages
+		return nil, []error{ErrNoCompetitorPages}
 	}
 
 	return pages, nil
@@ -219,14 +240,14 @@ func (r *pageRepo) ListActivePages(ctx context.Context, batchSize int, lastPageI
 
 	rows, err := runner.QueryContext(ctx, query, args...)
 	if err != nil {
-		return models.ActivePageBatch{}, fmt.Errorf("failed to list active pages: %w", err)
+		return models.ActivePageBatch{}, err
 	}
 	defer rows.Close()
 
 	var pages []models.Page
 	pages, err = scanPages(rows)
 	if err != nil {
-		return models.ActivePageBatch{}, fmt.Errorf("failed to scan pages: %w", err)
+		return models.ActivePageBatch{}, err
 	}
 
 	result := models.ActivePageBatch{
@@ -254,8 +275,12 @@ func (r *pageRepo) GetCompetitorPage(ctx context.Context, competitorID, pageID u
 
 	row := runner.QueryRowContext(ctx, query, pageID, competitorID)
 	page, err := scanPage(row)
-	if err != nil || page == nil {
-		return models.Page{}, fmt.Errorf("failed to get competitor page: %w", err)
+	if err != nil {
+		return models.Page{}, err
+	}
+
+	if page == nil {
+		return models.Page{}, ErrPageNotFound
 	}
 
 	return *page, nil
@@ -270,21 +295,21 @@ func (r *pageRepo) UpdateCompetitorPage(ctx context.Context, competitorID, pageI
 	var exists bool
 	err := runner.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM pages WHERE id = $1 AND competitor_id = $2)", pageID, competitorID).Scan(&exists)
 	if err != nil {
-		return models.Page{}, fmt.Errorf("failed to verify page ownership: %w", err)
+		return models.Page{}, err
 	}
 	if !exists {
-		return models.Page{}, ErrCompetitorMismatch
+		return models.Page{}, ErrPageNotFound
 	}
 
 	// Marshal the maps to JSON
 	captureProfileJSON, err := json.Marshal(page.CaptureProfile)
 	if err != nil {
-		return models.Page{}, fmt.Errorf("failed to marshal capture profile: %w", err)
+		return models.Page{}, ErrFailedToMarshallCaptureProfile
 	}
 
 	diffProfileJSON, err := json.Marshal(page.DiffProfile)
 	if err != nil {
-		return models.Page{}, fmt.Errorf("failed to marshal diff profile: %w", err)
+		return models.Page{}, ErrFailedToMarshallDiffProfile
 	}
 
 	query := `
@@ -303,8 +328,8 @@ func (r *pageRepo) UpdateCompetitorPage(ctx context.Context, competitorID, pageI
 	)
 
 	updatedPage, err := scanPage(row)
-	if err != nil || updatedPage == nil {
-		return models.Page{}, fmt.Errorf("failed to update page: %w", err)
+	if err != nil {
+		return models.Page{}, err
 	}
 
 	return *updatedPage, nil
@@ -330,7 +355,7 @@ func scanPage(row dbScanner) (*models.Page, error) {
 		return nil, ErrPageNotFound
 	}
 	if err != nil {
-		return nil, fmt.Errorf("failed to scan page: %w", err)
+		return nil, ErrFailedToScanPages
 	}
 
 	// Initialize empty maps if needed
@@ -344,12 +369,12 @@ func scanPage(row dbScanner) (*models.Page, error) {
 	// Unmarshal JSONB data into maps
 	if len(captureProfileBytes) > 0 {
 		if err := json.Unmarshal(captureProfileBytes, &page.CaptureProfile); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal capture profile: %w", err)
+			return nil, ErrFailedToUnmarshalCaptureProfile
 		}
 	}
 	if len(diffProfileBytes) > 0 {
 		if err := json.Unmarshal(diffProfileBytes, &page.DiffProfile); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal diff profile: %w", err)
+			return nil, ErrFailedToUnmarshalDiffProfile
 		}
 	}
 
@@ -367,7 +392,7 @@ func scanPages(rows *sql.Rows) ([]models.Page, error) {
 		pages = append(pages, *page)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating over rows: %w", err)
+		return nil, ErrFailedToIterateOverPagesForScan
 	}
 
 	return pages, nil

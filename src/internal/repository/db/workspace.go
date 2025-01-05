@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"strings"
@@ -16,9 +17,19 @@ import (
 )
 
 var (
+	// ---- validation errors -----
+	ErrNoWorkspaceSpecified = errors.New("no workspace specified")
+
+	// ---- non fatal errors ----
+	ErrFailedToConfirmUpdatedBillingEmail   = errors.New("failed to confirm billing email")
+	ErrFailedToConfirmWorkspaceNameUpdate   = errors.New("failed to confirm workspace name update")
+	ErrFailedToConfirmWorkspaceStatusUpdate = errors.New("failed to confirm workspace status update")
+	ErrFailedToConfirmWorkspaceUpdate       = errors.New("failed to confirm workspace update")
+
+	// ---- remapped errors ----
+	// case 1 : remapping an existing error
+	// case 2 : remapping a non error scenario to an error
 	ErrWorkspaceNotFound = errors.New("workspace not found")
-	ErrInvalidWorkspace  = errors.New("invalid workspace data")
-	ErrDuplicateSlug     = errors.New("workspace slug already exists")
 )
 
 type workspaceRepo struct {
@@ -44,22 +55,7 @@ func (r *workspaceRepo) CreateWorkspace(ctx context.Context, workspaceName, bill
 	runner := r.tm.GetRunner(ctx)
 
 	// Generate initial slug
-	baseSlug := generateSlug(workspaceName)
-	slug := baseSlug
-
-	// Handle potential slug collisions
-	for i := 1; ; i++ {
-		var exists bool
-		err := runner.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM workspaces WHERE slug = $1)", slug).Scan(&exists)
-		if err != nil {
-			return models.Workspace{}, fmt.Errorf("failed to check slug existence: %w", err)
-		}
-		if !exists {
-			break
-		}
-		// If slug exists, append a number and try again
-		slug = fmt.Sprintf("%s-%d", baseSlug, i)
-	}
+	slug := generateSlug(workspaceName)
 
 	query := `
 		INSERT INTO workspaces (name, slug, billing_email, status)
@@ -84,7 +80,7 @@ func (r *workspaceRepo) CreateWorkspace(ctx context.Context, workspaceName, bill
 	)
 
 	if err != nil {
-		return models.Workspace{}, fmt.Errorf("failed to create workspace: %w", err)
+		return models.Workspace{}, err
 	}
 
 	return workspace, nil
@@ -93,7 +89,7 @@ func (r *workspaceRepo) CreateWorkspace(ctx context.Context, workspaceName, bill
 // GetWorkspaces gets multiple workspaces by their IDs
 func (r *workspaceRepo) GetWorkspaces(ctx context.Context, workspaceIDs []uuid.UUID) ([]models.Workspace, []error) {
 	if len(workspaceIDs) == 0 {
-		return []models.Workspace{}, nil
+		return []models.Workspace{}, []error{ErrNoWorkspaceSpecified}
 	}
 
 	runner := r.tm.GetRunner(ctx)
@@ -114,7 +110,7 @@ func (r *workspaceRepo) GetWorkspaces(ctx context.Context, workspaceIDs []uuid.U
 
 	rows, err := runner.QueryContext(ctx, query, args...)
 	if err != nil {
-		return nil, []error{fmt.Errorf("failed to get workspaces: %w", err)}
+		return nil, []error{err}
 	}
 	defer rows.Close()
 
@@ -133,22 +129,22 @@ func (r *workspaceRepo) GetWorkspaces(ctx context.Context, workspaceIDs []uuid.U
 			&workspace.UpdatedAt,
 		)
 		if err != nil {
-			errs = append(errs, fmt.Errorf("failed to scan workspace: %w", err))
+			errs = append(errs, err)
 			continue
 		}
 		workspaces = append(workspaces, workspace)
 	}
 
 	if err = rows.Err(); err != nil {
-		errs = append(errs, fmt.Errorf("error iterating over rows: %w", err))
-	}
-
-	if len(workspaces) == 0 {
-		return nil, []error{ErrWorkspaceNotFound}
+		errs = append(errs, err)
 	}
 
 	if len(errs) > 0 {
 		return workspaces, errs
+	}
+
+	if len(workspaces) == 0 {
+		return nil, []error{ErrWorkspaceNotFound}
 	}
 
 	return workspaces, nil
@@ -166,7 +162,10 @@ func (r *workspaceRepo) WorkspaceExists(ctx context.Context, workspaceID uuid.UU
 	).Scan(&exists)
 
 	if err != nil {
-		return false, fmt.Errorf("failed to check workspace existence: %w", err)
+		if err == sql.ErrNoRows {
+			return false, nil
+		}
+		return false, err
 	}
 
 	return exists, nil
@@ -183,12 +182,12 @@ func (r *workspaceRepo) UpdateWorkspaceBillingEmail(ctx context.Context, workspa
 	`, billingEmail, workspaceID)
 
 	if err != nil {
-		return fmt.Errorf("failed to update workspace billing email: %w", err)
+		return err
 	}
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		return fmt.Errorf("failed to get affected rows: %w", err)
+		return ErrFailedToConfirmUpdatedBillingEmail
 	}
 
 	if rowsAffected == 0 {
@@ -203,23 +202,7 @@ func (r *workspaceRepo) UpdateWorkspaceName(ctx context.Context, workspaceID uui
 	runner := r.tm.GetRunner(ctx)
 
 	// Generate and verify unique slug
-	baseSlug := generateSlug(workspaceName)
-	slug := baseSlug
-
-	for i := 1; ; i++ {
-		var exists bool
-		err := runner.QueryRowContext(ctx,
-			"SELECT EXISTS(SELECT 1 FROM workspaces WHERE slug = $1 AND id != $2)",
-			slug, workspaceID,
-		).Scan(&exists)
-		if err != nil {
-			return fmt.Errorf("failed to check slug existence: %w", err)
-		}
-		if !exists {
-			break
-		}
-		slug = fmt.Sprintf("%s-%d", baseSlug, i)
-	}
+	slug := generateSlug(workspaceName)
 
 	result, err := runner.ExecContext(ctx, `
 		UPDATE workspaces
@@ -228,12 +211,12 @@ func (r *workspaceRepo) UpdateWorkspaceName(ctx context.Context, workspaceID uui
 	`, workspaceName, slug, workspaceID)
 
 	if err != nil {
-		return fmt.Errorf("failed to update workspace name: %w", err)
+		return err
 	}
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		return fmt.Errorf("failed to get affected rows: %w", err)
+		return ErrFailedToConfirmWorkspaceNameUpdate
 	}
 
 	if rowsAffected == 0 {
@@ -254,12 +237,12 @@ func (r *workspaceRepo) UpdateWorkspaceStatus(ctx context.Context, workspaceID u
 	`, status, workspaceID)
 
 	if err != nil {
-		return fmt.Errorf("failed to update workspace status: %w", err)
+		return err
 	}
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		return fmt.Errorf("failed to get affected rows: %w", err)
+		return ErrFailedToConfirmWorkspaceStatusUpdate
 	}
 
 	if rowsAffected == 0 {
@@ -274,23 +257,7 @@ func (r *workspaceRepo) UpdateWorkspace(ctx context.Context, workspaceID uuid.UU
 	runner := r.tm.GetRunner(ctx)
 
 	// Generate and verify unique slug
-	baseSlug := generateSlug(workspaceReq.Name)
-	slug := baseSlug
-
-	for i := 1; ; i++ {
-		var exists bool
-		err := runner.QueryRowContext(ctx,
-			"SELECT EXISTS(SELECT 1 FROM workspaces WHERE slug = $1 AND id != $2)",
-			slug, workspaceID,
-		).Scan(&exists)
-		if err != nil {
-			return fmt.Errorf("failed to check slug existence: %w", err)
-		}
-		if !exists {
-			break
-		}
-		slug = fmt.Sprintf("%s-%d", baseSlug, i)
-	}
+	slug := generateSlug(workspaceReq.Name)
 
 	result, err := runner.ExecContext(ctx, `
 		UPDATE workspaces
@@ -302,12 +269,12 @@ func (r *workspaceRepo) UpdateWorkspace(ctx context.Context, workspaceID uuid.UU
 	`, workspaceReq.Name, slug, workspaceReq.BillingEmail, workspaceID)
 
 	if err != nil {
-		return fmt.Errorf("failed to update workspace: %w", err)
+		return err
 	}
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		return fmt.Errorf("failed to get affected rows: %w", err)
+		return ErrFailedToConfirmWorkspaceUpdate
 	}
 
 	if rowsAffected == 0 {

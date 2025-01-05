@@ -15,10 +15,17 @@ import (
 )
 
 var (
-	ErrPageHistoryNotFound = errors.New("page history not found")
-	ErrNoPageHistory       = errors.New("no page history found")
-	ErrInvalidPageIDs      = errors.New("invalid page IDs")
-	ErrInvalidPagination   = errors.New("invalid pagination parameters")
+	// ---- validation errors ----
+	ErrPageIDsUnspecified = errors.New("pageIDs unspecified")
+
+	// ---- non fatal errors ----
+	ErrFailedToScanPageHistory = errors.New("failed to scan page history")
+
+	// ---- remapped errors ----
+	// case 1: remapping an existing error
+	// case 2: remapping a non error scenario to an error
+	ErrPageHistoryNotFound = errors.New("no page history found for the page")
+
 )
 
 type historyRepo struct {
@@ -69,6 +76,10 @@ func (r *historyRepo) CreatePageHistory(ctx context.Context, pageID uuid.UUID, p
 		pageHistory.ScreenshotURL2,
 	)
 
+	if err := row.Err(); err != nil {
+		return models.PageHistory{}, err
+	}
+
 	var created models.PageHistory
 	err := row.Scan(
 		&created.ID,
@@ -85,14 +96,14 @@ func (r *historyRepo) CreatePageHistory(ctx context.Context, pageID uuid.UUID, p
 		&created.CreatedAt,
 	)
 	if err != nil {
-		return models.PageHistory{}, fmt.Errorf("failed to create page history: %w", err)
+		return models.PageHistory{}, ErrFailedToScanPageHistory
 	}
 
 	return created, nil
 }
 
 // ListPageHistory lists page history for a page with optional pagination
-func (r *historyRepo) ListPageHistory(ctx context.Context, pageID uuid.UUID, limit, offset *int) ([]models.PageHistory, error) {
+func (r *historyRepo) ListPageHistory(ctx context.Context, pageID uuid.UUID, limit, offset *int) ([]models.PageHistory, []error) {
 	runner := r.tm.GetRunner(ctx)
 
 	// Build the query with optional pagination
@@ -108,8 +119,11 @@ func (r *historyRepo) ListPageHistory(ctx context.Context, pageID uuid.UUID, lim
 
 	// Add pagination if provided
 	if limit != nil && offset != nil {
-		if *limit < 0 || *offset < 0 {
-			return nil, ErrInvalidPagination
+		if *limit < 0 {
+			return nil, []error{ErrInvalidLimit}
+		}
+		if *offset < 0 {
+			return nil, []error{ErrInvalidOffset}
 		}
 		query += " LIMIT $2 OFFSET $3"
 		args = append(args, *limit, *offset)
@@ -117,11 +131,12 @@ func (r *historyRepo) ListPageHistory(ctx context.Context, pageID uuid.UUID, lim
 
 	rows, err := runner.QueryContext(ctx, query, args...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list page history: %w", err)
+		return nil, []error{err}
 	}
 	defer rows.Close()
 
 	var history []models.PageHistory
+	errs := make([]error, 0)
 	for rows.Next() {
 		var h models.PageHistory
 		err := rows.Scan(
@@ -139,17 +154,22 @@ func (r *historyRepo) ListPageHistory(ctx context.Context, pageID uuid.UUID, lim
 			&h.CreatedAt,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("failed to scan page history: %w", err)
+			errs = append(errs, err)
+			continue
 		}
 		history = append(history, h)
 	}
 
+	if len(errs) > 0 {
+		return history, errs
+	}
+
 	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating over rows: %w", err)
+		return nil, []error{err}
 	}
 
 	if len(history) == 0 {
-		return []models.PageHistory{}, nil
+		return history, []error{ErrPageHistoryNotFound}
 	}
 
 	return history, nil
@@ -158,7 +178,7 @@ func (r *historyRepo) ListPageHistory(ctx context.Context, pageID uuid.UUID, lim
 // RemovePageHistory removes page history for a list of pages
 func (r *historyRepo) RemovePageHistory(ctx context.Context, pageIDs []uuid.UUID) []error {
 	if len(pageIDs) == 0 {
-		return []error{ErrInvalidPageIDs}
+		return []error{ErrPageIDsUnspecified}
 	}
 
 	runner := r.tm.GetRunner(ctx)
@@ -178,16 +198,16 @@ func (r *historyRepo) RemovePageHistory(ctx context.Context, pageIDs []uuid.UUID
 
 	result, err := runner.ExecContext(ctx, query, args...)
 	if err != nil {
-		return []error{fmt.Errorf("failed to remove page history: %w", err)}
+		return []error{err}
 	}
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		return []error{fmt.Errorf("failed to get affected rows: %w", err)}
+		return []error{err}
 	}
 
 	if rowsAffected == 0 {
-		return []error{ErrNoPageHistory}
+		return []error{ErrPageHistoryNotFound}
 	}
 
 	return nil
@@ -212,11 +232,17 @@ func (r *historyRepo) PageHistoryExists(ctx context.Context, pageID string, week
 	`
 
 	var exists bool
-	err := runner.QueryRowContext(ctx, query,
+	row := runner.QueryRowContext(ctx, query,
 		pageID, weekNumber1, weekNumber2, yearNumber1, yearNumber2, bucketID1, bucketID2,
-	).Scan(&exists)
+	)
+
+	if err := row.Err(); err != nil {
+		return false, err
+	}
+
+	err := row.Scan(&exists)
 	if err != nil {
-		return false, fmt.Errorf("failed to check page history existence: %w", err)
+		return false, err
 	}
 
 	return exists, nil
