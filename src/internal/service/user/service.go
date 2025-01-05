@@ -58,8 +58,8 @@ func (us *userService) CreateWorkspaceOwner(ctx context.Context, clerk *clerk.Us
 		Status:  models.AccountStatusActive,
 	}
 
-	user, err := us.userRepository.GetOrCreateUser(ctx, partialUser)
-	if err != nil {
+	user, uErr := us.userRepository.GetOrCreateUser(ctx, partialUser)
+	if uErr != nil && uErr.HasErrors() {
 		return nil, ErrFailedToGetUser
 	}
 
@@ -71,8 +71,7 @@ func (us *userService) CreateWorkspaceOwner(ctx context.Context, clerk *clerk.Us
 		},
 	}
 
-	_, errs := us.userRepository.AddUsersToWorkspace(ctx, addUsers, workspaceID)
-	if len(errs) > 0 {
+	if _, uErr := us.userRepository.AddUsersToWorkspace(ctx, addUsers, workspaceID); uErr != nil && uErr.HasErrors() {
 		return nil, ErrFailedToAddUserToWorkspace
 	}
 
@@ -85,13 +84,12 @@ func (us *userService) AddUserToWorkspace(ctx context.Context, workspaceID uuid.
 	}
 
 	var responses []api.CreateWorkspaceUserResponse
-	workspaceUsers, errs := us.userRepository.AddUsersToWorkspace(ctx, invitedUsers, workspaceID)
-	if len(errs) > 0 {
-		for range errs {
-			responses = append(responses, api.CreateWorkspaceUserResponse{
-				Error: ErrFailedToAddUserToWorkspace,
-			})
-		}
+	workspaceUsers, uErr := us.userRepository.AddUsersToWorkspace(ctx, invitedUsers, workspaceID)
+	if uErr != nil && uErr.HasErrors() {
+		// TODO: This is a bug. Fix this during service refactor
+		responses = append(responses, api.CreateWorkspaceUserResponse{
+			Error: ErrFailedToAddUserToWorkspace,
+		})
 	}
 
 	for _, wu := range workspaceUsers {
@@ -110,8 +108,8 @@ func (us *userService) GetWorkspaceUser(ctx context.Context, clerk *clerk.User, 
 		return models.WorkspaceUser{}, ErrFailedToGetUser
 	}
 
-	workspaceUser, err := us.userRepository.GetWorkspaceClerkUser(ctx, workspaceID, clerk.ID, userEmail)
-	if err != nil {
+	workspaceUser, uErr := us.userRepository.GetWorkspaceClerkUser(ctx, workspaceID, clerk.ID, userEmail)
+	if uErr != nil && uErr.HasErrors() {
 		return models.WorkspaceUser{}, ErrFailedToGetUser
 	}
 
@@ -119,8 +117,8 @@ func (us *userService) GetWorkspaceUser(ctx context.Context, clerk *clerk.User, 
 }
 
 func (us *userService) GetWorkspaceUserByID(ctx context.Context, userID, workspaceID uuid.UUID) (models.WorkspaceUser, error) {
-	workspaceUser, err := us.userRepository.GetWorkspaceUser(ctx, workspaceID, userID)
-	if err != nil {
+	workspaceUser, uErr := us.userRepository.GetWorkspaceUser(ctx, workspaceID, userID)
+	if uErr != nil && uErr.HasErrors() {
 		return models.WorkspaceUser{}, ErrFailedToGetUser
 	}
 
@@ -128,8 +126,8 @@ func (us *userService) GetWorkspaceUserByID(ctx context.Context, userID, workspa
 }
 
 func (us *userService) ListWorkspaceUsers(ctx context.Context, workspaceID uuid.UUID) ([]models.WorkspaceUser, error) {
-	workspaceUsers, errs := us.userRepository.ListWorkspaceUsers(ctx, workspaceID)
-	if len(errs) > 0 {
+	workspaceUsers, uErr := us.userRepository.ListWorkspaceUsers(ctx, workspaceID)
+	if uErr != nil && uErr.HasErrors() {
 		return nil, ErrFailedToListWorkspaceUsers
 	}
 
@@ -142,13 +140,13 @@ func (us *userService) ListUserWorkspaces(ctx context.Context, clerk *clerk.User
 		return nil, ErrFailedToGetUserEmail
 	}
 
-	user, err := us.userRepository.GetClerkUser(ctx, clerk.ID, primaryEmail)
-	if err != nil {
+	user, uErr := us.userRepository.GetClerkUser(ctx, clerk.ID, primaryEmail)
+	if uErr != nil && uErr.HasErrors() {
 		return nil, ErrFailedToGetUser
 	}
 
-	workspaceIDs, errs := us.userRepository.ListUserWorkspaces(ctx, user.ID)
-	if len(errs) > 0 {
+	workspaceIDs, uErr := us.userRepository.ListUserWorkspaces(ctx, user.ID)
+	if uErr != nil && uErr.HasErrors() {
 		return nil, ErrFailedToListWorkspaceForUser
 	}
 
@@ -157,13 +155,13 @@ func (us *userService) ListUserWorkspaces(ctx context.Context, clerk *clerk.User
 
 func (us *userService) UpdateWorkspaceUserRole(ctx context.Context, userID, workspaceID uuid.UUID, role models.UserWorkspaceRole) (models.WorkspaceUser, error) {
 	userIDs := []uuid.UUID{userID}
-	_, errs := us.userRepository.UpdateWorkspaceUserRole(ctx, workspaceID, userIDs, role)
-	if len(errs) > 0 {
+	_, uErr := us.userRepository.UpdateWorkspaceUserRole(ctx, workspaceID, userIDs, role)
+	if uErr != nil && uErr.HasErrors() {
 		return models.WorkspaceUser{}, ErrFailedToUpdateWorkspaceUserRole
 	}
 
-	workspaceUser, err := us.userRepository.GetWorkspaceUser(ctx, workspaceID, userID)
-	if err != nil {
+	workspaceUser, uErr := us.userRepository.GetWorkspaceUser(ctx, workspaceID, userID)
+	if uErr != nil && uErr.HasErrors() {
 		return models.WorkspaceUser{}, ErrFailedToGetUser
 	}
 
@@ -172,8 +170,8 @@ func (us *userService) UpdateWorkspaceUserRole(ctx context.Context, userID, work
 
 func (us *userService) UpdateWorkspaceUserStatus(ctx context.Context, userID, workspaceID uuid.UUID, status models.UserWorkspaceStatus) error {
 	userIDs := []uuid.UUID{userID}
-	_, errs := us.userRepository.UpdateWorkspaceUserStatus(ctx, workspaceID, userIDs, status)
-	if len(errs) > 0 {
+	_, uErr := us.userRepository.UpdateWorkspaceUserStatus(ctx, workspaceID, userIDs, status)
+	if uErr != nil && uErr.HasErrors() {
 		return ErrFailedToUpdateWorkspaceUserStatus
 	}
 
@@ -181,8 +179,8 @@ func (us *userService) UpdateWorkspaceUserStatus(ctx context.Context, userID, wo
 }
 
 func (us *userService) RemoveWorkspaceUsers(ctx context.Context, userIDs []uuid.UUID, workspaceID uuid.UUID) []error {
-	errs := us.userRepository.RemoveUsersFromWorkspace(ctx, userIDs, workspaceID)
-	if len(errs) > 0 {
+	uErr := us.userRepository.RemoveUsersFromWorkspace(ctx, userIDs, workspaceID)
+	if uErr != nil && uErr.HasErrors() {
 		return []error{ErrFailedToRemoveWorkspaceUsers}
 	}
 
@@ -190,8 +188,8 @@ func (us *userService) RemoveWorkspaceUsers(ctx context.Context, userIDs []uuid.
 }
 
 func (us *userService) GetWorkspaceUserCountByRole(ctx context.Context, workspaceID uuid.UUID) (int, int, error) {
-	admin, member, err := us.userRepository.GetWorkspaceUserCountByRole(ctx, workspaceID)
-	if err != nil {
+	admin, member, uErr := us.userRepository.GetWorkspaceUserCountByRole(ctx, workspaceID)
+	if uErr != nil && uErr.HasErrors() {
 		return 0, 0, ErrFailedToGetWorkspaceUserRoleCount
 	}
 
@@ -203,12 +201,12 @@ func (us *userService) SyncUser(ctx context.Context, clerk *clerk.User) error {
 	if err != nil {
 		return ErrFailedToGetUserEmail
 	}
-	user, err := us.userRepository.GetClerkUser(ctx, clerk.ID, primaryEmail)
-	if err != nil {
+	user, uErr := us.userRepository.GetClerkUser(ctx, clerk.ID, primaryEmail)
+	if uErr != nil && uErr.HasErrors() {
 		return ErrFailedToGetUser
 	}
 
-	if err := us.userRepository.SyncUser(ctx, user.ID, clerk); err != nil {
+	if uErr := us.userRepository.SyncUser(ctx, user.ID, clerk); uErr != nil && uErr.HasErrors() {
 		return ErrFailedToSyncUser
 	}
 
@@ -220,12 +218,12 @@ func (us *userService) DeleteUser(ctx context.Context, clerk *clerk.User) error 
 	if err != nil {
 		return ErrFailedToGetUserEmail
 	}
-	user, err := us.userRepository.GetClerkUser(ctx, clerk.ID, primaryEmail)
-	if err != nil {
+	user, uErr := us.userRepository.GetClerkUser(ctx, clerk.ID, primaryEmail)
+	if uErr != nil && uErr.HasErrors() {
 		return ErrFailedToGetUser
 	}
 
-	if err := us.userRepository.DeleteUser(ctx, user.ID); err != nil {
+	if uErr := us.userRepository.DeleteUser(ctx, user.ID); uErr != nil && uErr.HasErrors() {
 		return ErrFailedToDeleteUser
 	}
 

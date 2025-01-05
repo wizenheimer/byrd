@@ -47,8 +47,8 @@ func (ws *workspaceService) CreateWorkspace(ctx context.Context, workspaceOwner 
 	}
 
 	// Create a workspace using the workspace name and billing email
-	workspace, err := ws.workspaceRepo.CreateWorkspace(ctx, workspaceName, billingEmail)
-	if err != nil {
+	workspace, wErr := ws.workspaceRepo.CreateWorkspace(ctx, workspaceName, billingEmail)
+	if wErr != nil && wErr.HasErrors() {
 		return nil, ErrFailedToCreateWorkspace
 	}
 
@@ -110,8 +110,8 @@ func (ws *workspaceService) ListUserWorkspaces(ctx context.Context, workspaceMem
 		return nil, err
 	}
 
-	workspaces, errs := ws.workspaceRepo.GetWorkspaces(ctx, workspaceIDs)
-	if len(errs) > 0 {
+	workspaces, wErr := ws.workspaceRepo.GetWorkspaces(ctx, workspaceIDs)
+	if wErr != nil && wErr.HasErrors() {
 		// TODO: non-fatal error handling
 		return nil, ErrFailedToListWorkspaces
 	}
@@ -121,8 +121,8 @@ func (ws *workspaceService) ListUserWorkspaces(ctx context.Context, workspaceMem
 
 func (ws *workspaceService) GetWorkspace(ctx context.Context, workspaceID uuid.UUID) (*models.Workspace, error) {
 	workspaceIDs := []uuid.UUID{workspaceID}
-	workspaces, errs := ws.workspaceRepo.GetWorkspaces(ctx, workspaceIDs)
-	if len(errs) > 0 {
+	workspaces, wErr := ws.workspaceRepo.GetWorkspaces(ctx, workspaceIDs)
+	if wErr != nil && wErr.HasErrors() {
 		return nil, ErrFailedToGetWorkspace
 	}
 
@@ -162,7 +162,7 @@ func (ws *workspaceService) UpdateWorkspace(ctx context.Context, workspaceID uui
 		BillingEmail: req.BillingEmail,
 	}
 
-	if err := ws.workspaceRepo.UpdateWorkspace(ctx, workspaceID, workspaceReq); err != nil {
+	if wErr := ws.workspaceRepo.UpdateWorkspace(ctx, workspaceID, workspaceReq); wErr != nil && wErr.HasErrors() {
 		return ErrFailedToUpdateWorkspace
 	}
 
@@ -191,8 +191,8 @@ func (ws *workspaceService) DeleteWorkspace(ctx context.Context, workspaceID uui
 	}
 
 	// Handle workspace deletion
-	err = ws.workspaceRepo.UpdateWorkspaceStatus(ctx, workspace.ID, models.WorkspaceStatusInactive)
-	if err != nil {
+	wErr := ws.workspaceRepo.UpdateWorkspaceStatus(ctx, workspace.ID, models.WorkspaceStatusInactive)
+	if wErr != nil && wErr.HasErrors() {
 		return models.WorkspaceStatusInactive, ErrFailedToDeleteWorkspace
 	}
 

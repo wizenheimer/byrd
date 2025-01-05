@@ -31,8 +31,8 @@ func NewPageService(pageRepo repo.PageRepository, pageHistoryService svc.PageHis
 }
 
 func (ps *pageService) CreatePage(ctx context.Context, competitorID uuid.UUID, pageReq []api.CreatePageRequest) ([]models.Page, []error) {
-	pages, errs := ps.pageRepo.AddPagesToCompetitor(ctx, competitorID, pageReq)
-	if errs != nil {
+	pages, pErr := ps.pageRepo.AddPagesToCompetitor(ctx, competitorID, pageReq)
+	if pErr != nil && pErr.HasErrors() {
 		return nil, []error{ErrFailedToCreatePageForCompetitor}
 	}
 
@@ -40,8 +40,8 @@ func (ps *pageService) CreatePage(ctx context.Context, competitorID uuid.UUID, p
 }
 
 func (ps *pageService) GetPage(ctx context.Context, competitorID uuid.UUID, pageID uuid.UUID) (models.Page, error) {
-	page, err := ps.pageRepo.GetCompetitorPage(ctx, competitorID, pageID)
-	if err != nil {
+	page, pErr := ps.pageRepo.GetCompetitorPage(ctx, competitorID, pageID)
+	if pErr != nil && pErr.HasErrors() {
 		return models.Page{}, ErrFailedToGetPageForCompetitor
 	}
 
@@ -66,8 +66,8 @@ func (ps *pageService) GetPageWithHistory(ctx context.Context, competitorID uuid
 }
 
 func (ps *pageService) UpdatePage(ctx context.Context, competitorID uuid.UUID, pageID uuid.UUID, pageReq api.UpdatePageRequest) (models.Page, error) {
-	updatedPage, err := ps.pageRepo.UpdateCompetitorPage(ctx, competitorID, pageID, pageReq)
-	if err != nil {
+	updatedPage, pErr := ps.pageRepo.UpdateCompetitorPage(ctx, competitorID, pageID, pageReq)
+	if pErr != nil && pErr.HasErrors() {
 		return models.Page{}, ErrFailedToUpdatePageForCompetitor
 	}
 
@@ -80,8 +80,8 @@ func (ps *pageService) ListCompetitorPages(ctx context.Context, competitorID uui
 		limit, offset = utils.ToPtr(param.GetLimit()), utils.ToPtr(param.GetOffset())
 	}
 
-	page, errs := ps.pageRepo.ListCompetitorPages(ctx, competitorID, limit, offset)
-	if errs != nil {
+	page, pErr := ps.pageRepo.ListCompetitorPages(ctx, competitorID, limit, offset)
+	if pErr != nil && pErr.HasErrors() {
 		return nil, ErrFaileToListPagesForCompetitor
 	}
 
@@ -107,12 +107,12 @@ func (ps *pageService) ListPageHistory(ctx context.Context, competitorID uuid.UU
 }
 
 func (ps *pageService) RemovePage(ctx context.Context, competitorID uuid.UUID, pageIDs []uuid.UUID) []error {
-	errs := ps.pageRepo.RemovePagesFromCompetitor(
+	pErr := ps.pageRepo.RemovePagesFromCompetitor(
 		ctx,
 		competitorID,
 		pageIDs,
 	)
-	if errs != nil {
+	if pErr != nil && pErr.HasErrors() {
 		return []error{ErrFailedToRemovePageFromCompetitor}
 	}
 	return nil

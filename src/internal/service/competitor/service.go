@@ -45,11 +45,10 @@ func (cs *competitorService) CreateCompetitor(ctx context.Context, workspaceID u
 		competitorName := cs.nameFinder.ProcessURLs(urls)
 
 		// Create competitor using the competitor name
-		createdCompetitors, errs := cs.competitorRepository.CreateCompetitors(ctx, workspaceID, []string{competitorName})
-		if errs != nil || len(createdCompetitors) == 0 {
-			cerrs = append(errs, ErrFailedToCreateWorkspaceCompetitors)
-			continue
-		}
+		createdCompetitors, err := cs.competitorRepository.CreateCompetitors(ctx, workspaceID, []string{competitorName})
+		if err != nil && err.HasErrors() {
+            cerrs = append(cerrs, ErrFailedToCreateWorkspaceCompetitors)
+        }
 
 		// Add the page to the competitor
 		if _, errs := cs.pageService.CreatePage(ctx, createdCompetitors[0].ID, []api.CreatePageRequest{page}); len(errs) > 0 {
@@ -69,12 +68,12 @@ func (cs *competitorService) CreateCompetitor(ctx context.Context, workspaceID u
 }
 
 func (cs *competitorService) GetCompetitor(ctx context.Context, workspaceID, competitorID uuid.UUID, pagePaginationParam api.PaginationParams) (api.GetWorkspaceCompetitorResponse, error) {
-	competitor, err := cs.competitorRepository.GetCompetitor(ctx, competitorID)
-	if err != nil {
+	competitor, cErr := cs.competitorRepository.GetCompetitor(ctx, competitorID)
+	if cErr != nil && cErr.HasErrors() {
 		return api.GetWorkspaceCompetitorResponse{}, ErrFailedToGetCompetitorForWorkspace
 	}
 
-	pages, err := cs.pageService.ListCompetitorPages(ctx, competitorID, &pagePaginationParam)
+    pages, err := cs.pageService.ListCompetitorPages(ctx, competitorID, &pagePaginationParam)
 	if err != nil {
 		return api.GetWorkspaceCompetitorResponse{}, ErrFailedToListPagesForCompetitor
 	}
@@ -87,7 +86,7 @@ func (cs *competitorService) GetCompetitor(ctx context.Context, workspaceID, com
 
 func (cs *competitorService) CompetitorExists(ctx context.Context, workspaceID, competitorID uuid.UUID) (bool, error) {
 	competitor, err := cs.competitorRepository.GetCompetitor(ctx, competitorID)
-	if err != nil {
+	if err != nil && err.HasErrors() {
 		return false, ErrFailedToGetCompetitorForWorkspace
 	}
 
@@ -103,12 +102,13 @@ func (cs *competitorService) PageExists(ctx context.Context, competitorID, pageI
 }
 
 func (cs *competitorService) ListWorkspaceCompetitors(ctx context.Context, workspaceID uuid.UUID, param api.PaginationParams) ([]api.GetWorkspaceCompetitorResponse, []error) {
-	competitors, errs := cs.competitorRepository.ListWorkspaceCompetitors(ctx, workspaceID, param.GetLimit(), param.GetOffset())
-	if errs != nil {
+	competitors, cErr := cs.competitorRepository.ListWorkspaceCompetitors(ctx, workspaceID, param.GetLimit(), param.GetOffset())
+	if cErr != nil && cErr.HasErrors() {
 		return nil, []error{ErrFailedToListWorkspaceCompetitors}
 	}
 
 	var competitorResponses []api.GetWorkspaceCompetitorResponse
+    var errs []error
 	for _, competitor := range competitors {
 		// Setting pagination as nil would list all pages for the competitor
 		pages, err := cs.pageService.ListCompetitorPages(ctx, competitor.ID, nil)
@@ -128,8 +128,8 @@ func (cs *competitorService) ListWorkspaceCompetitors(ctx context.Context, works
 
 func (cs *competitorService) RemoveCompetitors(ctx context.Context, workspaceID uuid.UUID, competitorIDs []uuid.UUID) []error {
 	// Remove workspace competitors
-	errs := cs.competitorRepository.RemoveWorkspaceCompetitors(ctx, workspaceID, competitorIDs)
-	if errs != nil {
+	cErr := cs.competitorRepository.RemoveWorkspaceCompetitors(ctx, workspaceID, competitorIDs)
+	if cErr != nil && cErr.HasErrors() {
 		return []error{ErrFailedToRemoveWorkspaceCompetitors}
 	}
 
