@@ -5,6 +5,7 @@ import (
 
 	"github.com/google/uuid"
 	models "github.com/wizenheimer/iris/src/internal/models/core"
+	"github.com/wizenheimer/iris/src/pkg/err"
 )
 
 // PageHistoryRepository is the interface that provides page history operations
@@ -13,17 +14,13 @@ import (
 type PageHistoryRepository interface {
 	// CreatePageHistory creates a new page history
 	// The page history is created with the provided page ID and page history
-	CreatePageHistory(ctx context.Context, pageID uuid.UUID, pageHistory models.PageHistory) (models.PageHistory, error)
-
-	// PageHistoryExists checks if a page history exists
-	// This is optimized for quick lookups over the page history table
-	// PageHistoryExists(ctx context.Context, pageID string, weekNumber1, weekNumber2, yearNumber1, yearNumber2 int, bucketID1, bucketID2 string) (bool, error)
+	CreatePageHistory(ctx context.Context, pageID uuid.UUID, pageHistory models.PageHistory) (models.PageHistory, err.Error)
 
 	// ListPageHistory lists page history for a page ordered by created at
 	// When limit and offset are nil, all page history is returned
-	ListPageHistory(ctx context.Context, pageID uuid.UUID, limit, offset *int) ([]models.PageHistory, []error)
+	ListPageHistory(ctx context.Context, pageID uuid.UUID, limit, offset *int) ([]models.PageHistory, err.Error)
 
 	// RemovePageHistory removes page history for a list of pages
 	// Returns an error if pageIDs are nil
-	RemovePageHistory(ctx context.Context, pageIDs []uuid.UUID) []error
+	RemovePageHistory(ctx context.Context, pageIDs []uuid.UUID) err.Error
 }
