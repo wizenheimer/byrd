@@ -13,30 +13,9 @@ import (
 	repo "github.com/wizenheimer/iris/src/internal/interfaces/repository"
 	models "github.com/wizenheimer/iris/src/internal/models/core"
 	"github.com/wizenheimer/iris/src/internal/repository/transaction"
+	"github.com/wizenheimer/iris/src/pkg/err"
 	"github.com/wizenheimer/iris/src/pkg/logger"
 	"github.com/wizenheimer/iris/src/pkg/utils"
-)
-
-var (
-	// ---- validation errors -----
-	ErrInvalidUserEmail          = errors.New("user email invalid")
-	ErrUserEmailsNotSpecified    = errors.New("user emails unspecified")
-	ErrUserIDsNotSpecified       = errors.New("user ids unspecified")
-	ErrCouldnotGetClerkUserEmail = errors.New("couldn't get user email from profile")
-
-	// ---- non fatal errors ----
-	ErrCouldnotScanUser            = errors.New("couldn't scan user")
-	ErrNoWorkspaceFoundForUser     = errors.New("no workspaces found for the user")
-	ErrCouldnotConfirmSyncStatus   = errors.New("couldn't confirm sync status")
-	ErrCouldnotConfirmDeleteStatus = errors.New("couldn't confirm delete status")
-
-	// ---- remapped errors ----
-	// case 1 : remapping an existing error
-	// case 2 : remapping a non error scenario to an error
-	ErrUserNotFoundByID        = errors.New("user not found by ID")
-	ErrUserNotFoundByEmail     = errors.New("user not found by email")
-	ErrUserNotFoundByIDOrEmail = errors.New("user not found by ID or Email")
-	ErrWorkspaceUsersNotFound  = errors.New("users not found in workspace")
 )
 
 type userRepo struct {
@@ -56,7 +35,8 @@ func NewUserRepository(tm *transaction.TxManager, logger *logger.Logger) repo.Us
 // --------------------------------------------------
 
 // GetUserByUserID gets a user by UserID
-func (r *userRepo) GetUserByUserID(ctx context.Context, userID uuid.UUID) (models.User, error) {
+func (r *userRepo) GetUserByUserID(ctx context.Context, userID uuid.UUID) (models.User, err.Error) {
+	userErr := err.New()
 	runner := r.tm.GetRunner(ctx)
 
 	query := `
@@ -76,21 +56,27 @@ func (r *userRepo) GetUserByUserID(ctx context.Context, userID uuid.UUID) (model
 		&user.UpdatedAt,
 	)
 
-	// Remap the error to ErrUserNotFound
-	if err == sql.ErrNoRows {
-		return models.User{}, ErrUserNotFoundByID
-	}
-
 	// Propagate any other error
 	if err != nil {
-		return models.User{}, err
+		// Remap the error to ErrUserNotFound
+		if err == sql.ErrNoRows {
+			userErr.Add(repo.ErrUserNotFoundByID, map[string]any{
+				"userID": userID,
+			})
+		} else {
+			userErr.Add(err, map[string]any{
+				"userID": userID,
+			})
+		}
+		return models.User{}, userErr
 	}
 
 	return user, nil
 }
 
 // GetUserByEmail gets a user by email
-func (r *userRepo) GetUserByEmail(ctx context.Context, email string) (models.User, error) {
+func (r *userRepo) GetUserByEmail(ctx context.Context, email string) (models.User, err.Error) {
+	userErr := err.New()
 	runner := r.tm.GetRunner(ctx)
 
 	email = utils.NormalizeEmail(email)
@@ -112,21 +98,26 @@ func (r *userRepo) GetUserByEmail(ctx context.Context, email string) (models.Use
 		&user.UpdatedAt,
 	)
 
-	// Remap the error to ErrUserNotFound
-	if err == sql.ErrNoRows {
-		return models.User{}, ErrUserNotFoundByEmail
-	}
-
-	// Propagate any other error
 	if err != nil {
-		return models.User{}, err
+		// Remap the error to ErrUserNotFound
+		if err == sql.ErrNoRows {
+			userErr.Add(repo.ErrUserNotFoundByEmail, map[string]any{
+				"email": email,
+			})
+		} else {
+			userErr.Add(err, map[string]any{
+				"email": email,
+			})
+		}
+		return models.User{}, userErr
 	}
 
 	return user, nil
 }
 
 // GetClerkUser gets a user by clerkID or clerkEmail
-func (r *userRepo) GetClerkUser(ctx context.Context, clerkID string, clerkEmail string) (models.User, error) {
+func (r *userRepo) GetClerkUser(ctx context.Context, clerkID string, clerkEmail string) (models.User, err.Error) {
+	userErr := err.New()
 	runner := r.tm.GetRunner(ctx)
 
 	clerkEmail = utils.NormalizeEmail(clerkEmail)
@@ -148,21 +139,30 @@ func (r *userRepo) GetClerkUser(ctx context.Context, clerkID string, clerkEmail 
 		&user.UpdatedAt,
 	)
 
-	// Remap the error to ErrUserNotFound
-	if err == sql.ErrNoRows {
-		return models.User{}, ErrUserNotFoundByIDOrEmail
-	}
-
 	// Propagate any other error
 	if err != nil {
-		return models.User{}, err
+		// Remap the error to ErrUserNotFound
+		if err == sql.ErrNoRows {
+			userErr.Add(repo.ErrUserNotFoundByIDOrEmail, map[string]any{
+				"clerkID":    clerkID,
+				"clerkEmail": clerkEmail,
+			})
+		} else {
+			userErr.Add(err, map[string]any{
+				"clerkID":    clerkID,
+				"clerkEmail": clerkEmail,
+			})
+		}
+		return models.User{}, userErr
 	}
 
 	return user, nil
 }
 
 // GetOrCreateUser creates a user if it does not exist
-func (r *userRepo) GetOrCreateUser(ctx context.Context, partialUser models.User) (models.User, error) {
+func (r *userRepo) GetOrCreateUser(ctx context.Context, partialUser models.User) (models.User, err.Error) {
+	userErr := err.New()
+
 	// Get a transaction runner
 	runner := r.tm.GetRunner(ctx)
 
@@ -174,7 +174,11 @@ func (r *userRepo) GetOrCreateUser(ctx context.Context, partialUser models.User)
 	`
 
 	if partialUser.Email == nil {
-		return models.User{}, ErrInvalidUserEmail
+		userErr.Add(repo.ErrInvalidUserEmail, map[string]any{
+			"email":   partialUser.Email,
+			"clerkID": partialUser.ClerkID,
+		})
+		return models.User{}, userErr
 	}
 
 	partialUser.Email = utils.ToPtr(utils.NormalizeEmail(*partialUser.Email))
@@ -206,7 +210,11 @@ func (r *userRepo) GetOrCreateUser(ctx context.Context, partialUser models.User)
 			partialUser.Status,
 		)
 		if err := row.Err(); err != nil {
-			return models.User{}, err
+			userErr.Add(err, map[string]any{
+				"clerkID": partialUser.ClerkID,
+				"email":   partialUser.Email,
+			})
+			return models.User{}, userErr
 		}
 
 		err = row.Scan(
@@ -220,29 +228,40 @@ func (r *userRepo) GetOrCreateUser(ctx context.Context, partialUser models.User)
 		)
 
 		if err != nil {
-			return models.User{}, ErrCouldnotScanUser
+			userErr.Add(repo.ErrCouldnotScanUser, map[string]any{
+				"clerkID": partialUser.ClerkID,
+				"email":   partialUser.Email,
+			})
+			return models.User{}, userErr
 		}
 	}
 
 	// Propagate any other error
 	if err != nil {
-		return models.User{}, err
+		userErr.Add(err, map[string]any{
+			"clerkID": partialUser.ClerkID,
+			"email":   partialUser.Email,
+		})
+		return models.User{}, userErr
 	}
 
 	return user, nil
 }
 
 // GetOrCreateUserByEmail creates users if they do not exist
-func (r *userRepo) GetOrCreateUserByEmail(ctx context.Context, emails []string) ([]models.User, []error) {
+func (r *userRepo) GetOrCreateUserByEmail(ctx context.Context, emails []string) ([]models.User, err.Error) {
+	userErr := err.New()
 	if len(emails) == 0 {
-		return nil, []error{ErrUserEmailsNotSpecified}
+		userErr.Add(repo.ErrUserEmailsNotSpecified, map[string]any{
+			"emails": emails,
+		})
+		return nil, userErr
 	}
 
 	// Get a transaction runner
 	runner := r.tm.GetRunner(ctx)
 
 	users := make([]models.User, 0, len(emails))
-	errs := make([]error, 0)
 
 	for _, email := range emails {
 		// Try to get existing user
@@ -265,35 +284,45 @@ func (r *userRepo) GetOrCreateUserByEmail(ctx context.Context, emails []string) 
 			&user.UpdatedAt,
 		)
 
-		if err == sql.ErrNoRows {
-			// Create new user
-			row := runner.QueryRowContext(ctx, `
+		if err != nil {
+			// If user does not exist, create a new user
+			if err == sql.ErrNoRows {
+				// Create new user
+				row := runner.QueryRowContext(ctx, `
 				INSERT INTO users (email, status)
 				VALUES ($1, $2)
 				RETURNING id, clerk_id, email, name, status, created_at, updated_at
 			`, email, models.AccountStatusPending)
 
-			if err := row.Err(); err != nil {
-				errs = append(errs, err)
-				continue
-			}
+				if err := row.Err(); err != nil {
+					userErr.Add(err, map[string]any{
+						"email": email,
+					})
+					continue
+				}
 
-			err = row.Scan(
-				&user.ID,
-				&user.ClerkID,
-				&user.Email,
-				&user.Name,
-				&user.Status,
-				&user.CreatedAt,
-				&user.UpdatedAt,
-			)
-			if err != nil {
-				err = ErrCouldnotScanUser
+				err = row.Scan(
+					&user.ID,
+					&user.ClerkID,
+					&user.Email,
+					&user.Name,
+					&user.Status,
+					&user.CreatedAt,
+					&user.UpdatedAt,
+				)
+				if err != nil {
+					userErr.Add(repo.ErrCouldnotScanUser, map[string]any{
+						"email": email,
+					})
+					continue
+				}
+			} else {
+				// Propagate any other error
+				userErr.Add(err, map[string]any{
+					"email": email,
+				})
 			}
-		}
-
-		if err != nil {
-			errs = append(errs, err)
+			// Continue to next email
 			continue
 		}
 
@@ -302,8 +331,8 @@ func (r *userRepo) GetOrCreateUserByEmail(ctx context.Context, emails []string) 
 
 	// If there are any errors, return them along with the users created so far
 	// Otherwise, return the users
-	if len(errs) > 0 {
-		return users, errs
+	if userErr.HasErrors() {
+		return users, userErr
 	}
 
 	return users, nil
@@ -314,9 +343,10 @@ func (r *userRepo) GetOrCreateUserByEmail(ctx context.Context, emails []string) 
 // -----------------------------------------------------------
 
 // AddUsersToWorkspace adds users to a workspace
-func (r *userRepo) AddUsersToWorkspace(ctx context.Context, workspaceUserProps []models.WorkspaceUserProps, workspaceID uuid.UUID) ([]models.WorkspaceUser, []error) {
+func (r *userRepo) AddUsersToWorkspace(ctx context.Context, workspaceUserProps []models.WorkspaceUserProps, workspaceID uuid.UUID) ([]models.WorkspaceUser, err.Error) {
+	userErr := err.New()
+	// Get a transaction runner
 	runner := r.tm.GetRunner(ctx)
-	var errors []error
 	emailToUserID := make(map[string]uuid.UUID)
 
 	// Get or create users for each email
@@ -326,16 +356,16 @@ func (r *userRepo) AddUsersToWorkspace(ctx context.Context, workspaceUserProps [
 	}
 
 	users, errs := r.GetOrCreateUserByEmail(ctx, emails)
-	if len(errs) > 0 {
-		return nil, errs
+	if errs != nil && errs.HasErrors() {
+		userErr.Merge(errs)
+	}
+
+	if len(users) == 0 {
+		return nil, userErr
 	}
 
 	for _, user := range users {
 		emailToUserID[*user.Email] = user.ID
-	}
-
-	if len(errors) > 0 {
-		return nil, errors
 	}
 
 	valueStrings := make([]string, len(workspaceUserProps))
@@ -362,29 +392,33 @@ func (r *userRepo) AddUsersToWorkspace(ctx context.Context, workspaceUserProps [
 
 	rows, err := runner.QueryContext(ctx, insertQuery, valueArgs...)
 	if err != nil {
-		return nil, []error{err}
+		userErr.Add(err, map[string]any{
+			"query": insertQuery,
+		})
+		return nil, userErr
 	}
 	defer rows.Close()
 
 	var workspaceUsers []models.WorkspaceUser
-	errs = make([]error, 0)
 	for rows.Next() {
 		var wu models.WorkspaceUser
-		err := rows.Scan(
+
+		if err := rows.Scan(
 			&wu.WorkspaceID,
 			&wu.ID, // user_id
 			&wu.Role,
 			&wu.WorkspaceUserStatus,
-		)
-		if err != nil {
-			errs = append(errs, err)
+		); err != nil {
+			userErr.Add(err, map[string]any{
+				"query": insertQuery,
+			})
 			continue
 		}
 
 		// Populate the user fields
 		user, err := r.GetUserByUserID(ctx, wu.ID)
 		if err != nil {
-			errs = append(errs, err)
+			userErr.Merge(err)
 			continue
 		}
 
@@ -396,12 +430,15 @@ func (r *userRepo) AddUsersToWorkspace(ctx context.Context, workspaceUserProps [
 		workspaceUsers = append(workspaceUsers, wu)
 	}
 
-	if len(errs) > 0 {
-		return workspaceUsers, errs
+	if userErr.HasErrors() {
+		return nil, userErr
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, []error{err}
+		userErr.Add(err, map[string]any{
+			"query": insertQuery,
+		})
+		return nil, userErr
 	}
 
 	return workspaceUsers, nil
@@ -409,7 +446,8 @@ func (r *userRepo) AddUsersToWorkspace(ctx context.Context, workspaceUserProps [
 
 // RemoveUsersFromWorkspace removes users from a workspace
 // When userIDs is nil, all users are removed from the workspace
-func (r *userRepo) RemoveUsersFromWorkspace(ctx context.Context, userIDs []uuid.UUID, workspaceID uuid.UUID) []error {
+func (r *userRepo) RemoveUsersFromWorkspace(ctx context.Context, userIDs []uuid.UUID, workspaceID uuid.UUID) err.Error {
+	userErr := err.New()
 	// Get a transaction runner
 	runner := r.tm.GetRunner(ctx)
 
@@ -456,18 +494,26 @@ func (r *userRepo) RemoveUsersFromWorkspace(ctx context.Context, userIDs []uuid.
 	var count int64
 	err := runner.QueryRowContext(ctx, query, args...).Scan(&count)
 	if err != nil {
-		return []error{err}
+		userErr.Add(err, map[string]any{
+			"query": query,
+		})
+		return userErr
 	}
 
 	if count == 0 {
-		return []error{ErrWorkspaceUsersNotFound}
+		userErr.Add(repo.ErrWorkspaceUsersNotFound, map[string]any{
+			"workspaceID": workspaceID,
+			"userIDs":     userIDs,
+		})
+		return userErr
 	}
 
 	return nil
 }
 
 // GetWorkspaceUser gets a user from the workspace
-func (r *userRepo) GetWorkspaceUser(ctx context.Context, workspaceID, userID uuid.UUID) (models.WorkspaceUser, error) {
+func (r *userRepo) GetWorkspaceUser(ctx context.Context, workspaceID, userID uuid.UUID) (models.WorkspaceUser, err.Error) {
+	userErr := err.New()
 	// Get a transaction runner
 	runner := r.tm.GetRunner(ctx)
 
@@ -504,17 +550,27 @@ func (r *userRepo) GetWorkspaceUser(ctx context.Context, workspaceID, userID uui
 	)
 
 	if err == sql.ErrNoRows {
-		return models.WorkspaceUser{}, ErrWorkspaceUsersNotFound
+		userErr.Add(repo.ErrWorkspaceUsersNotFound, map[string]any{
+			"workspaceID": workspaceID,
+			"userID":      userID,
+		})
+		return models.WorkspaceUser{}, userErr
 	}
 	if err != nil {
-		return models.WorkspaceUser{}, err
+		userErr.Add(err, map[string]any{
+			"workspaceID": workspaceID,
+			"userID":      userID,
+		})
+		return models.WorkspaceUser{}, userErr
 	}
 
 	return wu, nil
 }
 
 // GetWorkspaceClerkUser gets a user from the workspace by clerk credentials
-func (r *userRepo) GetWorkspaceClerkUser(ctx context.Context, workspaceID uuid.UUID, clerkID, clerkEmail string) (models.WorkspaceUser, error) {
+func (r *userRepo) GetWorkspaceClerkUser(ctx context.Context, workspaceID uuid.UUID, clerkID, clerkEmail string) (models.WorkspaceUser, err.Error) {
+	userErr := err.New()
+
 	// Get a transaction runner
 	runner := r.tm.GetRunner(ctx)
 
@@ -543,17 +599,28 @@ func (r *userRepo) GetWorkspaceClerkUser(ctx context.Context, workspaceID uuid.U
 	)
 
 	if err == sql.ErrNoRows {
-		return models.WorkspaceUser{}, ErrWorkspaceUsersNotFound
+		userErr.Add(repo.ErrWorkspaceUsersNotFound, map[string]any{
+			"workspaceID": workspaceID,
+			"clerkID":     clerkID,
+			"clerkEmail":  clerkEmail,
+		})
+		return models.WorkspaceUser{}, userErr
 	}
 	if err != nil {
-		return models.WorkspaceUser{}, err
+		userErr.Add(err, map[string]any{
+			"workspaceID": workspaceID,
+			"clerkID":     clerkID,
+			"clerkEmail":  clerkEmail,
+		})
+		return models.WorkspaceUser{}, userErr
 	}
 
 	return wu, nil
 }
 
 // ListWorkspaceUsers lists all users from the workspace
-func (r *userRepo) ListWorkspaceUsers(ctx context.Context, workspaceID uuid.UUID) ([]models.WorkspaceUser, []error) {
+func (r *userRepo) ListWorkspaceUsers(ctx context.Context, workspaceID uuid.UUID) ([]models.WorkspaceUser, err.Error) {
+	userErr := err.New()
 	// Get a transaction runner
 	runner := r.tm.GetRunner(ctx)
 
@@ -569,12 +636,20 @@ func (r *userRepo) ListWorkspaceUsers(ctx context.Context, workspaceID uuid.UUID
 
 	rows, err := runner.QueryContext(ctx, query, workspaceID)
 	if err != nil {
-		return nil, []error{err}
+		if errors.Is(err, sql.ErrNoRows) {
+			userErr.Add(repo.ErrWorkspaceUsersNotFound, map[string]any{
+				"workspaceID": workspaceID,
+			})
+		} else {
+			userErr.Add(err, map[string]any{
+				"workspaceID": workspaceID,
+			})
+		}
+		return nil, userErr
 	}
 	defer rows.Close()
 
 	var users []models.WorkspaceUser
-	errs := make([]error, 0)
 	for rows.Next() {
 		var wu models.WorkspaceUser
 		err := rows.Scan(
@@ -590,29 +665,38 @@ func (r *userRepo) ListWorkspaceUsers(ctx context.Context, workspaceID uuid.UUID
 			&wu.UpdatedAt,
 		)
 		if err != nil {
-			errs = append(errs, err)
+			userErr.Add(repo.ErrCouldnotScanUser, map[string]any{
+				"workspaceID": workspaceID,
+			})
 			continue
 		}
 		users = append(users, wu)
 	}
 
-	if errs != nil {
-		return users, errs
+	if userErr.HasErrors() {
+		return nil, userErr
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, []error{err}
+		userErr.Add(err, map[string]any{
+			"workspaceID": workspaceID,
+		})
+		return nil, userErr
 	}
 
 	if len(users) == 0 {
-		return nil, []error{ErrWorkspaceUsersNotFound}
+		userErr.Add(repo.ErrWorkspaceUsersNotFound, map[string]any{
+			"workspaceID": workspaceID,
+		})
+		return nil, userErr
 	}
 
 	return users, nil
 }
 
 // ListUserWorkspaces lists all workspaces of a user
-func (r *userRepo) ListUserWorkspaces(ctx context.Context, userID uuid.UUID) ([]uuid.UUID, []error) {
+func (r *userRepo) ListUserWorkspaces(ctx context.Context, userID uuid.UUID) ([]uuid.UUID, err.Error) {
+	userErr := err.New()
 	runner := r.tm.GetRunner(ctx)
 
 	query := `
@@ -629,38 +713,54 @@ func (r *userRepo) ListUserWorkspaces(ctx context.Context, userID uuid.UUID) ([]
 	rows, err := runner.QueryContext(ctx, query, userID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return []uuid.UUID{}, []error{ErrNoWorkspaceFoundForUser}
+			userErr.Add(repo.ErrNoWorkspaceFoundForUser, map[string]any{
+				"userID": userID,
+			})
+		} else {
+			userErr.Add(err, map[string]any{
+				"userID": userID,
+				"query":  query,
+			})
 		}
-		return nil, []error{err}
+		return nil, userErr
 	}
 	defer rows.Close()
 
 	workspaces := make([]uuid.UUID, 0) // Initialize with empty slice instead of nil
-	errs := make([]error, 0)
 	for rows.Next() {
 		var workspaceID uuid.UUID
 		if err := rows.Scan(&workspaceID); err != nil {
-			errs = append(errs, err)
+			userErr.Add(err, map[string]any{
+				"userID": userID,
+			})
 			continue
 		}
 		workspaces = append(workspaces, workspaceID)
 	}
 
-	if len(errs) > 0 {
-		return workspaces, errs
+	if err = rows.Err(); err != nil {
+		userErr.Add(err, map[string]any{
+			"userID": userID,
+			"query":  query,
+		})
 	}
 
-	if err = rows.Err(); err != nil {
-		return nil, []error{err}
+	if userErr.HasErrors() {
+		return nil, userErr
 	}
 
 	return workspaces, nil // Will return empty slice if no rows found
 }
 
 // UpdateWorkspaceUserRole updates the role of users in the workspace
-func (r *userRepo) UpdateWorkspaceUserRole(ctx context.Context, workspaceID uuid.UUID, userIDs []uuid.UUID, role models.UserWorkspaceRole) ([]models.UserWorkspaceRole, []error) {
+func (r *userRepo) UpdateWorkspaceUserRole(ctx context.Context, workspaceID uuid.UUID, userIDs []uuid.UUID, role models.UserWorkspaceRole) ([]models.UserWorkspaceRole, err.Error) {
+	userErr := err.New()
 	if userIDs == nil {
-		return nil, []error{ErrUserIDsNotSpecified}
+		userErr.Add(repo.ErrUserIDsNotSpecified, map[string]any{
+			"workspaceID": workspaceID,
+			"role":        role,
+		})
+		return nil, userErr
 	}
 	// Get a transaction runner
 	runner := r.tm.GetRunner(ctx)
@@ -683,35 +783,48 @@ func (r *userRepo) UpdateWorkspaceUserRole(ctx context.Context, workspaceID uuid
 
 	rows, err := runner.QueryContext(ctx, query, args...)
 	if err != nil {
-		return nil, []error{err}
+		userErr.Add(err, map[string]any{
+			"workspaceID": workspaceID,
+			"role":        role,
+			"userIDs":     userIDs,
+			"query":       query,
+		})
+		return nil, userErr
 	}
 	defer rows.Close()
 
 	updatedRoles := make([]models.UserWorkspaceRole, 0, len(userIDs))
-	errs := make([]error, 0)
 	for rows.Next() {
 		var userID uuid.UUID
 		var updatedRole models.UserWorkspaceRole
 		if err := rows.Scan(&userID, &updatedRole); err != nil {
-			errs = append(errs, err)
+			userErr.Add(err, map[string]any{
+				"workspaceID": workspaceID,
+			})
 			continue
 		}
 		updatedRoles = append(updatedRoles, updatedRole)
 	}
 
-	if len(errs) > 0 {
-		return updatedRoles, errs
+	if err = rows.Err(); err != nil {
+		userErr.Add(err, map[string]any{
+			"workspaceID": workspaceID,
+			"role":        role,
+			"userIDs":     userIDs,
+			"query":       query,
+		})
 	}
 
-	if err = rows.Err(); err != nil {
-		return nil, []error{err}
+	if userErr.HasErrors() {
+		return nil, userErr
 	}
 
 	return updatedRoles, nil
 }
 
 // UpdateWorkspaceUserStatus updates the status of users in the workspace
-func (r *userRepo) UpdateWorkspaceUserStatus(ctx context.Context, workspaceID uuid.UUID, userIDs []uuid.UUID, status models.UserWorkspaceStatus) ([]models.UserWorkspaceStatus, []error) {
+func (r *userRepo) UpdateWorkspaceUserStatus(ctx context.Context, workspaceID uuid.UUID, userIDs []uuid.UUID, status models.UserWorkspaceStatus) ([]models.UserWorkspaceStatus, err.Error) {
+	userErr := err.New()
 	// Get a transaction runner
 	runner := r.tm.GetRunner(ctx)
 
@@ -733,35 +846,48 @@ func (r *userRepo) UpdateWorkspaceUserStatus(ctx context.Context, workspaceID uu
 
 	rows, err := runner.QueryContext(ctx, query, args...)
 	if err != nil {
-		return nil, []error{err}
+		userErr.Add(err, map[string]any{
+			"workspaceID": workspaceID,
+			"status":      status,
+			"userIDs":     userIDs,
+			"query":       query,
+		})
+		return nil, userErr
 	}
 	defer rows.Close()
 
 	updatedStatuses := make([]models.UserWorkspaceStatus, 0, len(userIDs))
-	errs := make([]error, 0)
 	for rows.Next() {
 		var userID uuid.UUID
 		var updatedStatus models.UserWorkspaceStatus
 		if err := rows.Scan(&userID, &updatedStatus); err != nil {
-			errs = append(errs, err)
+			userErr.Add(err, map[string]any{
+				"workspaceID": workspaceID,
+			})
 			continue
 		}
 		updatedStatuses = append(updatedStatuses, updatedStatus)
 	}
 
-	if len(errs) > 0 {
-		return updatedStatuses, errs
+	if err = rows.Err(); err != nil {
+		userErr.Add(err, map[string]any{
+			"workspaceID": workspaceID,
+			"status":      status,
+			"userIDs":     userIDs,
+			"query":       query,
+		})
 	}
 
-	if err = rows.Err(); err != nil {
-		return nil, []error{err}
+	if userErr.HasErrors() {
+		return nil, userErr
 	}
 
 	return updatedStatuses, nil
 }
 
 // GetWorkspaceUserCountByRole gets the count of users by role in the workspace
-func (r *userRepo) GetWorkspaceUserCountByRole(ctx context.Context, workspaceID uuid.UUID) (int, int, error) {
+func (r *userRepo) GetWorkspaceUserCountByRole(ctx context.Context, workspaceID uuid.UUID) (int, int, err.Error) {
+	userErr := err.New()
 	// Get a transaction runner
 	runner := r.tm.GetRunner(ctx)
 
@@ -776,7 +902,11 @@ func (r *userRepo) GetWorkspaceUserCountByRole(ctx context.Context, workspaceID 
 	var adminCount, userCount int
 	err := runner.QueryRowContext(ctx, query, workspaceID).Scan(&adminCount, &userCount)
 	if err != nil {
-		return 0, 0, fmt.Errorf("failed to get workspace user counts: %w", err)
+		userErr.Add(err, map[string]any{
+			"workspaceID": workspaceID,
+			"query":       query,
+		})
+		return 0, 0, userErr
 	}
 
 	return adminCount, userCount, nil
@@ -787,7 +917,8 @@ func (r *userRepo) GetWorkspaceUserCountByRole(ctx context.Context, workspaceID 
 // -------------------------------------------
 
 // SyncUser syncs user data with Clerk
-func (r *userRepo) SyncUser(ctx context.Context, userID uuid.UUID, clerkUser *clerk.User) error {
+func (r *userRepo) SyncUser(ctx context.Context, userID uuid.UUID, clerkUser *clerk.User) err.Error {
+	userErr := err.New()
 	// Get a transaction runner
 	runner := r.tm.GetRunner(ctx)
 
@@ -803,7 +934,10 @@ func (r *userRepo) SyncUser(ctx context.Context, userID uuid.UUID, clerkUser *cl
 
 	userEmail, err := utils.GetClerkUserEmail(clerkUser)
 	if err != nil {
-		return ErrCouldnotGetClerkUserEmail
+		userErr.Add(err, map[string]any{
+			"userID": userID,
+		})
+		return userErr
 	}
 
 	userFullName := utils.GetClerkUserFullName(clerkUser)
@@ -816,23 +950,34 @@ func (r *userRepo) SyncUser(ctx context.Context, userID uuid.UUID, clerkUser *cl
 		userID,
 	)
 	if err != nil {
-		return err
+		userErr.Add(err, map[string]any{
+			"userID": userID,
+			"query":  query,
+		})
+		return userErr
 	}
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		return ErrCouldnotConfirmSyncStatus
+		userErr.Add(err, map[string]any{
+			"userID": userID,
+		})
+		return userErr
 	}
 
 	if rowsAffected == 0 {
-		return ErrUserNotFoundByIDOrEmail
+		userErr.Add(repo.ErrUserNotFoundByID, map[string]any{
+			"userID": userID,
+		})
+		return userErr
 	}
 
 	return nil
 }
 
 // DeleteUser deletes a user and removes them from all workspaces
-func (r *userRepo) DeleteUser(ctx context.Context, userID uuid.UUID) error {
+func (r *userRepo) DeleteUser(ctx context.Context, userID uuid.UUID) err.Error {
+	userErr := err.New()
 	// Get a transaction runner
 	runner := r.tm.GetRunner(ctx)
 
@@ -841,10 +986,22 @@ func (r *userRepo) DeleteUser(ctx context.Context, userID uuid.UUID) error {
 	err := runner.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)", userID).Scan(&exists)
 
 	if err != nil {
-		return err
+		if err == sql.ErrNoRows {
+			userErr.Add(repo.ErrUserNotFoundByID, map[string]any{
+				"userID": userID,
+			})
+		} else {
+			userErr.Add(err, map[string]any{
+				"userID": userID,
+			})
+		}
+		return userErr
 	}
 	if !exists {
-		return ErrUserNotFoundByIDOrEmail
+		userErr.Add(repo.ErrUserNotFoundByID, map[string]any{
+			"userID": userID,
+		})
+		return userErr
 	}
 
 	// First update all workspace_users entries to inactive
@@ -856,7 +1013,10 @@ func (r *userRepo) DeleteUser(ctx context.Context, userID uuid.UUID) error {
 		WHERE user_id = $1
 	`, userID)
 	if err != nil {
-		return err
+		userErr.Add(err, map[string]any{
+			"userID": userID,
+		})
+		return userErr
 	}
 
 	// Then mark the user as inactive
@@ -871,16 +1031,25 @@ func (r *userRepo) DeleteUser(ctx context.Context, userID uuid.UUID) error {
 		WHERE id = $1
 	`, userID)
 	if err != nil {
-		return err
+		userErr.Add(err, map[string]any{
+			"userID": userID,
+		})
+		return userErr
 	}
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		return ErrCouldnotConfirmDeleteStatus
+		userErr.Add(err, map[string]any{
+			"userID": userID,
+		})
+		return userErr
 	}
 
 	if rowsAffected == 0 {
-		return ErrUserNotFoundByIDOrEmail
+		userErr.Add(repo.ErrUserNotFoundByID, map[string]any{
+			"userID": userID,
+		})
+		return userErr
 	}
 
 	return nil
@@ -891,7 +1060,8 @@ func (r *userRepo) DeleteUser(ctx context.Context, userID uuid.UUID) error {
 // ------------------------------------------
 
 // UserExists checks if a user exists by userID
-func (r *userRepo) UserExists(ctx context.Context, userID uuid.UUID) (bool, error) {
+func (r *userRepo) UserExists(ctx context.Context, userID uuid.UUID) (bool, err.Error) {
+	userErr := err.New()
 	// Get a transaction runner
 	runner := r.tm.GetRunner(ctx)
 
@@ -901,30 +1071,44 @@ func (r *userRepo) UserExists(ctx context.Context, userID uuid.UUID) (bool, erro
 		if err == sql.ErrNoRows {
 			return false, nil
 		}
-		return false, err
+		userErr.Add(err, map[string]any{
+			"userID": userID,
+		})
+		return false, userErr
 	}
 	return exists, nil
 }
 
 // ClerkUserExists checks if a user exists by clerk credentials
-func (r *userRepo) ClerkUserExists(ctx context.Context, clerkID, clerkEmail string) (bool, error) {
+func (r *userRepo) ClerkUserExists(ctx context.Context, clerkID, clerkEmail string) (bool, err.Error) {
+	// Normalize email
+	clerkEmail = utils.NormalizeEmail(clerkEmail)
+
+	userErr := err.New()
+
+	// Get a transaction runner
 	runner := r.tm.GetRunner(ctx)
 	var exists bool
-	err := runner.QueryRowContext(ctx,
+
+	if err := runner.QueryRowContext(ctx,
 		"SELECT EXISTS(SELECT 1 FROM users WHERE clerk_id = $1 OR email = $2)",
 		clerkID, clerkEmail,
-	).Scan(&exists)
-	if err != nil {
+	).Scan(&exists); err != nil {
 		if err == sql.ErrNoRows {
 			return false, nil
 		}
-		return false, err
+		userErr.Add(err, map[string]any{
+			"clerkID":    clerkID,
+			"clerkEmail": clerkEmail,
+		})
+		return false, userErr
 	}
 	return exists, nil
 }
 
 // WorkspaceUserExists checks if a user exists in the workspace
-func (r *userRepo) WorkspaceUserExists(ctx context.Context, workspaceID, userID uuid.UUID) (bool, error) {
+func (r *userRepo) WorkspaceUserExists(ctx context.Context, workspaceID, userID uuid.UUID) (bool, err.Error) {
+	userErr := err.New()
 	// Get a transaction runner
 	runner := r.tm.GetRunner(ctx)
 
@@ -937,13 +1121,18 @@ func (r *userRepo) WorkspaceUserExists(ctx context.Context, workspaceID, userID 
 		if err == sql.ErrNoRows {
 			return false, nil
 		}
-		return false, err
+		userErr.Add(err, map[string]any{
+			"workspaceID": workspaceID,
+			"userID":      userID,
+		})
+		return false, userErr
 	}
 	return exists, nil
 }
 
 // WorkspaceClerkUserExists checks if a user exists in the workspace by clerk credentials
-func (r *userRepo) WorkspaceClerkUserExists(ctx context.Context, workspaceID uuid.UUID, clerkID, clerkEmail string) (bool, error) {
+func (r *userRepo) WorkspaceClerkUserExists(ctx context.Context, workspaceID uuid.UUID, clerkID, clerkEmail string) (bool, err.Error) {
+	userErr := err.New()
 	// Get a transaction runner
 	runner := r.tm.GetRunner(ctx)
 
@@ -962,14 +1151,20 @@ func (r *userRepo) WorkspaceClerkUserExists(ctx context.Context, workspaceID uui
 		if err == sql.ErrNoRows {
 			return false, nil
 		}
-		return false, err
+		userErr.Add(err, map[string]any{
+			"workspaceID": workspaceID,
+			"clerkID":     clerkID,
+			"clerkEmail":  clerkEmail,
+		})
+		return false, userErr
 	}
 
 	return exists, nil
 }
 
 // ClerkUserIsAdmin checks if a clerk user is an admin in the workspace
-func (r *userRepo) ClerkUserIsAdmin(ctx context.Context, workspaceID uuid.UUID, clerkID string) (bool, error) {
+func (r *userRepo) ClerkUserIsAdmin(ctx context.Context, workspaceID uuid.UUID, clerkID string) (bool, err.Error) {
+	userErr := err.New()
 	// Get a transaction runner
 	runner := r.tm.GetRunner(ctx)
 
@@ -991,14 +1186,20 @@ func (r *userRepo) ClerkUserIsAdmin(ctx context.Context, workspaceID uuid.UUID, 
 		if err == sql.ErrNoRows {
 			return false, nil
 		}
-		return false, err
+		userErr.Add(err, map[string]any{
+			"workspaceID": workspaceID,
+			"clerkID":     clerkID,
+		})
+		return false, userErr
 	}
 
 	return isAdmin, nil
 }
 
 // ClerkUserIsMember checks if a clerk user is a member of the workspace
-func (r *userRepo) ClerkUserIsMember(ctx context.Context, workspaceID uuid.UUID, clerkID string) (bool, error) {
+func (r *userRepo) ClerkUserIsMember(ctx context.Context, workspaceID uuid.UUID, clerkID string) (bool, err.Error) {
+	userErr := err.New()
+
 	// Get a transaction runner
 	runner := r.tm.GetRunner(ctx)
 
@@ -1019,7 +1220,11 @@ func (r *userRepo) ClerkUserIsMember(ctx context.Context, workspaceID uuid.UUID,
 		if err == sql.ErrNoRows {
 			return false, nil
 		}
-		return false, err
+		userErr.Add(err, map[string]any{
+			"workspaceID": workspaceID,
+			"clerkID":     clerkID,
+		})
+		return false, userErr
 	}
 
 	return isMember, nil

@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -13,28 +12,8 @@ import (
 	repo "github.com/wizenheimer/iris/src/internal/interfaces/repository"
 	models "github.com/wizenheimer/iris/src/internal/models/core"
 	"github.com/wizenheimer/iris/src/internal/repository/transaction"
+	"github.com/wizenheimer/iris/src/pkg/err"
 	"github.com/wizenheimer/iris/src/pkg/logger"
-)
-
-var (
-	// ---- validation errors -----
-	ErrPagesUnspecified                = errors.New("pages unspecified for competitor")
-	ErrFailedToMarshallCaptureProfile  = errors.New("failed to marshal capture profile for page")
-	ErrFailedToUnmarshalCaptureProfile = errors.New("failed to unmarshal capture profile for page")
-	ErrFailedToMarshallDiffProfile     = errors.New("failed to marshal diff profile for page")
-	ErrFailedToUnmarshalDiffProfile    = errors.New("failed to unmarshal diff profile for page")
-	ErrInvalidBatchSize                = errors.New("invalid batch size")
-
-	// ---- non fatal errors ----
-	ErrFailedToConfirmPageRemoval = errors.New("failed to confirm page removal")
-
-	// ---- remapped errors ----
-	// case 1 : remapping an existing error
-	// case 2 : remapping a non error scenario to an error
-	ErrNoCompetitorPages = errors.New("no pages found for the competitor")
-	ErrPageNotFound      = errors.New("page not found")
-    ErrFailedToScanPages              = errors.New("failed to scan pages from pages table")
-    ErrFailedToIterateOverPagesForScan = errors.New("failed to scan pages from pages table")
 )
 
 type pageRepo struct {
@@ -50,9 +29,13 @@ func NewPageRepository(tm *transaction.TxManager, logger *logger.Logger) repo.Pa
 }
 
 // AddPagesToCompetitor adds pages to a competitor
-func (r *pageRepo) AddPagesToCompetitor(ctx context.Context, competitorID uuid.UUID, pages []models.PageProps) ([]models.Page, []error) {
+func (r *pageRepo) AddPagesToCompetitor(ctx context.Context, competitorID uuid.UUID, pages []models.PageProps) ([]models.Page, err.Error) {
+	pageErr := err.New()
 	if len(pages) == 0 {
-		return nil, []error{ErrPagesUnspecified}
+		pageErr.Add(repo.ErrPagesUnspecified, map[string]any{
+			"pages": pages,
+		})
+		return nil, pageErr
 	}
 
 	runner := r.tm.GetRunner(ctx)
@@ -66,12 +49,20 @@ func (r *pageRepo) AddPagesToCompetitor(ctx context.Context, competitorID uuid.U
 
 		captureProfileJSON, err := json.Marshal(page.CaptureProfile)
 		if err != nil {
-			return nil, []error{err, ErrFailedToMarshallCaptureProfile}
+			pageErr.Add(repo.ErrFailedToMarshallCaptureProfile, map[string]any{
+				"pageURL": page.URL,
+			})
 		}
 
 		diffProfileJSON, err := json.Marshal(page.DiffProfile)
 		if err != nil {
-			return nil, []error{err, ErrFailedToMarshallDiffProfile}
+			pageErr.Add(repo.ErrFailedToMarshallDiffProfile, map[string]any{
+				"pageURL": page.URL,
+			})
+		}
+
+		if pageErr.HasErrors() {
+			return nil, pageErr
 		}
 
 		valueArgs = append(valueArgs,
@@ -90,20 +81,27 @@ func (r *pageRepo) AddPagesToCompetitor(ctx context.Context, competitorID uuid.U
 
 	rows, err := runner.QueryContext(ctx, query, valueArgs...)
 	if err != nil {
-		return nil, []error{err}
+		pageErr.Add(err, map[string]any{
+			"competitorID": competitorID,
+		})
+		return nil, pageErr
 	}
 	defer rows.Close()
 
 	createdPages, err := scanPages(rows)
 	if err != nil {
-		return nil, []error{err}
+		pageErr.Add(err, map[string]any{
+			"query": query,
+		})
+		return nil, pageErr
 	}
 
 	return createdPages, nil
 }
 
 // RemovePagesFromCompetitor removes pages from a competitor
-func (r *pageRepo) RemovePagesFromCompetitor(ctx context.Context, competitorID uuid.UUID, pageIDs []uuid.UUID) []error {
+func (r *pageRepo) RemovePagesFromCompetitor(ctx context.Context, competitorID uuid.UUID, pageIDs []uuid.UUID) err.Error {
+	pageErr := err.New()
 	runner := r.tm.GetRunner(ctx)
 
 	var query string
@@ -141,29 +139,32 @@ func (r *pageRepo) RemovePagesFromCompetitor(ctx context.Context, competitorID u
 
 	result, err := runner.ExecContext(ctx, query, args...)
 	if err != nil {
-		return []error{
-			err,
-		}
+		pageErr.Add(err, map[string]any{
+			"query": query,
+		})
+		return pageErr
 	}
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		return []error{
-			ErrFailedToConfirmPageRemoval,
-		}
+		pageErr.Add(err, map[string]any{
+			"query": query,
+		})
 	}
 
 	if rowsAffected == 0 {
-		return []error{
-			ErrNoCompetitorPages,
-		}
+		pageErr.Add(repo.ErrNoCompetitorPages, map[string]any{
+			"pageIDs": pageIDs,
+		})
+		return pageErr
 	}
 
 	return nil
 }
 
 // ListCompetitorPages gets the pages for a competitor with optional pagination
-func (r *pageRepo) ListCompetitorPages(ctx context.Context, competitorID uuid.UUID, limit, offset *int) ([]models.Page, []error) {
+func (r *pageRepo) ListCompetitorPages(ctx context.Context, competitorID uuid.UUID, limit, offset *int) ([]models.Page, err.Error) {
+	pageErr := err.New()
 	runner := r.tm.GetRunner(ctx)
 
 	query := `
@@ -178,7 +179,8 @@ func (r *pageRepo) ListCompetitorPages(ctx context.Context, competitorID uuid.UU
 	// Only add LIMIT if limit is provided and valid
 	if limit != nil {
 		if *limit < 0 {
-			return nil, []error{ErrInvalidLimit}
+			pageErr.Add(repo.ErrInvalidLimit, nil)
+			return nil, pageErr
 		}
 		paramCount++
 		query += fmt.Sprintf(" LIMIT $%d", paramCount)
@@ -188,7 +190,8 @@ func (r *pageRepo) ListCompetitorPages(ctx context.Context, competitorID uuid.UU
 	// Only add OFFSET if offset is provided and valid
 	if offset != nil {
 		if *offset < 0 {
-			return nil, []error{ErrInvalidOffset}
+			pageErr.Add(repo.ErrInvalidOffset, nil)
+			return nil, pageErr
 		}
 		paramCount++
 		query += fmt.Sprintf(" OFFSET $%d", paramCount)
@@ -197,26 +200,37 @@ func (r *pageRepo) ListCompetitorPages(ctx context.Context, competitorID uuid.UU
 
 	rows, err := runner.QueryContext(ctx, query, args...)
 	if err != nil {
-		return nil, []error{err}
+		pageErr.Add(err, map[string]any{
+			"competitorID": competitorID,
+		})
+		return nil, pageErr
 	}
 	defer rows.Close()
 
 	pages, err := scanPages(rows)
 	if err != nil {
-		return nil, []error{err}
+		pageErr.Add(err, map[string]any{
+			"competitorID": competitorID,
+		})
+		return nil, pageErr
 	}
 
 	if len(pages) == 0 {
-		return nil, []error{ErrNoCompetitorPages}
+		pageErr.Add(repo.ErrNoCompetitorPages, map[string]any{
+			"competitorID": competitorID,
+		})
+		return nil, pageErr
 	}
 
 	return pages, nil
 }
 
 // ListActivePages lists all active pages in batches using cursor-based pagination
-func (r *pageRepo) ListActivePages(ctx context.Context, batchSize int, lastPageID *uuid.UUID) (models.ActivePageBatch, error) {
+func (r *pageRepo) ListActivePages(ctx context.Context, batchSize int, lastPageID *uuid.UUID) (models.ActivePageBatch, err.Error) {
+	pageErr := err.New()
 	if batchSize <= 0 {
-		return models.ActivePageBatch{}, ErrInvalidBatchSize
+		pageErr.Add(repo.ErrInvalidBatchSize, nil)
+		return models.ActivePageBatch{}, pageErr
 	}
 
 	runner := r.tm.GetRunner(ctx)
@@ -240,14 +254,22 @@ func (r *pageRepo) ListActivePages(ctx context.Context, batchSize int, lastPageI
 
 	rows, err := runner.QueryContext(ctx, query, args...)
 	if err != nil {
-		return models.ActivePageBatch{}, err
+		pageErr.Add(err, map[string]any{
+			"batchSize":  batchSize,
+			"lastPageID": lastPageID,
+		})
+		return models.ActivePageBatch{}, pageErr
 	}
 	defer rows.Close()
 
 	var pages []models.Page
 	pages, err = scanPages(rows)
 	if err != nil {
-		return models.ActivePageBatch{}, err
+		pageErr.Add(err, map[string]any{
+			"lastPageID": lastPageID,
+			"batchSize":  batchSize,
+		})
+		return models.ActivePageBatch{}, pageErr
 	}
 
 	result := models.ActivePageBatch{
@@ -264,7 +286,8 @@ func (r *pageRepo) ListActivePages(ctx context.Context, batchSize int, lastPageI
 }
 
 // GetCompetitorPage gets a page for a competitor
-func (r *pageRepo) GetCompetitorPage(ctx context.Context, competitorID, pageID uuid.UUID) (models.Page, error) {
+func (r *pageRepo) GetCompetitorPage(ctx context.Context, competitorID, pageID uuid.UUID) (models.Page, err.Error) {
+	pageErr := err.New()
 	runner := r.tm.GetRunner(ctx)
 
 	query := `
@@ -276,11 +299,16 @@ func (r *pageRepo) GetCompetitorPage(ctx context.Context, competitorID, pageID u
 	row := runner.QueryRowContext(ctx, query, pageID, competitorID)
 	page, err := scanPage(row)
 	if err != nil {
-		return models.Page{}, err
+		pageErr.Add(err, map[string]any{
+			"competitorID": competitorID,
+			"pageID":       pageID,
+		})
+		return models.Page{}, pageErr
 	}
 
 	if page == nil {
-		return models.Page{}, ErrPageNotFound
+		pageErr.Add(repo.ErrPageNotFound, nil)
+		return models.Page{}, pageErr
 	}
 
 	return *page, nil
@@ -288,29 +316,46 @@ func (r *pageRepo) GetCompetitorPage(ctx context.Context, competitorID, pageID u
 
 // UpdateCompetitorPage updates a page for a competitor
 // UpdateCompetitorPage updates a page for a competitor
-func (r *pageRepo) UpdateCompetitorPage(ctx context.Context, competitorID, pageID uuid.UUID, page models.PageProps) (models.Page, error) {
+func (r *pageRepo) UpdateCompetitorPage(ctx context.Context, competitorID, pageID uuid.UUID, page models.PageProps) (models.Page, err.Error) {
+	pageErr := err.New()
 	runner := r.tm.GetRunner(ctx)
 
 	// Verify the page belongs to the competitor
 	var exists bool
 	err := runner.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM pages WHERE id = $1 AND competitor_id = $2)", pageID, competitorID).Scan(&exists)
 	if err != nil {
-		return models.Page{}, err
+		pageErr.Add(err, map[string]any{
+			"competitorID": competitorID,
+			"pageID":       pageID,
+		})
+		return models.Page{}, pageErr
 	}
 	if !exists {
-		return models.Page{}, ErrPageNotFound
+		pageErr.Add(repo.ErrPageNotFound, map[string]any{
+			"competitorID": competitorID,
+			"pageID":       pageID,
+		})
+		return models.Page{}, pageErr
 	}
 
 	// Marshal the maps to JSON
 	captureProfileJSON, err := json.Marshal(page.CaptureProfile)
 	if err != nil {
-		return models.Page{}, ErrFailedToMarshallCaptureProfile
+        pageErr.Add(repo.ErrFailedToMarshallCaptureProfile, map[string]any{
+            "pageID": pageID,
+        })
 	}
 
 	diffProfileJSON, err := json.Marshal(page.DiffProfile)
 	if err != nil {
-		return models.Page{}, ErrFailedToMarshallDiffProfile
+        pageErr.Add(repo.ErrFailedToMarshallDiffProfile, map[string]any{
+            "pageID": pageID,
+        })
 	}
+
+    if pageErr.HasErrors() {
+        return models.Page{}, pageErr
+    }
 
 	query := `
 		UPDATE pages
@@ -329,7 +374,11 @@ func (r *pageRepo) UpdateCompetitorPage(ctx context.Context, competitorID, pageI
 
 	updatedPage, err := scanPage(row)
 	if err != nil {
-		return models.Page{}, err
+        pageErr.Add(err, map[string]any{
+            "competitorID": competitorID,
+            "pageID":       pageID,
+        })
+		return models.Page{}, pageErr
 	}
 
 	return *updatedPage, nil
@@ -352,10 +401,10 @@ func scanPage(row dbScanner) (*models.Page, error) {
 		&page.UpdatedAt,
 	)
 	if err == sql.ErrNoRows {
-		return nil, ErrPageNotFound
+		return nil, repo.ErrPageNotFound
 	}
 	if err != nil {
-		return nil, ErrFailedToScanPages
+		return nil, repo.ErrFailedToScanPages
 	}
 
 	// Initialize empty maps if needed
@@ -369,12 +418,12 @@ func scanPage(row dbScanner) (*models.Page, error) {
 	// Unmarshal JSONB data into maps
 	if len(captureProfileBytes) > 0 {
 		if err := json.Unmarshal(captureProfileBytes, &page.CaptureProfile); err != nil {
-			return nil, ErrFailedToUnmarshalCaptureProfile
+			return nil, repo.ErrFailedToUnmarshalCaptureProfile
 		}
 	}
 	if len(diffProfileBytes) > 0 {
 		if err := json.Unmarshal(diffProfileBytes, &page.DiffProfile); err != nil {
-			return nil, ErrFailedToUnmarshalDiffProfile
+			return nil, repo.ErrFailedToUnmarshalDiffProfile
 		}
 	}
 
@@ -392,7 +441,7 @@ func scanPages(rows *sql.Rows) ([]models.Page, error) {
 		pages = append(pages, *page)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, ErrFailedToIterateOverPagesForScan
+		return nil, repo.ErrFailedToIterateOverPagesForScan
 	}
 
 	return pages, nil

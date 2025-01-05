@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -11,21 +10,8 @@ import (
 	repo "github.com/wizenheimer/iris/src/internal/interfaces/repository"
 	models "github.com/wizenheimer/iris/src/internal/models/core"
 	"github.com/wizenheimer/iris/src/internal/repository/transaction"
+	"github.com/wizenheimer/iris/src/pkg/err"
 	"github.com/wizenheimer/iris/src/pkg/logger"
-)
-
-var (
-	// ---- validation errors ----
-	ErrPageIDsUnspecified = errors.New("pageIDs unspecified")
-
-	// ---- non fatal errors ----
-	ErrFailedToScanPageHistory = errors.New("failed to scan page history")
-
-	// ---- remapped errors ----
-	// case 1: remapping an existing error
-	// case 2: remapping a non error scenario to an error
-	ErrPageHistoryNotFound = errors.New("no page history found for the page")
-
 )
 
 type historyRepo struct {
@@ -41,7 +27,8 @@ func NewPageHistoryRepository(tm *transaction.TxManager, logger *logger.Logger) 
 }
 
 // CreatePageHistory creates a new page history entry
-func (r *historyRepo) CreatePageHistory(ctx context.Context, pageID uuid.UUID, pageHistory models.PageHistory) (models.PageHistory, error) {
+func (r *historyRepo) CreatePageHistory(ctx context.Context, pageID uuid.UUID, pageHistory models.PageHistory) (models.PageHistory, err.Error) {
+	pageHistoryErr := err.New()
 	runner := r.tm.GetRunner(ctx)
 
 	query := `
@@ -77,7 +64,10 @@ func (r *historyRepo) CreatePageHistory(ctx context.Context, pageID uuid.UUID, p
 	)
 
 	if err := row.Err(); err != nil {
-		return models.PageHistory{}, err
+		pageHistoryErr.Add(err, map[string]interface{}{
+			"pageID": pageID,
+		})
+		return models.PageHistory{}, pageHistoryErr
 	}
 
 	var created models.PageHistory
@@ -96,15 +86,19 @@ func (r *historyRepo) CreatePageHistory(ctx context.Context, pageID uuid.UUID, p
 		&created.CreatedAt,
 	)
 	if err != nil {
-		return models.PageHistory{}, ErrFailedToScanPageHistory
+		pageHistoryErr.Add(repo.ErrFailedToScanPageHistory, map[string]interface{}{
+			"pageID": pageID,
+		})
+		return models.PageHistory{}, pageHistoryErr
 	}
 
 	return created, nil
 }
 
 // ListPageHistory lists page history for a page with optional pagination
-func (r *historyRepo) ListPageHistory(ctx context.Context, pageID uuid.UUID, limit, offset *int) ([]models.PageHistory, []error) {
+func (r *historyRepo) ListPageHistory(ctx context.Context, pageID uuid.UUID, limit, offset *int) ([]models.PageHistory, err.Error) {
 	runner := r.tm.GetRunner(ctx)
+	pageHistoryErr := err.New()
 
 	// Build the query with optional pagination
 	query := `
@@ -120,10 +114,17 @@ func (r *historyRepo) ListPageHistory(ctx context.Context, pageID uuid.UUID, lim
 	// Add pagination if provided
 	if limit != nil && offset != nil {
 		if *limit < 0 {
-			return nil, []error{ErrInvalidLimit}
+			pageHistoryErr.Add(repo.ErrInvalidLimit, map[string]interface{}{
+				"limit": *limit,
+			})
 		}
 		if *offset < 0 {
-			return nil, []error{ErrInvalidOffset}
+			pageHistoryErr.Add(repo.ErrInvalidOffset, map[string]interface{}{
+				"offset": *offset,
+			})
+		}
+		if pageHistoryErr.HasErrors() {
+			return nil, pageHistoryErr
 		}
 		query += " LIMIT $2 OFFSET $3"
 		args = append(args, *limit, *offset)
@@ -131,12 +132,14 @@ func (r *historyRepo) ListPageHistory(ctx context.Context, pageID uuid.UUID, lim
 
 	rows, err := runner.QueryContext(ctx, query, args...)
 	if err != nil {
-		return nil, []error{err}
+		pageHistoryErr.Add(err, map[string]interface{}{
+			"pageID": pageID,
+		})
+		return nil, pageHistoryErr
 	}
 	defer rows.Close()
 
 	var history []models.PageHistory
-	errs := make([]error, 0)
 	for rows.Next() {
 		var h models.PageHistory
 		err := rows.Scan(
@@ -154,31 +157,37 @@ func (r *historyRepo) ListPageHistory(ctx context.Context, pageID uuid.UUID, lim
 			&h.CreatedAt,
 		)
 		if err != nil {
-			errs = append(errs, err)
+			pageHistoryErr.Add(err, map[string]interface{}{
+				"pageID": pageID,
+			})
 			continue
 		}
 		history = append(history, h)
 	}
 
-	if len(errs) > 0 {
-		return history, errs
-	}
-
 	if err = rows.Err(); err != nil {
-		return nil, []error{err}
+		pageHistoryErr.Add(err, map[string]interface{}{
+			"pageID": pageID,
+		})
 	}
 
 	if len(history) == 0 {
-		return history, []error{ErrPageHistoryNotFound}
+		pageHistoryErr.Add(repo.ErrPageHistoryNotFound, map[string]interface{}{
+			"pageID": pageID,
+		})
 	}
 
-	return history, nil
+	return history, pageHistoryErr
 }
 
 // RemovePageHistory removes page history for a list of pages
-func (r *historyRepo) RemovePageHistory(ctx context.Context, pageIDs []uuid.UUID) []error {
+func (r *historyRepo) RemovePageHistory(ctx context.Context, pageIDs []uuid.UUID) err.Error {
+	pageHistoryErr := err.New()
 	if len(pageIDs) == 0 {
-		return []error{ErrPageIDsUnspecified}
+		pageHistoryErr.Add(repo.ErrPageIDsUnspecified, map[string]any{
+			"pageIDs": pageIDs,
+		})
+		return pageHistoryErr
 	}
 
 	runner := r.tm.GetRunner(ctx)
@@ -198,52 +207,26 @@ func (r *historyRepo) RemovePageHistory(ctx context.Context, pageIDs []uuid.UUID
 
 	result, err := runner.ExecContext(ctx, query, args...)
 	if err != nil {
-		return []error{err}
+		pageHistoryErr.Add(err, map[string]any{
+			"pageIDs": pageIDs,
+		})
+		return pageHistoryErr
 	}
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		return []error{err}
+		pageHistoryErr.Add(err, map[string]any{
+			"pageIDs": pageIDs,
+		})
+		return pageHistoryErr
 	}
 
 	if rowsAffected == 0 {
-		return []error{ErrPageHistoryNotFound}
+		pageHistoryErr.Add(repo.ErrPageHistoryNotFound, map[string]any{
+			"pageIDs": pageIDs,
+		})
+		return pageHistoryErr
 	}
 
 	return nil
-}
-
-// PageHistoryExists checks if a page history exists with specific criteria
-func (r *historyRepo) PageHistoryExists(ctx context.Context, pageID string, weekNumber1, weekNumber2, yearNumber1, yearNumber2 int, bucketID1, bucketID2 string) (bool, error) {
-	runner := r.tm.GetRunner(ctx)
-
-	query := `
-		SELECT EXISTS(
-			SELECT 1
-			FROM page_history
-			WHERE page_id = $1
-			AND week_number_1 = $2
-			AND week_number_2 = $3
-			AND year_number_1 = $4
-			AND year_number_2 = $5
-			AND bucket_id_1 = $6
-			AND bucket_id_2 = $7
-		)
-	`
-
-	var exists bool
-	row := runner.QueryRowContext(ctx, query,
-		pageID, weekNumber1, weekNumber2, yearNumber1, yearNumber2, bucketID1, bucketID2,
-	)
-
-	if err := row.Err(); err != nil {
-		return false, err
-	}
-
-	err := row.Scan(&exists)
-	if err != nil {
-		return false, err
-	}
-
-	return exists, nil
 }
