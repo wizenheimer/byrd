@@ -18,7 +18,7 @@ type CompetitorRepository interface {
 	GetCompetitor(ctx context.Context, competitorID uuid.UUID) (models.Competitor, error)
 
 	// ListWorkspaceCompetitors lists all competitors in a workspace
-	ListWorkspaceCompetitors(ctx context.Context, workspaceID uuid.UUID, limit, offset int) ([]models.Competitor, error)
+	ListWorkspaceCompetitors(ctx context.Context, workspaceID uuid.UUID, limit, offset int) ([]models.Competitor, []error)
 
 	// RemoveWorkspaceCompetitor removes a competitor from a workspace
 	// When competitorIDs are nil, all competitors are removed from the workspace

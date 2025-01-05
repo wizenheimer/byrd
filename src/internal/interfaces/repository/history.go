@@ -21,7 +21,7 @@ type PageHistoryRepository interface {
 
 	// ListPageHistory lists page history for a page ordered by created at
 	// When limit and offset are nil, all page history is returned
-	ListPageHistory(ctx context.Context, pageID uuid.UUID, limit, offset *int) ([]models.PageHistory, error)
+	ListPageHistory(ctx context.Context, pageID uuid.UUID, limit, offset *int) ([]models.PageHistory, []error)
 
 	// RemovePageHistory removes page history for a list of pages
 	// Returns an error if pageIDs are nil

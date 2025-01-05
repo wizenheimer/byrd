@@ -53,10 +53,10 @@ type UserRepository interface {
 	GetWorkspaceClerkUser(ctx context.Context, workspaceID uuid.UUID, clerkID, clerkEmail string) (models.WorkspaceUser, error)
 
 	// ListWorkspaceUser lists all users from the workspace
-	ListWorkspaceUsers(ctx context.Context, workspaceID uuid.UUID) ([]models.WorkspaceUser, error)
+	ListWorkspaceUsers(ctx context.Context, workspaceID uuid.UUID) ([]models.WorkspaceUser, []error)
 
 	// ListUserWorkspaces lists all workspaces of a user
-	ListUserWorkspaces(ctx context.Context, userID uuid.UUID) ([]uuid.UUID, error)
+	ListUserWorkspaces(ctx context.Context, userID uuid.UUID) ([]uuid.UUID, []error)
 
 	// UpdateWorkspaceUserRole updates the role of a batch of users in the workspace
 	UpdateWorkspaceUserRole(ctx context.Context, workspaceID uuid.UUID, userIDs []uuid.UUID, role models.UserWorkspaceRole) ([]models.UserWorkspaceRole, []error)

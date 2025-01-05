@@ -40,7 +40,7 @@ type CompetitorService interface {
 	// This is triggered when a user wants to list all competitors in a workspace.
 	// Pagination is used to limit the number of competitors returned.
 	// The pages are returned in their entirety for every competitor requested.
-	ListWorkspaceCompetitors(ctx context.Context, workspaceID uuid.UUID, competitorListingParam api.PaginationParams) ([]api.GetWorkspaceCompetitorResponse, error)
+	ListWorkspaceCompetitors(ctx context.Context, workspaceID uuid.UUID, competitorListingParam api.PaginationParams) ([]api.GetWorkspaceCompetitorResponse, []error)
 
 	// RemoveCompetitors removes a list of competitors from a workspace.
 	// Removing a competitor also removes all its pages from the workspace.

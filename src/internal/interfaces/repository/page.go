@@ -21,7 +21,7 @@ type PageRepository interface {
 	// GetCompetitorPages gets the pages for a competitor
 	// This is used to get the pages that belong to a competitor
 	// When limit and offset are nil, all pages are returned
-	ListCompetitorPages(ctx context.Context, competitorID uuid.UUID, limit, offset *int) ([]models.Page, error)
+	ListCompetitorPages(ctx context.Context, competitorID uuid.UUID, limit, offset *int) ([]models.Page, []error)
 
 	// ListActivePages lists all active pages in batches
 	// This is triggered when a batch of active pages is requested by page service
