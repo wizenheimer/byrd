@@ -6,6 +6,10 @@ import (
 	models "github.com/wizenheimer/iris/src/internal/models/core"
 )
 
+var (
+	ErrFieldNotFound = fmt.Errorf("profile field not found")
+)
+
 // FieldRegistry contains all available predefined fields
 type FieldRegistry struct {
 	fields map[string]models.FieldConfig
@@ -162,7 +166,7 @@ func (r *FieldRegistry) GetField(name string, fallback bool) (models.FieldConfig
 		if fallback {
 			return field, nil
 		}
-		return field, fmt.Errorf("field %s not found", name)
+		return field, ErrFieldNotFound
 	}
 	return field, nil
 }

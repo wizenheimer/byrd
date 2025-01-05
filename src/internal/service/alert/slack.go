@@ -15,6 +15,13 @@ import (
 	"golang.org/x/time/rate"
 )
 
+var (
+	ErrSlackTokenMissing         = fmt.Errorf("slack token missing")
+	ErrSlackChannelIDMissing     = fmt.Errorf("slack channel ID missing")
+	ErrEncounteredSlackRateLimit = fmt.Errorf("encountered slack rate limit")
+	ErrExhaustedSlackRetries     = fmt.Errorf("exhausted slack retries")
+)
+
 // SlackAlertClient implements AlertClient interface for Slack
 type slackAlertClient struct {
 	// client for Slack
@@ -31,8 +38,12 @@ type slackAlertClient struct {
 }
 
 func NewSlackAlertClient(config models.SlackConfig, logger *logger.Logger) (clf.AlertClient, error) {
-	if config.Token == "" || config.ChannelID == "" {
-		return nil, fmt.Errorf("slack token and channel ID are required")
+	if config.Token == "" {
+		return nil, ErrSlackTokenMissing
+	}
+
+	if config.ChannelID == "" {
+		return nil, ErrSlackChannelIDMissing
 	}
 
 	// Set default retry count if not specified
@@ -55,7 +66,7 @@ func NewSlackAlertClient(config models.SlackConfig, logger *logger.Logger) (clf.
 func (s *slackAlertClient) Send(ctx context.Context, alert models.Alert) error {
 	// Rate limiting
 	if err := s.limiter.Wait(ctx); err != nil {
-		return fmt.Errorf("rate limit exceeded: %w", err)
+		return ErrEncounteredSlackRateLimit
 	}
 
 	// Check for duplicates
@@ -95,7 +106,7 @@ func (s *slackAlertClient) sendWithRetries(ctx context.Context, alert models.Ale
 			}
 
 			if attempt == s.config.RetryCount {
-				return fmt.Errorf("failed to send alert after %d retries: %w", s.config.RetryCount, err)
+				return ErrExhaustedSlackRetries
 			}
 
 			// Calculate exponential backoff with jitter
@@ -174,7 +185,7 @@ func (s *slackAlertClient) createAttachment(alert models.Alert) slack.Attachment
 func (s *slackAlertClient) SendBatch(ctx context.Context, alerts []models.Alert) error {
 	for _, alert := range alerts {
 		if err := s.Send(ctx, alert); err != nil {
-			return fmt.Errorf("failed to send batch alert: %w", err)
+			return ErrFailedToSendBatchAlert
 		}
 	}
 	return nil

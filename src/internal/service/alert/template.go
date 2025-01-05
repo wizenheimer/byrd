@@ -10,6 +10,12 @@ import (
 	"go.uber.org/zap"
 )
 
+var (
+    ErrCannotFindAlertType = fmt.Errorf("alert type not found in details")
+    ErrCannotFindTemplateForWorkflow = fmt.Errorf("no templates found for workflow type")
+    ErrCannotFindTemplateForAlert = fmt.Errorf("no template found for alert type")
+)
+
 // EventType represents the type of workflow event
 type EventType string
 
@@ -80,7 +86,7 @@ func (w *workflowAlertClient) prepareAlert(id models.WorkflowIdentifier, details
 	// Determine alert type from details
 	alertType := w.getAlertTypeFromDetails(details)
 	if alertType == "" {
-		return models.Alert{}, fmt.Errorf("alert type not found in details")
+		return models.Alert{}, ErrCannotFindAlertType
 	}
 
 	// Get workflow type as string
@@ -114,12 +120,12 @@ func (w *workflowAlertClient) prepareAlert(id models.WorkflowIdentifier, details
 func (w *workflowAlertClient) getTemplate(workflowType, alertType string) (AlertTemplate, error) {
 	templates, exists := AlertTemplates[workflowType]
 	if !exists {
-		return AlertTemplate{}, fmt.Errorf("no templates found for workflow type: %s", workflowType)
+		return AlertTemplate{}, ErrCannotFindTemplateForWorkflow // TODO: make it non-fatal
 	}
 
 	template, exists := templates[alertType]
 	if !exists {
-		return AlertTemplate{}, fmt.Errorf("no template found for alert type: %s", alertType)
+		return AlertTemplate{}, ErrCannotFindTemplateForAlert // TODO: make it non-fatal
 	}
 
 	return template, nil

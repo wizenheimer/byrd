@@ -23,6 +23,15 @@ type openAIService struct {
 	builder *ProfileBuilder
 }
 
+var (
+	ErrBuildingProfile         = fmt.Errorf("failed to build profile")
+	ErrPreparingChatCompletion = fmt.Errorf("failed to prepare chat completion")
+	ErrConvertingImageToBase64 = fmt.Errorf("failed to convert image to base64")
+	ErrEncounteredRefusal      = fmt.Errorf("refusal encountered in chat completion")
+	ErrParsingChanges          = fmt.Errorf("failed to parse changes")
+	ErrEncodingImage           = fmt.Errorf("failed to encode image")
+)
+
 func NewOpenAIService(apiKey string, logger *logger.Logger) (interfaces.AIService, error) {
 	client := openai.NewClient(
 		option.WithAPIKey(
@@ -57,14 +66,14 @@ func (s *openAIService) AnalyzeContentDifferences(ctx context.Context, version1,
 
 	profile, err := s.builder.BuildProfile(profileRequest, true)
 	if err != nil {
-		return nil, fmt.Errorf("failed to build profile: %v", err)
+		return nil, ErrBuildingProfile
 	}
 
 	s.logger.Debug("analyzing content differences", zap.String("version1", version1), zap.String("version2", version2), zap.Any("profile", profile.Fields), zap.Strings("requested_fields", fields))
 
 	chat, err := s.prepareTextCompletion(ctx, version1, version2, profile)
 	if err != nil {
-		return nil, fmt.Errorf("failed to prepare chat completion: %v", err)
+		return nil, ErrPreparingChatCompletion
 	}
 
 	return s.parseCompletion(chat)
@@ -80,12 +89,12 @@ func (s *openAIService) AnalyzeVisualDifferences(ctx context.Context, screenshot
 
 	profile, err := s.builder.BuildProfile(profileRequest, true)
 	if err != nil {
-		return nil, fmt.Errorf("failed to build profile: %v", err)
+		return nil, ErrBuildingProfile
 	}
 
 	chat, err := s.prepareImageCompletion(ctx, screenshot1, screenshot2, profile)
 	if err != nil {
-		return nil, fmt.Errorf("failed to prepare chat completion: %v", err)
+		return nil, ErrPreparingChatCompletion
 	}
 
 	return s.parseCompletion(chat)
@@ -145,12 +154,12 @@ func (s *openAIService) prepareImageCompletion(ctx context.Context, version1, ve
 	// convert images to base64
 	version1Base64, err := imageToBase64URL(version1)
 	if err != nil {
-		return nil, fmt.Errorf("failed to convert image to base64: %v", err)
+		return nil, ErrConvertingImageToBase64
 	}
 
 	version2Base64, err := imageToBase64URL(version2)
 	if err != nil {
-		return nil, fmt.Errorf("failed to convert image to base64: %v", err)
+		return nil, ErrConvertingImageToBase64
 	}
 
 	opts := s.prepareCompareOptions(&profile)
@@ -190,7 +199,7 @@ func (s *openAIService) prepareImageCompletion(ctx context.Context, version1, ve
 
 func (s *openAIService) parseCompletion(chat *openai.ChatCompletion) (*models.DynamicChanges, error) {
 	if chat.Choices[0].Message.Refusal != "" {
-		return nil, fmt.Errorf("refusal: %s", chat.Choices[0].Message.Refusal)
+		return nil, ErrEncounteredRefusal
 	}
 
 	changes := &models.DynamicChanges{
@@ -199,7 +208,7 @@ func (s *openAIService) parseCompletion(chat *openai.ChatCompletion) (*models.Dy
 
 	err := json.Unmarshal([]byte(chat.Choices[0].Message.Content), changes)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal changes: %v", err)
+		return nil, ErrParsingChanges
 	}
 
 	return changes, nil
@@ -221,7 +230,7 @@ func imageToBase64URL(img image.Image) (string, error) {
 	// Encode the image in PNG format to the buffer
 	err := png.Encode(&buf, img)
 	if err != nil {
-		return "", fmt.Errorf("failed to encode image: %v", err)
+		return "", ErrEncodingImage
 	}
 
 	// Convert the buffer bytes to base64 string

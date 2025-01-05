@@ -14,6 +14,12 @@ type ProfileRequest struct {
 	FieldNames  []string `json:"fields"`
 }
 
+var (
+	ErrProfileParsing      = fmt.Errorf("couldn't parse profile")
+	ErrProfileNameMissing  = fmt.Errorf("profile name is required")
+	ErrProfileFieldParsing = fmt.Errorf("couldn't parse profile field")
+)
+
 // ProfileBuilder helps build profiles from user requests
 type ProfileBuilder struct {
 	registry *FieldRegistry
@@ -30,7 +36,7 @@ func NewProfileBuilder(registry *FieldRegistry) *ProfileBuilder {
 func (pb *ProfileBuilder) BuildProfileFromJSON(jsonData string) (models.Profile, error) {
 	var request ProfileRequest
 	if err := json.Unmarshal([]byte(jsonData), &request); err != nil {
-		return models.Profile{}, fmt.Errorf("invalid request JSON: %w", err)
+		return models.Profile{}, ErrProfileParsing // TODO: make it non-fatal
 	}
 
 	return pb.BuildProfile(request, false)
@@ -39,7 +45,7 @@ func (pb *ProfileBuilder) BuildProfileFromJSON(jsonData string) (models.Profile,
 // BuildProfile builds a profile from a request
 func (pb *ProfileBuilder) BuildProfile(request ProfileRequest, fallback bool) (models.Profile, error) {
 	if request.Name == "" {
-		return DefaultUpdates, fmt.Errorf("profile name is required")
+		return DefaultUpdates, ErrProfileNameMissing // TODO: make it non-fatal
 	}
 
 	// Deduplicate field names
@@ -57,7 +63,7 @@ func (pb *ProfileBuilder) BuildProfile(request ProfileRequest, fallback bool) (m
 	for _, fieldName := range request.FieldNames {
 		field, err := pb.registry.GetField(fieldName, fallback)
 		if err != nil {
-			return models.Profile{}, fmt.Errorf("error getting field '%s': %w", fieldName, err)
+			return models.Profile{}, ErrProfileFieldParsing // TODO: make it non-fatal
 		}
 		fields = append(fields, field)
 	}

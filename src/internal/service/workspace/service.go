@@ -6,7 +6,6 @@ import (
 
 	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/google/uuid"
-	"go.uber.org/zap"
 
 	repo "github.com/wizenheimer/iris/src/internal/interfaces/repository"
 	svc "github.com/wizenheimer/iris/src/internal/interfaces/service"
@@ -14,6 +13,18 @@ import (
 	models "github.com/wizenheimer/iris/src/internal/models/core"
 	"github.com/wizenheimer/iris/src/pkg/logger"
 	"github.com/wizenheimer/iris/src/pkg/utils"
+)
+
+var (
+	ErrFailedToCreateWorkspace         = errors.New("failed to create workspace")
+	ErrFailedToGetClerkUserEmail       = errors.New("failed to get clerk user email")
+	ErrFailedToInviteUserToWorkspace   = errors.New("failed to invite user to workspace")
+	ErrFailedToListWorkspaces          = errors.New("failed to list workspaces")
+	ErrFailedToGetWorkspace            = errors.New("failed to get workspace")
+	ErrWorkspaceDoesntExist            = errors.New("workspace doesn't exist")
+	ErrFailedToUpdateWorkspace         = errors.New("failed to update workspace")
+	ErrFailedToDeleteWorkspace         = errors.New("failed to delete workspace")
+	ErrCannotLeaveWorkspaceAsOnlyAdmin = errors.New("cannot leave workspace as the only admin")
 )
 
 func NewWorkspaceService(workspaceRepo repo.WorkspaceRepository, competitorService svc.CompetitorService, userService svc.UserService, logger *logger.Logger) svc.WorkspaceService {
@@ -32,13 +43,13 @@ func (ws *workspaceService) CreateWorkspace(ctx context.Context, workspaceOwner 
 	workspaceName := utils.GenerateWorkspaceName(workspaceOwner)
 	billingEmail, err := utils.GetClerkUserEmail(workspaceOwner)
 	if err != nil {
-		return nil, err
+		return nil, ErrFailedToGetClerkUserEmail
 	}
 
 	// Create a workspace using the workspace name and billing email
 	workspace, err := ws.workspaceRepo.CreateWorkspace(ctx, workspaceName, billingEmail)
 	if err != nil {
-		return nil, err
+		return nil, ErrFailedToCreateWorkspace
 	}
 
 	// Step 2: Associate the workspace with the clerkUser
@@ -102,7 +113,7 @@ func (ws *workspaceService) ListUserWorkspaces(ctx context.Context, workspaceMem
 	workspaces, errs := ws.workspaceRepo.GetWorkspaces(ctx, workspaceIDs)
 	if len(errs) > 0 {
 		// TODO: non-fatal error handling
-		return nil, errs[0]
+		return nil, ErrFailedToListWorkspaces
 	}
 
 	return workspaces, nil
@@ -112,15 +123,15 @@ func (ws *workspaceService) GetWorkspace(ctx context.Context, workspaceID uuid.U
 	workspaceIDs := []uuid.UUID{workspaceID}
 	workspaces, errs := ws.workspaceRepo.GetWorkspaces(ctx, workspaceIDs)
 	if len(errs) > 0 {
-		return nil, errs[0]
+		return nil, ErrFailedToGetWorkspace
 	}
 
 	if len(workspaces) == 0 {
-		return nil, errors.New("workspace not found")
+		return nil, ErrWorkspaceDoesntExist
 	}
 
 	if workspaces[0].Status == models.WorkspaceStatusInactive {
-		return nil, errors.New("workspace is inactive")
+		return nil, ErrWorkspaceDoesntExist
 	}
 
 	return &workspaces[0], nil
@@ -151,7 +162,11 @@ func (ws *workspaceService) UpdateWorkspace(ctx context.Context, workspaceID uui
 		BillingEmail: req.BillingEmail,
 	}
 
-	return ws.workspaceRepo.UpdateWorkspace(ctx, workspaceID, workspaceReq)
+	if err := ws.workspaceRepo.UpdateWorkspace(ctx, workspaceID, workspaceReq); err != nil {
+		return ErrFailedToUpdateWorkspace
+	}
+
+	return nil
 }
 
 func (ws *workspaceService) DeleteWorkspace(ctx context.Context, workspaceID uuid.UUID) (models.WorkspaceStatus, error) {
@@ -159,10 +174,6 @@ func (ws *workspaceService) DeleteWorkspace(ctx context.Context, workspaceID uui
 	workspace, err := ws.GetWorkspace(ctx, workspaceID)
 	if err != nil {
 		return models.WorkspaceStatusInactive, err
-	}
-
-	if workspace.Status == models.WorkspaceStatusInactive {
-		return models.WorkspaceStatusInactive, errors.New("workspace is already inactive")
 	}
 
 	// Handle workspace user deletion
@@ -182,7 +193,7 @@ func (ws *workspaceService) DeleteWorkspace(ctx context.Context, workspaceID uui
 	// Handle workspace deletion
 	err = ws.workspaceRepo.UpdateWorkspaceStatus(ctx, workspace.ID, models.WorkspaceStatusInactive)
 	if err != nil {
-		return models.WorkspaceStatusInactive, err
+		return models.WorkspaceStatusInactive, ErrFailedToDeleteWorkspace
 	}
 
 	return models.WorkspaceStatusInactive, nil
@@ -228,7 +239,7 @@ func (ws *workspaceService) LeaveWorkspace(ctx context.Context, workspaceMember 
 	}
 
 	if adminUsers == 1 && workspaceUser.Role == models.UserRoleAdmin {
-		return errors.New("cannot leave workspace as the only admin")
+		return ErrCannotLeaveWorkspaceAsOnlyAdmin
 	}
 
 	users := []uuid.UUID{workspaceUser.ID}
@@ -405,11 +416,9 @@ func (ws *workspaceService) ListWorkspaceCompetitors(ctx context.Context, clerkU
 		return nil, err
 	}
 
-	ws.logger.Debug("listing workspace competitors", zap.Any("workspace", workspace), zap.Any("params", params), zap.Any("competitorService", ws.competitorService == nil))
-
-	competitorsWithPages, err := ws.competitorService.ListWorkspaceCompetitors(ctx, workspace.ID, params)
-	if err != nil {
-		return nil, err
+	competitorsWithPages, errs := ws.competitorService.ListWorkspaceCompetitors(ctx, workspace.ID, params)
+	if errs != nil {
+		return nil, errs[0]
 	}
 
 	return &api.PaginatedResponse{

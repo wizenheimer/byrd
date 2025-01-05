@@ -10,6 +10,10 @@ import (
 	"go.uber.org/zap"
 )
 
+var (
+    ErrFailedToSendBatchAlert = fmt.Errorf("failed to send batch alert")
+)
+
 // localWorkflowClient implements WorkflowAlertClient for local development
 type localWorkflowClient struct {
 	logger *logger.Logger
@@ -32,7 +36,7 @@ func (c *localWorkflowClient) Send(ctx context.Context, alert models.Alert) erro
 func (c *localWorkflowClient) SendBatch(ctx context.Context, alerts []models.Alert) error {
 	for _, alert := range alerts {
 		if err := c.Send(ctx, alert); err != nil {
-			return fmt.Errorf("failed to send alert in batch: %w", err)
+			return ErrFailedToSendBatchAlert
 		}
 	}
 	return nil
