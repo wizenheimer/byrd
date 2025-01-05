@@ -3,7 +3,9 @@ package screenshot
 import (
 	"context"
 	"errors"
-	"fmt"
+
+	// "errors"
+
 	_ "image/jpeg" // Register JPEG format
 	_ "image/png"  // Register PNG format
 	"strconv"
@@ -13,6 +15,32 @@ import (
 	"github.com/wizenheimer/iris/src/pkg/logger"
 	"github.com/wizenheimer/iris/src/pkg/utils"
 	"go.uber.org/zap"
+)
+
+var (
+	ErrStorageRepositoryRequired = errors.New("storage repository is required")
+	ErrHTTPClientRequired        = errors.New("HTTP client is required")
+	ErrScreenshotKeyRequired     = errors.New("screenshot key is required")
+	ErrScreenshotOriginRequired  = errors.New("screenshot origin is required")
+
+	ErrFailedToConvertCurrentDayToInt   = errors.New("failed to convert current day to int")
+	ErrFailedToGetCurrentScreenshotPath = errors.New("failed to get current screenshot path")
+	ErrFailedToGetCurrentContentPath    = errors.New("failed to get current content path")
+	ErrFailedToStoreScreenshotImage     = errors.New("failed to store screenshot image")
+
+	ErrFailedToGetPreviousScreenshotPath  = errors.New("failed to get previous screenshot path")
+	ErrFailedToGetPreviousScreenshotImage = errors.New("failed to get previous screenshot image")
+
+	ErrFailedToGetPreviousContentPath = errors.New("failed to get previous content path")
+	ErrFailedToGetPreviousContent     = errors.New("failed to get previous content")
+
+	ErrFailedToGetScreenshotPath  = errors.New("failed to get screenshot path")
+	ErrFailedToGetScreenshotImage = errors.New("failed to get screenshot image")
+
+	ErrFailedToGetContentPath = errors.New("failed to get content path")
+	ErrFailedToGetContent     = errors.New("failed to get content")
+
+	ErrFailedToGetListingPrefixFromContentType = errors.New("failed to get listing prefix from content type")
 )
 
 // NewScreenshotService creates a new screenshot service with the given options
@@ -30,16 +58,16 @@ func NewScreenshotService(logger *logger.Logger, opts ...ScreenshotServiceOption
 
 	// Validate required dependencies
 	if s.storage == nil {
-		return nil, errors.New("storage repository is required")
+		return nil, ErrStorageRepositoryRequired
 	}
 	if s.httpClient == nil {
-		return nil, errors.New("HTTP client is required")
+		return nil, ErrHTTPClientRequired
 	}
 	if s.config.Key == "" {
-		return nil, errors.New("screenshot key is required")
+		return nil, ErrScreenshotKeyRequired
 	}
 	if s.config.Origin == "" {
-		return nil, errors.New("screenshot origin is required")
+		return nil, ErrScreenshotOriginRequired
 	}
 
 	s.logger.Debug("created new screenshot service", zap.Any("config", s.config))
@@ -98,7 +126,7 @@ func (s *screenshotService) GetCurrentImage(ctx context.Context, save bool, opts
 	currentYear, currentWeek, currentDayString := utils.GetCurrentTimeComponents(false)
 	currentDay, err := strconv.Atoi(currentDayString)
 	if err != nil {
-		return nil, fmt.Errorf("failed to convert current day to int: %v", err)
+		return nil, ErrFailedToConvertCurrentDayToInt
 	}
 
 	// Parse the response
@@ -111,10 +139,10 @@ func (s *screenshotService) GetCurrentImage(ctx context.Context, save bool, opts
 	if save {
 		currentPath, err := utils.GetCurrentScreenshotPath(opts.URL)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get current screenshot path: %v", err)
+			return nil, ErrFailedToGetCurrentScreenshotPath
 		}
 		if err := s.storage.StoreScreenshotImage(ctx, *imgResp, currentPath); err != nil {
-			return nil, fmt.Errorf("failed to store screenshot: %v", err)
+			return nil, ErrFailedToStoreScreenshotImage
 		}
 	}
 
@@ -139,7 +167,7 @@ func (s *screenshotService) GetCurrentHTMLContent(ctx context.Context, save bool
 	currentYear, currentWeek, currentDayString := utils.GetCurrentTimeComponents(false)
 	currentDay, err := strconv.Atoi(currentDayString)
 	if err != nil {
-		return nil, fmt.Errorf("failed to convert current day to int: %v", err)
+		return nil, ErrFailedToConvertCurrentDayToInt
 	}
 
 	// Parse the response
@@ -152,10 +180,10 @@ func (s *screenshotService) GetCurrentHTMLContent(ctx context.Context, save bool
 	if save {
 		currentPath, err := utils.GetCurrentContentPath(opts.SourceURL)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get current content path: %v", err)
+			return nil, ErrFailedToGetCurrentContentPath
 		}
 		if err := s.storage.StoreScreenshotHTMLContent(ctx, *htmlContentResp, currentPath); err != nil {
-			return nil, fmt.Errorf("failed to store screenshot: %v", err)
+			return nil, ErrFailedToStoreScreenshotImage
 		}
 	}
 
@@ -166,12 +194,12 @@ func (s *screenshotService) GetCurrentHTMLContent(ctx context.Context, save bool
 func (s *screenshotService) GetPreviousImage(ctx context.Context, url string) (*models.ScreenshotImageResponse, error) {
 	screenshotPath, err := utils.GetPreviousScreenshotPath(url)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get previous screenshot path: %v", err)
+		return nil, ErrFailedToGetPreviousScreenshotPath
 	}
 
 	imgResp, errs := s.storage.GetScreenshotImage(ctx, screenshotPath)
 	if errs != nil {
-		return nil, fmt.Errorf("failed to get previous screenshot: %v", errs)
+		return nil, ErrFailedToGetPreviousScreenshotImage
 	}
 
 	return &imgResp, nil
@@ -181,14 +209,14 @@ func (s *screenshotService) GetPreviousImage(ctx context.Context, url string) (*
 func (s *screenshotService) GetPreviousHTMLContent(ctx context.Context, url string) (*models.ScreenshotHTMLContentResponse, error) {
 	contentPath, err := utils.GetPreviousContentPath(url)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get previous content path: %v", err)
+		return nil, ErrFailedToGetPreviousContentPath
 	}
 
 	s.logger.Debug("getting previous content", zap.Any("path", contentPath))
 
 	contentResp, errs := s.storage.GetScreenshotHTMLContent(ctx, contentPath)
 	if errs != nil {
-		return nil, fmt.Errorf("failed to get previous content: %v", errs)
+		return nil, ErrFailedToGetPreviousContent
 	}
 
 	return &contentResp, nil
@@ -200,12 +228,12 @@ func (s *screenshotService) GetPreviousHTMLContent(ctx context.Context, url stri
 func (s *screenshotService) GetImage(ctx context.Context, url string, year int, weekNumber int, weekDay int) (*models.ScreenshotImageResponse, error) {
 	screenshotPath, err := utils.GetScreenshotPath(url, year, weekNumber, weekDay)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get screenshot path: %v", err)
+		return nil, ErrFailedToGetScreenshotPath
 	}
 
 	imgResp, errs := s.storage.GetScreenshotImage(ctx, screenshotPath)
 	if errs != nil {
-		return nil, fmt.Errorf("failed to get screenshot: %v", errs)
+		return nil, ErrFailedToGetScreenshotImage
 	}
 
 	return &imgResp, nil
@@ -217,12 +245,12 @@ func (s *screenshotService) GetImage(ctx context.Context, url string, year int, 
 func (s *screenshotService) GetHTMLContent(ctx context.Context, url string, year int, weekNumber int, weekDay int) (*models.ScreenshotHTMLContentResponse, error) {
 	contentPath, err := utils.GetContentPath(url, year, weekNumber, weekDay)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get content path: %v", err)
+		return nil, ErrFailedToGetContentPath
 	}
 
 	contentResp, errs := s.storage.GetScreenshotHTMLContent(ctx, contentPath)
 	if errs != nil {
-		return nil, fmt.Errorf("failed to get content: %v", errs)
+		return nil, ErrFailedToGetContent
 	}
 
 	return &contentResp, nil
@@ -232,7 +260,7 @@ func (s *screenshotService) GetHTMLContent(ctx context.Context, url string, year
 func (s *screenshotService) ListScreenshots(ctx context.Context, url string, contentType string, maxItems int) ([]models.ScreenshotListResponse, error) {
 	prefix, err := utils.GetListingPrefixFromContentType(url, contentType)
 	if err != nil || prefix == nil {
-		return nil, fmt.Errorf("failed to get listing prefix: %v", err)
+		return nil, ErrFailedToGetListingPrefixFromContentType
 	}
 
 	// Get the list of screenshots

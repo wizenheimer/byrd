@@ -2,7 +2,7 @@ package screenshot
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"image"
 	"io"
 	"net/http"
@@ -14,20 +14,29 @@ import (
 	"go.uber.org/zap"
 )
 
+var (
+	ErrNoContentURLFoundInHeaders = errors.New("no content URL found in headers")
+	ErrNon200StatusCode           = errors.New("non-200 status code")
+	ErrReadingHTMLBody            = errors.New("error reading HTML body")
+	ErrUnexpectedContentType      = errors.New("received unexpected content type")
+	ErrCannotDecodeImage          = errors.New("cannot decode image")
+	ErrFailedToGetHTMLContent     = errors.New("failed to get HTML content")
+)
+
 // prepareImageResponse prepares the image response from the HTTP response
 func (s *screenshotService) prepareScreenshotImageResponse(resp *http.Response, url string, year int, weekNumber int, weekDay int) (*models.ScreenshotImageResponse, error) {
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		return nil, ErrNon200StatusCode
 	}
 
 	img, width, height, err := parseImageFromResponse(resp)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse image from response: %v", err)
+		return nil, err
 	}
 
 	renderedURL := resp.Header.Get("X-ScreenshotOne-Content-URL")
 	if renderedURL == "" {
-		return nil, fmt.Errorf("no content URL found in headers")
+		return nil, ErrNoContentURLFoundInHeaders
 	}
 
 	screenshotResponse := models.ScreenshotImageResponse{
@@ -50,13 +59,13 @@ func (s *screenshotService) prepareScreenshotImageResponse(resp *http.Response, 
 // prepareHTMLContentResponse prepares the HTML content response from the HTTP response
 func (s *screenshotService) prepareScreenshotHTMLContentResponse(resp *http.Response, sourceURL, renderedURL string, year int, weekNumber int, weekDay int) (*models.ScreenshotHTMLContentResponse, error) {
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		return nil, ErrNon200StatusCode
 	}
 
 	// Read the HTML content
 	htmlBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("error reading HTML body: %v", err)
+		return nil, ErrReadingHTMLBody
 	}
 
 	htmlContent := string(htmlBytes)
@@ -79,7 +88,7 @@ func (s *screenshotService) prepareScreenshotHTMLContentResponse(resp *http.Resp
 // parseImageFromResponse parses an image from an HTTP response
 func parseImageFromResponse(resp *http.Response) (image.Image, int, int, error) {
 	if resp.StatusCode != http.StatusOK {
-		return nil, -1, -1, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		return nil, -1, -1, ErrNon200StatusCode
 	}
 
 	imageContentTypes := []string{
@@ -89,12 +98,12 @@ func parseImageFromResponse(resp *http.Response) (image.Image, int, int, error) 
 	}
 
 	if !utils.Contains(imageContentTypes, resp.Header.Get("Content-Type")) {
-		return nil, -1, -1, fmt.Errorf("unexpected content type: %s", resp.Header.Get("Content-Type"))
+		return nil, -1, -1, ErrUnexpectedContentType
 	}
 
 	img, _, err := image.Decode(resp.Body)
 	if err != nil {
-		return nil, -1, -1, fmt.Errorf("failed to decode image: %w", err)
+		return nil, -1, -1, ErrCannotDecodeImage
 	}
 
 	var width, height int
@@ -125,14 +134,14 @@ func parseImageFromResponse(resp *http.Response) (image.Image, int, int, error) 
 func (s *screenshotService) getExistingScreenshotImage(ctx context.Context, url string) (*models.ScreenshotImageResponse, error) {
 	screenshotPath, err := utils.GetCurrentScreenshotPath(url)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get current screenshot path: %v", err)
+		return nil, ErrFailedToGetCurrentScreenshotPath
 	}
 
 	var screenshotImageResp models.ScreenshotImageResponse
 
 	screenshotImageResp, errs := s.storage.GetScreenshotImage(ctx, screenshotPath)
 	if errs != nil {
-		return nil, fmt.Errorf("failed to get existing screenshot: %v", errs)
+		return nil, ErrFailedToGetScreenshotImage
 	}
 	return &screenshotImageResp, nil
 }
@@ -142,14 +151,14 @@ func (s *screenshotService) getExistingScreenshotImage(ctx context.Context, url 
 func (s *screenshotService) getExistingHTMLContent(ctx context.Context, url string) (*models.ScreenshotHTMLContentResponse, error) {
 	contentPath, err := utils.GetCurrentContentPath(url)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get current content path: %v", err)
+		return nil, ErrFailedToGetCurrentContentPath
 	}
 
 	var screenshotContentResponse models.ScreenshotHTMLContentResponse
 
 	screenshotContentResponse, errs := s.storage.GetScreenshotHTMLContent(ctx, contentPath)
 	if errs != nil {
-		return nil, fmt.Errorf("failed to get existing screenshot: %v", errs)
+		return nil, ErrFailedToGetScreenshotImage
 	}
 
 	return &screenshotContentResponse, nil
@@ -181,11 +190,11 @@ func (s *screenshotService) prepareScreenshotHTML(opts models.ScreenshotHTMLRequ
 	// Get HTML content
 	htmlResp, err := http.Get(opts.RenderedURL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get HTML content: %v", err)
+		return nil, ErrFailedToGetHTMLContent
 	}
 
 	if htmlResp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d", htmlResp.StatusCode)
+		return nil, ErrNon200StatusCode
 	}
 
 	// Prepare the request
