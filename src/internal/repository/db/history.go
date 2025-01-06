@@ -12,6 +12,7 @@ import (
 	"github.com/wizenheimer/iris/src/internal/repository/transaction"
 	"github.com/wizenheimer/iris/src/pkg/err"
 	"github.com/wizenheimer/iris/src/pkg/logger"
+	"github.com/wizenheimer/iris/src/pkg/utils"
 )
 
 type historyRepo struct {
@@ -31,24 +32,32 @@ func (r *historyRepo) CreatePageHistory(ctx context.Context, pageID uuid.UUID, p
 	pageHistoryErr := err.New()
 	runner := r.tm.GetRunner(ctx)
 
+	if err := utils.SetDefaultsAndValidate(&pageHistory); err != nil {
+		pageHistoryErr.Add(repo.ErrInvalidPageHistory, map[string]interface{}{
+			"pageHistory": pageHistory,
+		})
+		return models.PageHistory{}, pageHistoryErr
+	}
+
 	query := `
-		INSERT INTO page_history (
-			page_id,
-			week_number_1,
-			week_number_2,
-			year_number_1,
-			year_number_2,
-			bucket_id_1,
-			bucket_id_2,
-			diff_content,
-			screenshot_url_1,
-			screenshot_url_2
-		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-		RETURNING id, page_id, week_number_1, week_number_2, year_number_1, year_number_2,
-				  bucket_id_1, bucket_id_2, diff_content, screenshot_url_1, screenshot_url_2,
-				  created_at
-	`
+        INSERT INTO page_history (
+            page_id,
+            week_number_1,
+            week_number_2,
+            year_number_1,
+            year_number_2,
+            bucket_id_1,
+            bucket_id_2,
+            diff_content,
+            screenshot_url_1,
+            screenshot_url_2,
+            status
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        RETURNING id, page_id, week_number_1, week_number_2, year_number_1, year_number_2,
+                  bucket_id_1, bucket_id_2, diff_content, screenshot_url_1, screenshot_url_2,
+                  created_at, status
+    `
 
 	row := runner.QueryRowContext(ctx, query,
 		pageID,
@@ -61,6 +70,7 @@ func (r *historyRepo) CreatePageHistory(ctx context.Context, pageID uuid.UUID, p
 		pageHistory.DiffContent,
 		pageHistory.ScreenshotURL1,
 		pageHistory.ScreenshotURL2,
+		models.HistoryStatusActive,
 	)
 
 	if err := row.Err(); err != nil {
@@ -84,6 +94,7 @@ func (r *historyRepo) CreatePageHistory(ctx context.Context, pageID uuid.UUID, p
 		&created.ScreenshotURL1,
 		&created.ScreenshotURL2,
 		&created.CreatedAt,
+		&created.Status,
 	)
 	if err != nil {
 		pageHistoryErr.Add(repo.ErrFailedToScanPageHistory, map[string]interface{}{
@@ -102,14 +113,15 @@ func (r *historyRepo) ListPageHistory(ctx context.Context, pageID uuid.UUID, lim
 
 	// Build the query with optional pagination
 	query := `
-		SELECT id, page_id, week_number_1, week_number_2, year_number_1, year_number_2,
-			   bucket_id_1, bucket_id_2, diff_content, screenshot_url_1, screenshot_url_2,
-			   created_at
-		FROM page_history
-		WHERE page_id = $1
-		ORDER BY created_at DESC
-	`
-	args := []interface{}{pageID}
+        SELECT id, page_id, week_number_1, week_number_2, year_number_1, year_number_2,
+               bucket_id_1, bucket_id_2, diff_content, screenshot_url_1, screenshot_url_2,
+               created_at, status
+        FROM page_history
+        WHERE page_id = $1
+        AND status = $2
+        ORDER BY created_at DESC
+    `
+	args := []interface{}{pageID, models.HistoryStatusActive}
 
 	// Add pagination if provided
 	if limit != nil && offset != nil {
@@ -126,7 +138,7 @@ func (r *historyRepo) ListPageHistory(ctx context.Context, pageID uuid.UUID, lim
 		if pageHistoryErr.HasErrors() {
 			return nil, pageHistoryErr
 		}
-		query += " LIMIT $2 OFFSET $3"
+		query += " LIMIT $3 OFFSET $4"
 		args = append(args, *limit, *offset)
 	}
 
@@ -155,6 +167,7 @@ func (r *historyRepo) ListPageHistory(ctx context.Context, pageID uuid.UUID, lim
 			&h.ScreenshotURL1,
 			&h.ScreenshotURL2,
 			&h.CreatedAt,
+			&h.Status,
 		)
 		if err != nil {
 			pageHistoryErr.Add(err, map[string]interface{}{
@@ -201,9 +214,11 @@ func (r *historyRepo) RemovePageHistory(ctx context.Context, pageIDs []uuid.UUID
 	}
 
 	query := fmt.Sprintf(`
-		DELETE FROM page_history
-		WHERE page_id IN (%s)
-	`, strings.Join(placeholders, ","))
+        UPDATE page_history
+        SET status = '%s'
+        WHERE page_id IN (%s)
+        AND status = '%s'
+    `, models.HistoryStatusInactive, strings.Join(placeholders, ","), models.HistoryStatusActive)
 
 	result, err := runner.ExecContext(ctx, query, args...)
 	if err != nil {
