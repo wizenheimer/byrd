@@ -29,12 +29,12 @@ func (uh *UserHandler) DeleteAccount(c *fiber.Ctx) error {
 		})
 	}
 
-	err = uh.userService.DeleteUser(c.Context(), clerkUser)
-	if err != nil {
+	e := uh.userService.DeleteUser(c.Context(), clerkUser)
+	if e != nil && e.HasErrors() {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"success": false,
 			"message": "Couldn't delete user",
-			"error":   err.Error(),
+			"error":   "Failed to delete user",
 		})
 	}
 

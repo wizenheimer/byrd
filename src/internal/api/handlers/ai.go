@@ -79,14 +79,14 @@ func (h *AIHandler) AnalyzeContentDifferences(c *fiber.Ctx) error {
 	// Convert profile fields to slice
 	profileFields := strings.Split(profileFieldsString, ",")
 
-	result, err := h.aiService.AnalyzeContentDifferences(
+	result, e := h.aiService.AnalyzeContentDifferences(
 		c.Context(),
 		string(content1),
 		string(content2),
 		profileFields,
 	)
-	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	if e != nil && e.HasErrors() {
+		return fiber.NewError(fiber.StatusInternalServerError, "Failed to analyze content differences")
 	}
 
 	return c.JSON(fiber.Map{
@@ -150,9 +150,9 @@ func (h *AIHandler) AnalyzeVisualDifferences(c *fiber.Ctx) error {
 	// Convert profile fields to slice
 	profileFields := strings.Split(profileString, ",")
 
-	result, err := h.aiService.AnalyzeVisualDifferences(c.Context(), img1, img2, profileFields)
-	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	result, e := h.aiService.AnalyzeVisualDifferences(c.Context(), img1, img2, profileFields)
+	if e != nil && e.HasErrors() {
+		return fiber.NewError(fiber.StatusInternalServerError, "Failed to analyze visual differences")
 	}
 
 	return c.JSON(fiber.Map{

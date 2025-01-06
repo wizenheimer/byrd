@@ -36,9 +36,9 @@ func (h *ScreenshotHandler) CreateScreenshot(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "Invalid request body")
 	}
 
-	screenshotResult, err := h.screenshotService.GetCurrentImage(c.Context(), true, sOpts)
-	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	screenshotResult, e := h.screenshotService.GetCurrentImage(c.Context(), true, sOpts)
+	if e != nil && e.HasErrors() {
+		return fiber.NewError(fiber.StatusInternalServerError, "Failed to create screenshot")
 	}
 
 	hOpts := models.ScreenshotHTMLRequestOptions{
@@ -46,9 +46,9 @@ func (h *ScreenshotHandler) CreateScreenshot(c *fiber.Ctx) error {
 		RenderedURL: screenshotResult.Metadata.RenderedURL,
 	}
 
-	contentResult, err := h.screenshotService.GetCurrentHTMLContent(c.Context(), true, hOpts)
-	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	contentResult, e := h.screenshotService.GetCurrentHTMLContent(c.Context(), true, hOpts)
+	if e != nil && e.HasErrors() {
+		return fiber.NewError(fiber.StatusInternalServerError, "Failed to create screenshot")
 	}
 
 	return c.JSON(fiber.Map{
@@ -72,9 +72,9 @@ func (h *ScreenshotHandler) GetScreenshotImage(c *fiber.Ctx) error {
 
 	h.logger.Debug("getting screenshot image", zap.Any("url", opts.URL), zap.Any("year", opts.Year), zap.Any("week_number", opts.WeekNumber), zap.Any("week_day", opts.WeekDay))
 
-	result, err := h.screenshotService.GetImage(c.Context(), opts.URL, *opts.Year, *opts.WeekNumber, *opts.WeekDay)
-	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	result, e := h.screenshotService.GetImage(c.Context(), opts.URL, *opts.Year, *opts.WeekNumber, *opts.WeekDay)
+	if e != nil && e.HasErrors() {
+		return fiber.NewError(fiber.StatusInternalServerError, "Failed to get screenshot image")
 	}
 
 	return h.sendPNGResponse(c, result)
@@ -92,9 +92,9 @@ func (h *ScreenshotHandler) GetScreenshotContent(c *fiber.Ctx) error {
 
 	h.logger.Debug("getting screenshot image", zap.Any("url", opts.URL), zap.Any("year", opts.Year), zap.Any("week_number", opts.WeekNumber), zap.Any("week_day", opts.WeekDay))
 
-	result, err := h.screenshotService.GetHTMLContent(c.Context(), opts.URL, *opts.Year, *opts.WeekNumber, *opts.WeekDay)
-	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	result, e := h.screenshotService.GetHTMLContent(c.Context(), opts.URL, *opts.Year, *opts.WeekNumber, *opts.WeekDay)
+	if e != nil && e.HasErrors() {
+		return fiber.NewError(fiber.StatusInternalServerError, "Failed to get screenshot content")
 	}
 
 	return c.JSON(fiber.Map{
@@ -111,9 +111,9 @@ func (h *ScreenshotHandler) ListScreenshots(c *fiber.Ctx) error {
 
 	h.logger.Debug("listing screenshots", zap.Any("url", opts.URL), zap.Any("content_type", opts.ContentType))
 
-	result, err := h.screenshotService.ListScreenshots(c.Context(), opts.URL, opts.ContentType, opts.MaxItems)
-	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	result, e := h.screenshotService.ListScreenshots(c.Context(), opts.URL, opts.ContentType, opts.MaxItems)
+	if e != nil  && e.HasErrors() {
+		return fiber.NewError(fiber.StatusInternalServerError, "Failed to list screenshots")
 	}
 
 	return c.JSON(fiber.Map{

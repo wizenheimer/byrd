@@ -9,7 +9,6 @@ import (
 	models "github.com/wizenheimer/iris/src/internal/models/core"
 	"github.com/wizenheimer/iris/src/pkg/logger"
 	"github.com/wizenheimer/iris/src/pkg/utils"
-	"go.uber.org/zap"
 )
 
 type WorkspaceHandler struct {
@@ -55,9 +54,8 @@ func (wh *WorkspaceHandler) CreateWorkspace(c *fiber.Ctx) error {
 		})
 	}
 
-	workspace, err := wh.workspaceService.CreateWorkspace(c.Context(), clerkUser, req)
-	if err != nil {
-		wh.logger.Error("Failed to create workspace", zap.Error(err))
+	workspace, e := wh.workspaceService.CreateWorkspace(c.Context(), clerkUser, req)
+	if e != nil && e.HasErrors() {
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
 			Error:   "InternalServerError",
 			Code:    fiber.StatusInternalServerError,
@@ -80,12 +78,12 @@ func (wh *WorkspaceHandler) ListWorkspaces(c *fiber.Ctx) error {
 		})
 	}
 
-	workspaces, err := wh.workspaceService.ListUserWorkspaces(c.Context(), clerkUser)
-	if err != nil {
+	workspaces, e := wh.workspaceService.ListUserWorkspaces(c.Context(), clerkUser)
+	if e != nil && e.HasErrors() {
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
 			Error:   "Failed to list workspaces",
 			Code:    fiber.StatusInternalServerError,
-			Message: err.Error(),
+			Message: "Failed to list workspaces",
 		})
 	}
 
@@ -103,19 +101,12 @@ func (wh *WorkspaceHandler) GetWorkspace(c *fiber.Ctx) error {
 		})
 	}
 
-	workspace, err := wh.workspaceService.GetWorkspace(c.Context(), workspaceID)
-	if err != nil {
-		// if errors.Is(err, svc.ErrWorkspaceNotFound) {
-		// 	return c.Status(fiber.StatusNotFound).JSON(ErrorResponse{
-		// 		Error:   "WorkspaceNotFound",
-		// 		Code:    fiber.StatusNotFound,
-		// 		Message: "Workspace not found",
-		// 	})
-		// }
+	workspace, e := wh.workspaceService.GetWorkspace(c.Context(), workspaceID)
+	if e != nil && e.HasErrors() {
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
 			Error:   "InternalServerError",
 			Code:    fiber.StatusInternalServerError,
-			Message: err.Error(),
+			Message: "Failed to get workspace",
 		})
 	}
 
@@ -150,27 +141,12 @@ func (wh *WorkspaceHandler) UpdateWorkspace(c *fiber.Ctx) error {
 		})
 	}
 
-	if err := wh.workspaceService.UpdateWorkspace(c.Context(), workspaceID, req); err != nil {
-		switch {
-		// case errors.Is(err, svc.ErrWorkspaceNotFound):
-		// 	return c.Status(fiber.StatusNotFound).JSON(ErrorResponse{
-		// 		Error:   "WorkspaceNotFound",
-		// 		Code:    fiber.StatusNotFound,
-		// 		Message: "Workspace not found",
-		// 	})
-		// case errors.Is(err, svc.ErrWorkspaceInactive):
-		// 	return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
-		// 		Error:   "WorkspaceInactive",
-		// 		Code:    fiber.StatusBadRequest,
-		// 		Message: "Workspace is inactive",
-		// 	})
-		default:
-			return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
-				Error:   "InternalServerError",
-				Code:    fiber.StatusInternalServerError,
-				Message: "Failed to update workspace",
-			})
-		}
+	if e := wh.workspaceService.UpdateWorkspace(c.Context(), workspaceID, req); e != nil && e.HasErrors() {
+		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
+			Error:   "InternalServerError",
+			Code:    fiber.StatusInternalServerError,
+			Message: "Failed to update workspace",
+		})
 	}
 
 	return c.SendStatus(fiber.StatusOK)
@@ -187,28 +163,13 @@ func (wh *WorkspaceHandler) DeleteWorkspace(c *fiber.Ctx) error {
 		})
 	}
 
-	status, err := wh.workspaceService.DeleteWorkspace(c.Context(), workspaceID)
-	if err != nil {
-		switch {
-		// case errors.Is(err, svc.ErrWorkspaceNotFound):
-		// 	return c.Status(fiber.StatusNotFound).JSON(ErrorResponse{
-		// 		Error:   "WorkspaceNotFound",
-		// 		Code:    fiber.StatusNotFound,
-		// 		Message: "Workspace not found",
-		// 	})
-		// case errors.Is(err, svc.ErrWorkspaceInactive):
-		// 	return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
-		// 		Error:   "WorkspaceInactive",
-		// 		Code:    fiber.StatusBadRequest,
-		// 		Message: "Workspace is already inactive",
-		// 	})
-		default:
-			return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
-				Error:   "Failed to delete workspace",
-				Code:    fiber.StatusInternalServerError,
-				Message: err.Error(),
-			})
-		}
+	status, e := wh.workspaceService.DeleteWorkspace(c.Context(), workspaceID)
+	if e != nil && e.HasErrors() {
+		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
+			Error:   "Failed to delete workspace",
+			Code:    fiber.StatusInternalServerError,
+			Message: "Failed to delete workspace",
+		})
 	}
 
 	return c.JSON(fiber.Map{
@@ -236,27 +197,12 @@ func (wh *WorkspaceHandler) ExitWorkspace(c *fiber.Ctx) error {
 		})
 	}
 
-	if err := wh.workspaceService.LeaveWorkspace(c.Context(), clerkUser, workspaceID); err != nil {
-		switch {
-		// case errors.Is(err, svc.ErrLastAdmin):
-		// 	return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
-		// 		Error:   "LastAdmin",
-		// 		Code:    fiber.StatusBadRequest,
-		// 		Message: "Cannot leave workspace as last admin",
-		// 	})
-		// case errors.Is(err, svc.ErrWorkspaceUserNotFound):
-		// 	return c.Status(fiber.StatusNotFound).JSON(ErrorResponse{
-		// 		Error:   "UserNotFound",
-		// 		Code:    fiber.StatusNotFound,
-		// 		Message: "User not found in workspace",
-		// 	})
-		default:
-			return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
-				Error:   "InternalServerError",
-				Code:    fiber.StatusInternalServerError,
-				Message: err.Error(),
-			})
-		}
+	if e := wh.workspaceService.LeaveWorkspace(c.Context(), clerkUser, workspaceID); e != nil && e.HasErrors() {
+		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
+			Error:   "InternalServerError",
+			Code:    fiber.StatusInternalServerError,
+			Message: "Failed to leave workspace",
+		})
 	}
 
 	return c.SendStatus(fiber.StatusOK)
@@ -282,27 +228,12 @@ func (wh *WorkspaceHandler) JoinWorkspace(c *fiber.Ctx) error {
 		})
 	}
 
-	if err := wh.workspaceService.JoinWorkspace(c.Context(), clerkUser, workspaceID); err != nil {
-		switch {
-		// case errors.Is(err, svc.ErrWorkspaceNotFound):
-		// 	return c.Status(fiber.StatusNotFound).JSON(ErrorResponse{
-		// 		Error:   "WorkspaceNotFound",
-		// 		Code:    fiber.StatusNotFound,
-		// 		Message: "Workspace not found",
-		// 	})
-		// case errors.Is(err, svc.ErrNotInvited):
-		// 	return c.Status(fiber.StatusForbidden).JSON(ErrorResponse{
-		// 		Error:   "NotInvited",
-		// 		Code:    fiber.StatusForbidden,
-		// 		Message: "User not invited to workspace",
-		// 	})
-		default:
-			return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
-				Error:   "InternalServerError",
-				Code:    fiber.StatusInternalServerError,
-				Message: "Failed to join workspace",
-			})
-		}
+	if e := wh.workspaceService.JoinWorkspace(c.Context(), clerkUser, workspaceID); e != nil && e.HasErrors() {
+		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
+			Error:   "InternalServerError",
+			Code:    fiber.StatusInternalServerError,
+			Message: "Failed to join workspace",
+		})
 	}
 
 	return c.SendStatus(fiber.StatusOK)
@@ -324,22 +255,13 @@ func (wh *WorkspaceHandler) ListWorkspaceUsers(c *fiber.Ctx) error {
 		IncludeAdmins:  c.QueryBool("includeAdmins", true),
 	}
 
-	users, err := wh.workspaceService.ListWorkspaceMembers(c.Context(), workspaceID, params)
-	if err != nil {
-		switch {
-		// case errors.Is(err, svc.ErrWorkspaceNotFound):
-		// 	return c.Status(fiber.StatusNotFound).JSON(ErrorResponse{
-		// 		Error:   "WorkspaceNotFound",
-		// 		Code:    fiber.StatusNotFound,
-		// 		Message: "Workspace not found",
-		// 	})
-		default:
-			return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
-				Error:   "InternalServerError",
-				Code:    fiber.StatusInternalServerError,
-				Message: "Failed to list workspace users",
-			})
-		}
+	users, e := wh.workspaceService.ListWorkspaceMembers(c.Context(), workspaceID, params)
+	if e != nil && e.HasErrors() {
+		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
+			Error:   "InternalServerError",
+			Code:    fiber.StatusInternalServerError,
+			Message: "Failed to list workspace users",
+		})
 	}
 
 	return c.JSON(users)
@@ -384,7 +306,15 @@ func (wh *WorkspaceHandler) AddUserToWorkspace(c *fiber.Ctx) error {
 		})
 	}
 
-	responses := wh.workspaceService.InviteUsersToWorkspace(c.Context(), clerkUser, workspaceID, reqs)
+	responses, e := wh.workspaceService.InviteUsersToWorkspace(c.Context(), clerkUser, workspaceID, reqs)
+	if e != nil && e.HasErrors() {
+		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
+			Error:   "InternalServerError",
+			Code:    fiber.StatusInternalServerError,
+			Message: "Failed to invite users to workspace",
+		})
+	}
+
 	return c.JSON(responses)
 }
 
@@ -408,34 +338,13 @@ func (wh *WorkspaceHandler) RemoveUserFromWorkspace(c *fiber.Ctx) error {
 		})
 	}
 
-	err = wh.workspaceService.RemoveUserFromWorkspace(c.Context(), workspaceID, userID)
-	if err != nil {
-		switch {
-		// case errors.Is(err, svc.ErrWorkspaceNotFound):
-		//     return c.Status(fiber.StatusNotFound).JSON(ErrorResponse{
-		//         Error:   "WorkspaceNotFound",
-		//         Code:    fiber.StatusNotFound,
-		//         Message: "Workspace not found",
-		//     })
-		// case errors.Is(err, svc.ErrWorkspaceUserNotFound):
-		//     return c.Status(fiber.StatusNotFound).JSON(ErrorResponse{
-		//         Error:   "UserNotFound",
-		//         Code:    fiber.StatusNotFound,
-		//         Message: "User not found in workspace",
-		//     })
-		// case errors.Is(err, svc.ErrLastAdmin):
-		//     return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
-		//         Error:   "LastAdmin",
-		//         Code:    fiber.StatusBadRequest,
-		//         Message: "Cannot remove last admin from workspace",
-		//     })
-		default:
-			return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
-				Error:   "InternalServerError",
-				Code:    fiber.StatusInternalServerError,
-				Message: err.Error(),
-			})
-		}
+	e := wh.workspaceService.RemoveUserFromWorkspace(c.Context(), workspaceID, userID)
+	if e != nil && e.HasErrors() {
+		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
+			Error:   "InternalServerError",
+			Code:    fiber.StatusInternalServerError,
+			Message: "Failed to remove user from workspace",
+		})
 	}
 
 	return c.SendStatus(fiber.StatusOK)
@@ -481,34 +390,13 @@ func (wh *WorkspaceHandler) UpdateUserRoleInWorkspace(c *fiber.Ctx) error {
 		})
 	}
 
-	err = wh.workspaceService.UpdateWorkspaceMemberRole(c.Context(), workspaceID, userID, req.Role)
-	if err != nil {
-		switch {
-		// case errors.Is(err, svc.ErrWorkspaceNotFound):
-		// 	return c.Status(fiber.StatusNotFound).JSON(ErrorResponse{
-		// 		Error:   "WorkspaceNotFound",
-		// 		Code:    fiber.StatusNotFound,
-		// 		Message: "Workspace not found",
-		// 	})
-		// case errors.Is(err, svc.ErrWorkspaceUserNotFound):
-		// 	return c.Status(fiber.StatusNotFound).JSON(ErrorResponse{
-		// 		Error:   "UserNotFound",
-		// 		Code:    fiber.StatusNotFound,
-		// 		Message: "User not found in workspace",
-		// 	})
-		// case errors.Is(err, svc.ErrLastAdmin):
-		// 	return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
-		// 		Error:   "LastAdmin",
-		// 		Code:    fiber.StatusBadRequest,
-		// 		Message: "Cannot change role of last admin",
-		// 	})
-		default:
-			return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
-				Error:   "InternalServerError",
-				Code:    fiber.StatusInternalServerError,
-				Message: err.Error(),
-			})
-		}
+	e := wh.workspaceService.UpdateWorkspaceMemberRole(c.Context(), workspaceID, userID, req.Role)
+	if e != nil && e.HasErrors() {
+		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
+			Error:   "InternalServerError",
+			Code:    fiber.StatusInternalServerError,
+			Message: "Failed to update user role",
+		})
 	}
 
 	return c.SendStatus(fiber.StatusOK)
@@ -553,12 +441,12 @@ func (wh *WorkspaceHandler) CreateCompetitorForWorkspace(c *fiber.Ctx) error {
 		})
 	}
 
-	errs := wh.workspaceService.CreateWorkspaceCompetitor(c.Context(), clerkUser, workspaceID, req)
-	if len(errs) > 0 {
+	e := wh.workspaceService.CreateWorkspaceCompetitor(c.Context(), clerkUser, workspaceID, req)
+	if e != nil && e.HasErrors() {
 		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
 			Error:   "CompetitorCreationFailed",
 			Code:    fiber.StatusBadRequest,
-			Message: "Failed to create competitor: " + errs[0].Error(),
+			Message: "Failed to create competitor",
 		})
 	}
 
@@ -604,12 +492,12 @@ func (wh *WorkspaceHandler) AddPageToCompetitor(c *fiber.Ctx) error {
 		})
 	}
 
-	createdPages, errs := wh.workspaceService.AddPageToCompetitor(c.Context(), clerkUser, competitorID.String(), pages)
-	if len(errs) > 0 {
+	createdPages, e := wh.workspaceService.AddPageToCompetitor(c.Context(), clerkUser, competitorID.String(), pages)
+	if e != nil && e.HasErrors() {
 		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
 			Error:   "PageCreationFailed",
 			Code:    fiber.StatusBadRequest,
-			Message: "Failed to add pages: " + errs[0].Error(),
+			Message: "Failed to add pages",
 		})
 	}
 
@@ -647,12 +535,12 @@ func (wh *WorkspaceHandler) ListWorkspaceCompetitors(c *fiber.Ctx) error {
 		PageSize: pageSize,
 	}
 
-	response, err := wh.workspaceService.ListWorkspaceCompetitors(c.Context(), clerkUser, workspaceID, params)
-	if err != nil {
+	response, e := wh.workspaceService.ListWorkspaceCompetitors(c.Context(), clerkUser, workspaceID, params)
+	if e != nil && e.HasErrors() {
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
 			Error:   "InternalServerError",
 			Code:    fiber.StatusInternalServerError,
-			Message: err.Error(),
+			Message: "Failed to list competitors",
 		})
 	}
 
@@ -705,12 +593,12 @@ func (wh *WorkspaceHandler) ListPageHistory(c *fiber.Ctx) error {
 		PageSize: pageSize,
 	}
 
-	history, err := wh.workspaceService.ListWorkspacePageHistory(c.Context(), clerkUser, workspaceID, competitorID, pageID, params)
-	if err != nil {
+	history, e := wh.workspaceService.ListWorkspacePageHistory(c.Context(), clerkUser, workspaceID, competitorID, pageID, params)
+	if e != nil && e.HasErrors() {
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
 			Error:   "InternalServerError",
 			Code:    fiber.StatusInternalServerError,
-			Message: err.Error(),
+			Message: "Failed to list page history",
 		})
 	}
 
@@ -746,7 +634,7 @@ func (wh *WorkspaceHandler) RemovePageFromCompetitor(c *fiber.Ctx) error {
 		})
 	}
 
-	if err := wh.workspaceService.RemovePageFromWorkspace(c.Context(), clerkUser, competitorID, pageID); err != nil {
+	if e := wh.workspaceService.RemovePageFromWorkspace(c.Context(), clerkUser, competitorID, pageID); e != nil && e.HasErrors() {
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
 			Error:   "InternalServerError",
 			Code:    fiber.StatusInternalServerError,
@@ -786,11 +674,11 @@ func (wh *WorkspaceHandler) RemoveCompetitorFromWorkspace(c *fiber.Ctx) error {
 		})
 	}
 
-	if err := wh.workspaceService.RemoveCompetitorFromWorkspace(c.Context(), clerkUser, workspaceID, competitorID); err != nil {
+	if e := wh.workspaceService.RemoveCompetitorFromWorkspace(c.Context(), clerkUser, workspaceID, competitorID); e != nil && e.HasErrors() {
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
 			Error:   "InternalServerError",
 			Code:    fiber.StatusInternalServerError,
-			Message: err.Error(),
+			Message: "Failed to remove competitor",
 		})
 	}
 
@@ -826,11 +714,11 @@ func (wh *WorkspaceHandler) UpdatePageInCompetitor(c *fiber.Ctx) error {
 		})
 	}
 
-	if err := wh.workspaceService.UpdateCompetitorPage(c.Context(), competitorID, pageID, req); err != nil {
+	if e := wh.workspaceService.UpdateCompetitorPage(c.Context(), competitorID, pageID, req); e != nil && e.HasErrors() {
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
 			Error:   "InternalServerError",
 			Code:    fiber.StatusInternalServerError,
-			Message: err.Error(),
+			Message: "Failed to update page",
 		})
 	}
 
