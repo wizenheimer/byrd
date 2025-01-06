@@ -8,9 +8,9 @@ import (
 )
 
 const (
-	CompetitorIDParamKey = "competitorId"
-	PageIDParamKey       = "pageId"
-	WorkspaceIDParamKey  = "workspaceId"
+	CompetitorIDParamKey = "competitorID"
+	PageIDParamKey       = "pageID"
+	WorkspaceIDParamKey  = "workspaceID"
 )
 
 type WorkspacePathValidationMiddleware struct {

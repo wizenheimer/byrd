@@ -45,8 +45,8 @@ func NewHandlerContainer(
 // This includes public and private routes
 func SetupRoutes(app *fiber.App, handlers *HandlerContainer, ws svc.WorkspaceService, logger *logger.Logger) {
 	authMiddleware := middleware.NewAuthenticatedMiddleware(logger)
-    authorizationMiddleware := middleware.NewAuthorizationMiddleware(ws, logger)
-    pathMiddleware := middleware.NewWorkspacePathValidationMiddleware(ws, logger)
+	authorizationMiddleware := middleware.NewAuthorizationMiddleware(ws, logger)
+	pathMiddleware := middleware.NewWorkspacePathValidationMiddleware(ws, logger)
 
 	setupPublicRoutes(app, handlers, authMiddleware, authorizationMiddleware, pathMiddleware)
 
@@ -56,7 +56,7 @@ func SetupRoutes(app *fiber.App, handlers *HandlerContainer, ws svc.WorkspaceSer
 
 }
 
-// setupPublicRoutes sets up the public routes for the application
+// setupPublicRoutes sets up public routes for the application
 func setupPublicRoutes(app *fiber.App, h *HandlerContainer, authMiddleware *middleware.AuthenticatedMiddleware, authorization *middleware.AuthorizationMiddleware, pathMiddleware *middleware.WorkspacePathValidationMiddleware) {
 	// Public routes for production and development
 	public := app.Group("/api/public/v1")
@@ -64,101 +64,62 @@ func setupPublicRoutes(app *fiber.App, h *HandlerContainer, authMiddleware *midd
 	// Workspace routes
 	wh := h.WorkspaceHandler
 
-    // -------------------------------------------------
-	// Base workspace routes require
-    // valid authentication token
+	// -------------------------------------------------
+	// Base workspace routes require valid authentication token
 	workspace := public.Group("/workspace", authMiddleware.AuthenticationMiddleware)
 
-	// Create a new workspace
+	// Base workspace endpoints (no ID needed)
 	workspace.Post("/", wh.CreateWorkspace)
-
-	// List workspaces for a user
 	workspace.Get("/", wh.ListWorkspaces)
 
-    // -------------------------------------------------
-	// workspace admin are routes that require
-	// valid workspace path
-    // valid workspace admin role
-    // inherits authentication middleware
-	workspaceAdmin := workspace.Group("", pathMiddleware.ValidateWorkspacePath, authorization.RequireWorkspaceAdmin)
+	// -------------------------------------------------
+	// All routes that need workspace validation
+	workspaceBase := workspace.Group("/:workspaceID",
+		pathMiddleware.ValidateWorkspacePath)
 
-	// Update a workspace by ID
-	workspaceAdmin.Put("/:workspaceID/", wh.UpdateWorkspace)
+	// Workspace admin routes
+	workspaceAdmin := workspaceBase.Group("",
+		authorization.RequireWorkspaceAdmin)
 
-	// Delete a workspace by ID
-	workspaceAdmin.Delete("/:workspaceID/", wh.DeleteWorkspace)
+	workspaceAdmin.Put("/", wh.UpdateWorkspace)
+	workspaceAdmin.Delete("/", wh.DeleteWorkspace)
+	workspaceAdmin.Delete("/users/:userId", wh.RemoveUserFromWorkspace)
+	workspaceAdmin.Put("/users/:userId", wh.UpdateUserRoleInWorkspace)
 
-	// Remove user from a workspace
-	workspaceAdmin.Delete("/:workspaceID/users/:userId", wh.RemoveUserFromWorkspace)
+	// -------------------------------------------------
+	// Workspace member routes
+	workspaceMember := workspaceBase.Group("",
+		authorization.RequireWorkspaceMembership)
 
-	// Update user role in a workspace
-	workspaceAdmin.Put("/:workspaceID/users/:userId", wh.UpdateUserRoleInWorkspace)
+	workspaceMember.Get("/", wh.GetWorkspace)
+	workspaceMember.Post("/exit", wh.ExitWorkspace)
+	workspaceMember.Post("/join", wh.JoinWorkspace)
+	workspaceMember.Get("/users", wh.ListWorkspaceUsers)
+	workspaceMember.Post("/users", wh.AddUserToWorkspace)
+	workspaceMember.Post("/competitors", wh.CreateCompetitorForWorkspace)
+	workspaceMember.Get("/competitors", wh.ListWorkspaceCompetitors)
 
-    // -------------------------------------------------
-	// workspaceMember routes are routes that require
-	// valid workspace path
-    // valid workspace membership role
-    // inherits authentication middleware
-	workspaceMember := workspace.Group("", pathMiddleware.ValidateWorkspacePath, authorization.RequireWorkspaceMembership)
+	// -------------------------------------------------
+	// Competitor management routes
+	competitorManagement := workspaceMember.Group("/competitors/:competitorID",
+		pathMiddleware.ValidateCompetitorPath)
 
-	// Get a workspace by ID
-	workspaceMember.Get("/:workspaceID/", wh.GetWorkspace)
+	competitorManagement.Post("/pages", wh.AddPageToCompetitor)
+	competitorManagement.Delete("/", wh.RemoveCompetitorFromWorkspace)
 
-	// Exit a workspace by ID
-	workspaceMember.Post("/:workspaceID/exit", wh.ExitWorkspace)
+	// -------------------------------------------------
+	// Page management routes
+	pageManagement := competitorManagement.Group("/pages/:pageID",
+		pathMiddleware.ValidatePagePath)
 
-	// Join a workspace by ID
-	workspaceMember.Post("/:workspaceID/join", wh.JoinWorkspace)
+	pageManagement.Get("/history", wh.ListPageHistory)
+	pageManagement.Delete("/", wh.RemovePageFromCompetitor)
+	pageManagement.Put("/", wh.UpdatePageInCompetitor)
 
-	// List users for a workspace
-	workspaceMember.Get("/:workspaceID/users", wh.ListWorkspaceUsers)
-
-	// Add user to a workspace
-	workspaceMember.Post("/:workspaceID/users", wh.AddUserToWorkspace)
-
-	// Create competitor for a workspace
-	workspaceMember.Post("/:workspaceID/competitors", wh.CreateCompetitorForWorkspace)
-
-	// List workspace competitors
-	workspaceMember.Get("/:workspaceID/competitors", wh.ListWorkspaceCompetitors)
-
-    // -------------------------------------------------
-	// Competitor routes are the routes that require
-	// a valid workspace path
-    // a valid competitor path
-    // inheritance of workspace membership role
-	competitorManagement := workspaceMember.Group("", pathMiddleware.ValidateCompetitorPath)
-
-	// Add page to a competitor
-	competitorManagement.Post("/:workspaceID/competitors/:competitorID/pages", wh.AddPageToCompetitor)
-
-	// Remove competitor from a workspace
-	competitorManagement.Delete("/:workspaceID/competitors/:competitorID", wh.RemoveCompetitorFromWorkspace)
-
-    // -------------------------------------------------
-    // Page Management routes are the routes that require
-    // a valid page path
-    // inherits a valid workspace path
-    // inherits a valid competitor path
-    pageManagement := competitorManagement.Group("", pathMiddleware.ValidatePagePath)
-
-	// List page history
-	pageManagement.Get("/:workspaceID/competitors/:competitorID/pages/:pageID/history", wh.ListPageHistory)
-
-	// Remove page from a competitor
-	pageManagement.Delete("/:workspaceID/competitors/:competitorID/pages/:pageID", wh.RemovePageFromCompetitor)
-
-	// Update page in a competitor
-	pageManagement.Put("/:workspaceID/competitors/:competitorID/pages/:pageID", wh.UpdatePageInCompetitor)
-
-
-    // -------------------------------------------------
-    // User routes are the routes that require
-    // a valid user path
+	// -------------------------------------------------
 	// User routes
 	uh := h.UserHandler
 	user := public.Group("/user", authMiddleware.AuthenticationMiddleware)
-	// Delete Account
 	user.Delete("/", uh.DeleteAccount)
 }
 
