@@ -22,53 +22,30 @@ func NewUserHandler(userService svc.UserService, logger *logger.Logger) *UserHan
 func (uh *UserHandler) DeleteAccount(c *fiber.Ctx) error {
 	clerkUser, err := auth.GetClerkUserFromContext(c)
 	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"success": false,
-			"message": "Couldn't get user from context",
-			"error":   err.Error(),
-		})
+		return sendErrorResponse(c, fiber.StatusUnauthorized, "Couldn't get user from context", err.Error())
 	}
 
 	e := uh.userService.DeleteUser(c.Context(), clerkUser)
 	if e != nil && e.HasErrors() {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"success": false,
-			"message": "Couldn't delete user",
-			"error":   "Failed to delete user",
-		})
+		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not delete user", e)
 	}
 
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"success": true,
-		"message": "User deleted successfully",
-	})
+	return sendDataResponse(c, fiber.StatusOK, "User deleted successfully", nil)
 }
 
 func (uh *UserHandler) ValidateToken(c *fiber.Ctx) error {
 	clerkClaims, err := auth.GetClerkClaimsFromContext(c)
 	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"success": false,
-			"message": "Couldn't get claims from context",
-			"error":   err.Error(),
-		})
+		return sendErrorResponse(c, fiber.StatusUnauthorized, "Couldn't get user claims from context", err.Error())
 	}
 
 	clerkUser, err := auth.GetClerkUserFromContext(c)
 	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"success": false,
-			"message": "Couldn't get user from context",
-			"error":   err.Error(),
-		})
+		return sendErrorResponse(c, fiber.StatusUnauthorized, "Couldn't get user from context", err.Error())
 	}
 
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"success": true,
-		"message": "User is authenticated",
-		"data": map[string]interface{}{
-			"user":   clerkUser,
-			"claims": clerkClaims,
-		},
+	return sendDataResponse(c, fiber.StatusOK, "User is authenticated", map[string]interface{}{
+		"user":   clerkUser,
+		"claims": clerkClaims,
 	})
 }

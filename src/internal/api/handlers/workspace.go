@@ -30,40 +30,42 @@ func NewWorkspaceHandler(
 func (wh *WorkspaceHandler) CreateWorkspace(c *fiber.Ctx) error {
 	var req api.WorkspaceCreationRequest
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
-			Error:   "InvalidRequest",
-			Code:    fiber.StatusBadRequest,
-			Message: "Invalid request body",
-		})
+		return c.Status(fiber.StatusBadRequest).JSON(
+			fiber.Map{
+				"error":   "InvalidRequest",
+				"details": err.Error(),
+			},
+		)
 	}
 
 	if err := utils.SetDefaultsAndValidate(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
-			Error:   "InvalidRequest",
-			Code:    fiber.StatusBadRequest,
-			Message: err.Error(),
-		})
+		return c.Status(fiber.StatusBadRequest).JSON(
+			fiber.Map{
+				"error":   "InvalidRequest",
+				"details": err.Error(),
+			},
+		)
 	}
 
 	clerkUser, err := auth.GetClerkUserFromContext(c)
 	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(ErrorResponse{
-			Error:   "Unauthorized",
-			Code:    fiber.StatusUnauthorized,
-			Message: "Unauthorized",
-		})
+		return c.Status(fiber.StatusUnauthorized).JSON(
+			fiber.Map{
+				"error":   "Unauthorized",
+				"details": err.Error(),
+			},
+		)
 	}
 
 	workspace, e := wh.workspaceService.CreateWorkspace(c.Context(), clerkUser, req)
 	if e != nil && e.HasErrors() {
-		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
-			Error:   "InternalServerError",
-			Code:    fiber.StatusInternalServerError,
-			Message: "Failed to create workspace",
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error":   "Could not create workspace",
+			"details": e,
 		})
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(workspace)
+	return sendDataResponse(c, fiber.StatusCreated, "Created workspace successfully", workspace)
 
 }
 
@@ -71,109 +73,77 @@ func (wh *WorkspaceHandler) CreateWorkspace(c *fiber.Ctx) error {
 func (wh *WorkspaceHandler) ListWorkspaces(c *fiber.Ctx) error {
 	clerkUser, err := auth.GetClerkUserFromContext(c)
 	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(ErrorResponse{
-			Error:   "Unauthorized",
-			Code:    fiber.StatusUnauthorized,
-			Message: err.Error(),
-		})
+		return sendErrorResponse(c, fiber.StatusUnauthorized, "Unauthorized", err.Error())
 	}
 
 	workspaces, e := wh.workspaceService.ListUserWorkspaces(c.Context(), clerkUser)
 	if e != nil && e.HasErrors() {
-		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
-			Error:   "Failed to list workspaces",
-			Code:    fiber.StatusInternalServerError,
-			Message: "Failed to list workspaces",
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"details": e,
 		})
 	}
 
-	return c.JSON(workspaces)
+	return sendDataResponse(c, fiber.StatusOK, "Listed workspaces successfully", workspaces)
 }
 
 // GetWorkspace gets a workspace by ID
 func (wh *WorkspaceHandler) GetWorkspace(c *fiber.Ctx) error {
 	workspaceID, err := uuid.Parse(c.Params("workspaceID"))
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
-			Error:   "InvalidWorkspaceID",
-			Code:    fiber.StatusBadRequest,
-			Message: "Invalid workspace ID format",
-		})
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid workspace ID format", err.Error())
 	}
 
 	workspace, e := wh.workspaceService.GetWorkspace(c.Context(), workspaceID)
 	if e != nil && e.HasErrors() {
-		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
-			Error:   "InternalServerError",
-			Code:    fiber.StatusInternalServerError,
-			Message: "Failed to get workspace",
-		})
+		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not get workspace", e)
 	}
 
-	return c.JSON(workspace)
+	return sendDataResponse(c, fiber.StatusOK, "Fetched workspace successfully", workspace)
 }
 
 // UpdateWorkspace updates a workspace by ID
 func (wh *WorkspaceHandler) UpdateWorkspace(c *fiber.Ctx) error {
 	workspaceID, err := uuid.Parse(c.Params("workspaceID"))
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
-			Error:   "InvalidWorkspaceID",
-			Code:    fiber.StatusBadRequest,
-			Message: "Invalid workspace ID format",
-		})
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid workspace ID format", err.Error())
 	}
 
 	var req api.WorkspaceUpdateRequest
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
-			Error:   "InvalidRequest",
-			Code:    fiber.StatusBadRequest,
-			Message: "Invalid request body",
-		})
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 
 	if err := utils.SetDefaultsAndValidate(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
-			Error:   "InvalidRequest",
-			Code:    fiber.StatusBadRequest,
-			Message: err.Error(),
-		})
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 
 	if e := wh.workspaceService.UpdateWorkspace(c.Context(), workspaceID, req); e != nil && e.HasErrors() {
-		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
-			Error:   "InternalServerError",
-			Code:    fiber.StatusInternalServerError,
-			Message: "Failed to update workspace",
-		})
+		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not update workspace", e)
 	}
 
-	return c.SendStatus(fiber.StatusOK)
+	return sendDataResponse(c, fiber.StatusOK, "Updated workspace successfully",
+		map[string]any{
+			"workspaceId":  workspaceID,
+			"billingEmail": req.BillingEmail,
+			"name":         req.Name,
+		})
 }
 
 // DeleteWorkspace deletes a workspace by ID
 func (wh *WorkspaceHandler) DeleteWorkspace(c *fiber.Ctx) error {
 	workspaceID, err := uuid.Parse(c.Params("workspaceID"))
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
-			Error:   "InvalidWorkspaceID",
-			Code:    fiber.StatusBadRequest,
-			Message: "Invalid workspace ID format",
-		})
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid workspace ID format", err.Error())
 	}
 
 	status, e := wh.workspaceService.DeleteWorkspace(c.Context(), workspaceID)
 	if e != nil && e.HasErrors() {
-		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
-			Error:   "Failed to delete workspace",
-			Code:    fiber.StatusInternalServerError,
-			Message: "Failed to delete workspace",
-		})
+		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not delete workspace", e)
 	}
 
-	return c.JSON(fiber.Map{
-		"status": status,
+	return sendDataResponse(c, fiber.StatusOK, "Deleted workspace successfully", map[string]any{
+		"workspaceId": workspaceID,
+		"status":      status,
 	})
 }
 
@@ -181,73 +151,49 @@ func (wh *WorkspaceHandler) DeleteWorkspace(c *fiber.Ctx) error {
 func (wh *WorkspaceHandler) ExitWorkspace(c *fiber.Ctx) error {
 	workspaceID, err := uuid.Parse(c.Params("workspaceID"))
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
-			Error:   "InvalidWorkspaceID",
-			Code:    fiber.StatusBadRequest,
-			Message: "Invalid workspace ID format",
-		})
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid workspace ID format", err.Error())
 	}
 
 	clerkUser, err := auth.GetClerkUserFromContext(c)
 	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(ErrorResponse{
-			Error:   "Unauthorized",
-			Code:    fiber.StatusUnauthorized,
-			Message: "Unauthorized",
-		})
+		return sendErrorResponse(c, fiber.StatusUnauthorized, "Unauthorized", err.Error())
 	}
 
 	if e := wh.workspaceService.LeaveWorkspace(c.Context(), clerkUser, workspaceID); e != nil && e.HasErrors() {
-		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
-			Error:   "InternalServerError",
-			Code:    fiber.StatusInternalServerError,
-			Message: "Failed to leave workspace",
-		})
+		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not exit workspace", e)
 	}
 
-	return c.SendStatus(fiber.StatusOK)
+	return sendDataResponse(c, fiber.StatusOK, "Exited workspace successfully", map[string]any{
+		"workspaceId": workspaceID,
+	})
 }
 
 // JoinWorkspace joins a workspace by ID
 func (wh *WorkspaceHandler) JoinWorkspace(c *fiber.Ctx) error {
 	workspaceID, err := uuid.Parse(c.Params("workspaceID"))
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
-			Error:   "InvalidWorkspaceID",
-			Code:    fiber.StatusBadRequest,
-			Message: "Invalid workspace ID format",
-		})
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid workspace ID format", err.Error())
 	}
 
 	clerkUser, err := auth.GetClerkUserFromContext(c)
 	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(ErrorResponse{
-			Error:   "Unauthorized",
-			Code:    fiber.StatusUnauthorized,
-			Message: "Unauthorized",
-		})
+		return sendErrorResponse(c, fiber.StatusUnauthorized, "Unauthorized", err.Error())
 	}
 
 	if e := wh.workspaceService.JoinWorkspace(c.Context(), clerkUser, workspaceID); e != nil && e.HasErrors() {
-		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
-			Error:   "InternalServerError",
-			Code:    fiber.StatusInternalServerError,
-			Message: "Failed to join workspace",
-		})
+		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not join workspace", e)
 	}
 
-	return c.SendStatus(fiber.StatusOK)
+	return sendDataResponse(c, fiber.StatusOK, "Joined workspace successfully", map[string]any{
+		"workspaceId": workspaceID,
+	})
 }
 
 // ListWorkspaceUsers lists users for a workspace
 func (wh *WorkspaceHandler) ListWorkspaceUsers(c *fiber.Ctx) error {
 	workspaceID, err := uuid.Parse(c.Params("workspaceID"))
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
-			Error:   "InvalidWorkspaceID",
-			Code:    fiber.StatusBadRequest,
-			Message: "Invalid workspace ID format",
-		})
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid workspace ID format", err.Error())
 	}
 
 	params := api.WorkspaceMembersListingParams{
@@ -257,149 +203,98 @@ func (wh *WorkspaceHandler) ListWorkspaceUsers(c *fiber.Ctx) error {
 
 	users, e := wh.workspaceService.ListWorkspaceMembers(c.Context(), workspaceID, params)
 	if e != nil && e.HasErrors() {
-		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
-			Error:   "InternalServerError",
-			Code:    fiber.StatusInternalServerError,
-			Message: "Failed to list workspace users",
-		})
+		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not list workspace users", e)
 	}
 
-	return c.JSON(users)
+	return sendDataResponse(c, fiber.StatusOK, "Listed workspace users successfully", users)
 }
 
 // AddUserToWorkspace adds a user to a workspace
 func (wh *WorkspaceHandler) AddUserToWorkspace(c *fiber.Ctx) error {
 	workspaceID, err := uuid.Parse(c.Params("workspaceID"))
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
-			Error:   "InvalidWorkspaceID",
-			Code:    fiber.StatusBadRequest,
-			Message: "Invalid workspace ID format",
-		})
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid workspace ID format", err.Error())
 	}
 
 	var reqs []api.InviteUserToWorkspaceRequest
 	if err := c.BodyParser(&reqs); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
-			Error:   "InvalidRequest",
-			Code:    fiber.StatusBadRequest,
-			Message: "Invalid request body",
-		})
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 
 	for index := range reqs {
 		if err := utils.SetDefaultsAndValidate(&reqs[index]); err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
-				Error:   "InvalidRequest",
-				Code:    fiber.StatusBadRequest,
-				Message: err.Error(),
-			})
+			return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
 		}
 	}
 
 	clerkUser, err := auth.GetClerkUserFromContext(c)
 	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(ErrorResponse{
-			Error:   "Unauthorized",
-			Code:    fiber.StatusUnauthorized,
-			Message: "Unauthorized",
-		})
+		return sendErrorResponse(c, fiber.StatusUnauthorized, "Unauthorized", err.Error())
 	}
 
 	responses, e := wh.workspaceService.InviteUsersToWorkspace(c.Context(), clerkUser, workspaceID, reqs)
 	if e != nil && e.HasErrors() {
-		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
-			Error:   "InternalServerError",
-			Code:    fiber.StatusInternalServerError,
-			Message: "Failed to invite users to workspace",
-		})
+		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not invite users to workspace", e)
 	}
 
-	return c.JSON(responses)
+	return sendDataResponse(c, fiber.StatusCreated, "Invited users to workspace successfully", responses)
 }
 
 // RemoveUserFromWorkspace removes a user from a workspace
 func (wh *WorkspaceHandler) RemoveUserFromWorkspace(c *fiber.Ctx) error {
 	workspaceID, err := uuid.Parse(c.Params("workspaceID"))
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
-			Error:   "InvalidWorkspaceID",
-			Code:    fiber.StatusBadRequest,
-			Message: "Invalid workspace ID format",
-		})
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid workspace ID format", err.Error())
 	}
 
 	userID, err := uuid.Parse(c.Params("userId"))
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
-			Error:   "InvalidUserID",
-			Code:    fiber.StatusBadRequest,
-			Message: "Invalid user ID format",
-		})
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid user ID format", err.Error())
 	}
 
 	e := wh.workspaceService.RemoveUserFromWorkspace(c.Context(), workspaceID, userID)
 	if e != nil && e.HasErrors() {
-		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
-			Error:   "InternalServerError",
-			Code:    fiber.StatusInternalServerError,
-			Message: "Failed to remove user from workspace",
-		})
+		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not remove user from workspace", e)
 	}
 
-	return c.SendStatus(fiber.StatusOK)
+	return sendDataResponse(c, fiber.StatusOK, "Removed user from workspace successfully", map[string]any{
+		"userId":      userID,
+		"workspaceId": workspaceID,
+	})
 }
 
 // UpdateUserRoleInWorkspace updates user role in a workspace
 func (wh *WorkspaceHandler) UpdateUserRoleInWorkspace(c *fiber.Ctx) error {
 	workspaceID, err := uuid.Parse(c.Params("workspaceID"))
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
-			Error:   "InvalidWorkspaceID",
-			Code:    fiber.StatusBadRequest,
-			Message: "Invalid workspace ID format",
-		})
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid workspace ID format", err.Error())
 	}
 
 	userID, err := uuid.Parse(c.Params("userId"))
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
-			Error:   "InvalidUserID",
-			Code:    fiber.StatusBadRequest,
-			Message: "Invalid user ID format",
-		})
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid user ID format", err.Error())
 	}
 
 	var req struct {
 		Role models.UserWorkspaceRole `json:"role"`
 	}
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
-			Error:   "InvalidRequest",
-			Code:    fiber.StatusBadRequest,
-			Message: "Invalid request body",
-		})
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 
 	// Validate role
 	if !isValidRole(req.Role) {
-		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
-			Error:   "InvalidRole",
-			Code:    fiber.StatusBadRequest,
-			Message: "Invalid role specified",
-		})
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid role", req.Role)
 	}
 
 	e := wh.workspaceService.UpdateWorkspaceMemberRole(c.Context(), workspaceID, userID, req.Role)
 	if e != nil && e.HasErrors() {
-		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
-			Error:   "InternalServerError",
-			Code:    fiber.StatusInternalServerError,
-			Message: "Failed to update user role",
-		})
+		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not update user role in workspace", e)
 	}
 
-	return c.SendStatus(fiber.StatusOK)
+	return sendDataResponse(c, fiber.StatusOK, "Updated user role in workspace successfully", map[string]any{
+		"role": req.Role,
+	})
 }
 
 // Helper function to validate workspace roles
@@ -416,112 +311,68 @@ func isValidRole(role models.UserWorkspaceRole) bool {
 func (wh *WorkspaceHandler) CreateCompetitorForWorkspace(c *fiber.Ctx) error {
 	workspaceID, err := uuid.Parse(c.Params("workspaceID"))
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
-			Error:   "InvalidWorkspaceID",
-			Code:    fiber.StatusBadRequest,
-			Message: "Invalid workspace ID format",
-		})
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid workspace ID format", err.Error())
 	}
 
 	var req api.CreatePageRequest
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
-			Error:   "InvalidRequest",
-			Code:    fiber.StatusBadRequest,
-			Message: "Invalid request body",
-		})
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 
 	clerkUser, err := auth.GetClerkUserFromContext(c)
 	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(ErrorResponse{
-			Error:   "Unauthorized",
-			Code:    fiber.StatusUnauthorized,
-			Message: "Unauthorized",
-		})
+		return sendErrorResponse(c, fiber.StatusUnauthorized, "Unauthorized", err.Error())
 	}
 
 	e := wh.workspaceService.CreateWorkspaceCompetitor(c.Context(), clerkUser, workspaceID, req)
 	if e != nil && e.HasErrors() {
-		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
-			Error:   "CompetitorCreationFailed",
-			Code:    fiber.StatusBadRequest,
-			Message: "Failed to create competitor",
-		})
+		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not create competitor", e)
 	}
 
-	return c.SendStatus(fiber.StatusCreated)
+	return sendDataResponse(c, fiber.StatusCreated, "Created competitor successfully", req)
 }
 
 // AddPageToCompetitor adds a page to a competitor
 func (wh *WorkspaceHandler) AddPageToCompetitor(c *fiber.Ctx) error {
 	competitorID, err := uuid.Parse(c.Params("competitorID"))
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
-			Error:   "InvalidCompetitorID",
-			Code:    fiber.StatusBadRequest,
-			Message: "Invalid competitor ID format",
-		})
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid competitor ID format", err.Error())
 	}
 
 	var pages []api.CreatePageRequest
 	if err := c.BodyParser(&pages); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
-			Error:   "InvalidRequest",
-			Code:    fiber.StatusBadRequest,
-			Message: "Invalid request body",
-		})
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 
 	for index := range pages {
 		if err := utils.SetDefaultsAndValidate(&pages[index]); err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
-				Error:   "InvalidRequest",
-				Code:    fiber.StatusBadRequest,
-				Message: err.Error(),
-			})
+			return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
 		}
 	}
 
 	clerkUser, err := auth.GetClerkUserFromContext(c)
 	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(ErrorResponse{
-			Error:   "Unauthorized",
-			Code:    fiber.StatusUnauthorized,
-			Message: "Unauthorized",
-		})
+		return sendErrorResponse(c, fiber.StatusUnauthorized, "Unauthorized", err.Error())
 	}
 
 	createdPages, e := wh.workspaceService.AddPageToCompetitor(c.Context(), clerkUser, competitorID.String(), pages)
 	if e != nil && e.HasErrors() {
-		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
-			Error:   "PageCreationFailed",
-			Code:    fiber.StatusBadRequest,
-			Message: "Failed to add pages",
-		})
+		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not add page to competitor", e)
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(createdPages)
+	return sendDataResponse(c, fiber.StatusCreated, "Added page to competitor successfully", createdPages)
 }
 
 // ListWorkspaceCompetitors lists competitors for a workspace
 func (wh *WorkspaceHandler) ListWorkspaceCompetitors(c *fiber.Ctx) error {
 	workspaceID, err := uuid.Parse(c.Params("workspaceID"))
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
-			Error:   "InvalidWorkspaceID",
-			Code:    fiber.StatusBadRequest,
-			Message: "Invalid workspace ID format",
-		})
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid workspace ID format", err.Error())
 	}
 
 	clerkUser, err := auth.GetClerkUserFromContext(c)
 	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(ErrorResponse{
-			Error:   "Unauthorized",
-			Code:    fiber.StatusUnauthorized,
-			Message: "Unauthorized",
-		})
+		return sendErrorResponse(c, fiber.StatusUnauthorized, "Unauthorized", err.Error())
 	}
 
 	limit := c.QueryInt("limit", 10)
@@ -537,52 +388,32 @@ func (wh *WorkspaceHandler) ListWorkspaceCompetitors(c *fiber.Ctx) error {
 
 	response, e := wh.workspaceService.ListWorkspaceCompetitors(c.Context(), clerkUser, workspaceID, params)
 	if e != nil && e.HasErrors() {
-		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
-			Error:   "InternalServerError",
-			Code:    fiber.StatusInternalServerError,
-			Message: "Failed to list competitors",
-		})
+		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not list workspace competitors", e)
 	}
 
-	return c.JSON(response)
+	return sendDataResponse(c, fiber.StatusOK, "Listed workspace competitors successfully", response)
 }
 
 // ListPageHistory lists page history
 func (wh *WorkspaceHandler) ListPageHistory(c *fiber.Ctx) error {
 	workspaceID, err := uuid.Parse(c.Params("workspaceID"))
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
-			Error:   "InvalidWorkspaceID",
-			Code:    fiber.StatusBadRequest,
-			Message: "Invalid workspace ID format",
-		})
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid workspace ID format", err.Error())
 	}
 
 	competitorID, err := uuid.Parse(c.Params("competitorID"))
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
-			Error:   "InvalidCompetitorID",
-			Code:    fiber.StatusBadRequest,
-			Message: "Invalid competitor ID format",
-		})
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid competitor ID format", err.Error())
 	}
 
 	pageID, err := uuid.Parse(c.Params("pageID"))
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
-			Error:   "InvalidPageID",
-			Code:    fiber.StatusBadRequest,
-			Message: "Invalid page ID format",
-		})
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid page ID format", err.Error())
 	}
 
 	clerkUser, err := auth.GetClerkUserFromContext(c)
 	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(ErrorResponse{
-			Error:   "Unauthorized",
-			Code:    fiber.StatusUnauthorized,
-			Message: "Unauthorized",
-		})
+		return sendErrorResponse(c, fiber.StatusUnauthorized, "Unauthorized", err.Error())
 	}
 
 	pageNumber := c.QueryInt("pageNumber", 10)
@@ -595,132 +426,80 @@ func (wh *WorkspaceHandler) ListPageHistory(c *fiber.Ctx) error {
 
 	history, e := wh.workspaceService.ListWorkspacePageHistory(c.Context(), clerkUser, workspaceID, competitorID, pageID, params)
 	if e != nil && e.HasErrors() {
-		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
-			Error:   "InternalServerError",
-			Code:    fiber.StatusInternalServerError,
-			Message: "Failed to list page history",
-		})
+		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not list page history", e)
 	}
 
-	return c.JSON(history)
+	return sendDataResponse(c, fiber.StatusOK, "Listed page history successfully", history)
 }
 
 // RemovePageFromCompetitor removes a page from a competitor
 func (wh *WorkspaceHandler) RemovePageFromCompetitor(c *fiber.Ctx) error {
 	competitorID, err := uuid.Parse(c.Params("competitorID"))
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
-			Error:   "InvalidCompetitorID",
-			Code:    fiber.StatusBadRequest,
-			Message: "Invalid competitor ID format",
-		})
+		return sendErrorResponse(c, fiber.StatusBadRequest, "InvalidCompetitorID", err.Error())
 	}
 
 	pageID, err := uuid.Parse(c.Params("pageID"))
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
-			Error:   "InvalidPageID",
-			Code:    fiber.StatusBadRequest,
-			Message: "Invalid page ID format",
-		})
+		return sendErrorResponse(c, fiber.StatusBadRequest, "InvalidPageID", err.Error())
 	}
 
 	clerkUser, err := auth.GetClerkUserFromContext(c)
 	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(ErrorResponse{
-			Error:   "Unauthorized",
-			Code:    fiber.StatusUnauthorized,
-			Message: "Unauthorized",
-		})
+		return sendErrorResponse(c, fiber.StatusUnauthorized, "Unauthorized", err.Error())
 	}
 
 	if e := wh.workspaceService.RemovePageFromWorkspace(c.Context(), clerkUser, competitorID, pageID); e != nil && e.HasErrors() {
-		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
-			Error:   "InternalServerError",
-			Code:    fiber.StatusInternalServerError,
-			Message: "Failed to remove page",
-		})
+		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not remove page from competitor", e)
 	}
 
-	return c.SendStatus(fiber.StatusOK)
+	return sendDataResponse(c, fiber.StatusOK, "Removed page from competitor successfully", nil)
 }
 
 // RemoveCompetitorFromWorkspace removes a competitor from a workspace
 func (wh *WorkspaceHandler) RemoveCompetitorFromWorkspace(c *fiber.Ctx) error {
 	workspaceID, err := uuid.Parse(c.Params("workspaceID"))
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
-			Error:   "InvalidWorkspaceID",
-			Code:    fiber.StatusBadRequest,
-			Message: "Invalid workspace ID format",
-		})
+		return sendErrorResponse(c, fiber.StatusBadRequest, "InvalidWorkspaceID", err.Error())
 	}
 
 	competitorID, err := uuid.Parse(c.Params("competitorID"))
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
-			Error:   "InvalidCompetitorID",
-			Code:    fiber.StatusBadRequest,
-			Message: "Invalid competitor ID format",
-		})
+		return sendErrorResponse(c, fiber.StatusBadRequest, "InvalidCompetitorID", err.Error())
 	}
 
 	clerkUser, err := auth.GetClerkUserFromContext(c)
 	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(ErrorResponse{
-			Error:   "Unauthorized",
-			Code:    fiber.StatusUnauthorized,
-			Message: "Unauthorized",
-		})
+		return sendErrorResponse(c, fiber.StatusUnauthorized, "Unauthorized", err.Error())
 	}
 
 	if e := wh.workspaceService.RemoveCompetitorFromWorkspace(c.Context(), clerkUser, workspaceID, competitorID); e != nil && e.HasErrors() {
-		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
-			Error:   "InternalServerError",
-			Code:    fiber.StatusInternalServerError,
-			Message: "Failed to remove competitor",
-		})
+		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not remove competitor from workspace", e)
 	}
 
-	return c.SendStatus(fiber.StatusOK)
+	return sendDataResponse(c, fiber.StatusOK, "Removed competitor from workspace successfully", nil)
 }
 
 // UpdatePageInCompetitor updates a page in a competitor
 func (wh *WorkspaceHandler) UpdatePageInCompetitor(c *fiber.Ctx) error {
 	competitorID, err := uuid.Parse(c.Params("competitorID"))
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
-			Error:   "InvalidCompetitorID",
-			Code:    fiber.StatusBadRequest,
-			Message: "Invalid competitor ID format",
-		})
+		return sendErrorResponse(c, fiber.StatusBadRequest, "InvalidCompetitorID", err.Error())
 	}
 
 	pageID, err := uuid.Parse(c.Params("pageID"))
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
-			Error:   "InvalidPageID",
-			Code:    fiber.StatusBadRequest,
-			Message: "Invalid page ID format",
-		})
+		return sendErrorResponse(c, fiber.StatusBadRequest, "InvalidPageID", err.Error())
 	}
 
 	var req api.UpdatePageRequest
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{
-			Error:   "InvalidRequest",
-			Code:    fiber.StatusBadRequest,
-			Message: "Invalid request body",
-		})
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 
 	if e := wh.workspaceService.UpdateCompetitorPage(c.Context(), competitorID, pageID, req); e != nil && e.HasErrors() {
-		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
-			Error:   "InternalServerError",
-			Code:    fiber.StatusInternalServerError,
-			Message: "Failed to update page",
-		})
+		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not update page in competitor", e)
 	}
 
-	return c.SendStatus(fiber.StatusOK)
+	return sendDataResponse(c, fiber.StatusOK, "Updated page in competitor successfully", nil)
 }

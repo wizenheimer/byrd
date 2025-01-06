@@ -29,22 +29,22 @@ func NewWorkspacePathValidationMiddleware(ws svc.WorkspaceService, logger *logge
 func (m *WorkspacePathValidationMiddleware) ValidateWorkspacePath(c *fiber.Ctx) error {
 	workspaceID := c.Params(WorkspaceIDParamKey)
 	if workspaceID == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid workspace ID",
-		})
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid workspace ID", map[string]interface{}{"workspaceID": workspaceID})
 	}
 
 	// Verify workspace exists
 	workspaceUUID, err := uuid.Parse(workspaceID)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid workspace ID",
-		})
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid workspace ID", map[string]interface{}{"workspaceID": workspaceID})
 	}
-	if exists, err := m.ws.WorkspaceExists(c.Context(), workspaceUUID); err != nil || !exists {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error": "Workspace not found",
-		})
+	exists, e := m.ws.WorkspaceExists(c.Context(), workspaceUUID)
+
+	if e != nil && e.HasErrors() {
+		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not verify workspace", e)
+	}
+
+	if !exists {
+		return sendErrorResponse(c, fiber.StatusNotFound, "Workspace not found", map[string]interface{}{"workspaceID": workspaceID, "exists": exists})
 	}
 
 	return c.Next()
@@ -54,37 +54,27 @@ func (m *WorkspacePathValidationMiddleware) ValidateWorkspacePath(c *fiber.Ctx) 
 func (m *WorkspacePathValidationMiddleware) ValidateCompetitorPath(c *fiber.Ctx) error {
 	workspaceID := c.Params(WorkspaceIDParamKey)
 	if workspaceID == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid workspace ID",
-		})
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid workspace ID", map[string]interface{}{"workspaceID": workspaceID})
 	}
 
 	competitorID := c.Params(CompetitorIDParamKey)
 	if competitorID == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid competitor ID",
-		})
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid competitor ID", map[string]interface{}{"competitorID": competitorID})
 	}
 
 	workspaceUUID, err := uuid.Parse(workspaceID)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid workspace ID",
-		})
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid workspace ID", map[string]interface{}{"workspaceID": workspaceID})
 	}
 
 	competitorUUID, err := uuid.Parse(competitorID)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid competitor ID",
-		})
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid competitor ID", map[string]interface{}{"competitorID": competitorID})
 	}
 
 	// Verify competitor exists
 	if exists, err := m.ws.WorkspaceCompetitorExists(c.Context(), workspaceUUID, competitorUUID); err != nil || !exists {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error": "Competitor not found",
-		})
+		return sendErrorResponse(c, fiber.StatusNotFound, "Competitor not found", map[string]interface{}{"competitorID": competitorID, "exists": exists})
 	}
 
 	return c.Next()
@@ -94,51 +84,37 @@ func (m *WorkspacePathValidationMiddleware) ValidateCompetitorPath(c *fiber.Ctx)
 func (m *WorkspacePathValidationMiddleware) ValidatePagePath(c *fiber.Ctx) error {
 	workspaceID := c.Params(WorkspaceIDParamKey)
 	if workspaceID == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid workspace ID",
-		})
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid workspace ID", map[string]interface{}{"workspaceID": workspaceID})
 	}
 
 	competitorID := c.Params(CompetitorIDParamKey)
 	if competitorID == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid competitor ID",
-		})
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid competitor ID", map[string]interface{}{"competitorID": competitorID})
 	}
 
 	pageID := c.Params(PageIDParamKey)
 	if pageID == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid page ID",
-		})
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid page ID", map[string]interface{}{"pageID": pageID})
 	}
 
 	workspaceUUID, err := uuid.Parse(workspaceID)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid workspace ID",
-		})
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid workspace ID", map[string]interface{}{"workspaceID": workspaceID})
 	}
 
 	competitorUUID, err := uuid.Parse(competitorID)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid competitor ID",
-		})
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid competitor ID", map[string]interface{}{"competitorID": competitorID})
 	}
 
 	pageUUID, err := uuid.Parse(pageID)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid page ID",
-		})
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid page ID", map[string]interface{}{"pageID": pageID})
 	}
 
 	// Verify page exists
 	if exists, err := m.ws.WorkspaceCompetitorPageExists(c.Context(), workspaceUUID, competitorUUID, pageUUID); err != nil || !exists {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error": "Page not found",
-		})
+		return sendErrorResponse(c, fiber.StatusNotFound, "Page not found", map[string]interface{}{"pageID": pageID, "exists": exists})
 	}
 
 	return c.Next()

@@ -29,7 +29,7 @@ func (h *AIHandler) AnalyzeContentDifferences(c *fiber.Ctx) error {
 
 	form, err := c.MultipartForm()
 	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "Invalid multipart form")
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid multipart form", err.Error())
 	}
 
 	// Get files from form
@@ -38,7 +38,7 @@ func (h *AIHandler) AnalyzeContentDifferences(c *fiber.Ctx) error {
 
 	// Validate files
 	if len(version1Files) == 0 || len(version2Files) == 0 {
-		return fiber.NewError(fiber.StatusBadRequest, "Both version files are required")
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Both versions are required")
 	}
 
 	// Get first file from each
@@ -48,31 +48,31 @@ func (h *AIHandler) AnalyzeContentDifferences(c *fiber.Ctx) error {
 	// Process Version 1
 	file1, err := file1Header.Open()
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, "Failed to open version1")
+		return sendErrorResponse(c, fiber.StatusInternalServerError, "Failed to open version1", err.Error())
 	}
 	defer file1.Close()
 
 	content1, err := io.ReadAll(file1)
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, "Failed to read version1")
+		return sendErrorResponse(c, fiber.StatusInternalServerError, "Failed to read version1", err.Error())
 	}
 
 	// Process Version 2
 	file2, err := file2Header.Open()
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, "Failed to open version2")
+		return sendErrorResponse(c, fiber.StatusInternalServerError, "Failed to open version2", err.Error())
 	}
 	defer file2.Close()
 
 	content2, err := io.ReadAll(file2)
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, "Failed to read version2")
+		return sendErrorResponse(c, fiber.StatusInternalServerError, "Failed to read version2", err.Error())
 	}
 
 	// Get profile from form values
 	profiles := form.Value["profile_fields"]
 	if len(profiles) == 0 {
-		return fiber.NewError(fiber.StatusBadRequest, "profile_fields is required")
+		return sendErrorResponse(c, fiber.StatusBadRequest, "profile_fields is required")
 	}
 	profileFieldsString := profiles[0]
 
@@ -86,13 +86,10 @@ func (h *AIHandler) AnalyzeContentDifferences(c *fiber.Ctx) error {
 		profileFields,
 	)
 	if e != nil && e.HasErrors() {
-		return fiber.NewError(fiber.StatusInternalServerError, "Failed to analyze content differences")
+		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not analyze content differences", e)
 	}
 
-	return c.JSON(fiber.Map{
-		"status": "success",
-		"data":   result,
-	})
+	return sendDataResponse(c, fiber.StatusOK, "Content analysis successfully", result)
 }
 
 func (h *AIHandler) AnalyzeVisualDifferences(c *fiber.Ctx) error {
@@ -100,7 +97,7 @@ func (h *AIHandler) AnalyzeVisualDifferences(c *fiber.Ctx) error {
 
 	form, err := c.MultipartForm()
 	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "Invalid multipart form")
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid multipart form", err.Error())
 	}
 
 	// Get files from form
@@ -109,7 +106,7 @@ func (h *AIHandler) AnalyzeVisualDifferences(c *fiber.Ctx) error {
 
 	// Validate files
 	if len(screenshots1) == 0 || len(screenshots2) == 0 {
-		return fiber.NewError(fiber.StatusBadRequest, "Both screenshots are required")
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Both screenshots are required")
 	}
 
 	// Get first file from each
@@ -119,31 +116,31 @@ func (h *AIHandler) AnalyzeVisualDifferences(c *fiber.Ctx) error {
 	// Process Screenshot1
 	file1, err := file1Header.Open()
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, "Failed to open screenshot1")
+		return sendErrorResponse(c, fiber.StatusInternalServerError, "Failed to open screenshot1", err.Error())
 	}
 	defer file1.Close()
 
 	img1, _, err := image.Decode(file1)
 	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "Invalid image format for screenshot1")
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid image format for screenshot1", err.Error())
 	}
 
 	// Process Screenshot2
 	file2, err := file2Header.Open()
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, "Failed to open screenshot2")
+		return sendErrorResponse(c, fiber.StatusInternalServerError, "Failed to open screenshot2", err.Error())
 	}
 	defer file2.Close()
 
 	img2, _, err := image.Decode(file2)
 	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "Invalid image format for screenshot2")
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid image format for screenshot2", err.Error())
 	}
 
 	// Get profile from form values
 	profiles := form.Value["profile_fields"]
 	if len(profiles) == 0 {
-		return fiber.NewError(fiber.StatusBadRequest, "profile_fields is required")
+		return sendErrorResponse(c, fiber.StatusBadRequest, "profile_fields is required")
 	}
 	profileString := profiles[0]
 
@@ -152,11 +149,8 @@ func (h *AIHandler) AnalyzeVisualDifferences(c *fiber.Ctx) error {
 
 	result, e := h.aiService.AnalyzeVisualDifferences(c.Context(), img1, img2, profileFields)
 	if e != nil && e.HasErrors() {
-		return fiber.NewError(fiber.StatusInternalServerError, "Failed to analyze visual differences")
+		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not analyze visual differences", e)
 	}
 
-	return c.JSON(fiber.Map{
-		"status": "success",
-		"data":   result,
-	})
+	return sendDataResponse(c, fiber.StatusOK, "Analyzed visual difference successfully", result)
 }

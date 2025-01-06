@@ -9,7 +9,6 @@ import (
 	models "github.com/wizenheimer/iris/src/internal/models/core"
 	"github.com/wizenheimer/iris/src/pkg/logger"
 	"github.com/wizenheimer/iris/src/pkg/utils"
-	"go.uber.org/zap"
 )
 
 type ScreenshotHandler struct {
@@ -33,12 +32,12 @@ func (h *ScreenshotHandler) CreateScreenshot(c *fiber.Ctx) error {
 
 	var sOpts models.ScreenshotRequestOptions
 	if err := c.BodyParser(&sOpts); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "Invalid request body")
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 
 	screenshotResult, e := h.screenshotService.GetCurrentImage(c.Context(), true, sOpts)
 	if e != nil && e.HasErrors() {
-		return fiber.NewError(fiber.StatusInternalServerError, "Failed to create screenshot")
+		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not create screenshot", e)
 	}
 
 	hOpts := models.ScreenshotHTMLRequestOptions{
@@ -48,15 +47,12 @@ func (h *ScreenshotHandler) CreateScreenshot(c *fiber.Ctx) error {
 
 	contentResult, e := h.screenshotService.GetCurrentHTMLContent(c.Context(), true, hOpts)
 	if e != nil && e.HasErrors() {
-		return fiber.NewError(fiber.StatusInternalServerError, "Failed to create screenshot")
+		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not create screenshot content", e)
 	}
 
-	return c.JSON(fiber.Map{
-		"status": "success",
-		"data": map[string]interface{}{
-			"image":   screenshotResult,
-			"content": contentResult,
-		},
+	return sendDataResponse(c, fiber.StatusCreated, "Screenshot created successfully", map[string]interface{}{
+		"image":   screenshotResult,
+		"content": contentResult,
 	})
 }
 
@@ -64,17 +60,15 @@ func (h *ScreenshotHandler) CreateScreenshot(c *fiber.Ctx) error {
 func (h *ScreenshotHandler) GetScreenshotImage(c *fiber.Ctx) error {
 	var opts models.GetScreenshotOptions
 	if err := c.BodyParser(&opts); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "Invalid request body")
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 
 	// handleDefaults sets the year, week number, and week day to the current values if they are not set
 	h.handleTimeDefaults(&opts)
 
-	h.logger.Debug("getting screenshot image", zap.Any("url", opts.URL), zap.Any("year", opts.Year), zap.Any("week_number", opts.WeekNumber), zap.Any("week_day", opts.WeekDay))
-
 	result, e := h.screenshotService.GetImage(c.Context(), opts.URL, *opts.Year, *opts.WeekNumber, *opts.WeekDay)
 	if e != nil && e.HasErrors() {
-		return fiber.NewError(fiber.StatusInternalServerError, "Failed to get screenshot image")
+		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not get screenshot image", e)
 	}
 
 	return h.sendPNGResponse(c, result)
@@ -84,42 +78,32 @@ func (h *ScreenshotHandler) GetScreenshotImage(c *fiber.Ctx) error {
 func (h *ScreenshotHandler) GetScreenshotContent(c *fiber.Ctx) error {
 	var opts models.GetScreenshotOptions
 	if err := c.BodyParser(&opts); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "Invalid request body")
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 
 	// handleDefaults sets the year, week number, and week day to the current values if they are not set
 	h.handleTimeDefaults(&opts)
 
-	h.logger.Debug("getting screenshot image", zap.Any("url", opts.URL), zap.Any("year", opts.Year), zap.Any("week_number", opts.WeekNumber), zap.Any("week_day", opts.WeekDay))
-
 	result, e := h.screenshotService.GetHTMLContent(c.Context(), opts.URL, *opts.Year, *opts.WeekNumber, *opts.WeekDay)
 	if e != nil && e.HasErrors() {
-		return fiber.NewError(fiber.StatusInternalServerError, "Failed to get screenshot content")
+		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not get screenshot content", e)
 	}
 
-	return c.JSON(fiber.Map{
-		"status": result.Status,
-		"data":   result,
-	})
+	return sendDataResponse(c, fiber.StatusOK, "Fetched screenshot content successfully", result)
 }
 
 func (h *ScreenshotHandler) ListScreenshots(c *fiber.Ctx) error {
 	var opts models.ListScreenshotsOptions
 	if err := c.BodyParser(&opts); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "Invalid request body")
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
-
-	h.logger.Debug("listing screenshots", zap.Any("url", opts.URL), zap.Any("content_type", opts.ContentType))
 
 	result, e := h.screenshotService.ListScreenshots(c.Context(), opts.URL, opts.ContentType, opts.MaxItems)
-	if e != nil  && e.HasErrors() {
-		return fiber.NewError(fiber.StatusInternalServerError, "Failed to list screenshots")
+	if e != nil && e.HasErrors() {
+		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not list screenshots", e)
 	}
 
-	return c.JSON(fiber.Map{
-		"status": "success",
-		"data":   result,
-	})
+	return sendDataResponse(c, fiber.StatusOK, "Listed screenshots successfully", result)
 }
 
 // addScreenshotMetadataToHeaders adds the screenshot metadata to the response headers
@@ -139,31 +123,6 @@ func (h *ScreenshotHandler) addScreenshotMetadataToHeaders(c *fiber.Ctx, screens
 	c.Set("x-screenshot-year", fmt.Sprintf("%v", metadata.Year))
 	c.Set("x-screenshot-week-number", fmt.Sprintf("%v", metadata.WeekNumber))
 	c.Set("x-screenshot-week-day", fmt.Sprintf("%v", metadata.WeekDay))
-}
-
-// sendPNGResponse sends a PNG response with the screenshot image
-func (h *ScreenshotHandler) sendPNGResponse(c *fiber.Ctx, result *models.ScreenshotImageResponse) error {
-	// If the result is nil, return a 404 Not Found error
-	if result == nil || result.Image == nil {
-		return fiber.NewError(fiber.StatusNotFound, "Screenshot not found")
-	}
-
-	// WritePNGResponse writes the image to a PNG byte array
-	pngBytes, err := utils.WritePNGResponse(
-		result.Image,
-	)
-	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
-	}
-
-	// Set the Content-Type header to image/png
-	c.Set("Content-Type", "image/png")
-
-	// Add the screenshot metadata to the response headers
-	h.addScreenshotMetadataToHeaders(c, result)
-
-	// Send the PNG byte array as the response
-	return c.Send(pngBytes)
 }
 
 // handleDefaults sets the year, week number, and week day to the current values if they are not set

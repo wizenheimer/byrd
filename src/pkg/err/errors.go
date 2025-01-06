@@ -114,3 +114,24 @@ func (e Error) Propagate(levelError error, nonFatalErrors ...error) (Error, bool
 
 	return higherLevel, true
 }
+
+// Error implements the error interface and returns a string representation of all errors
+func (e Error) Error() string {
+	if len(e) == 0 {
+		return "no errors"
+	}
+
+	// Convert to a map[string][]ErrorContext for consistent JSON marshaling
+	m := make(map[string][]ErrorContext)
+	for k, v := range e {
+		m[k.Error()] = v
+	}
+
+	// Marshal to JSON
+	bytes, err := json.MarshalIndent(m, "", "    ")
+	if err != nil {
+		return "error marshaling errors: " + err.Error()
+	}
+
+	return string(bytes)
+}
