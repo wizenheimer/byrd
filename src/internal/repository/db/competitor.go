@@ -105,19 +105,20 @@ func (r *competitorRepo) GetCompetitor(ctx context.Context, competitorID uuid.UU
 
 	query := `
 		SELECT id, workspace_id, name, status, created_at, updated_at
-		FROM competitors
-		WHERE id = $1
+        FROM competitors
+        WHERE id = $1
+        AND status = $2
 	`
 
 	var competitor models.Competitor
-	err := runner.QueryRowContext(ctx, query, competitorID).Scan(
-		&competitor.ID,
-		&competitor.WorkspaceID,
-		&competitor.Name,
-		&competitor.Status,
-		&competitor.CreatedAt,
-		&competitor.UpdatedAt,
-	)
+	err := runner.QueryRowContext(ctx, query, competitorID, models.CompetitorStatusActive).Scan(
+        &competitor.ID,
+        &competitor.WorkspaceID,
+        &competitor.Name,
+        &competitor.Status,
+        &competitor.CreatedAt,
+        &competitor.UpdatedAt,
+    )
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -158,13 +159,14 @@ func (r *competitorRepo) ListWorkspaceCompetitors(ctx context.Context, workspace
 
 	query := `
 		SELECT id, workspace_id, name, status, created_at, updated_at
-		FROM competitors
-		WHERE workspace_id = $1
-		ORDER BY created_at DESC
-		LIMIT $2 OFFSET $3
+        FROM competitors
+        WHERE workspace_id = $1
+        AND status = $2
+        ORDER BY created_at DESC
+        LIMIT $3 OFFSET $4
 	`
 
-	rows, err := runner.QueryContext(ctx, query, workspaceID, limit, offset)
+	rows, err := runner.QueryContext(ctx, query, workspaceID, models.CompetitorStatusActive, limit, offset)
 	if err != nil {
 		listErr.Add(err, map[string]any{
 			"query": query,
@@ -219,29 +221,40 @@ func (r *competitorRepo) RemoveWorkspaceCompetitors(ctx context.Context, workspa
 
 	var query string
 	var args []interface{}
+    now := time.Now()
+
 	if competitorIDs == nil {
 		// Remove all competitors from workspace
 		query = `
-			DELETE FROM competitors
-			WHERE workspace_id = $1
+			UPDATE competitors
+            SET status = $2,
+                updated_at = $3
+            WHERE workspace_id = $1
+            AND status = $4
 		`
-		args = []interface{}{workspaceID}
+		args = []interface{}{workspaceID, models.CompetitorStatusInactive, now, models.CompetitorStatusActive}
 	} else {
-		// Remove specific competitors
-		placeholders := make([]string, len(competitorIDs))
-		args = make([]interface{}, len(competitorIDs)+1)
-		args[0] = workspaceID
+		// Deactivate specific competitors
+        placeholders := make([]string, len(competitorIDs))
+        args = make([]interface{}, len(competitorIDs)+4)
+        args[0] = workspaceID
+        args[1] = models.CompetitorStatusInactive
+        args[2] = now
+        args[3] = models.CompetitorStatusActive
 
-		for i, id := range competitorIDs {
-			placeholders[i] = fmt.Sprintf("$%d", i+2)
-			args[i+1] = id
-		}
+        for i, id := range competitorIDs {
+            placeholders[i] = fmt.Sprintf("$%d", i+5)
+            args[i+4] = id
+        }
 
-		query = fmt.Sprintf(`
-			DELETE FROM competitors
-			WHERE workspace_id = $1
-			AND id IN (%s)
-		`, strings.Join(placeholders, ","))
+        query = fmt.Sprintf(`
+            UPDATE competitors
+            SET status = $2,
+                updated_at = $3
+            WHERE workspace_id = $1
+            AND id IN (%s)
+            AND status = $4
+        `, strings.Join(placeholders, ","))
 	}
 
 	result, err := runner.ExecContext(ctx, query, args...)
@@ -274,14 +287,16 @@ func (r *competitorRepo) WorkspaceCompetitorExists(ctx context.Context, workspac
 	runner := r.tm.GetRunner(ctx)
 	query := `
 		SELECT EXISTS(
-			SELECT 1
-			FROM competitors
-			WHERE workspace_id = $1 AND id = $2
-		)
+            SELECT 1
+            FROM competitors
+            WHERE workspace_id = $1
+            AND id = $2
+            AND status = $3
+        )
 	`
 
 	var exists bool
-	err := runner.QueryRowContext(ctx, query, workspaceID, competitorID).Scan(&exists)
+	err := runner.QueryRowContext(ctx, query, workspaceID, competitorID, models.CompetitorStatusActive).Scan(&exists)
 	if err != nil {
 		competitorErr.Add(err, map[string]any{
 			"workspaceID":  workspaceID,

@@ -312,12 +312,11 @@ func (r *pageRepo) GetCompetitorPage(ctx context.Context, competitorID, pageID u
 	runner := r.tm.GetRunner(ctx)
 
 	query := `
-		SELECT id, competitor_id, url, capture_profile, diff_profile, last_checked_at, status, created_at, updated_at
-		FROM pages
-		WHERE id = $1 AND competitor_id = $2
-	`
-
-	row := runner.QueryRowContext(ctx, query, pageID, competitorID)
+    SELECT id, competitor_id, url, capture_profile, diff_profile, last_checked_at, status, created_at, updated_at
+    FROM pages
+    WHERE id = $1 AND competitor_id = $2 AND status = $3
+`
+	row := runner.QueryRowContext(ctx, query, pageID, competitorID, models.PageStatusActive)
 	page, err := scanPage(row)
 	if err != nil {
 		pageErr.Add(err, map[string]any{

@@ -23,7 +23,7 @@ type Workspace struct {
 	// BillingEmail is the email address to which billing information is sent, defaults to the email of the user who created the workspace
 	BillingEmail string `json:"billing_email"`
 	// Status is the status of the workspace
-	Status WorkspaceStatus `json:"status"`
+	Status WorkspaceStatus `json:"status" validate:"required,oneof=pending active inactive" default:"pending"`
 	// CreatedAt is the timestamp when the workspace was created
 	CreatedAt time.Time `json:"created_at"`
 	// UpdatedAt is the timestamp when the workspace was last updated

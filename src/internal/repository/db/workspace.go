@@ -95,10 +95,13 @@ func (r *workspaceRepo) GetWorkspaces(ctx context.Context, workspaceIDs []uuid.U
 	}
 
 	query := fmt.Sprintf(`
-		SELECT id, name, slug, billing_email, status, created_at, updated_at
-		FROM workspaces
-		WHERE id IN (%s)
-	`, strings.Join(placeholders, ","))
+        SELECT id, name, slug, billing_email, status, created_at, updated_at
+        FROM workspaces
+        WHERE id IN (%s)
+        AND status = $%d
+    `, strings.Join(placeholders, ","), len(workspaceIDs)+1)
+
+	args = append(args, models.WorkspaceStatusActive)
 
 	rows, err := runner.QueryContext(ctx, query, args...)
 	if err != nil {
@@ -322,6 +325,58 @@ func (r *workspaceRepo) UpdateWorkspace(ctx context.Context, workspaceID uuid.UU
 	if rowsAffected == 0 {
 		wErr.Add(repo.ErrWorkspaceNotFound, map[string]any{
 			"workspaceID": workspaceID,
+		})
+		return wErr
+	}
+
+	return nil
+}
+
+func (r *workspaceRepo) RemoveWorkspaces(ctx context.Context, workspaceIDs []uuid.UUID) err.Error {
+	wErr := err.New()
+	if len(workspaceIDs) == 0 {
+		wErr.Add(repo.ErrNoWorkspaceSpecified, map[string]any{
+			"workspaceIDs": workspaceIDs,
+		})
+		return wErr
+	}
+
+	runner := r.tm.GetRunner(ctx)
+
+	placeholders := make([]string, len(workspaceIDs))
+	args := make([]interface{}, len(workspaceIDs))
+	for i, id := range workspaceIDs {
+		placeholders[i] = fmt.Sprintf("$%d", i+1)
+		args[i] = id
+	}
+
+	query := fmt.Sprintf(`
+        UPDATE workspaces
+        SET status = '%s',
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id IN (%s)
+        AND status = '%s'
+    `, models.WorkspaceStatusInactive, strings.Join(placeholders, ","), models.WorkspaceStatusActive)
+
+	result, err := runner.ExecContext(ctx, query, args...)
+	if err != nil {
+		wErr.Add(err, map[string]any{
+			"workspaceIDs": workspaceIDs,
+		})
+		return wErr
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		wErr.Add(err, map[string]any{
+			"workspaceIDs": workspaceIDs,
+		})
+		return wErr
+	}
+
+	if rowsAffected == 0 {
+		wErr.Add(repo.ErrWorkspaceNotFound, map[string]any{
+			"workspaceIDs": workspaceIDs,
 		})
 		return wErr
 	}
