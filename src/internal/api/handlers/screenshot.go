@@ -35,6 +35,10 @@ func (h *ScreenshotHandler) CreateScreenshot(c *fiber.Ctx) error {
 		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 
+	if err := utils.SetDefaultsAndValidate(&sOpts); err != nil {
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
+	}
+
 	screenshotResult, e := h.screenshotService.GetCurrentImage(c.Context(), true, sOpts)
 	if e != nil && e.HasErrors() {
 		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not create screenshot", e)
@@ -63,6 +67,10 @@ func (h *ScreenshotHandler) GetScreenshotImage(c *fiber.Ctx) error {
 		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 
+	if err := utils.SetDefaultsAndValidate(&opts); err != nil {
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
+	}
+
 	// handleDefaults sets the year, week number, and week day to the current values if they are not set
 	h.handleTimeDefaults(&opts)
 
@@ -81,6 +89,10 @@ func (h *ScreenshotHandler) GetScreenshotContent(c *fiber.Ctx) error {
 		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 
+	if err := utils.SetDefaultsAndValidate(&opts); err != nil {
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
+	}
+
 	// handleDefaults sets the year, week number, and week day to the current values if they are not set
 	h.handleTimeDefaults(&opts)
 
@@ -95,6 +107,10 @@ func (h *ScreenshotHandler) GetScreenshotContent(c *fiber.Ctx) error {
 func (h *ScreenshotHandler) ListScreenshots(c *fiber.Ctx) error {
 	var opts models.ListScreenshotsOptions
 	if err := c.BodyParser(&opts); err != nil {
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
+	}
+
+	if err := utils.SetDefaultsAndValidate(&opts); err != nil {
 		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 

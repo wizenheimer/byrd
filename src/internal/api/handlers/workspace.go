@@ -6,7 +6,6 @@ import (
 	"github.com/wizenheimer/iris/src/internal/api/auth"
 	svc "github.com/wizenheimer/iris/src/internal/interfaces/service"
 	api "github.com/wizenheimer/iris/src/internal/models/api"
-	models "github.com/wizenheimer/iris/src/internal/models/core"
 	"github.com/wizenheimer/iris/src/pkg/logger"
 	"github.com/wizenheimer/iris/src/pkg/utils"
 )
@@ -30,39 +29,21 @@ func NewWorkspaceHandler(
 func (wh *WorkspaceHandler) CreateWorkspace(c *fiber.Ctx) error {
 	var req api.WorkspaceCreationRequest
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(
-			fiber.Map{
-				"error":   "InvalidRequest",
-				"details": err.Error(),
-			},
-		)
+		return sendErrorResponse(c, fiber.StatusBadRequest, "InvalidRequest", err.Error())
 	}
 
 	if err := utils.SetDefaultsAndValidate(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(
-			fiber.Map{
-				"error":   "InvalidRequest",
-				"details": err.Error(),
-			},
-		)
+		return sendErrorResponse(c, fiber.StatusBadRequest, "InvalidRequest", err.Error())
 	}
 
 	clerkUser, err := auth.GetClerkUserFromContext(c)
 	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(
-			fiber.Map{
-				"error":   "Unauthorized",
-				"details": err.Error(),
-			},
-		)
+		return sendErrorResponse(c, fiber.StatusUnauthorized, "Unauthorized", err.Error())
 	}
 
 	workspace, e := wh.workspaceService.CreateWorkspace(c.Context(), clerkUser, req)
 	if e != nil && e.HasErrors() {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error":   "Could not create workspace",
-			"details": e,
-		})
+		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not create workspace", e)
 	}
 
 	return sendDataResponse(c, fiber.StatusCreated, "Created workspace successfully", workspace)
@@ -78,9 +59,7 @@ func (wh *WorkspaceHandler) ListWorkspaces(c *fiber.Ctx) error {
 
 	workspaces, e := wh.workspaceService.ListUserWorkspaces(c.Context(), clerkUser)
 	if e != nil && e.HasErrors() {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"details": e,
-		})
+		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not list workspaces", e)
 	}
 
 	return sendDataResponse(c, fiber.StatusOK, "Listed workspaces successfully", workspaces)
@@ -275,16 +254,13 @@ func (wh *WorkspaceHandler) UpdateUserRoleInWorkspace(c *fiber.Ctx) error {
 		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid user ID format", err.Error())
 	}
 
-	var req struct {
-		Role models.UserWorkspaceRole `json:"role"`
-	}
+	var req api.UpdateWorkspaceUserRoleRequest
 	if err := c.BodyParser(&req); err != nil {
 		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 
-	// Validate role
-	if !isValidRole(req.Role) {
-		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid role", req.Role)
+	if err := utils.SetDefaultsAndValidate(&req); err != nil {
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 
 	e := wh.workspaceService.UpdateWorkspaceMemberRole(c.Context(), workspaceID, userID, req.Role)
@@ -297,16 +273,6 @@ func (wh *WorkspaceHandler) UpdateUserRoleInWorkspace(c *fiber.Ctx) error {
 	})
 }
 
-// Helper function to validate workspace roles
-func isValidRole(role models.UserWorkspaceRole) bool {
-	switch role {
-	case models.UserRoleAdmin, models.UserRoleUser, models.UserRoleViewer:
-		return true
-	default:
-		return false
-	}
-}
-
 // CreateCompetitorForWorkspace creates a competitor for a workspace
 func (wh *WorkspaceHandler) CreateCompetitorForWorkspace(c *fiber.Ctx) error {
 	workspaceID, err := uuid.Parse(c.Params("workspaceID"))
@@ -316,6 +282,10 @@ func (wh *WorkspaceHandler) CreateCompetitorForWorkspace(c *fiber.Ctx) error {
 
 	var req api.CreatePageRequest
 	if err := c.BodyParser(&req); err != nil {
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
+	}
+
+	if err := utils.SetDefaultsAndValidate(&req); err != nil {
 		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 
@@ -494,6 +464,10 @@ func (wh *WorkspaceHandler) UpdatePageInCompetitor(c *fiber.Ctx) error {
 
 	var req api.UpdatePageRequest
 	if err := c.BodyParser(&req); err != nil {
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
+	}
+
+	if err := utils.SetDefaultsAndValidate(&req); err != nil {
 		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 

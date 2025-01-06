@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/creasty/defaults"
 	"github.com/google/uuid"
 	_ "github.com/lib/pq"
 	repo "github.com/wizenheimer/iris/src/internal/interfaces/repository"
@@ -33,7 +34,7 @@ func (r *pageRepo) AddPagesToCompetitor(ctx context.Context, competitorID uuid.U
 	pageErr := err.New()
 	if len(pages) == 0 {
 		pageErr.Add(repo.ErrPagesUnspecified, map[string]any{
-			"pages": pages,
+			"competitor_id": competitorID,
 		})
 		return nil, pageErr
 	}
@@ -42,26 +43,44 @@ func (r *pageRepo) AddPagesToCompetitor(ctx context.Context, competitorID uuid.U
 
 	// Build batch insert query
 	valueStrings := make([]string, 0, len(pages))
-	valueArgs := make([]interface{}, 0, len(pages)*4)
+	valueArgs := make([]interface{}, 0, len(pages)*5)
+
 	for i, page := range pages {
+		// Set defaults for CaptureProfile if needed
+		if err := defaults.Set(&page.CaptureProfile); err != nil {
+			pageErr.Add(err, map[string]any{
+				"pageURL": page.URL,
+				"error":   "failed to set capture profile defaults",
+			})
+			return nil, pageErr
+		}
+
+		// Initialize empty diff profile if nil
+		if page.DiffProfile == nil {
+			page.DiffProfile = make(map[string]interface{})
+		}
+
+		// Add the placeholder for the prepared statement
 		valueStrings = append(valueStrings, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d)",
 			i*5+1, i*5+2, i*5+3, i*5+4, i*5+5))
 
+		// Marshal the capture profile
 		captureProfileJSON, err := json.Marshal(page.CaptureProfile)
 		if err != nil {
 			pageErr.Add(repo.ErrFailedToMarshallCaptureProfile, map[string]any{
 				"pageURL": page.URL,
+				"error":   err.Error(),
 			})
+			return nil, pageErr
 		}
 
+		// Marshal the diff profile
 		diffProfileJSON, err := json.Marshal(page.DiffProfile)
 		if err != nil {
 			pageErr.Add(repo.ErrFailedToMarshallDiffProfile, map[string]any{
 				"pageURL": page.URL,
+				"error":   err.Error(),
 			})
-		}
-
-		if pageErr.HasErrors() {
 			return nil, pageErr
 		}
 
@@ -82,7 +101,8 @@ func (r *pageRepo) AddPagesToCompetitor(ctx context.Context, competitorID uuid.U
 	rows, err := runner.QueryContext(ctx, query, valueArgs...)
 	if err != nil {
 		pageErr.Add(err, map[string]any{
-			"competitorID": competitorID,
+			"competitor_id": competitorID,
+			"error":         err.Error(),
 		})
 		return nil, pageErr
 	}
@@ -91,7 +111,8 @@ func (r *pageRepo) AddPagesToCompetitor(ctx context.Context, competitorID uuid.U
 	createdPages, err := scanPages(rows)
 	if err != nil {
 		pageErr.Add(err, map[string]any{
-			"query": query,
+			"competitor_id": competitorID,
+			"error":         err.Error(),
 		})
 		return nil, pageErr
 	}
@@ -315,7 +336,6 @@ func (r *pageRepo) GetCompetitorPage(ctx context.Context, competitorID, pageID u
 }
 
 // UpdateCompetitorPage updates a page for a competitor
-// UpdateCompetitorPage updates a page for a competitor
 func (r *pageRepo) UpdateCompetitorPage(ctx context.Context, competitorID, pageID uuid.UUID, page models.PageProps) (models.Page, err.Error) {
 	pageErr := err.New()
 	runner := r.tm.GetRunner(ctx)
@@ -338,22 +358,37 @@ func (r *pageRepo) UpdateCompetitorPage(ctx context.Context, competitorID, pageI
 		return models.Page{}, pageErr
 	}
 
-	// Marshal the maps to JSON
+	// Set defaults for CaptureProfile if needed
+	if err := defaults.Set(&page.CaptureProfile); err != nil {
+		pageErr.Add(err, map[string]any{
+			"pageID": pageID,
+			"error":  "failed to set capture profile defaults",
+		})
+		return models.Page{}, pageErr
+	}
+
+	// Marshal the capture profile
 	captureProfileJSON, err := json.Marshal(page.CaptureProfile)
 	if err != nil {
 		pageErr.Add(repo.ErrFailedToMarshallCaptureProfile, map[string]any{
 			"pageID": pageID,
+			"error":  err.Error(),
 		})
+		return models.Page{}, pageErr
 	}
 
+	// Initialize empty diff profile if nil
+	if page.DiffProfile == nil {
+		page.DiffProfile = make(map[string]interface{})
+	}
+
+	// Marshal the diff profile
 	diffProfileJSON, err := json.Marshal(page.DiffProfile)
 	if err != nil {
 		pageErr.Add(repo.ErrFailedToMarshallDiffProfile, map[string]any{
 			"pageID": pageID,
+			"error":  err.Error(),
 		})
-	}
-
-	if pageErr.HasErrors() {
 		return models.Page{}, pageErr
 	}
 
@@ -366,8 +401,8 @@ func (r *pageRepo) UpdateCompetitorPage(ctx context.Context, competitorID, pageI
 
 	row := runner.QueryRowContext(ctx, query,
 		page.URL,
-		captureProfileJSON, // Using the marshaled JSON instead of the raw map
-		diffProfileJSON,    // Using the marshaled JSON instead of the raw map
+		captureProfileJSON,
+		diffProfileJSON,
 		pageID,
 		competitorID,
 	)
@@ -404,27 +439,38 @@ func scanPage(row dbScanner) (*models.Page, error) {
 		return nil, repo.ErrPageNotFound
 	}
 	if err != nil {
-		return nil, repo.ErrFailedToScanPages
+		return nil, fmt.Errorf("%w: %v", repo.ErrFailedToScanPages, err)
 	}
 
-	// Initialize empty maps if needed
-	if page.CaptureProfile == nil {
-		page.CaptureProfile = make(map[string]interface{})
+	// Initialize empty CaptureProfile with defaults
+	if err := defaults.Set(&page.CaptureProfile); err != nil {
+		return nil, fmt.Errorf("failed to set capture profile defaults: %w", err)
 	}
+
+	// Initialize empty DiffProfile if needed
 	if page.DiffProfile == nil {
 		page.DiffProfile = make(map[string]interface{})
 	}
 
-	// Unmarshal JSONB data into maps
+	// Unmarshal CaptureProfile with proper error handling
 	if len(captureProfileBytes) > 0 {
 		if err := json.Unmarshal(captureProfileBytes, &page.CaptureProfile); err != nil {
-			return nil, repo.ErrFailedToUnmarshalCaptureProfile
+			return nil, fmt.Errorf("%w: %v", repo.ErrFailedToUnmarshalCaptureProfile, err)
+		}
+		// Set defaults after unmarshaling to ensure all fields are properly initialized
+		if err := defaults.Set(&page.CaptureProfile); err != nil {
+			return nil, fmt.Errorf("failed to set capture profile defaults after unmarshal: %w", err)
 		}
 	}
+
+	// Unmarshal DiffProfile with proper error handling
 	if len(diffProfileBytes) > 0 {
 		if err := json.Unmarshal(diffProfileBytes, &page.DiffProfile); err != nil {
-			return nil, repo.ErrFailedToUnmarshalDiffProfile
+			return nil, fmt.Errorf("%w: %v", repo.ErrFailedToUnmarshalDiffProfile, err)
 		}
+	} else {
+		// Ensure DiffProfile is initialized even when no bytes are present
+		page.DiffProfile = make(map[string]interface{})
 	}
 
 	return &page, nil

@@ -20,16 +20,16 @@ const (
 // Page is a page in the page table
 type Page struct {
 	// ID is the page's unique identifier
-	ID uuid.UUID `json:"id"`
+	ID uuid.UUID `json:"id" validate:"required"`
 
 	// CompetitorID is the competitor's unique identifier
-	CompetitorID uuid.UUID `json:"competitor_id"`
+	CompetitorID uuid.UUID `json:"competitor_id" validate:"required"`
 
 	// URL is the page's URL
-	URL string `json:"url"`
+	URL string `json:"url" validate:"required,url"`
 
 	// CaptureProfile is the profile used to capture the page
-	CaptureProfile map[string]interface{} `json:"capture_profile"`
+	CaptureProfile ScreenshotRequestOptions `json:"capture_profile" validate:"dive"`
 
 	// DiffProfile is the profile used to diff the page
 	DiffProfile map[string]interface{} `json:"diff_profile"`
@@ -68,9 +68,9 @@ type PageProps struct {
 
 	// CaptureProfile is the profile used to capture the page
 	// This is optional and defaults to an default capture profile
-	CaptureProfile map[string]interface{} `json:"capture_profile" default:"{}"`
+	CaptureProfile ScreenshotRequestOptions `json:"capture_profile" validate:"dive"`
 
 	// DiffProfile is the profile used to diff the page
 	// This is optional and defaults to an default diff profile
-	DiffProfile map[string]interface{} `json:"diff_profile" default:"{}"`
+	DiffProfile map[string]interface{} `json:"diff_profile"`
 }

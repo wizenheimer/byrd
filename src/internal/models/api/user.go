@@ -17,3 +17,8 @@ type CreateWorkspaceUserRequest = models.WorkspaceUserProps
 
 // CreateWorkspaceUserResponse is the response to creating a user in a workspace
 type CreateWorkspaceUserResponse = models.WorkspaceUser
+
+// UpdateWorkspaceUserRoleRequest is the request to update a user's role in a workspace
+type UpdateWorkspaceUserRoleRequest struct {
+	Role models.UserWorkspaceRole `json:"role" validate:"required,oneof=admin user viewer" default:"user"`
+}
