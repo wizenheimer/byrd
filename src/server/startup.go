@@ -28,7 +28,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func initializer(cfg *config.Config, sqldb *sql.DB, logger *logger.Logger) (*routes.HandlerContainer, error) {
+func initializer(cfg *config.Config, tm *transaction.TxManager, logger *logger.Logger) (*routes.HandlerContainer, svc.WorkspaceService, error) {
 	// Initialize HTTP client for services
 	screenshotClientOpts := []client.ClientOption{
 		client.WithLogger(logger),
@@ -38,7 +38,7 @@ func initializer(cfg *config.Config, sqldb *sql.DB, logger *logger.Logger) (*rou
 	}
 	screenshotHttpClient, err := client.NewClient(screenshotClientOpts...)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Create a new rate limited client
@@ -51,21 +51,18 @@ func initializer(cfg *config.Config, sqldb *sql.DB, logger *logger.Logger) (*rou
 	// Initialize services
 	screenshotService, err := setupScreenshotService(cfg, screenshotRateLimitedClient, logger)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	aiService, err := setupAIService(cfg, logger)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	diffService, err := diff.NewDiffService(aiService, logger)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-
-	// Intialize transaction manager
-	tm := transaction.NewTxManager(sqldb)
 
 	// Intialize repository
 	competitorRepo := db.NewCompetitorRepository(tm, logger)
@@ -90,7 +87,7 @@ func initializer(cfg *config.Config, sqldb *sql.DB, logger *logger.Logger) (*rou
 		logger,
 	)
 
-	return handlers, nil
+	return handlers, workspaceService, nil
 }
 
 func setupScreenshotService(cfg *config.Config, screenshotHTTPClient clf.HTTPClient, logger *logger.Logger) (svc.ScreenshotService, error) {

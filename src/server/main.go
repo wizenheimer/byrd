@@ -10,6 +10,7 @@ import (
 	"github.com/wizenheimer/iris/src/internal/api/middleware"
 	"github.com/wizenheimer/iris/src/internal/api/routes"
 	"github.com/wizenheimer/iris/src/internal/config"
+	"github.com/wizenheimer/iris/src/internal/repository/transaction"
 	"github.com/wizenheimer/iris/src/pkg/logger"
 	"go.uber.org/zap"
 )
@@ -57,8 +58,11 @@ func main() {
 		return
 	}
 
+	// Intialize transaction manager
+	tm := transaction.NewTxManager(sqlDb)
+
 	// Initialize handlers
-	handlers, err := initializer(cfg, sqlDb, logger)
+	handlers, ws, err := initializer(cfg, tm, logger)
 	if err != nil {
 		logger.Fatal("Failed to initialize handlers", zap.Error(err))
 		return
@@ -74,7 +78,7 @@ func main() {
 	middleware.SetupMiddleware(app)
 
 	// Setup routes
-	routes.SetupRoutes(app, handlers, logger)
+	routes.SetupRoutes(app, handlers, ws, logger)
 
 	// Start server in a goroutine
 	serverError := make(chan error, 1)
