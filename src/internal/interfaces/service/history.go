@@ -2,10 +2,12 @@ package interfaces
 
 import (
 	"context"
+	"errors"
 
 	"github.com/google/uuid"
 	api "github.com/wizenheimer/iris/src/internal/models/api"
 	models "github.com/wizenheimer/iris/src/internal/models/core"
+	"github.com/wizenheimer/iris/src/pkg/err"
 )
 
 // PageHistoryService is a service for page history operations
@@ -20,12 +22,18 @@ type PageHistoryService interface {
 	// This is trigger during page creation by the page service and by workflow service.
 	// It returns true if the new page history was created or it returns false if the page history already exists.
 	// Error is returned if there was an issue creating the page history.
-	CreatePageHistory(ctx context.Context, pageID uuid.UUID) (bool, error)
+	CreatePageHistory(ctx context.Context, pageID uuid.UUID) (bool, err.Error)
 
 	// ListPageHistory lists the history of a page, paginated by pageHistoryPaginationParam
 	// This is triggered when a user wants to list all page histories of a page
-	ListPageHistory(ctx context.Context, pageID uuid.UUID, pageHistoryPaginationParam api.PaginationParams) ([]models.PageHistory, error)
+	ListPageHistory(ctx context.Context, pageID uuid.UUID, pageHistoryPaginationParam api.PaginationParams) ([]models.PageHistory, err.Error)
 
 	// ClearPageHistory clears the history of a page.
-	ClearPageHistory(ctx context.Context, pageIDs []uuid.UUID) []error
+	ClearPageHistory(ctx context.Context, pageIDs []uuid.UUID) err.Error
 }
+
+var (
+	ErrFailedToCreatePageHistory = errors.New("failed to create page history")
+	ErrFailedToListPageHistory   = errors.New("failed to list page history")
+	ErrFailedToClearPageHistory  = errors.New("failed to clear page history")
+)
