@@ -2,9 +2,10 @@ package ai
 
 import (
 	"encoding/json"
-	"fmt"
 
+	svc "github.com/wizenheimer/iris/src/internal/interfaces/service"
 	models "github.com/wizenheimer/iris/src/internal/models/core"
+	"github.com/wizenheimer/iris/src/pkg/err"
 )
 
 // UserProfileRequest represents the user's request to create a profile
@@ -13,12 +14,6 @@ type ProfileRequest struct {
 	Description string   `json:"description"`
 	FieldNames  []string `json:"fields"`
 }
-
-var (
-	ErrProfileParsing      = fmt.Errorf("couldn't parse profile")
-	ErrProfileNameMissing  = fmt.Errorf("profile name is required")
-	ErrProfileFieldParsing = fmt.Errorf("couldn't parse profile field")
-)
 
 // ProfileBuilder helps build profiles from user requests
 type ProfileBuilder struct {
@@ -33,19 +28,28 @@ func NewProfileBuilder(registry *FieldRegistry) *ProfileBuilder {
 }
 
 // BuildProfileFromJSON builds a profile from a JSON request
-func (pb *ProfileBuilder) BuildProfileFromJSON(jsonData string) (models.Profile, error) {
+func (pb *ProfileBuilder) BuildProfileFromJSON(jsonData string) (models.Profile, err.Error) {
 	var request ProfileRequest
+	pErr := err.New()
 	if err := json.Unmarshal([]byte(jsonData), &request); err != nil {
-		return models.Profile{}, ErrProfileParsing // TODO: make it non-fatal
+		pErr.Add(svc.ErrProfileParsing, map[string]any{
+			"jsonData": jsonData,
+		})
+		return models.Profile{}, pErr // TODO: make it non-fatal
 	}
 
 	return pb.BuildProfile(request, false)
 }
 
 // BuildProfile builds a profile from a request
-func (pb *ProfileBuilder) BuildProfile(request ProfileRequest, fallback bool) (models.Profile, error) {
+func (pb *ProfileBuilder) BuildProfile(request ProfileRequest, fallback bool) (models.Profile, err.Error) {
+	pErr := err.New()
 	if request.Name == "" {
-		return DefaultUpdates, ErrProfileNameMissing // TODO: make it non-fatal
+		pErr.Add(svc.ErrProfileNameMissing, map[string]any{
+			"request":  request,
+			"fallback": fallback,
+		})
+		return DefaultUpdates, pErr // TODO: make it non-fatal
 	}
 
 	// Deduplicate field names
@@ -63,7 +67,11 @@ func (pb *ProfileBuilder) BuildProfile(request ProfileRequest, fallback bool) (m
 	for _, fieldName := range request.FieldNames {
 		field, err := pb.registry.GetField(fieldName, fallback)
 		if err != nil {
-			return models.Profile{}, ErrProfileFieldParsing // TODO: make it non-fatal
+			pErr.Add(svc.ErrProfileFieldNotFound, map[string]any{
+				"fieldName": fieldName,
+				"fallback":  fallback,
+			})
+			return models.Profile{}, pErr // TODO: make it non-fatal
 		}
 		fields = append(fields, field)
 	}

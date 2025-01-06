@@ -16,10 +16,4 @@ type UpdateUserRequest = models.UserProps
 type CreateWorkspaceUserRequest = models.WorkspaceUserProps
 
 // CreateWorkspaceUserResponse is the response to creating a user in a workspace
-type CreateWorkspaceUserResponse struct {
-	// User is the user that was created
-	User *models.WorkspaceUser `json:"user"`
-
-	// Error is the error that occurred while creating the user
-	Error error `json:"error"`
-}
+type CreateWorkspaceUserResponse = models.WorkspaceUser

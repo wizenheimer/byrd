@@ -1,13 +1,8 @@
 package ai
 
 import (
-	"fmt"
-
+	svc "github.com/wizenheimer/iris/src/internal/interfaces/service"
 	models "github.com/wizenheimer/iris/src/internal/models/core"
-)
-
-var (
-	ErrFieldNotFound = fmt.Errorf("profile field not found")
 )
 
 // FieldRegistry contains all available predefined fields
@@ -166,7 +161,7 @@ func (r *FieldRegistry) GetField(name string, fallback bool) (models.FieldConfig
 		if fallback {
 			return field, nil
 		}
-		return field, ErrFieldNotFound
+		return field, svc.ErrProfileFieldNotFound
 	}
 	return field, nil
 }

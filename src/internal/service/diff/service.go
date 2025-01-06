@@ -5,6 +5,7 @@ import (
 
 	svc "github.com/wizenheimer/iris/src/internal/interfaces/service"
 	models "github.com/wizenheimer/iris/src/internal/models/core"
+	"github.com/wizenheimer/iris/src/pkg/err"
 	"github.com/wizenheimer/iris/src/pkg/logger"
 	"github.com/wizenheimer/iris/src/pkg/utils"
 )
@@ -28,6 +29,6 @@ func NewDiffService(aiService svc.AIService, logger *logger.Logger) (svc.DiffSer
 	}, nil
 }
 
-func (d *diffService) Compare(ctx context.Context, content1, content2 *models.ScreenshotHTMLContentResponse, profileStr string, persist bool) (*models.DynamicChanges, error) {
+func (d *diffService) Compare(ctx context.Context, content1, content2 *models.ScreenshotHTMLContentResponse, profileStr string, persist bool) (*models.DynamicChanges, err.Error) {
 	return nil, nil
 }

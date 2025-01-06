@@ -11,8 +11,9 @@ import (
 
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
-	interfaces "github.com/wizenheimer/iris/src/internal/interfaces/service"
+	svc "github.com/wizenheimer/iris/src/internal/interfaces/service"
 	models "github.com/wizenheimer/iris/src/internal/models/core"
+	"github.com/wizenheimer/iris/src/pkg/err"
 	"github.com/wizenheimer/iris/src/pkg/logger"
 	"go.uber.org/zap"
 )
@@ -23,16 +24,7 @@ type openAIService struct {
 	builder *ProfileBuilder
 }
 
-var (
-	ErrBuildingProfile         = fmt.Errorf("failed to build profile")
-	ErrPreparingChatCompletion = fmt.Errorf("failed to prepare chat completion")
-	ErrConvertingImageToBase64 = fmt.Errorf("failed to convert image to base64")
-	ErrEncounteredRefusal      = fmt.Errorf("refusal encountered in chat completion")
-	ErrParsingChanges          = fmt.Errorf("failed to parse changes")
-	ErrEncodingImage           = fmt.Errorf("failed to encode image")
-)
-
-func NewOpenAIService(apiKey string, logger *logger.Logger) (interfaces.AIService, error) {
+func NewOpenAIService(apiKey string, logger *logger.Logger) (svc.AIService, error) {
 	client := openai.NewClient(
 		option.WithAPIKey(
 			apiKey,
@@ -57,7 +49,8 @@ func NewOpenAIService(apiKey string, logger *logger.Logger) (interfaces.AIServic
 }
 
 // AnalyzeContentDifferences analyzes the content differences between two versions of a URL
-func (s *openAIService) AnalyzeContentDifferences(ctx context.Context, version1, version2 string, fields []string) (*models.DynamicChanges, error) {
+func (s *openAIService) AnalyzeContentDifferences(ctx context.Context, version1, version2 string, fields []string) (*models.DynamicChanges, err.Error) {
+	pErr := err.New()
 	profileRequest := ProfileRequest{
 		Name:        "competitor_updates",
 		Description: "Carefully compare these two versions of content, identify and surface changes",
@@ -66,21 +59,26 @@ func (s *openAIService) AnalyzeContentDifferences(ctx context.Context, version1,
 
 	profile, err := s.builder.BuildProfile(profileRequest, true)
 	if err != nil {
-		return nil, ErrBuildingProfile
+		pErr.Add(svc.ErrBuildingProfile, map[string]interface{}{
+			"profileRequest": profileRequest,
+		})
+		return nil, pErr
 	}
 
 	s.logger.Debug("analyzing content differences", zap.String("version1", version1), zap.String("version2", version2), zap.Any("profile", profile.Fields), zap.Strings("requested_fields", fields))
 
 	chat, err := s.prepareTextCompletion(ctx, version1, version2, profile)
-	if err != nil {
-		return nil, ErrPreparingChatCompletion
+	if err != nil && err.HasErrors() {
+		pErr.Merge(err)
+		return nil, pErr
 	}
 
 	return s.parseCompletion(chat)
 }
 
 // AnalyzeVisualDifferences analyzes the visual differences between two screenshots
-func (s *openAIService) AnalyzeVisualDifferences(ctx context.Context, screenshot1, screenshot2 image.Image, fields []string) (*models.DynamicChanges, error) {
+func (s *openAIService) AnalyzeVisualDifferences(ctx context.Context, screenshot1, screenshot2 image.Image, fields []string) (*models.DynamicChanges, err.Error) {
+	dErr := err.New()
 	profileRequest := ProfileRequest{
 		Name:        "competitor_updates",
 		Description: "Carefully compare and contrast visual changes in the webpage",
@@ -89,12 +87,16 @@ func (s *openAIService) AnalyzeVisualDifferences(ctx context.Context, screenshot
 
 	profile, err := s.builder.BuildProfile(profileRequest, true)
 	if err != nil {
-		return nil, ErrBuildingProfile
+		dErr.Add(svc.ErrBuildingProfile, map[string]interface{}{
+			"profileRequest": profileRequest,
+		})
+		return nil, dErr
 	}
 
 	chat, err := s.prepareImageCompletion(ctx, screenshot1, screenshot2, profile)
-	if err != nil {
-		return nil, ErrPreparingChatCompletion
+	if err != nil && err.HasErrors() {
+		dErr.Merge(err)
+		return nil, dErr
 	}
 
 	return s.parseCompletion(chat)
@@ -117,8 +119,8 @@ func (s *openAIService) validate() error {
 	return err
 }
 
-func (s *openAIService) prepareTextCompletion(ctx context.Context, version1, version2 string, profile models.Profile) (*openai.ChatCompletion, error) {
-
+func (s *openAIService) prepareTextCompletion(ctx context.Context, version1, version2 string, profile models.Profile) (*openai.ChatCompletion, err.Error) {
+	dErr := err.New()
 	opts := s.prepareCompareOptions(&profile)
 
 	userPrompt := fmt.Sprintf("Compare these two versions of content and identify changes:\n\nVersion 1:\n%s\n\nVersion 2:\n%s", version1, version2)
@@ -147,19 +149,30 @@ func (s *openAIService) prepareTextCompletion(ctx context.Context, version1, ver
 		MaxTokens:   openai.F(opts.MaxTokens),
 	})
 
-	return chat, err
+    dErr.Add(err, map[string]interface{}{
+        "profile": profile,
+    })
+
+	return chat, dErr
 }
 
-func (s *openAIService) prepareImageCompletion(ctx context.Context, version1, version2 image.Image, profile models.Profile) (*openai.ChatCompletion, error) {
+func (s *openAIService) prepareImageCompletion(ctx context.Context, version1, version2 image.Image, profile models.Profile) (*openai.ChatCompletion, err.Error) {
+    dErr := err.New()
 	// convert images to base64
 	version1Base64, err := imageToBase64URL(version1)
 	if err != nil {
-		return nil, ErrConvertingImageToBase64
+        dErr.Add(svc.ErrConvertingImageToBase64, map[string]interface{}{
+            "profile": profile,
+        })
+		return nil, dErr
 	}
 
 	version2Base64, err := imageToBase64URL(version2)
 	if err != nil {
-		return nil, ErrConvertingImageToBase64
+        dErr.Add(svc.ErrConvertingImageToBase64, map[string]interface{}{
+            "profile": profile,
+        })
+		return nil, dErr
 	}
 
 	opts := s.prepareCompareOptions(&profile)
@@ -194,12 +207,19 @@ func (s *openAIService) prepareImageCompletion(ctx context.Context, version1, ve
 		MaxTokens:   openai.F(opts.MaxTokens),
 	})
 
-	return chat, err
+    dErr.Add(err, map[string]interface{}{
+        "profile": profile,
+    })
+	return chat, dErr
 }
 
-func (s *openAIService) parseCompletion(chat *openai.ChatCompletion) (*models.DynamicChanges, error) {
+func (s *openAIService) parseCompletion(chat *openai.ChatCompletion) (*models.DynamicChanges, err.Error) {
+    dErr := err.New()
 	if chat.Choices[0].Message.Refusal != "" {
-		return nil, ErrEncounteredRefusal
+        dErr.Add(svc.ErrEncounteredRefusal, map[string]interface{}{
+            "refusal": chat.Choices[0].Message.Refusal,
+        })
+		return nil, dErr
 	}
 
 	changes := &models.DynamicChanges{
@@ -208,7 +228,10 @@ func (s *openAIService) parseCompletion(chat *openai.ChatCompletion) (*models.Dy
 
 	err := json.Unmarshal([]byte(chat.Choices[0].Message.Content), changes)
 	if err != nil {
-		return nil, ErrParsingChanges
+        dErr.Add(svc.ErrParsingChanges, map[string]interface{}{
+            "content": chat.Choices[0].Message.Content,
+        })
+		return nil, dErr
 	}
 
 	return changes, nil
@@ -230,7 +253,7 @@ func imageToBase64URL(img image.Image) (string, error) {
 	// Encode the image in PNG format to the buffer
 	err := png.Encode(&buf, img)
 	if err != nil {
-		return "", ErrEncodingImage
+		return "", svc.ErrEncodingImage
 	}
 
 	// Convert the buffer bytes to base64 string
