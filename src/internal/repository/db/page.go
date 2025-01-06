@@ -341,21 +341,21 @@ func (r *pageRepo) UpdateCompetitorPage(ctx context.Context, competitorID, pageI
 	// Marshal the maps to JSON
 	captureProfileJSON, err := json.Marshal(page.CaptureProfile)
 	if err != nil {
-        pageErr.Add(repo.ErrFailedToMarshallCaptureProfile, map[string]any{
-            "pageID": pageID,
-        })
+		pageErr.Add(repo.ErrFailedToMarshallCaptureProfile, map[string]any{
+			"pageID": pageID,
+		})
 	}
 
 	diffProfileJSON, err := json.Marshal(page.DiffProfile)
 	if err != nil {
-        pageErr.Add(repo.ErrFailedToMarshallDiffProfile, map[string]any{
-            "pageID": pageID,
-        })
+		pageErr.Add(repo.ErrFailedToMarshallDiffProfile, map[string]any{
+			"pageID": pageID,
+		})
 	}
 
-    if pageErr.HasErrors() {
-        return models.Page{}, pageErr
-    }
+	if pageErr.HasErrors() {
+		return models.Page{}, pageErr
+	}
 
 	query := `
 		UPDATE pages
@@ -374,10 +374,10 @@ func (r *pageRepo) UpdateCompetitorPage(ctx context.Context, competitorID, pageI
 
 	updatedPage, err := scanPage(row)
 	if err != nil {
-        pageErr.Add(err, map[string]any{
-            "competitorID": competitorID,
-            "pageID":       pageID,
-        })
+		pageErr.Add(err, map[string]any{
+			"competitorID": competitorID,
+			"pageID":       pageID,
+		})
 		return models.Page{}, pageErr
 	}
 

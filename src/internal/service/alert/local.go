@@ -11,7 +11,7 @@ import (
 )
 
 var (
-    ErrFailedToSendBatchAlert = fmt.Errorf("failed to send batch alert")
+	ErrFailedToSendBatchAlert = fmt.Errorf("failed to send batch alert")
 )
 
 // localWorkflowClient implements WorkflowAlertClient for local development

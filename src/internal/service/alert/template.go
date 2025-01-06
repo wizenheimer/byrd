@@ -11,9 +11,9 @@ import (
 )
 
 var (
-    ErrCannotFindAlertType = fmt.Errorf("alert type not found in details")
-    ErrCannotFindTemplateForWorkflow = fmt.Errorf("no templates found for workflow type")
-    ErrCannotFindTemplateForAlert = fmt.Errorf("no template found for alert type")
+	ErrCannotFindAlertType           = fmt.Errorf("alert type not found in details")
+	ErrCannotFindTemplateForWorkflow = fmt.Errorf("no templates found for workflow type")
+	ErrCannotFindTemplateForAlert    = fmt.Errorf("no template found for alert type")
 )
 
 // EventType represents the type of workflow event

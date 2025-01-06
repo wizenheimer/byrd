@@ -22,10 +22,10 @@ func NewPageService(pageRepo repo.PageRepository, pageHistoryService svc.PageHis
 }
 
 func (ps *pageService) CreatePage(ctx context.Context, competitorID uuid.UUID, pageReq []api.CreatePageRequest) ([]models.Page, err.Error) {
-    cErr := err.New()
+	cErr := err.New()
 	pages, pErr := ps.pageRepo.AddPagesToCompetitor(ctx, competitorID, pageReq)
 	if pErr != nil && pErr.HasErrors() {
-        cErr.Merge(pErr)
+		cErr.Merge(pErr)
 		return nil, cErr
 	}
 
@@ -33,10 +33,10 @@ func (ps *pageService) CreatePage(ctx context.Context, competitorID uuid.UUID, p
 }
 
 func (ps *pageService) GetPage(ctx context.Context, competitorID uuid.UUID, pageID uuid.UUID) (models.Page, err.Error) {
-    cErr := err.New()
+	cErr := err.New()
 	page, pErr := ps.pageRepo.GetCompetitorPage(ctx, competitorID, pageID)
 	if pErr != nil && pErr.HasErrors() {
-        cErr.Merge(pErr)
+		cErr.Merge(pErr)
 		return models.Page{}, cErr
 	}
 
@@ -44,16 +44,16 @@ func (ps *pageService) GetPage(ctx context.Context, competitorID uuid.UUID, page
 }
 
 func (ps *pageService) GetPageWithHistory(ctx context.Context, competitorID uuid.UUID, pageID uuid.UUID, historyPaginationParams api.PaginationParams) (api.GetPageResponse, err.Error) {
-    cErr := err.New()
+	cErr := err.New()
 	page, err := ps.GetPage(ctx, competitorID, pageID)
 	if err != nil {
-        cErr.Merge(err)
+		cErr.Merge(err)
 		return api.GetPageResponse{}, cErr
 	}
 
 	pageHistory, err := ps.pageHistoryService.ListPageHistory(ctx, pageID, historyPaginationParams)
 	if err != nil {
-        cErr.Merge(err)
+		cErr.Merge(err)
 		return api.GetPageResponse{}, cErr
 	}
 
@@ -64,10 +64,10 @@ func (ps *pageService) GetPageWithHistory(ctx context.Context, competitorID uuid
 }
 
 func (ps *pageService) UpdatePage(ctx context.Context, competitorID uuid.UUID, pageID uuid.UUID, pageReq api.UpdatePageRequest) (models.Page, err.Error) {
-    cErr  := err.New()
+	cErr := err.New()
 	updatedPage, pErr := ps.pageRepo.UpdateCompetitorPage(ctx, competitorID, pageID, pageReq)
 	if pErr != nil && pErr.HasErrors() {
-        cErr.Merge(pErr)
+		cErr.Merge(pErr)
 		return models.Page{}, cErr
 	}
 
@@ -75,7 +75,7 @@ func (ps *pageService) UpdatePage(ctx context.Context, competitorID uuid.UUID, p
 }
 
 func (ps *pageService) ListCompetitorPages(ctx context.Context, competitorID uuid.UUID, param *api.PaginationParams) ([]models.Page, err.Error) {
-    cErr := err.New()
+	cErr := err.New()
 	var limit, offset *int
 	if param != nil {
 		limit, offset = utils.ToPtr(param.GetLimit()), utils.ToPtr(param.GetOffset())
@@ -83,7 +83,7 @@ func (ps *pageService) ListCompetitorPages(ctx context.Context, competitorID uui
 
 	page, pErr := ps.pageRepo.ListCompetitorPages(ctx, competitorID, limit, offset)
 	if pErr != nil && pErr.HasErrors() {
-        cErr.Merge(pErr)
+		cErr.Merge(pErr)
 		return nil, cErr
 	}
 
@@ -96,14 +96,14 @@ func (ps *pageService) ListActivePages(ctx context.Context, batchSize int, lastP
 }
 
 func (ps *pageService) ListPageHistory(ctx context.Context, competitorID uuid.UUID, pageID uuid.UUID, param api.PaginationParams) ([]models.PageHistory, err.Error) {
-    cErr := err.New()
+	cErr := err.New()
 	pageHistory, err := ps.pageHistoryService.ListPageHistory(
 		ctx,
 		pageID,
 		param,
 	)
 	if err != nil {
-        cErr.Merge(err)
+		cErr.Merge(err)
 		return nil, cErr
 	}
 
@@ -111,14 +111,14 @@ func (ps *pageService) ListPageHistory(ctx context.Context, competitorID uuid.UU
 }
 
 func (ps *pageService) RemovePage(ctx context.Context, competitorID uuid.UUID, pageIDs []uuid.UUID) err.Error {
-    cErr := err.New()
+	cErr := err.New()
 	pErr := ps.pageRepo.RemovePagesFromCompetitor(
 		ctx,
 		competitorID,
 		pageIDs,
 	)
 	if pErr != nil && pErr.HasErrors() {
-        cErr.Merge(pErr)
+		cErr.Merge(pErr)
 		return cErr
 	}
 	return nil

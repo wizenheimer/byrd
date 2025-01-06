@@ -165,5 +165,5 @@ var (
 	ErrFailedToDeleteWorkspace         = errors.New("failed to delete workspace")
 	ErrCannotLeaveWorkspaceAsOnlyAdmin = errors.New("cannot leave workspace as the only admin")
 	ErrUserNotInvitedToWorkspace       = errors.New("user is not invited to the workspace")
-    ErrWorkspaceDoesNotExist           = errors.New("workspace does not exist")
+	ErrWorkspaceDoesNotExist           = errors.New("workspace does not exist")
 )

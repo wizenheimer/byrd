@@ -149,29 +149,29 @@ func (s *openAIService) prepareTextCompletion(ctx context.Context, version1, ver
 		MaxTokens:   openai.F(opts.MaxTokens),
 	})
 
-    dErr.Add(err, map[string]interface{}{
-        "profile": profile,
-    })
+	dErr.Add(err, map[string]interface{}{
+		"profile": profile,
+	})
 
 	return chat, dErr
 }
 
 func (s *openAIService) prepareImageCompletion(ctx context.Context, version1, version2 image.Image, profile models.Profile) (*openai.ChatCompletion, err.Error) {
-    dErr := err.New()
+	dErr := err.New()
 	// convert images to base64
 	version1Base64, err := imageToBase64URL(version1)
 	if err != nil {
-        dErr.Add(svc.ErrConvertingImageToBase64, map[string]interface{}{
-            "profile": profile,
-        })
+		dErr.Add(svc.ErrConvertingImageToBase64, map[string]interface{}{
+			"profile": profile,
+		})
 		return nil, dErr
 	}
 
 	version2Base64, err := imageToBase64URL(version2)
 	if err != nil {
-        dErr.Add(svc.ErrConvertingImageToBase64, map[string]interface{}{
-            "profile": profile,
-        })
+		dErr.Add(svc.ErrConvertingImageToBase64, map[string]interface{}{
+			"profile": profile,
+		})
 		return nil, dErr
 	}
 
@@ -207,18 +207,18 @@ func (s *openAIService) prepareImageCompletion(ctx context.Context, version1, ve
 		MaxTokens:   openai.F(opts.MaxTokens),
 	})
 
-    dErr.Add(err, map[string]interface{}{
-        "profile": profile,
-    })
+	dErr.Add(err, map[string]interface{}{
+		"profile": profile,
+	})
 	return chat, dErr
 }
 
 func (s *openAIService) parseCompletion(chat *openai.ChatCompletion) (*models.DynamicChanges, err.Error) {
-    dErr := err.New()
+	dErr := err.New()
 	if chat.Choices[0].Message.Refusal != "" {
-        dErr.Add(svc.ErrEncounteredRefusal, map[string]interface{}{
-            "refusal": chat.Choices[0].Message.Refusal,
-        })
+		dErr.Add(svc.ErrEncounteredRefusal, map[string]interface{}{
+			"refusal": chat.Choices[0].Message.Refusal,
+		})
 		return nil, dErr
 	}
 
@@ -228,9 +228,9 @@ func (s *openAIService) parseCompletion(chat *openai.ChatCompletion) (*models.Dy
 
 	err := json.Unmarshal([]byte(chat.Choices[0].Message.Content), changes)
 	if err != nil {
-        dErr.Add(svc.ErrParsingChanges, map[string]interface{}{
-            "content": chat.Choices[0].Message.Content,
-        })
+		dErr.Add(svc.ErrParsingChanges, map[string]interface{}{
+			"content": chat.Choices[0].Message.Content,
+		})
 		return nil, dErr
 	}
 

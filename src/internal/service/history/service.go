@@ -27,12 +27,12 @@ func (ph *pageHistoryService) CreatePageHistory(ctx context.Context, pageID uuid
 }
 
 func (ph *pageHistoryService) ListPageHistory(ctx context.Context, pageID uuid.UUID, pageHistoryPaginationParam api.PaginationParams) ([]models.PageHistory, err.Error) {
-    cErr := err.New()
+	cErr := err.New()
 	limit, offset := pageHistoryPaginationParam.GetLimit(), pageHistoryPaginationParam.GetOffset()
 
 	history, hErr := ph.pageHistoryRepo.ListPageHistory(ctx, pageID, &limit, &offset)
 	if hErr != nil && hErr.HasErrors() {
-        cErr.Merge(hErr)
+		cErr.Merge(hErr)
 		return nil, cErr
 	}
 
@@ -40,11 +40,11 @@ func (ph *pageHistoryService) ListPageHistory(ctx context.Context, pageID uuid.U
 }
 
 func (ph *pageHistoryService) ClearPageHistory(ctx context.Context, pageIDs []uuid.UUID) err.Error {
-    cErr := err.New()
+	cErr := err.New()
 	hErr := ph.pageHistoryRepo.RemovePageHistory(ctx, pageIDs)
 	if hErr != nil && hErr.HasErrors() {
-        cErr.Merge(hErr)
-        return cErr
+		cErr.Merge(hErr)
+		return cErr
 	}
 
 	return nil
