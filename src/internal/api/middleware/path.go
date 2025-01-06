@@ -4,6 +4,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	svc "github.com/wizenheimer/iris/src/internal/interfaces/service"
+	"github.com/wizenheimer/iris/src/pkg/logger"
 )
 
 const (
@@ -13,12 +14,14 @@ const (
 )
 
 type WorkspacePathValidationMiddleware struct {
-	ws svc.WorkspaceService
+	ws     svc.WorkspaceService
+	logger *logger.Logger
 }
 
-func NewWorkspacePathValidationMiddleware(ws svc.WorkspaceService) *WorkspacePathValidationMiddleware {
+func NewWorkspacePathValidationMiddleware(ws svc.WorkspaceService, logger *logger.Logger) *WorkspacePathValidationMiddleware {
 	return &WorkspacePathValidationMiddleware{
-		ws: ws,
+		ws:     ws,
+		logger: logger,
 	}
 }
 
