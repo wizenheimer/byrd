@@ -32,6 +32,10 @@ type WorkspaceRepository interface {
 	// This is used to update the name of the workspace
 	UpdateWorkspaceName(ctx context.Context, workspaceID uuid.UUID, workspaceName string) err.Error
 
+	// RemoveWorkspaces removes the workspaces by their IDs
+	// This is used to remove the workspaces
+	RemoveWorkspaces(ctx context.Context, workspaceIDs []uuid.UUID) err.Error
+
 	// UpdateWorkspaceStatus updates the status of the workspace
 	// This is used to update the status of the workspace
 	UpdateWorkspaceStatus(ctx context.Context, workspaceID uuid.UUID, status models.WorkspaceStatus) err.Error

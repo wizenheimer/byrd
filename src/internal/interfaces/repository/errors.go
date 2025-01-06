@@ -16,6 +16,7 @@ var (
 	// ---- remapped errors ----
 	// case 1: remapping an existing error
 	ErrFailedToScanPageHistory = errors.New("failed to scan page history")
+	ErrInvalidPageHistory      = errors.New("invalid page history")
 
 	// case 2: remapping a non error scenario to an error
 	ErrPageHistoryNotFound = errors.New("no page history found for the page")
