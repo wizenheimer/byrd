@@ -192,7 +192,7 @@ func (ws *workspaceService) DeleteWorkspace(ctx context.Context, workspaceID uui
 	}
 
 	// Handle workspace deletion
-	if err := ws.workspaceRepo.UpdateWorkspaceStatus(ctx, workspace.ID, models.WorkspaceStatusInactive); err != nil && err.HasErrors() {
+	if err := ws.workspaceRepo.RemoveWorkspaces(ctx, []uuid.UUID{workspace.ID}); err != nil && err.HasErrors() {
 		wErr.Merge(err)
 		return models.WorkspaceStatusInactive, wErr
 	}
