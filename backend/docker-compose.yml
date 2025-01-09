@@ -96,11 +96,11 @@ services:
 
 volumes:
   go-mod-cache:
-    name: iris_go_mod_cache
+    name: byrd_go_mod_cache
   redis_data:
-    name: iris_redis_data
+    name: byrd_redis_data
 
 networks:
   app-network:
-    name: iris_network
+    name: byrd_network
     driver: bridge

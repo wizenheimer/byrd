@@ -1,4 +1,4 @@
-module github.com/wizenheimer/iris
+module github.com/wizenheimer/byrd
 
 go 1.23.2
 
