@@ -299,7 +299,9 @@ func (wh *WorkspaceHandler) CreateCompetitorForWorkspace(c *fiber.Ctx) error {
 		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not create competitor", e)
 	}
 
-	return sendDataResponse(c, fiber.StatusCreated, "Created competitor successfully", req)
+	return sendDataResponse(c, fiber.StatusCreated, "Created competitor successfully", map[string]any{
+		"url": req.URL,
+	})
 }
 
 // AddPageToCompetitor adds a page to a competitor
@@ -314,10 +316,8 @@ func (wh *WorkspaceHandler) AddPageToCompetitor(c *fiber.Ctx) error {
 		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 
-	for index := range pages {
-		if err := utils.SetDefaultsAndValidate(&pages[index]); err != nil {
-			return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
-		}
+	if err := utils.SetDefaultsAndValidateArray(&pages); err != nil {
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid request body")
 	}
 
 	clerkUser, err := auth.GetClerkUserFromContext(c)

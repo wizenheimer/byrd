@@ -38,6 +38,9 @@ func (cs *competitorService) CreateCompetitor(ctx context.Context, workspaceID u
 			continue
 		}
 
+		// Sync the page url in capture profile
+		page.CaptureProfile.URL = page.URL
+
 		// Add the page to the competitor
 		if _, err := cs.pageService.CreatePage(ctx, createdCompetitors[0].ID, []api.CreatePageRequest{page}); err != nil && err.HasErrors() {
 			cErr.Merge(err)

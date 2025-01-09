@@ -162,7 +162,7 @@ func (s *screenshotService) prepareScreenshot(opts models.ScreenshotRequestOptio
 	defaultOpt := getDefaultScreenshotRequestOptions()
 
 	// Merge the provided options with default options
-	mergedOpt := mergeScreenshotRequestOptions(defaultOpt, opts)
+	mergedOpt := MergeScreenshotRequestOptions(defaultOpt, opts)
 
 	s.logger.Debug("creating screenshot request", zap.Any("opts", opts), zap.Any("merged_opts", mergedOpt), zap.Any("default_opts", defaultOpt))
 
@@ -234,7 +234,7 @@ func getDefaultScreenshotRequestOptions() models.ScreenshotRequestOptions {
 }
 
 // MergeOptions merges the provided options with default options
-func mergeScreenshotRequestOptions(defaults, override models.ScreenshotRequestOptions) models.ScreenshotRequestOptions {
+func MergeScreenshotRequestOptions(defaults, override models.ScreenshotRequestOptions) models.ScreenshotRequestOptions {
 	result := defaults
 
 	// Use reflection to handle all fields

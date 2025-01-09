@@ -512,11 +512,6 @@ func (r *userRepo) AddUsersToWorkspace(ctx context.Context, workspaceUserProps [
         RETURNING workspace_id, user_id, role, status
     `, strings.Join(valueStrings, ","))
 
-	r.logger.Debug("preparing workspace users",
-		zap.Int("total_props", len(workspaceUserProps)),
-		zap.Int("valid_users", len(valueStrings)),
-		zap.Any("email_mapping", emailToUserID))
-
 	rows, err := runner.QueryContext(ctx, insertQuery, valueArgs...)
 	if err != nil {
 		userErr.Add(err, map[string]any{
@@ -567,6 +562,9 @@ func (r *userRepo) AddUsersToWorkspace(ctx context.Context, workspaceUserProps [
 		})
 		return nil, userErr
 	}
+
+	r.logger.Debug("workspace users added",
+		zap.Any("workspaceUsers", workspaceUsers))
 
 	return workspaceUsers, nil
 }

@@ -28,12 +28,17 @@ func SendErrorResponse(c *fiber.Ctx, status int, message string, details ...any)
 
 type DataResponse struct {
 	Message string      `json:"message"`
-	Data    interface{} `json:"data"`
+	Data    interface{} `json:"data,omitempty"`
 }
 
 func SendDataResponse(c *fiber.Ctx, status int, message string, data any) error {
-	return c.Status(status).JSON(DataResponse{
-		Data:    data,
+	response := DataResponse{
 		Message: message,
-	})
+	}
+
+	if data != nil {
+		response.Data = data
+	}
+
+	return c.Status(status).JSON(response)
 }

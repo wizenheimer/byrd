@@ -33,7 +33,14 @@ func (ph *pageHistoryService) ListPageHistory(ctx context.Context, pageID uuid.U
 	history, hErr := ph.pageHistoryRepo.ListPageHistory(ctx, pageID, &limit, &offset)
 	if hErr != nil && hErr.HasErrors() {
 		cErr.Merge(hErr)
-		return nil, cErr
+		ph.logger.Info(hErr.Error())
+		// Initialize an empty slice instead of returning nil
+		return make([]models.PageHistory, 0), cErr
+	}
+
+	// If history is nil, return an empty slice
+	if history == nil {
+		return make([]models.PageHistory, 0), nil
 	}
 
 	return history, nil

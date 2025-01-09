@@ -3,10 +3,9 @@ package db
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/google/uuid"
-	_ "github.com/lib/pq"
+	"github.com/lib/pq"
 	repo "github.com/wizenheimer/byrd/src/internal/interfaces/repository"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/internal/repository/transaction"
@@ -113,9 +112,7 @@ func (r *historyRepo) ListPageHistory(ctx context.Context, pageID uuid.UUID, lim
 
 	// Build the query with optional pagination
 	query := `
-        SELECT id, page_id, week_number_1, week_number_2, year_number_1, year_number_2,
-               bucket_id_1, bucket_id_2, diff_content, screenshot_url_1, screenshot_url_2,
-               created_at, status
+        SELECT id, page_id, week_number_1, week_number_2, year_number_1, year_number_2, bucket_id_1, bucket_id_2, diff_content, screenshot_url_1, screenshot_url_2, created_at, status
         FROM page_history
         WHERE page_id = $1
         AND status = $2
@@ -151,7 +148,7 @@ func (r *historyRepo) ListPageHistory(ctx context.Context, pageID uuid.UUID, lim
 	}
 	defer rows.Close()
 
-	var history []models.PageHistory
+	history := make([]models.PageHistory, 0)
 	for rows.Next() {
 		var h models.PageHistory
 		err := rows.Scan(
@@ -184,12 +181,6 @@ func (r *historyRepo) ListPageHistory(ctx context.Context, pageID uuid.UUID, lim
 		})
 	}
 
-	if len(history) == 0 {
-		pageHistoryErr.Add(repo.ErrPageHistoryNotFound, map[string]interface{}{
-			"pageID": pageID,
-		})
-	}
-
 	return history, pageHistoryErr
 }
 
@@ -213,14 +204,17 @@ func (r *historyRepo) RemovePageHistory(ctx context.Context, pageIDs []uuid.UUID
 		args[i] = id
 	}
 
-	query := fmt.Sprintf(`
-        UPDATE page_history
-        SET status = '%s'
-        WHERE page_id IN (%s)
-        AND status = '%s'
-    `, models.HistoryStatusInactive, strings.Join(placeholders, ","), models.HistoryStatusActive)
-
-	result, err := runner.ExecContext(ctx, query, args...)
+	query := `
+    UPDATE page_history
+    SET status = $1
+    WHERE page_id = ANY($2)
+    AND status = $3
+`
+	result, err := runner.ExecContext(ctx, query,
+		models.HistoryStatusInactive,
+		pq.Array(pageIDs),
+		models.HistoryStatusActive,
+	)
 	if err != nil {
 		pageHistoryErr.Add(err, map[string]any{
 			"pageIDs": pageIDs,

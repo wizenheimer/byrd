@@ -49,3 +49,16 @@ func (uh *UserHandler) ValidateToken(c *fiber.Ctx) error {
 		"claims": clerkClaims,
 	})
 }
+
+func (uh *UserHandler) Sync(c *fiber.Ctx) error {
+	clerkUser, err := auth.GetClerkUserFromContext(c)
+	if err != nil {
+		return sendErrorResponse(c, fiber.StatusUnauthorized, "Couldn't get user from context", err.Error())
+	}
+
+	if err := uh.userService.SyncUser(c.Context(), clerkUser); err != nil && err.HasErrors() {
+		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not sync user", err.Error())
+	}
+
+	return sendDataResponse(c, fiber.StatusOK, "User is synchronized", nil)
+}

@@ -127,7 +127,7 @@ const (
 // ScreenshotRequestOptions defines all possible options for taking a screenshot
 type ScreenshotRequestOptions struct {
 	// Target Options
-	URL string `json:"url" validate:"required"` // The URL of the website to take a screenshot of
+	URL string `json:"url"` // The URL of the website to take a screenshot of
 
 	// Selector Options
 	Selector              *string `json:"selector,omitempty"`

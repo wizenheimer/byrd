@@ -121,6 +121,7 @@ func setupPublicRoutes(app *fiber.App, h *HandlerContainer, authMiddleware *midd
 	uh := h.UserHandler
 	user := public.Group("/user", authMiddleware.AuthenticationMiddleware)
 	user.Delete("/", uh.DeleteAccount)
+	user.Get("/", uh.Sync)
 }
 
 // setupPrivateRoutes sets up the private routes for the application

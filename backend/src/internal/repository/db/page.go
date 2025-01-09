@@ -13,6 +13,7 @@ import (
 	repo "github.com/wizenheimer/byrd/src/internal/interfaces/repository"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/internal/repository/transaction"
+	"github.com/wizenheimer/byrd/src/internal/service/screenshot"
 	"github.com/wizenheimer/byrd/src/pkg/err"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 )
@@ -54,6 +55,9 @@ func (r *pageRepo) AddPagesToCompetitor(ctx context.Context, competitorID uuid.U
 			})
 			return nil, pageErr
 		}
+
+		// Sync the page url in capture profile
+		page.CaptureProfile.URL = page.URL
 
 		// Initialize empty diff profile if nil
 		if page.DiffProfile == nil {
@@ -335,39 +339,29 @@ func (r *pageRepo) GetCompetitorPage(ctx context.Context, competitorID, pageID u
 }
 
 // UpdateCompetitorPage updates a page for a competitor
-func (r *pageRepo) UpdateCompetitorPage(ctx context.Context, competitorID, pageID uuid.UUID, page models.PageProps) (models.Page, err.Error) {
+func (r *pageRepo) UpdateCompetitorPage(ctx context.Context, competitorID, pageID uuid.UUID, updatedPage models.PageProps) (models.Page, err.Error) {
 	pageErr := err.New()
 	runner := r.tm.GetRunner(ctx)
 
-	// Verify the page belongs to the competitor
-	var exists bool
-	err := runner.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM pages WHERE id = $1 AND competitor_id = $2)", pageID, competitorID).Scan(&exists)
-	if err != nil {
-		pageErr.Add(err, map[string]any{
-			"competitorID": competitorID,
-			"pageID":       pageID,
-		})
-		return models.Page{}, pageErr
-	}
-	if !exists {
-		pageErr.Add(repo.ErrPageNotFound, map[string]any{
+	existingPage, pErr := r.GetCompetitorPage(ctx, competitorID, pageID)
+	if pErr != nil && pErr.HasErrors() {
+		pageErr.Add(pErr, map[string]any{
 			"competitorID": competitorID,
 			"pageID":       pageID,
 		})
 		return models.Page{}, pageErr
 	}
 
-	// Set defaults for CaptureProfile if needed
-	if err := defaults.Set(&page.CaptureProfile); err != nil {
-		pageErr.Add(err, map[string]any{
-			"pageID": pageID,
-			"error":  "failed to set capture profile defaults",
-		})
-		return models.Page{}, pageErr
+	// Merge the existing capture profile with the new capture profile
+	updatedPage.CaptureProfile = screenshot.MergeScreenshotRequestOptions(existingPage.CaptureProfile, updatedPage.CaptureProfile)
+
+	// Sync the page url in capture profile
+	if updatedPage.URL != "" {
+		updatedPage.CaptureProfile.URL = updatedPage.URL
 	}
 
 	// Marshal the capture profile
-	captureProfileJSON, err := json.Marshal(page.CaptureProfile)
+	captureProfileJSON, err := json.Marshal(updatedPage.CaptureProfile)
 	if err != nil {
 		pageErr.Add(repo.ErrFailedToMarshallCaptureProfile, map[string]any{
 			"pageID": pageID,
@@ -377,12 +371,16 @@ func (r *pageRepo) UpdateCompetitorPage(ctx context.Context, competitorID, pageI
 	}
 
 	// Initialize empty diff profile if nil
-	if page.DiffProfile == nil {
-		page.DiffProfile = make(map[string]interface{})
+	if updatedPage.DiffProfile == nil {
+		if existingPage.DiffProfile != nil {
+			updatedPage.DiffProfile = existingPage.DiffProfile
+		} else {
+			updatedPage.DiffProfile = make(map[string]interface{})
+		}
 	}
 
 	// Marshal the diff profile
-	diffProfileJSON, err := json.Marshal(page.DiffProfile)
+	diffProfileJSON, err := json.Marshal(updatedPage.DiffProfile)
 	if err != nil {
 		pageErr.Add(repo.ErrFailedToMarshallDiffProfile, map[string]any{
 			"pageID": pageID,
@@ -399,14 +397,14 @@ func (r *pageRepo) UpdateCompetitorPage(ctx context.Context, competitorID, pageI
 	`
 
 	row := runner.QueryRowContext(ctx, query,
-		page.URL,
+		updatedPage.URL,
 		captureProfileJSON,
 		diffProfileJSON,
 		pageID,
 		competitorID,
 	)
 
-	updatedPage, err := scanPage(row)
+	finalPage, err := scanPage(row)
 	if err != nil {
 		pageErr.Add(err, map[string]any{
 			"competitorID": competitorID,
@@ -415,7 +413,7 @@ func (r *pageRepo) UpdateCompetitorPage(ctx context.Context, competitorID, pageI
 		return models.Page{}, pageErr
 	}
 
-	return *updatedPage, nil
+	return *finalPage, nil
 }
 
 // scanPage scans a single row into a Page object
