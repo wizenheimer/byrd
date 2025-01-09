@@ -1,6 +1,6 @@
 package models
 
-import models "github.com/wizenheimer/iris/src/internal/models/core"
+import models "github.com/wizenheimer/byrd/src/internal/models/core"
 
 // InviteUserToWorkspaceRequest is the request to invite a user to a workspace
 type InviteUserToWorkspaceRequest = models.WorkspaceUserProps

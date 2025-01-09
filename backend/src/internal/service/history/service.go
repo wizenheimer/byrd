@@ -4,12 +4,12 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-	repo "github.com/wizenheimer/iris/src/internal/interfaces/repository"
-	svc "github.com/wizenheimer/iris/src/internal/interfaces/service"
-	api "github.com/wizenheimer/iris/src/internal/models/api"
-	models "github.com/wizenheimer/iris/src/internal/models/core"
-	"github.com/wizenheimer/iris/src/pkg/err"
-	"github.com/wizenheimer/iris/src/pkg/logger"
+	repo "github.com/wizenheimer/byrd/src/internal/interfaces/repository"
+	svc "github.com/wizenheimer/byrd/src/internal/interfaces/service"
+	api "github.com/wizenheimer/byrd/src/internal/models/api"
+	models "github.com/wizenheimer/byrd/src/internal/models/core"
+	"github.com/wizenheimer/byrd/src/pkg/err"
+	"github.com/wizenheimer/byrd/src/pkg/logger"
 )
 
 func NewPageHistoryService(pageHistoryRepo repo.PageHistoryRepository, screenshotService svc.ScreenshotService, diffService svc.DiffService, logger *logger.Logger) svc.PageHistoryService {

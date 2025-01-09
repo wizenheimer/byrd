@@ -3,9 +3,9 @@ package alert
 import (
 	"context"
 
-	clf "github.com/wizenheimer/iris/src/internal/interfaces/client"
-	models "github.com/wizenheimer/iris/src/internal/models/core"
-	"github.com/wizenheimer/iris/src/pkg/logger"
+	clf "github.com/wizenheimer/byrd/src/internal/interfaces/client"
+	models "github.com/wizenheimer/byrd/src/internal/models/core"
+	"github.com/wizenheimer/byrd/src/pkg/logger"
 )
 
 type workflowAlertClient struct {

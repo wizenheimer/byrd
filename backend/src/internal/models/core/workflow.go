@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/wizenheimer/iris/src/internal/constants"
+	"github.com/wizenheimer/byrd/src/internal/constants"
 )
 
 // WorkflowCheckpoint captures the current checkpoint of the workflow

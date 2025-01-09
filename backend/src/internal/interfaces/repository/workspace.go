@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-	models "github.com/wizenheimer/iris/src/internal/models/core"
-	"github.com/wizenheimer/iris/src/pkg/err"
+	models "github.com/wizenheimer/byrd/src/internal/models/core"
+	"github.com/wizenheimer/byrd/src/pkg/err"
 )
 
 // WorkspaceRepository is the interface that provides workspace operations

@@ -5,8 +5,8 @@ import (
 
 	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/google/uuid"
-	models "github.com/wizenheimer/iris/src/internal/models/core"
-	"github.com/wizenheimer/iris/src/pkg/err"
+	models "github.com/wizenheimer/byrd/src/internal/models/core"
+	"github.com/wizenheimer/byrd/src/pkg/err"
 )
 
 // UserRepository interacts with the user table and the workspace_user table

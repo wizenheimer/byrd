@@ -1,8 +1,8 @@
 package ai
 
 import (
-	svc "github.com/wizenheimer/iris/src/internal/interfaces/service"
-	models "github.com/wizenheimer/iris/src/internal/models/core"
+	svc "github.com/wizenheimer/byrd/src/internal/interfaces/service"
+	models "github.com/wizenheimer/byrd/src/internal/models/core"
 )
 
 // FieldRegistry contains all available predefined fields

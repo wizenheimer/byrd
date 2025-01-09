@@ -3,8 +3,8 @@ package executor
 import (
 	"context"
 
-	api "github.com/wizenheimer/iris/src/internal/models/api"
-	models "github.com/wizenheimer/iris/src/internal/models/core"
+	api "github.com/wizenheimer/byrd/src/internal/models/api"
+	models "github.com/wizenheimer/byrd/src/internal/models/core"
 )
 
 // WorkflowExecutor represents the executor for managing workflows

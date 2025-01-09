@@ -1,6 +1,6 @@
 package models
 
-import models "github.com/wizenheimer/iris/src/internal/models/core"
+import models "github.com/wizenheimer/byrd/src/internal/models/core"
 
 // CreateCompetitorRequest is the request to create brand new competitors
 // A new competitor is created for each page in the list

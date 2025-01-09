@@ -7,9 +7,9 @@ import (
 	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/google/uuid"
 
-	api "github.com/wizenheimer/iris/src/internal/models/api"
-	models "github.com/wizenheimer/iris/src/internal/models/core"
-	"github.com/wizenheimer/iris/src/pkg/err"
+	api "github.com/wizenheimer/byrd/src/internal/models/api"
+	models "github.com/wizenheimer/byrd/src/internal/models/core"
+	"github.com/wizenheimer/byrd/src/pkg/err"
 )
 
 // UserService is a service that manages users

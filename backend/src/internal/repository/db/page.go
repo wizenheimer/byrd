@@ -10,11 +10,11 @@ import (
 	"github.com/creasty/defaults"
 	"github.com/google/uuid"
 	_ "github.com/lib/pq"
-	repo "github.com/wizenheimer/iris/src/internal/interfaces/repository"
-	models "github.com/wizenheimer/iris/src/internal/models/core"
-	"github.com/wizenheimer/iris/src/internal/repository/transaction"
-	"github.com/wizenheimer/iris/src/pkg/err"
-	"github.com/wizenheimer/iris/src/pkg/logger"
+	repo "github.com/wizenheimer/byrd/src/internal/interfaces/repository"
+	models "github.com/wizenheimer/byrd/src/internal/models/core"
+	"github.com/wizenheimer/byrd/src/internal/repository/transaction"
+	"github.com/wizenheimer/byrd/src/pkg/err"
+	"github.com/wizenheimer/byrd/src/pkg/logger"
 )
 
 type pageRepo struct {

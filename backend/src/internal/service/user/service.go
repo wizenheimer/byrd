@@ -6,13 +6,13 @@ import (
 
 	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/google/uuid"
-	repo "github.com/wizenheimer/iris/src/internal/interfaces/repository"
-	svc "github.com/wizenheimer/iris/src/internal/interfaces/service"
-	api "github.com/wizenheimer/iris/src/internal/models/api"
-	models "github.com/wizenheimer/iris/src/internal/models/core"
-	"github.com/wizenheimer/iris/src/pkg/err"
-	"github.com/wizenheimer/iris/src/pkg/logger"
-	"github.com/wizenheimer/iris/src/pkg/utils"
+	repo "github.com/wizenheimer/byrd/src/internal/interfaces/repository"
+	svc "github.com/wizenheimer/byrd/src/internal/interfaces/service"
+	api "github.com/wizenheimer/byrd/src/internal/models/api"
+	models "github.com/wizenheimer/byrd/src/internal/models/core"
+	"github.com/wizenheimer/byrd/src/pkg/err"
+	"github.com/wizenheimer/byrd/src/pkg/logger"
+	"github.com/wizenheimer/byrd/src/pkg/utils"
 )
 
 func NewUserService(userRepository repo.UserRepository, logger *logger.Logger) svc.UserService {

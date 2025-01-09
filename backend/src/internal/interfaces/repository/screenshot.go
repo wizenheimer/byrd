@@ -3,7 +3,7 @@ package interfaces
 import (
 	"context"
 
-	models "github.com/wizenheimer/iris/src/internal/models/core"
+	models "github.com/wizenheimer/byrd/src/internal/models/core"
 )
 
 // ScreenshotRepository is the interface that provides screenshot operations

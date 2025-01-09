@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/wizenheimer/iris/src/pkg/logger"
+	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"go.uber.org/zap"
 	"golang.org/x/net/html"
 )

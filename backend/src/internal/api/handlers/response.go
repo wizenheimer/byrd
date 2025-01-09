@@ -2,9 +2,9 @@ package handlers
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/wizenheimer/iris/src/internal/api/commons"
-	models "github.com/wizenheimer/iris/src/internal/models/core"
-	"github.com/wizenheimer/iris/src/pkg/utils"
+	"github.com/wizenheimer/byrd/src/internal/api/commons"
+	models "github.com/wizenheimer/byrd/src/internal/models/core"
+	"github.com/wizenheimer/byrd/src/pkg/utils"
 )
 
 func sendDataResponse(c *fiber.Ctx, status int, message string, data ...any) error {

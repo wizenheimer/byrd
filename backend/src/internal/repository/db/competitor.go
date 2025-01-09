@@ -9,11 +9,11 @@ import (
 
 	"github.com/google/uuid"
 	_ "github.com/lib/pq"
-	repo "github.com/wizenheimer/iris/src/internal/interfaces/repository"
-	models "github.com/wizenheimer/iris/src/internal/models/core"
-	"github.com/wizenheimer/iris/src/internal/repository/transaction"
-	"github.com/wizenheimer/iris/src/pkg/err"
-	"github.com/wizenheimer/iris/src/pkg/logger"
+	repo "github.com/wizenheimer/byrd/src/internal/interfaces/repository"
+	models "github.com/wizenheimer/byrd/src/internal/models/core"
+	"github.com/wizenheimer/byrd/src/internal/repository/transaction"
+	"github.com/wizenheimer/byrd/src/pkg/err"
+	"github.com/wizenheimer/byrd/src/pkg/logger"
 )
 
 type competitorRepo struct {
@@ -112,13 +112,13 @@ func (r *competitorRepo) GetCompetitor(ctx context.Context, competitorID uuid.UU
 
 	var competitor models.Competitor
 	err := runner.QueryRowContext(ctx, query, competitorID, models.CompetitorStatusActive).Scan(
-        &competitor.ID,
-        &competitor.WorkspaceID,
-        &competitor.Name,
-        &competitor.Status,
-        &competitor.CreatedAt,
-        &competitor.UpdatedAt,
-    )
+		&competitor.ID,
+		&competitor.WorkspaceID,
+		&competitor.Name,
+		&competitor.Status,
+		&competitor.CreatedAt,
+		&competitor.UpdatedAt,
+	)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -221,7 +221,7 @@ func (r *competitorRepo) RemoveWorkspaceCompetitors(ctx context.Context, workspa
 
 	var query string
 	var args []interface{}
-    now := time.Now()
+	now := time.Now()
 
 	if competitorIDs == nil {
 		// Remove all competitors from workspace
@@ -235,19 +235,19 @@ func (r *competitorRepo) RemoveWorkspaceCompetitors(ctx context.Context, workspa
 		args = []interface{}{workspaceID, models.CompetitorStatusInactive, now, models.CompetitorStatusActive}
 	} else {
 		// Deactivate specific competitors
-        placeholders := make([]string, len(competitorIDs))
-        args = make([]interface{}, len(competitorIDs)+4)
-        args[0] = workspaceID
-        args[1] = models.CompetitorStatusInactive
-        args[2] = now
-        args[3] = models.CompetitorStatusActive
+		placeholders := make([]string, len(competitorIDs))
+		args = make([]interface{}, len(competitorIDs)+4)
+		args[0] = workspaceID
+		args[1] = models.CompetitorStatusInactive
+		args[2] = now
+		args[3] = models.CompetitorStatusActive
 
-        for i, id := range competitorIDs {
-            placeholders[i] = fmt.Sprintf("$%d", i+5)
-            args[i+4] = id
-        }
+		for i, id := range competitorIDs {
+			placeholders[i] = fmt.Sprintf("$%d", i+5)
+			args[i+4] = id
+		}
 
-        query = fmt.Sprintf(`
+		query = fmt.Sprintf(`
             UPDATE competitors
             SET status = $2,
                 updated_at = $3

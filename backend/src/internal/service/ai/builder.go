@@ -3,9 +3,9 @@ package ai
 import (
 	"encoding/json"
 
-	svc "github.com/wizenheimer/iris/src/internal/interfaces/service"
-	models "github.com/wizenheimer/iris/src/internal/models/core"
-	"github.com/wizenheimer/iris/src/pkg/err"
+	svc "github.com/wizenheimer/byrd/src/internal/interfaces/service"
+	models "github.com/wizenheimer/byrd/src/internal/models/core"
+	"github.com/wizenheimer/byrd/src/pkg/err"
 )
 
 // UserProfileRequest represents the user's request to create a profile

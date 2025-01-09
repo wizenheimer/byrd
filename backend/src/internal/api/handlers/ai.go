@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
-	interfaces "github.com/wizenheimer/iris/src/internal/interfaces/service"
-	"github.com/wizenheimer/iris/src/pkg/logger"
+	interfaces "github.com/wizenheimer/byrd/src/internal/interfaces/service"
+	"github.com/wizenheimer/byrd/src/pkg/logger"
 )
 
 type AIHandler struct {

@@ -13,7 +13,7 @@ import (
 	"strconv"
 	"strings"
 
-	clf "github.com/wizenheimer/iris/src/internal/interfaces/client"
+	clf "github.com/wizenheimer/byrd/src/internal/interfaces/client"
 )
 
 // RequestBuilder helps construct HTTP requests

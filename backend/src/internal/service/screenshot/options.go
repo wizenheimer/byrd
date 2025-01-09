@@ -1,9 +1,9 @@
 package screenshot
 
 import (
-	clf "github.com/wizenheimer/iris/src/internal/interfaces/client"
-	repo "github.com/wizenheimer/iris/src/internal/interfaces/repository"
-	models "github.com/wizenheimer/iris/src/internal/models/core"
+	clf "github.com/wizenheimer/byrd/src/internal/interfaces/client"
+	repo "github.com/wizenheimer/byrd/src/internal/interfaces/repository"
+	models "github.com/wizenheimer/byrd/src/internal/models/core"
 )
 
 // ScreenshotServiceOption is a function type that modifies ScreenshotService

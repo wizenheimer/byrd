@@ -1,6 +1,6 @@
 package models
 
-import models "github.com/wizenheimer/iris/src/internal/models/core"
+import models "github.com/wizenheimer/byrd/src/internal/models/core"
 
 // WorkspaceCreationRequest is the request to create a workspace
 type WorkspaceCreationRequest struct {

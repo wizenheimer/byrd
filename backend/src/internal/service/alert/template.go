@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	models "github.com/wizenheimer/iris/src/internal/models/core"
+	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"go.uber.org/zap"
 )
 

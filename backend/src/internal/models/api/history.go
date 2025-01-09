@@ -2,7 +2,7 @@ package models
 
 import (
 	"github.com/google/uuid"
-	models "github.com/wizenheimer/iris/src/internal/models/core"
+	models "github.com/wizenheimer/byrd/src/internal/models/core"
 )
 
 type PageHistoryUpdateRequest struct {

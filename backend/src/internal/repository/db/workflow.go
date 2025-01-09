@@ -8,10 +8,10 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
-	interfaces "github.com/wizenheimer/iris/src/internal/interfaces/repository"
-	api "github.com/wizenheimer/iris/src/internal/models/api"
-	models "github.com/wizenheimer/iris/src/internal/models/core"
-	"github.com/wizenheimer/iris/src/pkg/logger"
+	interfaces "github.com/wizenheimer/byrd/src/internal/interfaces/repository"
+	api "github.com/wizenheimer/byrd/src/internal/models/api"
+	models "github.com/wizenheimer/byrd/src/internal/models/core"
+	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"go.uber.org/zap"
 )
 

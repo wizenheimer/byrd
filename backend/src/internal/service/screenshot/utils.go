@@ -8,9 +8,9 @@ import (
 	"reflect"
 	"strconv"
 
-	svc "github.com/wizenheimer/iris/src/internal/interfaces/service"
-	models "github.com/wizenheimer/iris/src/internal/models/core"
-	"github.com/wizenheimer/iris/src/pkg/utils"
+	svc "github.com/wizenheimer/byrd/src/internal/interfaces/service"
+	models "github.com/wizenheimer/byrd/src/internal/models/core"
+	"github.com/wizenheimer/byrd/src/pkg/utils"
 	"go.uber.org/zap"
 )
 

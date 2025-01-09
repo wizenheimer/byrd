@@ -3,11 +3,11 @@ package handlers
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
-	"github.com/wizenheimer/iris/src/internal/api/auth"
-	svc "github.com/wizenheimer/iris/src/internal/interfaces/service"
-	api "github.com/wizenheimer/iris/src/internal/models/api"
-	"github.com/wizenheimer/iris/src/pkg/logger"
-	"github.com/wizenheimer/iris/src/pkg/utils"
+	"github.com/wizenheimer/byrd/src/internal/api/auth"
+	svc "github.com/wizenheimer/byrd/src/internal/interfaces/service"
+	api "github.com/wizenheimer/byrd/src/internal/models/api"
+	"github.com/wizenheimer/byrd/src/pkg/logger"
+	"github.com/wizenheimer/byrd/src/pkg/utils"
 )
 
 type WorkspaceHandler struct {

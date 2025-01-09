@@ -3,8 +3,8 @@ package middleware
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
-	svc "github.com/wizenheimer/iris/src/internal/interfaces/service"
-	"github.com/wizenheimer/iris/src/pkg/logger"
+	svc "github.com/wizenheimer/byrd/src/internal/interfaces/service"
+	"github.com/wizenheimer/byrd/src/pkg/logger"
 )
 
 const (

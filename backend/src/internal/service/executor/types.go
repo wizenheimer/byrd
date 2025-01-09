@@ -4,12 +4,12 @@ import (
 	"context"
 	"sync"
 
-	clf "github.com/wizenheimer/iris/src/internal/interfaces/client"
-	exc "github.com/wizenheimer/iris/src/internal/interfaces/executor"
-	repo "github.com/wizenheimer/iris/src/internal/interfaces/repository"
-	api "github.com/wizenheimer/iris/src/internal/models/api"
-	models "github.com/wizenheimer/iris/src/internal/models/core"
-	"github.com/wizenheimer/iris/src/pkg/logger"
+	clf "github.com/wizenheimer/byrd/src/internal/interfaces/client"
+	exc "github.com/wizenheimer/byrd/src/internal/interfaces/executor"
+	repo "github.com/wizenheimer/byrd/src/internal/interfaces/repository"
+	api "github.com/wizenheimer/byrd/src/internal/models/api"
+	models "github.com/wizenheimer/byrd/src/internal/models/core"
+	"github.com/wizenheimer/byrd/src/pkg/logger"
 )
 
 type workflowExecutor struct {

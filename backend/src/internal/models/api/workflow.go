@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	models "github.com/wizenheimer/iris/src/internal/models/core"
+	models "github.com/wizenheimer/byrd/src/internal/models/core"
 )
 
 // WorkflowRequest is a request to start a workflow

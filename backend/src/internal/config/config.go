@@ -3,7 +3,7 @@ package config
 import (
 	"time"
 
-	"github.com/wizenheimer/iris/src/pkg/utils"
+	"github.com/wizenheimer/byrd/src/pkg/utils"
 )
 
 type Config struct {

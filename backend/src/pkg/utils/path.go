@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/wizenheimer/iris/src/internal/constants"
+	"github.com/wizenheimer/byrd/src/internal/constants"
 )
 
 // GenerateURLHash normalizes the URL and generates a consistent hash

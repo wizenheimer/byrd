@@ -3,8 +3,8 @@ package interfaces
 import (
 	"context"
 
-	api "github.com/wizenheimer/iris/src/internal/models/api"
-	models "github.com/wizenheimer/iris/src/internal/models/core"
+	api "github.com/wizenheimer/byrd/src/internal/models/api"
+	models "github.com/wizenheimer/byrd/src/internal/models/core"
 )
 
 // WorkflowRepository represents the repository for managing workflows

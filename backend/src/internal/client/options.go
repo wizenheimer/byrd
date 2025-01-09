@@ -3,8 +3,8 @@ package client
 import (
 	"time"
 
-	clf "github.com/wizenheimer/iris/src/internal/interfaces/client"
-	"github.com/wizenheimer/iris/src/pkg/logger"
+	clf "github.com/wizenheimer/byrd/src/internal/interfaces/client"
+	"github.com/wizenheimer/byrd/src/pkg/logger"
 )
 
 // WithMaxRetries sets the maximum number of retries for the client

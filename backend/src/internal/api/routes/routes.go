@@ -2,11 +2,11 @@ package routes
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/wizenheimer/iris/src/internal/api/handlers"
-	"github.com/wizenheimer/iris/src/internal/api/middleware"
-	"github.com/wizenheimer/iris/src/internal/config"
-	svc "github.com/wizenheimer/iris/src/internal/interfaces/service"
-	"github.com/wizenheimer/iris/src/pkg/logger"
+	"github.com/wizenheimer/byrd/src/internal/api/handlers"
+	"github.com/wizenheimer/byrd/src/internal/api/middleware"
+	"github.com/wizenheimer/byrd/src/internal/config"
+	svc "github.com/wizenheimer/byrd/src/internal/interfaces/service"
+	"github.com/wizenheimer/byrd/src/pkg/logger"
 )
 
 type HandlerContainer struct {

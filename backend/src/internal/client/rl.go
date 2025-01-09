@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	clf "github.com/wizenheimer/iris/src/internal/interfaces/client"
+	clf "github.com/wizenheimer/byrd/src/internal/interfaces/client"
 	"golang.org/x/time/rate"
 )
 

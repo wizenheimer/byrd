@@ -3,8 +3,8 @@ package workflow
 import (
 	"sync"
 
-	repo "github.com/wizenheimer/iris/src/internal/interfaces/repository"
-	"github.com/wizenheimer/iris/src/pkg/logger"
+	repo "github.com/wizenheimer/byrd/src/internal/interfaces/repository"
+	"github.com/wizenheimer/byrd/src/pkg/logger"
 )
 
 type workflowService struct {

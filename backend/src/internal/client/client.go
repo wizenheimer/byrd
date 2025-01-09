@@ -9,8 +9,8 @@ import (
 	"net/url"
 	"time"
 
-	clf "github.com/wizenheimer/iris/src/internal/interfaces/client"
-	"github.com/wizenheimer/iris/src/pkg/logger"
+	clf "github.com/wizenheimer/byrd/src/internal/interfaces/client"
+	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"go.uber.org/zap"
 )
 

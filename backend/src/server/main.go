@@ -7,11 +7,11 @@ import (
 
 	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/gofiber/fiber/v2"
-	"github.com/wizenheimer/iris/src/internal/api/middleware"
-	"github.com/wizenheimer/iris/src/internal/api/routes"
-	"github.com/wizenheimer/iris/src/internal/config"
-	"github.com/wizenheimer/iris/src/internal/repository/transaction"
-	"github.com/wizenheimer/iris/src/pkg/logger"
+	"github.com/wizenheimer/byrd/src/internal/api/middleware"
+	"github.com/wizenheimer/byrd/src/internal/api/routes"
+	"github.com/wizenheimer/byrd/src/internal/config"
+	"github.com/wizenheimer/byrd/src/internal/repository/transaction"
+	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"go.uber.org/zap"
 )
 

@@ -5,12 +5,12 @@ import (
 	"errors"
 	"fmt"
 
-	exc "github.com/wizenheimer/iris/src/internal/interfaces/executor"
-	repo "github.com/wizenheimer/iris/src/internal/interfaces/repository"
-	svc "github.com/wizenheimer/iris/src/internal/interfaces/service"
-	api "github.com/wizenheimer/iris/src/internal/models/api"
-	models "github.com/wizenheimer/iris/src/internal/models/core"
-	"github.com/wizenheimer/iris/src/pkg/logger"
+	exc "github.com/wizenheimer/byrd/src/internal/interfaces/executor"
+	repo "github.com/wizenheimer/byrd/src/internal/interfaces/repository"
+	svc "github.com/wizenheimer/byrd/src/internal/interfaces/service"
+	api "github.com/wizenheimer/byrd/src/internal/models/api"
+	models "github.com/wizenheimer/byrd/src/internal/models/core"
+	"github.com/wizenheimer/byrd/src/pkg/logger"
 )
 
 func NewWorkflowService(logger *logger.Logger, repository repo.WorkflowRepository, screenshotWorkflowExecutor, reportWorkflowExecutor exc.WorkflowExecutor) (svc.WorkflowService, error) {

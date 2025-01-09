@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/wizenheimer/iris/src/internal/api/commons"
+	"github.com/wizenheimer/byrd/src/internal/api/commons"
 )
 
 func sendErrorResponse(c *fiber.Ctx, status int, message string, details ...any) error {

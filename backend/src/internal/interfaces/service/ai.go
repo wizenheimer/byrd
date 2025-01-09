@@ -5,8 +5,8 @@ import (
 	"errors"
 	"image"
 
-	models "github.com/wizenheimer/iris/src/internal/models/core"
-	"github.com/wizenheimer/iris/src/pkg/err"
+	models "github.com/wizenheimer/byrd/src/internal/models/core"
+	"github.com/wizenheimer/byrd/src/pkg/err"
 )
 
 type AIService interface {

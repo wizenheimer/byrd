@@ -3,9 +3,9 @@ package workflow
 import (
 	"fmt"
 
-	exc "github.com/wizenheimer/iris/src/internal/interfaces/executor"
-	api "github.com/wizenheimer/iris/src/internal/models/api"
-	models "github.com/wizenheimer/iris/src/internal/models/core"
+	exc "github.com/wizenheimer/byrd/src/internal/interfaces/executor"
+	api "github.com/wizenheimer/byrd/src/internal/models/api"
+	models "github.com/wizenheimer/byrd/src/internal/models/core"
 )
 
 func (s *workflowService) registerExecutor(wfType models.WorkflowType, executor exc.WorkflowExecutor) {

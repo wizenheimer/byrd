@@ -2,7 +2,7 @@ package commons
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/wizenheimer/iris/src/internal/config"
+	"github.com/wizenheimer/byrd/src/internal/config"
 )
 
 type ErrorResponse struct {

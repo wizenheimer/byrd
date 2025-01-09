@@ -11,10 +11,10 @@ import (
 
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
-	svc "github.com/wizenheimer/iris/src/internal/interfaces/service"
-	models "github.com/wizenheimer/iris/src/internal/models/core"
-	"github.com/wizenheimer/iris/src/pkg/err"
-	"github.com/wizenheimer/iris/src/pkg/logger"
+	svc "github.com/wizenheimer/byrd/src/internal/interfaces/service"
+	models "github.com/wizenheimer/byrd/src/internal/models/core"
+	"github.com/wizenheimer/byrd/src/pkg/err"
+	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"go.uber.org/zap"
 )
 

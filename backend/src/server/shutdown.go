@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/wizenheimer/iris/src/internal/api/middleware"
-	"github.com/wizenheimer/iris/src/pkg/logger"
+	"github.com/wizenheimer/byrd/src/internal/api/middleware"
+	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"go.uber.org/zap"
 )
 

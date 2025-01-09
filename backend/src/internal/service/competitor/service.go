@@ -4,12 +4,12 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-	repo "github.com/wizenheimer/iris/src/internal/interfaces/repository"
-	svc "github.com/wizenheimer/iris/src/internal/interfaces/service"
-	api "github.com/wizenheimer/iris/src/internal/models/api"
-	models "github.com/wizenheimer/iris/src/internal/models/core"
-	"github.com/wizenheimer/iris/src/pkg/err"
-	"github.com/wizenheimer/iris/src/pkg/logger"
+	repo "github.com/wizenheimer/byrd/src/internal/interfaces/repository"
+	svc "github.com/wizenheimer/byrd/src/internal/interfaces/service"
+	api "github.com/wizenheimer/byrd/src/internal/models/api"
+	models "github.com/wizenheimer/byrd/src/internal/models/core"
+	"github.com/wizenheimer/byrd/src/pkg/err"
+	"github.com/wizenheimer/byrd/src/pkg/logger"
 )
 
 func NewCompetitorService(competitorRepository repo.CompetitorRepository, pageService svc.PageService, logger *logger.Logger) svc.CompetitorService {

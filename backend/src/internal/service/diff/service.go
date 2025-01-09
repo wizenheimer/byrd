@@ -3,11 +3,11 @@ package diff
 import (
 	"context"
 
-	svc "github.com/wizenheimer/iris/src/internal/interfaces/service"
-	models "github.com/wizenheimer/iris/src/internal/models/core"
-	"github.com/wizenheimer/iris/src/pkg/err"
-	"github.com/wizenheimer/iris/src/pkg/logger"
-	"github.com/wizenheimer/iris/src/pkg/utils"
+	svc "github.com/wizenheimer/byrd/src/internal/interfaces/service"
+	models "github.com/wizenheimer/byrd/src/internal/models/core"
+	"github.com/wizenheimer/byrd/src/pkg/err"
+	"github.com/wizenheimer/byrd/src/pkg/logger"
+	"github.com/wizenheimer/byrd/src/pkg/utils"
 )
 
 type diffService struct {

@@ -1,7 +1,7 @@
 package ai
 
 import (
-	models "github.com/wizenheimer/iris/src/internal/models/core"
+	models "github.com/wizenheimer/byrd/src/internal/models/core"
 )
 
 var DefaultUpdates = models.Profile{

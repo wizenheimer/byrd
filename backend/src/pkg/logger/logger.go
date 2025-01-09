@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/wizenheimer/iris/src/internal/config"
-	"github.com/wizenheimer/iris/src/pkg/utils"
+	"github.com/wizenheimer/byrd/src/internal/config"
+	"github.com/wizenheimer/byrd/src/pkg/utils"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )

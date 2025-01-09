@@ -2,9 +2,9 @@ package handlers
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/wizenheimer/iris/src/internal/api/auth"
-	svc "github.com/wizenheimer/iris/src/internal/interfaces/service"
-	"github.com/wizenheimer/iris/src/pkg/logger"
+	"github.com/wizenheimer/byrd/src/internal/api/auth"
+	svc "github.com/wizenheimer/byrd/src/internal/interfaces/service"
+	"github.com/wizenheimer/byrd/src/pkg/logger"
 )
 
 type UserHandler struct {
