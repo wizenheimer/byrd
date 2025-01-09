@@ -7,6 +7,7 @@ CREATE TYPE user_workspace_role AS ENUM ('admin', 'user', 'viewer');
 CREATE TYPE user_workspace_status AS ENUM ('pending', 'active', 'inactive');
 CREATE TYPE competitor_status AS ENUM ('active', 'inactive');
 CREATE TYPE page_status AS ENUM ('active', 'inactive');
+CREATE TYPE history_status AS ENUM ('active', 'inactive');
 -- Create workspaces table
 CREATE TABLE workspaces (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -70,6 +71,7 @@ CREATE TABLE page_history (
     bucket_id_1 VARCHAR(255) NOT NULL,
     bucket_id_2 VARCHAR(255) NOT NULL,
     diff_content JSONB,
+    status history_status NOT NULL DEFAULT 'active',
     screenshot_url_1 TEXT,
     screenshot_url_2 TEXT,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
