@@ -9,7 +9,7 @@ type WorkspaceCreationRequest struct {
 
 	// Users is the users to create the workspace for
 	// This excludes the user who is creating the workspace
-	WorkspaceUserCreationRequest []CreateWorkspaceUserRequest `json:"users" validate:"dive"`
+	WorkspaceUserCreationRequest []CreateWorkspaceUserRequest `json:"users" validate:"required,dive"`
 }
 
 // WorkspaceCreationResponse is the response to create a workspace

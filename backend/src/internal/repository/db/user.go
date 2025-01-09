@@ -16,6 +16,7 @@ import (
 	"github.com/wizenheimer/byrd/src/pkg/err"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"github.com/wizenheimer/byrd/src/pkg/utils"
+	"go.uber.org/zap"
 )
 
 type userRepo struct {
@@ -445,14 +446,13 @@ func (r *userRepo) AddUsersToWorkspace(ctx context.Context, workspaceUserProps [
 
 	// Get or create users for each email
 	emails := make([]string, 0)
-	for i, props := range workspaceUserProps {
-		if err := utils.SetDefaultsAndValidate(&workspaceUserProps[i]); err != nil {
-			userErr.Add(err, map[string]any{
-				"workspaceUserProps": workspaceUserProps[i],
-			})
-			continue
-		}
-		emails = append(emails, props.Email)
+	for index, props := range workspaceUserProps {
+		// Normalize the email
+		email := utils.NormalizeEmail(props.Email)
+		// Add the email to the list
+		emails = append(emails, email)
+		// Update the email in the props
+		workspaceUserProps[index].Email = email
 	}
 
 	users, errs := r.GetOrCreateUserByEmail(ctx, emails)
@@ -468,17 +468,39 @@ func (r *userRepo) AddUsersToWorkspace(ctx context.Context, workspaceUserProps [
 		emailToUserID[*user.Email] = user.ID
 	}
 
-	valueStrings := make([]string, len(workspaceUserProps))
-	valueArgs := make([]interface{}, 0, len(workspaceUserProps)*4)
+	valueStrings := make([]string, 0, len(users))
+	valueArgs := make([]interface{}, 0, len(users)*4)
 
-	for i, props := range workspaceUserProps {
-		valueStrings[i] = fmt.Sprintf("($%d, $%d, $%d, $%d)", i*4+1, i*4+2, i*4+3, i*4+4)
+	// Iterate over the workspaceUserProps and prepare the values for the query
+	for _, props := range workspaceUserProps {
+		// Skip those emails which are not found in the users list
+		if _, exists := emailToUserID[props.Email]; !exists {
+			r.logger.Debug("skipping user - not found in mapping",
+				zap.String("email", props.Email))
+			continue
+		}
+
+		// Use len(valueStrings) instead of i for parameter numbering
+		paramBase := len(valueStrings)*4 + 1
+		valueStrings = append(valueStrings,
+			fmt.Sprintf("($%d, $%d, $%d, $%d)",
+				paramBase, paramBase+1, paramBase+2, paramBase+3))
+
 		valueArgs = append(valueArgs,
 			workspaceID,
 			emailToUserID[props.Email],
 			props.Role,
-			props.Status, // Now using the status from props
+			props.Status,
 		)
+	}
+
+	// Only proceed if we have values to insert
+	if len(valueStrings) == 0 {
+		userErr.Add(errors.New("no valid users to insert"), map[string]any{
+			"workspaceID":        workspaceID,
+			"workspaceUserProps": workspaceUserProps,
+		})
+		return nil, userErr
 	}
 
 	insertQuery := fmt.Sprintf(`
@@ -489,6 +511,11 @@ func (r *userRepo) AddUsersToWorkspace(ctx context.Context, workspaceUserProps [
             status = EXCLUDED.status
         RETURNING workspace_id, user_id, role, status
     `, strings.Join(valueStrings, ","))
+
+	r.logger.Debug("preparing workspace users",
+		zap.Int("total_props", len(workspaceUserProps)),
+		zap.Int("valid_users", len(valueStrings)),
+		zap.Any("email_mapping", emailToUserID))
 
 	rows, err := runner.QueryContext(ctx, insertQuery, valueArgs...)
 	if err != nil {

@@ -128,7 +128,7 @@ type WorkspaceService interface {
 	// It returns an error if the workspace does not exist
 	// It returns an error if the user is not an member of the workspace
 	// pagination params applies to competitors (not pages)
-	ListWorkspaceCompetitors(ctx context.Context, clerkUser *clerk.User, workspaceID uuid.UUID, params api.PaginationParams) (*api.PaginatedResponse, err.Error)
+	ListWorkspaceCompetitors(ctx context.Context, clerkUser *clerk.User, workspaceID uuid.UUID, params api.PaginationParams) ([]api.GetWorkspaceCompetitorResponse, err.Error)
 
 	// ListWorkspacePageHistory lists the history of a page
 	// It returns an error if the workspace does not exist

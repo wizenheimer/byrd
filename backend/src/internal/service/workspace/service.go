@@ -5,6 +5,7 @@ import (
 
 	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 
 	repo "github.com/wizenheimer/byrd/src/internal/interfaces/repository"
 	svc "github.com/wizenheimer/byrd/src/internal/interfaces/service"
@@ -42,39 +43,44 @@ func (ws *workspaceService) CreateWorkspace(ctx context.Context, workspaceOwner 
 		return nil, wErr
 	}
 
-	// Step 2: Associate the workspace with the clerkUser
-	if _, err := ws.userService.CreateWorkspaceOwner(ctx, workspaceOwner, workspace.ID); err != nil && err.HasErrors() {
-		wErr.Merge(err)
-		return nil, wErr
-	}
-
-	// Step 3: Invite users to the workspace
+	// Step 2: Invite users to the workspace
 	emailMap := make(map[string]bool)
 	emailMap[billingEmail] = true
 
 	var invitedUsers []api.InviteUserToWorkspaceRequest
 	for _, user := range workspaceReq.WorkspaceUserCreationRequest {
-		// Ensure the owner is not invited again
+		// Ensure that the user is not already invited
 		if _, ok := emailMap[user.Email]; ok {
 			continue
 		}
 
 		invitedUsers = append(invitedUsers, api.InviteUserToWorkspaceRequest{
-			Email: user.Email,
-			Role:  models.UserRoleUser,
+			Email:  user.Email,
+			Role:   models.UserRoleUser,
+			Status: models.UserWorkspaceStatusPending,
 		})
 
 		emailMap[user.Email] = true
 	}
 
+	// Add the workspace owner to the list of invited users
+	invitedUsers = append(invitedUsers, api.InviteUserToWorkspaceRequest{
+		Email:  billingEmail,
+		Role:   models.UserRoleAdmin,
+		Status: models.UserWorkspaceStatusActive,
+	})
+
+	ws.logger.Debug("Inviting users to workspace", zap.Any("invited_users", invitedUsers))
+
 	// Batch invite users to the workspace
 	_, rErr = ws.userService.AddUserToWorkspace(ctx, workspace.ID, invitedUsers)
 	if rErr != nil && rErr.HasErrors() {
+		rErr.Log("Failed to add users to created workspace", ws.logger)
 		wErr.Merge(rErr)
 		return nil, wErr
 	}
 
-	// Step 4: Create a competitor for the workspace
+	// Step 3: Create a competitor for the workspace
 	// Flatten the competitor request to create a competitor
 	for _, pages := range workspaceReq.CompetitorCreationRequest.Pages {
 		competitorReq := api.CreateCompetitorRequest{
@@ -471,7 +477,7 @@ func (ws *workspaceService) AddPageToCompetitor(ctx context.Context, clerkUser *
 	return pages, nil
 }
 
-func (ws *workspaceService) ListWorkspaceCompetitors(ctx context.Context, clerkUser *clerk.User, workspaceID uuid.UUID, params api.PaginationParams) (*api.PaginatedResponse, err.Error) {
+func (ws *workspaceService) ListWorkspaceCompetitors(ctx context.Context, clerkUser *clerk.User, workspaceID uuid.UUID, params api.PaginationParams) ([]api.GetWorkspaceCompetitorResponse, err.Error) {
 	wErr := err.New()
 
 	workspace, err := ws.GetWorkspace(ctx, workspaceID)
@@ -482,12 +488,11 @@ func (ws *workspaceService) ListWorkspaceCompetitors(ctx context.Context, clerkU
 
 	competitorsWithPages, err := ws.competitorService.ListWorkspaceCompetitors(ctx, workspace.ID, params)
 	if err != nil && err.HasErrors() {
+		wErr.Merge(err)
 		return nil, wErr
 	}
 
-	return &api.PaginatedResponse{
-		Data: competitorsWithPages,
-	}, nil
+	return competitorsWithPages, nil
 }
 
 func (ws *workspaceService) ListWorkspacePageHistory(ctx context.Context, clerkUser *clerk.User, workspaceID, competitorID, pageID uuid.UUID, param api.PaginationParams) ([]models.PageHistory, err.Error) {

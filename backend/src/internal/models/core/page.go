@@ -29,7 +29,7 @@ type Page struct {
 	URL string `json:"url" validate:"required,url"`
 
 	// CaptureProfile is the profile used to capture the page
-	CaptureProfile ScreenshotRequestOptions `json:"capture_profile" validate:"dive"`
+	CaptureProfile ScreenshotRequestOptions `json:"capture_profile"`
 
 	// DiffProfile is the profile used to diff the page
 	DiffProfile map[string]interface{} `json:"diff_profile"`
@@ -68,7 +68,7 @@ type PageProps struct {
 
 	// CaptureProfile is the profile used to capture the page
 	// This is optional and defaults to an default capture profile
-	CaptureProfile ScreenshotRequestOptions `json:"capture_profile" validate:"dive"`
+	CaptureProfile ScreenshotRequestOptions `json:"capture_profile"`
 
 	// DiffProfile is the profile used to diff the page
 	// This is optional and defaults to an default diff profile

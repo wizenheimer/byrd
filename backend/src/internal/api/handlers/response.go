@@ -7,7 +7,7 @@ import (
 	"github.com/wizenheimer/byrd/src/pkg/utils"
 )
 
-func sendDataResponse(c *fiber.Ctx, status int, message string, data ...any) error {
+func sendDataResponse(c *fiber.Ctx, status int, message string, data any) error {
 	return commons.SendDataResponse(c, status, message, data)
 }
 

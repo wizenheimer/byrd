@@ -2,7 +2,6 @@ package user
 
 import (
 	"context"
-	"errors"
 
 	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/google/uuid"
@@ -71,20 +70,23 @@ func (us *userService) CreateWorkspaceOwner(ctx context.Context, clerk *clerk.Us
 func (us *userService) AddUserToWorkspace(ctx context.Context, workspaceID uuid.UUID, invitedUsers []api.InviteUserToWorkspaceRequest) ([]api.CreateWorkspaceUserResponse, err.Error) {
 	wErr := err.New()
 	if len(invitedUsers) == 0 {
-		wErr.Add(svc.ErrFailedToAddUserToWorkspace, map[string]any{"error": errors.New("no users to add")})
+		wErr.Add(svc.ErrFailedToAddUserToWorkspace, map[string]any{"error": "no users to add"})
 		return nil, wErr
 	}
 
-	var responses []api.CreateWorkspaceUserResponse
+	err := utils.SetDefaultsAndValidateArray(&invitedUsers)
+	if err != nil {
+		wErr.Add(svc.ErrFailedToAddUserToWorkspace, map[string]any{"error": err.Error()})
+		return nil, wErr
+	}
+
 	workspaceUsers, uErr := us.userRepository.AddUsersToWorkspace(ctx, invitedUsers, workspaceID)
 	if uErr != nil && uErr.HasErrors() {
 		wErr.Merge(uErr)
 		return nil, wErr
 	}
 
-	responses = append(responses, workspaceUsers...)
-
-	return responses, wErr
+	return workspaceUsers, wErr
 }
 
 func (us *userService) GetWorkspaceUser(ctx context.Context, clerk *clerk.User, workspaceID uuid.UUID) (models.WorkspaceUser, err.Error) {

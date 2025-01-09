@@ -75,3 +75,39 @@ func SetDefaultsAndValidate(s interface{}) error {
 	}
 	return validateStruct(s)
 }
+
+func SetDefaultsAndValidateArray(arr interface{}) error {
+	if validate == nil {
+		InitializeValidator()
+	}
+
+	// Handle pointer to slice case
+	value := reflect.ValueOf(arr)
+	if value.Kind() == reflect.Ptr {
+		value = value.Elem()
+	}
+
+	if value.Kind() != reflect.Slice && value.Kind() != reflect.Array {
+		return fmt.Errorf("input must be a slice or array")
+	}
+
+	// Set defaults for each element in the array
+	for i := 0; i < value.Len(); i++ {
+		// Get a pointer to the actual element in the slice
+		elem := value.Index(i).Addr().Interface()
+
+		// Now we're passing a pointer to the actual element
+		if err := setDefaults(elem); err != nil {
+			return fmt.Errorf("failed to set defaults for element %d: %w", i, err)
+		}
+	}
+
+	// Create a wrapper struct for validation
+	wrapper := struct {
+		Array interface{} `validate:"required,dive"`
+	}{
+		Array: arr,
+	}
+
+	return validateStruct(wrapper)
+}
