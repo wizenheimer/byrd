@@ -31,7 +31,7 @@ type DataResponse struct {
 	Data    interface{} `json:"data"`
 }
 
-func SendDataResponse(c *fiber.Ctx, status int, message string, data ...any) error {
+func SendDataResponse(c *fiber.Ctx, status int, message string, data any) error {
 	return c.Status(status).JSON(DataResponse{
 		Data:    data,
 		Message: message,

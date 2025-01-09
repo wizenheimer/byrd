@@ -1,6 +1,11 @@
 package err
 
-import "encoding/json"
+import (
+	"encoding/json"
+
+	"github.com/wizenheimer/byrd/src/pkg/logger"
+	"go.uber.org/zap"
+)
 
 // ErrorContext is an alias for map[string]any to store error parameters
 type ErrorContext map[string]any
@@ -58,6 +63,16 @@ func (e Error) HasFatalErrors(nonFatalErrors ...error) bool {
 // HasErrors checks if there are any errors
 func (e Error) HasErrors() bool {
 	return len(e) > 0
+}
+
+func (e Error) Log(msg string, logger *logger.Logger, fields ...zap.Field) {
+	if len(e) == 0 {
+		return
+	}
+
+	fields = append(fields, zap.String("errors", e.Error()))
+
+	logger.Error(msg, fields...)
 }
 
 func (e Error) Merge(others ...Error) {
