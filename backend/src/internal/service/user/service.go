@@ -9,7 +9,7 @@ import (
 	svc "github.com/wizenheimer/byrd/src/internal/interfaces/service"
 	api "github.com/wizenheimer/byrd/src/internal/models/api"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
-	"github.com/wizenheimer/byrd/src/pkg/err"
+	"github.com/wizenheimer/byrd/src/pkg/errs"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"github.com/wizenheimer/byrd/src/pkg/utils"
 )
@@ -21,8 +21,8 @@ func NewUserService(userRepository repo.UserRepository, logger *logger.Logger) s
 	}
 }
 
-func (us *userService) CreateWorkspaceOwner(ctx context.Context, clerk *clerk.User, workspaceID uuid.UUID) (*models.User, err.Error) {
-	wErr := err.New()
+func (us *userService) CreateWorkspaceOwner(ctx context.Context, clerk *clerk.User, workspaceID uuid.UUID) (*models.User, errs.Error) {
+	wErr := errs.New()
 	email, err := utils.GetClerkUserEmail(clerk)
 	if err != nil {
 		wErr.Add(svc.ErrFailedToCreateWorkspaceOwner, map[string]any{"error": err.Error()})
@@ -67,8 +67,8 @@ func (us *userService) CreateWorkspaceOwner(ctx context.Context, clerk *clerk.Us
 	return &user, nil
 }
 
-func (us *userService) AddUserToWorkspace(ctx context.Context, workspaceID uuid.UUID, invitedUsers []api.InviteUserToWorkspaceRequest) ([]api.CreateWorkspaceUserResponse, err.Error) {
-	wErr := err.New()
+func (us *userService) AddUserToWorkspace(ctx context.Context, workspaceID uuid.UUID, invitedUsers []api.InviteUserToWorkspaceRequest) ([]api.CreateWorkspaceUserResponse, errs.Error) {
+	wErr := errs.New()
 	if len(invitedUsers) == 0 {
 		wErr.Add(svc.ErrFailedToAddUserToWorkspace, map[string]any{"error": "no users to add"})
 		return nil, wErr
@@ -89,8 +89,8 @@ func (us *userService) AddUserToWorkspace(ctx context.Context, workspaceID uuid.
 	return workspaceUsers, wErr
 }
 
-func (us *userService) GetWorkspaceUser(ctx context.Context, clerk *clerk.User, workspaceID uuid.UUID) (models.WorkspaceUser, err.Error) {
-	wErr := err.New()
+func (us *userService) GetWorkspaceUser(ctx context.Context, clerk *clerk.User, workspaceID uuid.UUID) (models.WorkspaceUser, errs.Error) {
+	wErr := errs.New()
 	userEmail, err := utils.GetClerkUserEmail(clerk)
 	if err != nil {
 		wErr.Add(svc.ErrFailedToGetUserEmail, map[string]any{"error": err.Error()})
@@ -106,8 +106,8 @@ func (us *userService) GetWorkspaceUser(ctx context.Context, clerk *clerk.User, 
 	return workspaceUser, nil
 }
 
-func (us *userService) GetWorkspaceUserByID(ctx context.Context, userID, workspaceID uuid.UUID) (models.WorkspaceUser, err.Error) {
-	wErr := err.New()
+func (us *userService) GetWorkspaceUserByID(ctx context.Context, userID, workspaceID uuid.UUID) (models.WorkspaceUser, errs.Error) {
+	wErr := errs.New()
 	workspaceUser, uErr := us.userRepository.GetWorkspaceUser(ctx, workspaceID, userID)
 	if uErr != nil && uErr.HasErrors() {
 		wErr.Merge(uErr)
@@ -117,8 +117,8 @@ func (us *userService) GetWorkspaceUserByID(ctx context.Context, userID, workspa
 	return workspaceUser, nil
 }
 
-func (us *userService) ListWorkspaceUsers(ctx context.Context, workspaceID uuid.UUID) ([]models.WorkspaceUser, err.Error) {
-	wErr := err.New()
+func (us *userService) ListWorkspaceUsers(ctx context.Context, workspaceID uuid.UUID) ([]models.WorkspaceUser, errs.Error) {
+	wErr := errs.New()
 	workspaceUsers, uErr := us.userRepository.ListWorkspaceUsers(ctx, workspaceID)
 	if uErr != nil && uErr.HasErrors() {
 		wErr.Merge(uErr)
@@ -128,8 +128,8 @@ func (us *userService) ListWorkspaceUsers(ctx context.Context, workspaceID uuid.
 	return workspaceUsers, nil
 }
 
-func (us *userService) ListUserWorkspaces(ctx context.Context, clerk *clerk.User) ([]uuid.UUID, err.Error) {
-	wErr := err.New()
+func (us *userService) ListUserWorkspaces(ctx context.Context, clerk *clerk.User) ([]uuid.UUID, errs.Error) {
+	wErr := errs.New()
 
 	primaryEmail, err := utils.GetClerkUserEmail(clerk)
 	if err != nil {
@@ -152,8 +152,8 @@ func (us *userService) ListUserWorkspaces(ctx context.Context, clerk *clerk.User
 	return workspaceIDs, nil
 }
 
-func (us *userService) UpdateWorkspaceUserRole(ctx context.Context, userID, workspaceID uuid.UUID, role models.UserWorkspaceRole) (models.WorkspaceUser, err.Error) {
-	wErr := err.New()
+func (us *userService) UpdateWorkspaceUserRole(ctx context.Context, userID, workspaceID uuid.UUID, role models.UserWorkspaceRole) (models.WorkspaceUser, errs.Error) {
+	wErr := errs.New()
 
 	userIDs := []uuid.UUID{userID}
 	_, uErr := us.userRepository.UpdateWorkspaceUserRole(ctx, workspaceID, userIDs, role)
@@ -171,8 +171,8 @@ func (us *userService) UpdateWorkspaceUserRole(ctx context.Context, userID, work
 	return workspaceUser, nil
 }
 
-func (us *userService) UpdateWorkspaceUserStatus(ctx context.Context, userID, workspaceID uuid.UUID, status models.UserWorkspaceStatus) err.Error {
-	wErr := err.New()
+func (us *userService) UpdateWorkspaceUserStatus(ctx context.Context, userID, workspaceID uuid.UUID, status models.UserWorkspaceStatus) errs.Error {
+	wErr := errs.New()
 	userIDs := []uuid.UUID{userID}
 	_, uErr := us.userRepository.UpdateWorkspaceUserStatus(ctx, workspaceID, userIDs, status)
 	if uErr != nil && uErr.HasErrors() {
@@ -183,8 +183,8 @@ func (us *userService) UpdateWorkspaceUserStatus(ctx context.Context, userID, wo
 	return nil
 }
 
-func (us *userService) RemoveWorkspaceUsers(ctx context.Context, userIDs []uuid.UUID, workspaceID uuid.UUID) err.Error {
-	wErr := err.New()
+func (us *userService) RemoveWorkspaceUsers(ctx context.Context, userIDs []uuid.UUID, workspaceID uuid.UUID) errs.Error {
+	wErr := errs.New()
 	uErr := us.userRepository.RemoveUsersFromWorkspace(ctx, userIDs, workspaceID)
 	if uErr != nil && uErr.HasErrors() {
 		wErr.Merge(uErr)
@@ -194,8 +194,8 @@ func (us *userService) RemoveWorkspaceUsers(ctx context.Context, userIDs []uuid.
 	return nil
 }
 
-func (us *userService) GetWorkspaceUserCountByRole(ctx context.Context, workspaceID uuid.UUID) (int, int, err.Error) {
-	wErr := err.New()
+func (us *userService) GetWorkspaceUserCountByRole(ctx context.Context, workspaceID uuid.UUID) (int, int, errs.Error) {
+	wErr := errs.New()
 	admin, member, uErr := us.userRepository.GetWorkspaceUserCountByRole(ctx, workspaceID)
 	if uErr != nil && uErr.HasErrors() {
 		wErr.Merge(uErr)
@@ -205,8 +205,8 @@ func (us *userService) GetWorkspaceUserCountByRole(ctx context.Context, workspac
 	return admin, member, nil
 }
 
-func (us *userService) SyncUser(ctx context.Context, clerk *clerk.User) err.Error {
-	wErr := err.New()
+func (us *userService) SyncUser(ctx context.Context, clerk *clerk.User) errs.Error {
+	wErr := errs.New()
 	primaryEmail, err := utils.GetClerkUserEmail(clerk)
 	if err != nil {
 		wErr.Add(svc.ErrFailedToGetUserEmail, map[string]any{"error": err.Error()})
@@ -226,8 +226,8 @@ func (us *userService) SyncUser(ctx context.Context, clerk *clerk.User) err.Erro
 	return nil
 }
 
-func (us *userService) DeleteUser(ctx context.Context, clerk *clerk.User) err.Error {
-	wErr := err.New()
+func (us *userService) DeleteUser(ctx context.Context, clerk *clerk.User) errs.Error {
+	wErr := errs.New()
 
 	primaryEmail, err := utils.GetClerkUserEmail(clerk)
 	if err != nil {

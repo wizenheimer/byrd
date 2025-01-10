@@ -41,8 +41,8 @@ func (m *AuthorizationMiddleware) RequireWorkspaceAdmin(c *fiber.Ctx) error {
 		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid workspace ID", map[string]interface{}{"error": err.Error(), "workspaceID": workspaceID})
 	}
 
-	if exists, err := m.workspaceService.ClerkUserIsWorkspaceAdmin(c.Context(), workspaceUUID, clerkUser); !exists || err != nil {
-		return sendErrorResponse(c, fiber.StatusUnauthorized, "Unauthorized", map[string]interface{}{"error": err.Error(), "workspaceID": workspaceID})
+	if exists, e := m.workspaceService.ClerkUserIsWorkspaceAdmin(c.Context(), workspaceUUID, clerkUser); !exists || (e != nil && e.HasErrors()) {
+		return sendErrorResponse(c, fiber.StatusUnauthorized, "Unauthorized", map[string]interface{}{"error": e.Error(), "workspaceID": workspaceID})
 	}
 
 	return c.Next()
@@ -65,8 +65,8 @@ func (m *AuthorizationMiddleware) RequireWorkspaceMembership(c *fiber.Ctx) error
 		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid workspace ID", map[string]interface{}{"error": err.Error(), "workspaceID": workspaceID})
 	}
 
-	if exists, err := m.workspaceService.ClerkUserIsWorkspaceMember(c.Context(), workspaceUUID, clerkUser); !exists || err != nil {
-		return sendErrorResponse(c, fiber.StatusUnauthorized, "Unauthorized", map[string]interface{}{"error": err.Error(), "workspaceID": workspaceID})
+	if exists, e := m.workspaceService.ClerkUserIsWorkspaceMember(c.Context(), workspaceUUID, clerkUser); !exists || (e != nil && e.HasErrors()) {
+		return sendErrorResponse(c, fiber.StatusUnauthorized, "Unauthorized", map[string]interface{}{"error": e.Error(), "workspaceID": workspaceID})
 	}
 
 	return c.Next()

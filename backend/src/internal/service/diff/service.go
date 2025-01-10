@@ -5,7 +5,7 @@ import (
 
 	svc "github.com/wizenheimer/byrd/src/internal/interfaces/service"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
-	"github.com/wizenheimer/byrd/src/pkg/err"
+	"github.com/wizenheimer/byrd/src/pkg/errs"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"github.com/wizenheimer/byrd/src/pkg/utils"
 )
@@ -29,6 +29,6 @@ func NewDiffService(aiService svc.AIService, logger *logger.Logger) (svc.DiffSer
 	}, nil
 }
 
-func (d *diffService) Compare(ctx context.Context, content1, content2 *models.ScreenshotHTMLContentResponse, profileStr string, persist bool) (*models.DynamicChanges, err.Error) {
+func (d *diffService) Compare(ctx context.Context, content1, content2 *models.ScreenshotHTMLContentResponse, profileStr string, persist bool) (*models.DynamicChanges, errs.Error) {
 	return nil, nil
 }

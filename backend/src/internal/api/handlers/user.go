@@ -56,8 +56,8 @@ func (uh *UserHandler) Sync(c *fiber.Ctx) error {
 		return sendErrorResponse(c, fiber.StatusUnauthorized, "Couldn't get user from context", err.Error())
 	}
 
-	if err := uh.userService.SyncUser(c.Context(), clerkUser); err != nil && err.HasErrors() {
-		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not sync user", err.Error())
+	if e := uh.userService.SyncUser(c.Context(), clerkUser); e != nil && e.HasErrors() {
+		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not sync user", e)
 	}
 
 	return sendDataResponse(c, fiber.StatusOK, "User is synchronized", nil)

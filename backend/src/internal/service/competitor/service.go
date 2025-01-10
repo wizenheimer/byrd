@@ -8,7 +8,7 @@ import (
 	svc "github.com/wizenheimer/byrd/src/internal/interfaces/service"
 	api "github.com/wizenheimer/byrd/src/internal/models/api"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
-	"github.com/wizenheimer/byrd/src/pkg/err"
+	"github.com/wizenheimer/byrd/src/pkg/errs"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 )
 
@@ -21,8 +21,8 @@ func NewCompetitorService(competitorRepository repo.CompetitorRepository, pageSe
 	}
 }
 
-func (cs *competitorService) CreateCompetitor(ctx context.Context, workspaceID uuid.UUID, competitorReq api.CreateCompetitorRequest) (api.CreateWorkspaceCompetitorResponse, err.Error) {
-	cErr := err.New()
+func (cs *competitorService) CreateCompetitor(ctx context.Context, workspaceID uuid.UUID, competitorReq api.CreateCompetitorRequest) (api.CreateWorkspaceCompetitorResponse, errs.Error) {
+	cErr := errs.New()
 	competitors := make([]models.Competitor, 0)
 
 	// Iterate over the list of pages in the request
@@ -58,8 +58,8 @@ func (cs *competitorService) CreateCompetitor(ctx context.Context, workspaceID u
 
 }
 
-func (cs *competitorService) GetCompetitor(ctx context.Context, workspaceID, competitorID uuid.UUID, pagePaginationParam api.PaginationParams) (api.GetWorkspaceCompetitorResponse, err.Error) {
-	cErr := err.New()
+func (cs *competitorService) GetCompetitor(ctx context.Context, workspaceID, competitorID uuid.UUID, pagePaginationParam api.PaginationParams) (api.GetWorkspaceCompetitorResponse, errs.Error) {
+	cErr := errs.New()
 	competitor, err := cs.competitorRepository.GetCompetitor(ctx, competitorID)
 	if err != nil && err.HasErrors() {
 		cErr.Merge(err)
@@ -78,8 +78,8 @@ func (cs *competitorService) GetCompetitor(ctx context.Context, workspaceID, com
 	}, cErr
 }
 
-func (cs *competitorService) CompetitorExists(ctx context.Context, workspaceID, competitorID uuid.UUID) (bool, err.Error) {
-	cErr := err.New()
+func (cs *competitorService) CompetitorExists(ctx context.Context, workspaceID, competitorID uuid.UUID) (bool, errs.Error) {
+	cErr := errs.New()
 	competitor, err := cs.competitorRepository.GetCompetitor(ctx, competitorID)
 	if err != nil && err.HasErrors() {
 		cErr.Merge(err)
@@ -89,8 +89,8 @@ func (cs *competitorService) CompetitorExists(ctx context.Context, workspaceID, 
 	return competitor.WorkspaceID == workspaceID, nil
 }
 
-func (cs *competitorService) PageExists(ctx context.Context, competitorID, pageID uuid.UUID) (bool, err.Error) {
-	cErr := err.New()
+func (cs *competitorService) PageExists(ctx context.Context, competitorID, pageID uuid.UUID) (bool, errs.Error) {
+	cErr := errs.New()
 	if _, err := cs.pageService.GetPage(ctx, competitorID, pageID); err != nil {
 		cErr.Merge(err)
 		return false, cErr
@@ -99,8 +99,8 @@ func (cs *competitorService) PageExists(ctx context.Context, competitorID, pageI
 	return true, nil
 }
 
-func (cs *competitorService) ListWorkspaceCompetitors(ctx context.Context, workspaceID uuid.UUID, param api.PaginationParams) ([]api.GetWorkspaceCompetitorResponse, err.Error) {
-	cErr := err.New()
+func (cs *competitorService) ListWorkspaceCompetitors(ctx context.Context, workspaceID uuid.UUID, param api.PaginationParams) ([]api.GetWorkspaceCompetitorResponse, errs.Error) {
+	cErr := errs.New()
 	competitors, err := cs.competitorRepository.ListWorkspaceCompetitors(ctx, workspaceID, param.GetLimit(), param.GetOffset())
 	if err != nil && err.HasErrors() {
 		cErr.Merge(err)
@@ -125,8 +125,8 @@ func (cs *competitorService) ListWorkspaceCompetitors(ctx context.Context, works
 	return competitorResponses, cErr
 }
 
-func (cs *competitorService) RemoveCompetitors(ctx context.Context, workspaceID uuid.UUID, competitorIDs []uuid.UUID) err.Error {
-	cErr := err.New()
+func (cs *competitorService) RemoveCompetitors(ctx context.Context, workspaceID uuid.UUID, competitorIDs []uuid.UUID) errs.Error {
+	cErr := errs.New()
 	// Remove workspace competitors
 
 	if err := cs.competitorRepository.RemoveWorkspaceCompetitors(ctx, workspaceID, competitorIDs); err != nil && err.HasErrors() {
@@ -149,8 +149,8 @@ func (cs *competitorService) RemoveCompetitors(ctx context.Context, workspaceID 
 	return cErr
 }
 
-func (cs *competitorService) AddPagesToCompetitor(ctx context.Context, competitorID uuid.UUID, pageReq []api.CreatePageRequest) ([]models.Page, err.Error) {
-	cErr := err.New()
+func (cs *competitorService) AddPagesToCompetitor(ctx context.Context, competitorID uuid.UUID, pageReq []api.CreatePageRequest) ([]models.Page, errs.Error) {
+	cErr := errs.New()
 	page, err := cs.pageService.CreatePage(ctx, competitorID, pageReq)
 	if err != nil && err.HasErrors() {
 		cErr.Merge(err)
@@ -159,8 +159,8 @@ func (cs *competitorService) AddPagesToCompetitor(ctx context.Context, competito
 	return page, nil
 }
 
-func (cs *competitorService) GetCompetitorPage(ctx context.Context, competitorID, pageID uuid.UUID, historyPaginationParams api.PaginationParams) (api.GetPageResponse, err.Error) {
-	cErr := err.New()
+func (cs *competitorService) GetCompetitorPage(ctx context.Context, competitorID, pageID uuid.UUID, historyPaginationParams api.PaginationParams) (api.GetPageResponse, errs.Error) {
+	cErr := errs.New()
 	page, err := cs.pageService.GetPageWithHistory(ctx, competitorID, pageID, historyPaginationParams)
 	if err != nil && err.HasErrors() {
 		return api.GetPageResponse{}, cErr
@@ -168,8 +168,8 @@ func (cs *competitorService) GetCompetitorPage(ctx context.Context, competitorID
 	return page, nil
 }
 
-func (cs *competitorService) UpdatePage(ctx context.Context, competitorID, pageID uuid.UUID, pageReq api.UpdatePageRequest) (models.Page, err.Error) {
-	cErr := err.New()
+func (cs *competitorService) UpdatePage(ctx context.Context, competitorID, pageID uuid.UUID, pageReq api.UpdatePageRequest) (models.Page, errs.Error) {
+	cErr := errs.New()
 	page, err := cs.pageService.UpdatePage(ctx, competitorID, pageID, pageReq)
 	if err != nil {
 		cErr.Merge(err)
@@ -179,8 +179,8 @@ func (cs *competitorService) UpdatePage(ctx context.Context, competitorID, pageI
 	return page, nil
 }
 
-func (cs *competitorService) RemovePagesFromCompetitor(ctx context.Context, competitorID uuid.UUID, pageID []uuid.UUID) err.Error {
-	cErr := err.New()
+func (cs *competitorService) RemovePagesFromCompetitor(ctx context.Context, competitorID uuid.UUID, pageID []uuid.UUID) errs.Error {
+	cErr := errs.New()
 	// Remove pages for the competitor
 	errs := cs.pageService.RemovePage(ctx, competitorID, pageID)
 	if len(errs) > 0 {
@@ -190,8 +190,8 @@ func (cs *competitorService) RemovePagesFromCompetitor(ctx context.Context, comp
 	return nil
 }
 
-func (cs *competitorService) ListCompetitorPages(ctx context.Context, competitorID uuid.UUID) ([]models.Page, err.Error) {
-	cErr := err.New()
+func (cs *competitorService) ListCompetitorPages(ctx context.Context, competitorID uuid.UUID) ([]models.Page, errs.Error) {
+	cErr := errs.New()
 	pages, err := cs.pageService.ListCompetitorPages(ctx, competitorID, nil)
 	if err != nil {
 		cErr.Merge(err)

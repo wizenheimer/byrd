@@ -5,41 +5,41 @@ import (
 	"errors"
 
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
-	"github.com/wizenheimer/byrd/src/pkg/err"
+	"github.com/wizenheimer/byrd/src/pkg/errs"
 )
 
 type ScreenshotService interface {
 	// Refresh refreshes the screenshot repository with the latest screenshot and html content
 	// url is the URL to take a screenshot of
 	// opts are the options for the screenshot
-	Refresh(ctx context.Context, url string, opts models.ScreenshotRequestOptions) (*models.ScreenshotImageResponse, *models.ScreenshotHTMLContentResponse, err.Error)
+	Refresh(ctx context.Context, url string, opts models.ScreenshotRequestOptions) (*models.ScreenshotImageResponse, *models.ScreenshotHTMLContentResponse, errs.Error)
 
 	// Retrieve retrieves previous screenshot and html content from the storage
 	// url is the URL to retrieve the screenshot from
-	Retrieve(ctx context.Context, url string) (*models.ScreenshotImageResponse, *models.ScreenshotHTMLContentResponse, err.Error)
+	Retrieve(ctx context.Context, url string) (*models.ScreenshotImageResponse, *models.ScreenshotHTMLContentResponse, errs.Error)
 
 	// GetCurrentImage retrieves the current screenshot from the storage if present
 	// Or it will take a new screenshot and store it as an image
-	GetCurrentImage(ctx context.Context, save bool, opts models.ScreenshotRequestOptions) (*models.ScreenshotImageResponse, err.Error)
+	GetCurrentImage(ctx context.Context, save bool, opts models.ScreenshotRequestOptions) (*models.ScreenshotImageResponse, errs.Error)
 
 	// GetCurrentHTML retrieves the current html content from the storage if present
 	// Or it will take a new screenshot and store it as html
-	GetCurrentHTMLContent(ctx context.Context, save bool, opts models.ScreenshotHTMLRequestOptions) (*models.ScreenshotHTMLContentResponse, err.Error)
+	GetCurrentHTMLContent(ctx context.Context, save bool, opts models.ScreenshotHTMLRequestOptions) (*models.ScreenshotHTMLContentResponse, errs.Error)
 
 	// GetPreviousImage retrieves the previous screenshot from the storage
-	GetPreviousImage(ctx context.Context, url string) (*models.ScreenshotImageResponse, err.Error)
+	GetPreviousImage(ctx context.Context, url string) (*models.ScreenshotImageResponse, errs.Error)
 
 	// GetPreviousHTML retrieves the previous content of a screenshot from the storage
-	GetPreviousHTMLContent(ctx context.Context, url string) (*models.ScreenshotHTMLContentResponse, err.Error)
+	GetPreviousHTMLContent(ctx context.Context, url string) (*models.ScreenshotHTMLContentResponse, errs.Error)
 
 	// GetImage retrieves a screenshot from the storage
-	GetImage(ctx context.Context, url string, year int, weekNumber int, weekDay int) (*models.ScreenshotImageResponse, err.Error)
+	GetImage(ctx context.Context, url string, year int, weekNumber int, weekDay int) (*models.ScreenshotImageResponse, errs.Error)
 
 	// GetHTMLContent retrieves the content of a screenshot from the storage
-	GetHTMLContent(ctx context.Context, url string, year int, weekNumber int, weekDay int) (*models.ScreenshotHTMLContentResponse, err.Error)
+	GetHTMLContent(ctx context.Context, url string, year int, weekNumber int, weekDay int) (*models.ScreenshotHTMLContentResponse, errs.Error)
 
 	// ListScreenshots lists the latest content (images or text) for a given URL
-	ListScreenshots(ctx context.Context, url string, contentType string, maxItems int) ([]models.ScreenshotListResponse, err.Error)
+	ListScreenshots(ctx context.Context, url string, contentType string, maxItems int) ([]models.ScreenshotListResponse, errs.Error)
 }
 
 var (

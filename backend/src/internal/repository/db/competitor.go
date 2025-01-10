@@ -12,7 +12,7 @@ import (
 	repo "github.com/wizenheimer/byrd/src/internal/interfaces/repository"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/internal/repository/transaction"
-	"github.com/wizenheimer/byrd/src/pkg/err"
+	"github.com/wizenheimer/byrd/src/pkg/errs"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 )
 
@@ -29,8 +29,8 @@ func NewCompetitorRepository(tm *transaction.TxManager, logger *logger.Logger) r
 }
 
 // CreateCompetitors creates multiple competitors in a workspace
-func (r *competitorRepo) CreateCompetitors(ctx context.Context, workspaceID uuid.UUID, competitorNames []string) ([]models.Competitor, err.Error) {
-	competitorErr := err.New()
+func (r *competitorRepo) CreateCompetitors(ctx context.Context, workspaceID uuid.UUID, competitorNames []string) ([]models.Competitor, errs.Error) {
+	competitorErr := errs.New()
 	if competitorNames == nil {
 		competitorErr.Add(repo.ErrCompetitorNamesListEmpty, map[string]any{
 			"competitorNames": competitorNames,
@@ -99,8 +99,8 @@ func (r *competitorRepo) CreateCompetitors(ctx context.Context, workspaceID uuid
 }
 
 // GetCompetitor gets a competitor by its ID
-func (r *competitorRepo) GetCompetitor(ctx context.Context, competitorID uuid.UUID) (models.Competitor, err.Error) {
-	competitorErr := err.New()
+func (r *competitorRepo) GetCompetitor(ctx context.Context, competitorID uuid.UUID) (models.Competitor, errs.Error) {
+	competitorErr := errs.New()
 	runner := r.tm.GetRunner(ctx)
 
 	query := `
@@ -138,8 +138,8 @@ func (r *competitorRepo) GetCompetitor(ctx context.Context, competitorID uuid.UU
 }
 
 // ListWorkspaceCompetitors lists all competitors in a workspace with pagination
-func (r *competitorRepo) ListWorkspaceCompetitors(ctx context.Context, workspaceID uuid.UUID, limit, offset int) ([]models.Competitor, err.Error) {
-	listErr := err.New()
+func (r *competitorRepo) ListWorkspaceCompetitors(ctx context.Context, workspaceID uuid.UUID, limit, offset int) ([]models.Competitor, errs.Error) {
+	listErr := errs.New()
 	if limit < 1 {
 		listErr.Add(repo.ErrInvalidLimit, map[string]any{
 			"limit": limit,
@@ -215,8 +215,8 @@ func (r *competitorRepo) ListWorkspaceCompetitors(ctx context.Context, workspace
 }
 
 // RemoveWorkspaceCompetitors removes competitors from a workspace
-func (r *competitorRepo) RemoveWorkspaceCompetitors(ctx context.Context, workspaceID uuid.UUID, competitorIDs []uuid.UUID) err.Error {
-	remErr := err.New()
+func (r *competitorRepo) RemoveWorkspaceCompetitors(ctx context.Context, workspaceID uuid.UUID, competitorIDs []uuid.UUID) errs.Error {
+	remErr := errs.New()
 	runner := r.tm.GetRunner(ctx)
 
 	var query string
@@ -269,8 +269,8 @@ func (r *competitorRepo) RemoveWorkspaceCompetitors(ctx context.Context, workspa
 }
 
 // WorkspaceCompetitorExists checks if a competitor exists in a workspace
-func (r *competitorRepo) WorkspaceCompetitorExists(ctx context.Context, workspaceID, competitorID uuid.UUID) (bool, err.Error) {
-	competitorErr := err.New()
+func (r *competitorRepo) WorkspaceCompetitorExists(ctx context.Context, workspaceID, competitorID uuid.UUID) (bool, errs.Error) {
+	competitorErr := errs.New()
 	runner := r.tm.GetRunner(ctx)
 	query := `
 		SELECT EXISTS(

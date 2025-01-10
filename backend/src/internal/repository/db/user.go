@@ -13,7 +13,7 @@ import (
 	repo "github.com/wizenheimer/byrd/src/internal/interfaces/repository"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/internal/repository/transaction"
-	"github.com/wizenheimer/byrd/src/pkg/err"
+	"github.com/wizenheimer/byrd/src/pkg/errs"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"github.com/wizenheimer/byrd/src/pkg/utils"
 	"go.uber.org/zap"
@@ -37,8 +37,8 @@ func NewUserRepository(tm *transaction.TxManager, logger *logger.Logger) repo.Us
 
 // GetUserByUserID gets a user by UserID
 // Respects the status of the user and excludes soft-deleted users
-func (r *userRepo) GetUserByUserID(ctx context.Context, userID uuid.UUID) (models.User, err.Error) {
-	userErr := err.New()
+func (r *userRepo) GetUserByUserID(ctx context.Context, userID uuid.UUID) (models.User, errs.Error) {
+	userErr := errs.New()
 	runner := r.tm.GetRunner(ctx)
 
 	query := `
@@ -82,8 +82,8 @@ func (r *userRepo) GetUserByUserID(ctx context.Context, userID uuid.UUID) (model
 
 // GetUserByEmail gets a user by email
 // Respects the status of the user and excludes soft-deleted users
-func (r *userRepo) GetUserByEmail(ctx context.Context, email string) (models.User, err.Error) {
-	userErr := err.New()
+func (r *userRepo) GetUserByEmail(ctx context.Context, email string) (models.User, errs.Error) {
+	userErr := errs.New()
 	runner := r.tm.GetRunner(ctx)
 
 	email = utils.NormalizeEmail(email)
@@ -128,8 +128,8 @@ func (r *userRepo) GetUserByEmail(ctx context.Context, email string) (models.Use
 
 // GetClerkUser gets a user by clerkID or clerkEmail
 // Respects the status of the user and excludes soft-deleted users
-func (r *userRepo) GetClerkUser(ctx context.Context, clerkID string, clerkEmail string) (models.User, err.Error) {
-	userErr := err.New()
+func (r *userRepo) GetClerkUser(ctx context.Context, clerkID string, clerkEmail string) (models.User, errs.Error) {
+	userErr := errs.New()
 	runner := r.tm.GetRunner(ctx)
 
 	clerkEmail = utils.NormalizeEmail(clerkEmail)
@@ -176,8 +176,8 @@ func (r *userRepo) GetClerkUser(ctx context.Context, clerkID string, clerkEmail 
 // Respects the status of the user and excludes soft-deleted users during lookup
 // And if the user is soft-deleted, it will be restored with the new data
 // If the user does not exist, it will be created
-func (r *userRepo) GetOrCreateUser(ctx context.Context, partialUser models.User) (models.User, err.Error) {
-	userErr := err.New()
+func (r *userRepo) GetOrCreateUser(ctx context.Context, partialUser models.User) (models.User, errs.Error) {
+	userErr := errs.New()
 	runner := r.tm.GetRunner(ctx)
 
 	// Validate email
@@ -313,8 +313,8 @@ func (r *userRepo) GetOrCreateUser(ctx context.Context, partialUser models.User)
 // Respects the status of the user and excludes soft-deleted users during lookup
 // And if the user is soft-deleted, it will be restored with the new data
 // If the user does not exist, it will be created
-func (r *userRepo) GetOrCreateUserByEmail(ctx context.Context, emails []string) ([]models.User, err.Error) {
-	userErr := err.New()
+func (r *userRepo) GetOrCreateUserByEmail(ctx context.Context, emails []string) ([]models.User, errs.Error) {
+	userErr := errs.New()
 	if len(emails) == 0 {
 		userErr.Add(repo.ErrUserEmailsNotSpecified, map[string]any{
 			"emails": emails,
@@ -438,8 +438,8 @@ func (r *userRepo) GetOrCreateUserByEmail(ctx context.Context, emails []string) 
 // AddUsersToWorkspace adds users to a workspace
 // Gets the user by email and creates a workspace_user entry
 // Underlying dependents respect the soft-deleted status of user
-func (r *userRepo) AddUsersToWorkspace(ctx context.Context, workspaceUserProps []models.WorkspaceUserProps, workspaceID uuid.UUID) ([]models.WorkspaceUser, err.Error) {
-	userErr := err.New()
+func (r *userRepo) AddUsersToWorkspace(ctx context.Context, workspaceUserProps []models.WorkspaceUserProps, workspaceID uuid.UUID) ([]models.WorkspaceUser, errs.Error) {
+	userErr := errs.New()
 	// Get a transaction runner
 	runner := r.tm.GetRunner(ctx)
 	emailToUserID := make(map[string]uuid.UUID)
@@ -572,8 +572,8 @@ func (r *userRepo) AddUsersToWorkspace(ctx context.Context, workspaceUserProps [
 // RemoveUsersFromWorkspace removes users from a workspace
 // When userIDs is nil, all users are removed from the workspace
 // Only removes users that are not already soft-deleted (either at user or workspace level)
-func (r *userRepo) RemoveUsersFromWorkspace(ctx context.Context, userIDs []uuid.UUID, workspaceID uuid.UUID) err.Error {
-	userErr := err.New()
+func (r *userRepo) RemoveUsersFromWorkspace(ctx context.Context, userIDs []uuid.UUID, workspaceID uuid.UUID) errs.Error {
+	userErr := errs.New()
 	runner := r.tm.GetRunner(ctx)
 
 	var query string
@@ -657,8 +657,8 @@ func (r *userRepo) RemoveUsersFromWorkspace(ctx context.Context, userIDs []uuid.
 
 // GetWorkspaceUser gets a user from the workspace
 // It respects the status of the user and workspace_user entries
-func (r *userRepo) GetWorkspaceUser(ctx context.Context, workspaceID, userID uuid.UUID) (models.WorkspaceUser, err.Error) {
-	userErr := err.New()
+func (r *userRepo) GetWorkspaceUser(ctx context.Context, workspaceID, userID uuid.UUID) (models.WorkspaceUser, errs.Error) {
+	userErr := errs.New()
 	// Get a transaction runner
 	runner := r.tm.GetRunner(ctx)
 
@@ -721,8 +721,8 @@ func (r *userRepo) GetWorkspaceUser(ctx context.Context, workspaceID, userID uui
 
 // GetWorkspaceClerkUser gets a user from the workspace by clerk credentials
 // It respects the status of the user and workspace_user entries
-func (r *userRepo) GetWorkspaceClerkUser(ctx context.Context, workspaceID uuid.UUID, clerkID, clerkEmail string) (models.WorkspaceUser, err.Error) {
-	userErr := err.New()
+func (r *userRepo) GetWorkspaceClerkUser(ctx context.Context, workspaceID uuid.UUID, clerkID, clerkEmail string) (models.WorkspaceUser, errs.Error) {
+	userErr := errs.New()
 
 	// Get a transaction runner
 	runner := r.tm.GetRunner(ctx)
@@ -782,8 +782,8 @@ func (r *userRepo) GetWorkspaceClerkUser(ctx context.Context, workspaceID uuid.U
 
 // ListWorkspaceUsers lists all users from the workspace
 // It respects the status of the user and workspace_user entries
-func (r *userRepo) ListWorkspaceUsers(ctx context.Context, workspaceID uuid.UUID) ([]models.WorkspaceUser, err.Error) {
-	userErr := err.New()
+func (r *userRepo) ListWorkspaceUsers(ctx context.Context, workspaceID uuid.UUID) ([]models.WorkspaceUser, errs.Error) {
+	userErr := errs.New()
 	runner := r.tm.GetRunner(ctx)
 
 	// Modified query to:
@@ -858,8 +858,8 @@ func (r *userRepo) ListWorkspaceUsers(ctx context.Context, workspaceID uuid.UUID
 
 // ListUserWorkspaces lists all workspaces of a user
 // It respects the status of the user and workspace_user entries
-func (r *userRepo) ListUserWorkspaces(ctx context.Context, userID uuid.UUID) ([]uuid.UUID, err.Error) {
-	userErr := err.New()
+func (r *userRepo) ListUserWorkspaces(ctx context.Context, userID uuid.UUID) ([]uuid.UUID, errs.Error) {
+	userErr := errs.New()
 	runner := r.tm.GetRunner(ctx)
 
 	query := `
@@ -924,8 +924,8 @@ func (r *userRepo) ListUserWorkspaces(ctx context.Context, userID uuid.UUID) ([]
 
 // UpdateWorkspaceUserRole updates the role of users in the workspace
 // Skips soft-deleted users and inactive workspace users
-func (r *userRepo) UpdateWorkspaceUserRole(ctx context.Context, workspaceID uuid.UUID, userIDs []uuid.UUID, role models.UserWorkspaceRole) ([]models.UserWorkspaceRole, err.Error) {
-	userErr := err.New()
+func (r *userRepo) UpdateWorkspaceUserRole(ctx context.Context, workspaceID uuid.UUID, userIDs []uuid.UUID, role models.UserWorkspaceRole) ([]models.UserWorkspaceRole, errs.Error) {
+	userErr := errs.New()
 	if userIDs == nil {
 		userErr.Add(repo.ErrUserIDsNotSpecified, map[string]any{
 			"workspaceID": workspaceID,
@@ -1007,8 +1007,8 @@ func (r *userRepo) UpdateWorkspaceUserRole(ctx context.Context, workspaceID uuid
 
 // UpdateWorkspaceUserStatus updates the status of users in the workspace
 // Skip soft-deleted user accounts as they are no longer considered active in the app
-func (r *userRepo) UpdateWorkspaceUserStatus(ctx context.Context, workspaceID uuid.UUID, userIDs []uuid.UUID, status models.UserWorkspaceStatus) ([]models.UserWorkspaceStatus, err.Error) {
-	userErr := err.New()
+func (r *userRepo) UpdateWorkspaceUserStatus(ctx context.Context, workspaceID uuid.UUID, userIDs []uuid.UUID, status models.UserWorkspaceStatus) ([]models.UserWorkspaceStatus, errs.Error) {
+	userErr := errs.New()
 	if userIDs == nil {
 		userErr.Add(repo.ErrUserIDsNotSpecified, map[string]any{
 			"workspaceID": workspaceID,
@@ -1097,8 +1097,8 @@ func (r *userRepo) UpdateWorkspaceUserStatus(ctx context.Context, workspaceID uu
 
 // GetWorkspaceUserCountByRole gets the count of users by role in the workspace
 // It respects the status of the user and workspace_user entries
-func (r *userRepo) GetWorkspaceUserCountByRole(ctx context.Context, workspaceID uuid.UUID) (int, int, err.Error) {
-	userErr := err.New()
+func (r *userRepo) GetWorkspaceUserCountByRole(ctx context.Context, workspaceID uuid.UUID) (int, int, errs.Error) {
+	userErr := errs.New()
 	runner := r.tm.GetRunner(ctx)
 
 	query := `
@@ -1135,8 +1135,8 @@ func (r *userRepo) GetWorkspaceUserCountByRole(ctx context.Context, workspaceID 
 
 // SyncUser syncs user data with Clerk
 // Whenever sync is triggered, it will activate the user from inactive state
-func (r *userRepo) SyncUser(ctx context.Context, userID uuid.UUID, clerkUser *clerk.User) err.Error {
-	userErr := err.New()
+func (r *userRepo) SyncUser(ctx context.Context, userID uuid.UUID, clerkUser *clerk.User) errs.Error {
+	userErr := errs.New()
 	// Get a transaction runner
 	runner := r.tm.GetRunner(ctx)
 
@@ -1195,8 +1195,8 @@ func (r *userRepo) SyncUser(ctx context.Context, userID uuid.UUID, clerkUser *cl
 
 // DeleteUser deletes a user and removes them from all workspaces
 // It respects the status of the user and workspace_user entries
-func (r *userRepo) DeleteUser(ctx context.Context, userID uuid.UUID) err.Error {
-	userErr := err.New()
+func (r *userRepo) DeleteUser(ctx context.Context, userID uuid.UUID) errs.Error {
+	userErr := errs.New()
 	// Get a transaction runner
 	runner := r.tm.GetRunner(ctx)
 
@@ -1280,8 +1280,8 @@ func (r *userRepo) DeleteUser(ctx context.Context, userID uuid.UUID) err.Error {
 
 // UserExists checks if a user exists by userID
 // It respects the status of the user
-func (r *userRepo) UserExists(ctx context.Context, userID uuid.UUID) (bool, err.Error) {
-	userErr := err.New()
+func (r *userRepo) UserExists(ctx context.Context, userID uuid.UUID) (bool, errs.Error) {
+	userErr := errs.New()
 	// Get a transaction runner
 	runner := r.tm.GetRunner(ctx)
 
@@ -1309,11 +1309,11 @@ func (r *userRepo) UserExists(ctx context.Context, userID uuid.UUID) (bool, err.
 
 // ClerkUserExists checks if a user exists by clerk credentials
 // It respects the status of the user
-func (r *userRepo) ClerkUserExists(ctx context.Context, clerkID, clerkEmail string) (bool, err.Error) {
+func (r *userRepo) ClerkUserExists(ctx context.Context, clerkID, clerkEmail string) (bool, errs.Error) {
 	// Normalize email
 	clerkEmail = utils.NormalizeEmail(clerkEmail)
 
-	userErr := err.New()
+	userErr := errs.New()
 
 	// Get a transaction runner
 	runner := r.tm.GetRunner(ctx)
@@ -1347,8 +1347,8 @@ func (r *userRepo) ClerkUserExists(ctx context.Context, clerkID, clerkEmail stri
 
 // WorkspaceUserExists checks if a user exists in the workspace
 // It respects the status of the user and workspace_user entries
-func (r *userRepo) WorkspaceUserExists(ctx context.Context, workspaceID, userID uuid.UUID) (bool, err.Error) {
-	userErr := err.New()
+func (r *userRepo) WorkspaceUserExists(ctx context.Context, workspaceID, userID uuid.UUID) (bool, errs.Error) {
+	userErr := errs.New()
 	// Get a transaction runner
 	runner := r.tm.GetRunner(ctx)
 
@@ -1385,8 +1385,8 @@ func (r *userRepo) WorkspaceUserExists(ctx context.Context, workspaceID, userID 
 
 // WorkspaceClerkUserExists checks if a user exists in the workspace by clerk credentials
 // It respects the status of the user and workspace_user entries
-func (r *userRepo) WorkspaceClerkUserExists(ctx context.Context, workspaceID uuid.UUID, clerkID, clerkEmail string) (bool, err.Error) {
-	userErr := err.New()
+func (r *userRepo) WorkspaceClerkUserExists(ctx context.Context, workspaceID uuid.UUID, clerkID, clerkEmail string) (bool, errs.Error) {
+	userErr := errs.New()
 	// Get a transaction runner
 	runner := r.tm.GetRunner(ctx)
 
@@ -1427,8 +1427,8 @@ func (r *userRepo) WorkspaceClerkUserExists(ctx context.Context, workspaceID uui
 
 // ClerkUserIsAdmin checks if a clerk user is an admin in the workspace
 // It respects the status of the user and workspace_user entries
-func (r *userRepo) ClerkUserIsAdmin(ctx context.Context, workspaceID uuid.UUID, clerkID string) (bool, err.Error) {
-	userErr := err.New()
+func (r *userRepo) ClerkUserIsAdmin(ctx context.Context, workspaceID uuid.UUID, clerkID string) (bool, errs.Error) {
+	userErr := errs.New()
 	runner := r.tm.GetRunner(ctx)
 
 	query := `
@@ -1468,8 +1468,8 @@ func (r *userRepo) ClerkUserIsAdmin(ctx context.Context, workspaceID uuid.UUID, 
 
 // ClerkUserIsMember checks if a clerk user is a member of the workspace
 // It respects the status of the user and workspace_user entries
-func (r *userRepo) ClerkUserIsMember(ctx context.Context, workspaceID uuid.UUID, clerkID string) (bool, err.Error) {
-	userErr := err.New()
+func (r *userRepo) ClerkUserIsMember(ctx context.Context, workspaceID uuid.UUID, clerkID string) (bool, errs.Error) {
+	userErr := errs.New()
 	runner := r.tm.GetRunner(ctx)
 
 	query := `

@@ -5,7 +5,7 @@ import (
 
 	svc "github.com/wizenheimer/byrd/src/internal/interfaces/service"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
-	"github.com/wizenheimer/byrd/src/pkg/err"
+	"github.com/wizenheimer/byrd/src/pkg/errs"
 )
 
 // UserProfileRequest represents the user's request to create a profile
@@ -28,9 +28,9 @@ func NewProfileBuilder(registry *FieldRegistry) *ProfileBuilder {
 }
 
 // BuildProfileFromJSON builds a profile from a JSON request
-func (pb *ProfileBuilder) BuildProfileFromJSON(jsonData string) (models.Profile, err.Error) {
+func (pb *ProfileBuilder) BuildProfileFromJSON(jsonData string) (models.Profile, errs.Error) {
 	var request ProfileRequest
-	pErr := err.New()
+	pErr := errs.New()
 	if err := json.Unmarshal([]byte(jsonData), &request); err != nil {
 		pErr.Add(svc.ErrProfileParsing, map[string]any{
 			"jsonData": jsonData,
@@ -42,8 +42,8 @@ func (pb *ProfileBuilder) BuildProfileFromJSON(jsonData string) (models.Profile,
 }
 
 // BuildProfile builds a profile from a request
-func (pb *ProfileBuilder) BuildProfile(request ProfileRequest, fallback bool) (models.Profile, err.Error) {
-	pErr := err.New()
+func (pb *ProfileBuilder) BuildProfile(request ProfileRequest, fallback bool) (models.Profile, errs.Error) {
+	pErr := errs.New()
 	if request.Name == "" {
 		pErr.Add(svc.ErrProfileNameMissing, map[string]any{
 			"request":  request,

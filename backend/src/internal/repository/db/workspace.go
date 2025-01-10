@@ -12,7 +12,7 @@ import (
 	repo "github.com/wizenheimer/byrd/src/internal/interfaces/repository"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/internal/repository/transaction"
-	"github.com/wizenheimer/byrd/src/pkg/err"
+	"github.com/wizenheimer/byrd/src/pkg/errs"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 )
 
@@ -35,8 +35,8 @@ func generateSlug(name string) string {
 }
 
 // CreateWorkspace creates a new workspace
-func (r *workspaceRepo) CreateWorkspace(ctx context.Context, workspaceName, billingEmail string) (models.Workspace, err.Error) {
-	wErr := err.New()
+func (r *workspaceRepo) CreateWorkspace(ctx context.Context, workspaceName, billingEmail string) (models.Workspace, errs.Error) {
+	wErr := errs.New()
 	runner := r.tm.GetRunner(ctx)
 
 	// Generate initial slug
@@ -75,8 +75,8 @@ func (r *workspaceRepo) CreateWorkspace(ctx context.Context, workspaceName, bill
 }
 
 // GetWorkspaces gets multiple workspaces by their IDs
-func (r *workspaceRepo) GetWorkspaces(ctx context.Context, workspaceIDs []uuid.UUID) ([]models.Workspace, err.Error) {
-	wErr := err.New()
+func (r *workspaceRepo) GetWorkspaces(ctx context.Context, workspaceIDs []uuid.UUID) ([]models.Workspace, errs.Error) {
+	wErr := errs.New()
 	if len(workspaceIDs) == 0 {
 		wErr.Add(repo.ErrNoWorkspaceSpecified, map[string]any{
 			"workspaceIDs": workspaceIDs,
@@ -156,8 +156,8 @@ func (r *workspaceRepo) GetWorkspaces(ctx context.Context, workspaceIDs []uuid.U
 
 // WorkspaceExists checks if a workspace exists
 // And is active
-func (r *workspaceRepo) WorkspaceExists(ctx context.Context, workspaceID uuid.UUID) (bool, err.Error) {
-	wErr := err.New()
+func (r *workspaceRepo) WorkspaceExists(ctx context.Context, workspaceID uuid.UUID) (bool, errs.Error) {
+	wErr := errs.New()
 	runner := r.tm.GetRunner(ctx)
 
 	var exists bool
@@ -180,8 +180,8 @@ func (r *workspaceRepo) WorkspaceExists(ctx context.Context, workspaceID uuid.UU
 }
 
 // UpdateWorkspaceBillingEmail updates the billing email
-func (r *workspaceRepo) UpdateWorkspaceBillingEmail(ctx context.Context, workspaceID uuid.UUID, billingEmail string) err.Error {
-	wErr := err.New()
+func (r *workspaceRepo) UpdateWorkspaceBillingEmail(ctx context.Context, workspaceID uuid.UUID, billingEmail string) errs.Error {
+	wErr := errs.New()
 	runner := r.tm.GetRunner(ctx)
 
 	result, err := runner.ExecContext(ctx, `
@@ -216,8 +216,8 @@ func (r *workspaceRepo) UpdateWorkspaceBillingEmail(ctx context.Context, workspa
 }
 
 // UpdateWorkspaceName updates the workspace name
-func (r *workspaceRepo) UpdateWorkspaceName(ctx context.Context, workspaceID uuid.UUID, workspaceName string) err.Error {
-	wErr := err.New()
+func (r *workspaceRepo) UpdateWorkspaceName(ctx context.Context, workspaceID uuid.UUID, workspaceName string) errs.Error {
+	wErr := errs.New()
 	runner := r.tm.GetRunner(ctx)
 
 	// Generate and verify unique slug
@@ -255,8 +255,8 @@ func (r *workspaceRepo) UpdateWorkspaceName(ctx context.Context, workspaceID uui
 }
 
 // UpdateWorkspaceStatus updates the workspace status
-func (r *workspaceRepo) UpdateWorkspaceStatus(ctx context.Context, workspaceID uuid.UUID, status models.WorkspaceStatus) err.Error {
-	wErr := err.New()
+func (r *workspaceRepo) UpdateWorkspaceStatus(ctx context.Context, workspaceID uuid.UUID, status models.WorkspaceStatus) errs.Error {
+	wErr := errs.New()
 	runner := r.tm.GetRunner(ctx)
 
 	result, err := runner.ExecContext(ctx, `
@@ -291,8 +291,8 @@ func (r *workspaceRepo) UpdateWorkspaceStatus(ctx context.Context, workspaceID u
 }
 
 // UpdateWorkspace updates the workspace details
-func (r *workspaceRepo) UpdateWorkspace(ctx context.Context, workspaceID uuid.UUID, workspaceReq models.WorkspaceProps) err.Error {
-	wErr := err.New()
+func (r *workspaceRepo) UpdateWorkspace(ctx context.Context, workspaceID uuid.UUID, workspaceReq models.WorkspaceProps) errs.Error {
+	wErr := errs.New()
 	runner := r.tm.GetRunner(ctx)
 
 	// Generate and verify unique slug
@@ -332,8 +332,8 @@ func (r *workspaceRepo) UpdateWorkspace(ctx context.Context, workspaceID uuid.UU
 	return nil
 }
 
-func (r *workspaceRepo) RemoveWorkspaces(ctx context.Context, workspaceIDs []uuid.UUID) err.Error {
-	wErr := err.New()
+func (r *workspaceRepo) RemoveWorkspaces(ctx context.Context, workspaceIDs []uuid.UUID) errs.Error {
+	wErr := errs.New()
 	if len(workspaceIDs) == 0 {
 		wErr.Add(repo.ErrNoWorkspaceSpecified, map[string]any{
 			"workspaceIDs": workspaceIDs,

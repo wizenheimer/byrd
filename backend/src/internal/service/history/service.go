@@ -8,7 +8,7 @@ import (
 	svc "github.com/wizenheimer/byrd/src/internal/interfaces/service"
 	api "github.com/wizenheimer/byrd/src/internal/models/api"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
-	"github.com/wizenheimer/byrd/src/pkg/err"
+	"github.com/wizenheimer/byrd/src/pkg/errs"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 )
 
@@ -21,13 +21,13 @@ func NewPageHistoryService(pageHistoryRepo repo.PageHistoryRepository, screensho
 	}
 }
 
-func (ph *pageHistoryService) CreatePageHistory(ctx context.Context, pageID uuid.UUID) (bool, err.Error) {
+func (ph *pageHistoryService) CreatePageHistory(ctx context.Context, pageID uuid.UUID) (bool, errs.Error) {
 	// TODO: TBD
 	return true, nil
 }
 
-func (ph *pageHistoryService) ListPageHistory(ctx context.Context, pageID uuid.UUID, pageHistoryPaginationParam api.PaginationParams) ([]models.PageHistory, err.Error) {
-	cErr := err.New()
+func (ph *pageHistoryService) ListPageHistory(ctx context.Context, pageID uuid.UUID, pageHistoryPaginationParam api.PaginationParams) ([]models.PageHistory, errs.Error) {
+	cErr := errs.New()
 	limit, offset := pageHistoryPaginationParam.GetLimit(), pageHistoryPaginationParam.GetOffset()
 
 	history, hErr := ph.pageHistoryRepo.ListPageHistory(ctx, pageID, &limit, &offset)
@@ -46,8 +46,8 @@ func (ph *pageHistoryService) ListPageHistory(ctx context.Context, pageID uuid.U
 	return history, nil
 }
 
-func (ph *pageHistoryService) ClearPageHistory(ctx context.Context, pageIDs []uuid.UUID) err.Error {
-	cErr := err.New()
+func (ph *pageHistoryService) ClearPageHistory(ctx context.Context, pageIDs []uuid.UUID) errs.Error {
+	cErr := errs.New()
 	hErr := ph.pageHistoryRepo.RemovePageHistory(ctx, pageIDs)
 	if hErr != nil && hErr.HasErrors() {
 		cErr.Merge(hErr)

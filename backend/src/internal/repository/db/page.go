@@ -14,7 +14,7 @@ import (
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/internal/repository/transaction"
 	"github.com/wizenheimer/byrd/src/internal/service/screenshot"
-	"github.com/wizenheimer/byrd/src/pkg/err"
+	"github.com/wizenheimer/byrd/src/pkg/errs"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 )
 
@@ -31,8 +31,8 @@ func NewPageRepository(tm *transaction.TxManager, logger *logger.Logger) repo.Pa
 }
 
 // AddPagesToCompetitor adds pages to a competitor
-func (r *pageRepo) AddPagesToCompetitor(ctx context.Context, competitorID uuid.UUID, pages []models.PageProps) ([]models.Page, err.Error) {
-	pageErr := err.New()
+func (r *pageRepo) AddPagesToCompetitor(ctx context.Context, competitorID uuid.UUID, pages []models.PageProps) ([]models.Page, errs.Error) {
+	pageErr := errs.New()
 	if len(pages) == 0 {
 		pageErr.Add(repo.ErrPagesUnspecified, map[string]any{
 			"competitor_id": competitorID,
@@ -125,8 +125,8 @@ func (r *pageRepo) AddPagesToCompetitor(ctx context.Context, competitorID uuid.U
 }
 
 // RemovePagesFromCompetitor removes pages from a competitor
-func (r *pageRepo) RemovePagesFromCompetitor(ctx context.Context, competitorID uuid.UUID, pageIDs []uuid.UUID) err.Error {
-	pageErr := err.New()
+func (r *pageRepo) RemovePagesFromCompetitor(ctx context.Context, competitorID uuid.UUID, pageIDs []uuid.UUID) errs.Error {
+	pageErr := errs.New()
 	runner := r.tm.GetRunner(ctx)
 
 	var query string
@@ -174,8 +174,8 @@ func (r *pageRepo) RemovePagesFromCompetitor(ctx context.Context, competitorID u
 }
 
 // ListCompetitorPages gets the pages for a competitor with optional pagination
-func (r *pageRepo) ListCompetitorPages(ctx context.Context, competitorID uuid.UUID, limit, offset *int) ([]models.Page, err.Error) {
-	pageErr := err.New()
+func (r *pageRepo) ListCompetitorPages(ctx context.Context, competitorID uuid.UUID, limit, offset *int) ([]models.Page, errs.Error) {
+	pageErr := errs.New()
 	runner := r.tm.GetRunner(ctx)
 
 	query := `
@@ -237,8 +237,8 @@ func (r *pageRepo) ListCompetitorPages(ctx context.Context, competitorID uuid.UU
 }
 
 // ListActivePages lists all active pages in batches using cursor-based pagination
-func (r *pageRepo) ListActivePages(ctx context.Context, batchSize int, lastPageID *uuid.UUID) (models.ActivePageBatch, err.Error) {
-	pageErr := err.New()
+func (r *pageRepo) ListActivePages(ctx context.Context, batchSize int, lastPageID *uuid.UUID) (models.ActivePageBatch, errs.Error) {
+	pageErr := errs.New()
 	if batchSize <= 0 {
 		pageErr.Add(repo.ErrInvalidBatchSize, nil)
 		return models.ActivePageBatch{}, pageErr
@@ -297,8 +297,8 @@ func (r *pageRepo) ListActivePages(ctx context.Context, batchSize int, lastPageI
 }
 
 // GetCompetitorPage gets a page for a competitor
-func (r *pageRepo) GetCompetitorPage(ctx context.Context, competitorID, pageID uuid.UUID) (models.Page, err.Error) {
-	pageErr := err.New()
+func (r *pageRepo) GetCompetitorPage(ctx context.Context, competitorID, pageID uuid.UUID) (models.Page, errs.Error) {
+	pageErr := errs.New()
 	runner := r.tm.GetRunner(ctx)
 
 	query := `
@@ -325,8 +325,8 @@ func (r *pageRepo) GetCompetitorPage(ctx context.Context, competitorID, pageID u
 }
 
 // UpdateCompetitorPage updates a page for a competitor
-func (r *pageRepo) UpdateCompetitorPage(ctx context.Context, competitorID, pageID uuid.UUID, updatedPage models.PageProps) (models.Page, err.Error) {
-	pageErr := err.New()
+func (r *pageRepo) UpdateCompetitorPage(ctx context.Context, competitorID, pageID uuid.UUID, updatedPage models.PageProps) (models.Page, errs.Error) {
+	pageErr := errs.New()
 	runner := r.tm.GetRunner(ctx)
 
 	existingPage, pErr := r.GetCompetitorPage(ctx, competitorID, pageID)

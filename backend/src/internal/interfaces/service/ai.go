@@ -6,15 +6,15 @@ import (
 	"image"
 
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
-	"github.com/wizenheimer/byrd/src/pkg/err"
+	"github.com/wizenheimer/byrd/src/pkg/errs"
 )
 
 type AIService interface {
 	// AnalyzeContentDifferences analyzes the content differences between two versions of a URL
-	AnalyzeContentDifferences(ctx context.Context, version1, version2 string, fields []string) (*models.DynamicChanges, err.Error)
+	AnalyzeContentDifferences(ctx context.Context, version1, version2 string, fields []string) (*models.DynamicChanges, errs.Error)
 
 	// AnalyzeVisualDifferences analyzes the visual differences between two screenshots
-	AnalyzeVisualDifferences(ctx context.Context, version1, version2 image.Image, fields []string) (*models.DynamicChanges, err.Error)
+	AnalyzeVisualDifferences(ctx context.Context, version1, version2 image.Image, fields []string) (*models.DynamicChanges, errs.Error)
 }
 
 var (

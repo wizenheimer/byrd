@@ -11,7 +11,7 @@ import (
 	svc "github.com/wizenheimer/byrd/src/internal/interfaces/service"
 	api "github.com/wizenheimer/byrd/src/internal/models/api"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
-	"github.com/wizenheimer/byrd/src/pkg/err"
+	"github.com/wizenheimer/byrd/src/pkg/errs"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"github.com/wizenheimer/byrd/src/pkg/utils"
 )
@@ -25,8 +25,8 @@ func NewWorkspaceService(workspaceRepo repo.WorkspaceRepository, competitorServi
 	}
 }
 
-func (ws *workspaceService) CreateWorkspace(ctx context.Context, workspaceOwner *clerk.User, workspaceReq api.WorkspaceCreationRequest) (*models.Workspace, err.Error) {
-	wErr := err.New()
+func (ws *workspaceService) CreateWorkspace(ctx context.Context, workspaceOwner *clerk.User, workspaceReq api.WorkspaceCreationRequest) (*models.Workspace, errs.Error) {
+	wErr := errs.New()
 	// Step 1: Create a workspace
 	// Generate a workspace name
 	workspaceName := utils.GenerateWorkspaceName(workspaceOwner)
@@ -97,8 +97,8 @@ func (ws *workspaceService) CreateWorkspace(ctx context.Context, workspaceOwner 
 	return &workspace, wErr
 }
 
-func (ws *workspaceService) ListUserWorkspaces(ctx context.Context, workspaceMember *clerk.User) ([]models.Workspace, err.Error) {
-	wErr := err.New()
+func (ws *workspaceService) ListUserWorkspaces(ctx context.Context, workspaceMember *clerk.User) ([]models.Workspace, errs.Error) {
+	wErr := errs.New()
 	// List workspaces for a user
 	workspaceIDs, err := ws.userService.ListUserWorkspaces(ctx, workspaceMember)
 	if err != nil && err.HasErrors() {
@@ -115,8 +115,8 @@ func (ws *workspaceService) ListUserWorkspaces(ctx context.Context, workspaceMem
 	return workspaces, nil
 }
 
-func (ws *workspaceService) GetWorkspace(ctx context.Context, workspaceID uuid.UUID) (*models.Workspace, err.Error) {
-	wErr := err.New()
+func (ws *workspaceService) GetWorkspace(ctx context.Context, workspaceID uuid.UUID) (*models.Workspace, errs.Error) {
+	wErr := errs.New()
 
 	workspaceIDs := []uuid.UUID{workspaceID}
 	workspaces, err := ws.workspaceRepo.GetWorkspaces(ctx, workspaceIDs)
@@ -138,8 +138,8 @@ func (ws *workspaceService) GetWorkspace(ctx context.Context, workspaceID uuid.U
 	return &workspaces[0], nil
 }
 
-func (ws *workspaceService) UpdateWorkspace(ctx context.Context, workspaceID uuid.UUID, req api.WorkspaceUpdateRequest) err.Error {
-	wErr := err.New()
+func (ws *workspaceService) UpdateWorkspace(ctx context.Context, workspaceID uuid.UUID, req api.WorkspaceUpdateRequest) errs.Error {
+	wErr := errs.New()
 	// Get existing workspace
 	workspace, err := ws.GetWorkspace(ctx, workspaceID)
 	if err != nil {
@@ -173,8 +173,8 @@ func (ws *workspaceService) UpdateWorkspace(ctx context.Context, workspaceID uui
 	return nil
 }
 
-func (ws *workspaceService) DeleteWorkspace(ctx context.Context, workspaceID uuid.UUID) (models.WorkspaceStatus, err.Error) {
-	wErr := err.New()
+func (ws *workspaceService) DeleteWorkspace(ctx context.Context, workspaceID uuid.UUID) (models.WorkspaceStatus, errs.Error) {
+	wErr := errs.New()
 	// Get existing workspace
 	workspace, err := ws.GetWorkspace(ctx, workspaceID)
 	if err != nil && err.HasErrors() {
@@ -206,8 +206,8 @@ func (ws *workspaceService) DeleteWorkspace(ctx context.Context, workspaceID uui
 	return models.WorkspaceStatusInactive, nil
 }
 
-func (ws *workspaceService) ListWorkspaceMembers(ctx context.Context, workspaceID uuid.UUID, params api.WorkspaceMembersListingParams) ([]models.WorkspaceUser, err.Error) {
-	wErr := err.New()
+func (ws *workspaceService) ListWorkspaceMembers(ctx context.Context, workspaceID uuid.UUID, params api.WorkspaceMembersListingParams) ([]models.WorkspaceUser, errs.Error) {
+	wErr := errs.New()
 	_, err := ws.GetWorkspace(ctx, workspaceID)
 	if err != nil && err.HasErrors() {
 		wErr.Merge(err)
@@ -223,8 +223,8 @@ func (ws *workspaceService) ListWorkspaceMembers(ctx context.Context, workspaceI
 	return wu, nil
 }
 
-func (ws *workspaceService) InviteUsersToWorkspace(ctx context.Context, workspaceMember *clerk.User, workspaceID uuid.UUID, invitedUsers []api.InviteUserToWorkspaceRequest) ([]api.CreateWorkspaceUserResponse, err.Error) {
-	wErr := err.New()
+func (ws *workspaceService) InviteUsersToWorkspace(ctx context.Context, workspaceMember *clerk.User, workspaceID uuid.UUID, invitedUsers []api.InviteUserToWorkspaceRequest) ([]api.CreateWorkspaceUserResponse, errs.Error) {
+	wErr := errs.New()
 	workspace, err := ws.GetWorkspace(ctx, workspaceID)
 	if err != nil && err.HasErrors() {
 		wErr.Merge(err)
@@ -240,8 +240,8 @@ func (ws *workspaceService) InviteUsersToWorkspace(ctx context.Context, workspac
 	return resp, nil
 }
 
-func (ws *workspaceService) LeaveWorkspace(ctx context.Context, workspaceMember *clerk.User, workspaceID uuid.UUID) err.Error {
-	wErr := err.New()
+func (ws *workspaceService) LeaveWorkspace(ctx context.Context, workspaceMember *clerk.User, workspaceID uuid.UUID) errs.Error {
+	wErr := errs.New()
 	workspace, err := ws.GetWorkspace(ctx, workspaceID)
 	if err != nil && err.HasErrors() {
 		wErr.Merge(err)
@@ -274,8 +274,8 @@ func (ws *workspaceService) LeaveWorkspace(ctx context.Context, workspaceMember 
 	return nil
 }
 
-func (ws *workspaceService) UpdateWorkspaceMemberRole(ctx context.Context, workspaceID uuid.UUID, workspaceMemberID uuid.UUID, role models.UserWorkspaceRole) err.Error {
-	wErr := err.New()
+func (ws *workspaceService) UpdateWorkspaceMemberRole(ctx context.Context, workspaceID uuid.UUID, workspaceMemberID uuid.UUID, role models.UserWorkspaceRole) errs.Error {
+	wErr := errs.New()
 	if _, err := ws.GetWorkspace(ctx, workspaceID); err != nil && err.HasErrors() {
 		wErr.Merge(err)
 		return wErr
@@ -289,8 +289,8 @@ func (ws *workspaceService) UpdateWorkspaceMemberRole(ctx context.Context, works
 	return nil
 }
 
-func (ws *workspaceService) RemoveUserFromWorkspace(ctx context.Context, workspaceID uuid.UUID, workspaceMemberID uuid.UUID) err.Error {
-	wErr := err.New()
+func (ws *workspaceService) RemoveUserFromWorkspace(ctx context.Context, workspaceID uuid.UUID, workspaceMemberID uuid.UUID) errs.Error {
+	wErr := errs.New()
 	workspace, err := ws.GetWorkspace(ctx, workspaceID)
 	if err != nil && err.HasErrors() {
 		wErr.Merge(err)
@@ -317,8 +317,8 @@ func (ws *workspaceService) RemoveUserFromWorkspace(ctx context.Context, workspa
 }
 
 // JoinWorkspace joins a user using the invite link
-func (ws *workspaceService) JoinWorkspace(ctx context.Context, invitedMember *clerk.User, workspaceID uuid.UUID) err.Error {
-	wErr := err.New()
+func (ws *workspaceService) JoinWorkspace(ctx context.Context, invitedMember *clerk.User, workspaceID uuid.UUID) errs.Error {
+	wErr := errs.New()
 	workspace, err := ws.GetWorkspace(ctx, workspaceID)
 	if err != nil && err.HasErrors() {
 		wErr.Merge(err)
@@ -358,8 +358,8 @@ func (ws *workspaceService) JoinWorkspace(ctx context.Context, invitedMember *cl
 	return nil
 }
 
-func (ws *workspaceService) WorkspaceExists(ctx context.Context, workspaceID uuid.UUID) (bool, err.Error) {
-	wErr := err.New()
+func (ws *workspaceService) WorkspaceExists(ctx context.Context, workspaceID uuid.UUID) (bool, errs.Error) {
+	wErr := errs.New()
 	// TODO: optimize this for quick lookiups
 	if _, err := ws.GetWorkspace(ctx, workspaceID); err != nil && err.HasErrors() {
 		wErr.Merge(err)
@@ -369,8 +369,8 @@ func (ws *workspaceService) WorkspaceExists(ctx context.Context, workspaceID uui
 	return true, nil
 }
 
-func (ws *workspaceService) ClerkUserIsWorkspaceAdmin(ctx context.Context, workspaceID uuid.UUID, clerkUser *clerk.User) (bool, err.Error) {
-	wErr := err.New()
+func (ws *workspaceService) ClerkUserIsWorkspaceAdmin(ctx context.Context, workspaceID uuid.UUID, clerkUser *clerk.User) (bool, errs.Error) {
+	wErr := errs.New()
 	workspace, err := ws.GetWorkspace(ctx, workspaceID)
 	if err != nil && err.HasErrors() {
 		wErr.Merge(err)
@@ -386,8 +386,8 @@ func (ws *workspaceService) ClerkUserIsWorkspaceAdmin(ctx context.Context, works
 	return workspaceUser.Role == models.UserRoleAdmin, nil
 }
 
-func (ws *workspaceService) ClerkUserIsWorkspaceMember(ctx context.Context, workspaceID uuid.UUID, clerkUser *clerk.User) (bool, err.Error) {
-	wErr := err.New()
+func (ws *workspaceService) ClerkUserIsWorkspaceMember(ctx context.Context, workspaceID uuid.UUID, clerkUser *clerk.User) (bool, errs.Error) {
+	wErr := errs.New()
 	workspace, err := ws.GetWorkspace(ctx, workspaceID)
 	if err != nil && err.HasErrors() {
 		wErr.Merge(err)
@@ -403,8 +403,8 @@ func (ws *workspaceService) ClerkUserIsWorkspaceMember(ctx context.Context, work
 	return workspaceUser.Role == models.UserRoleAdmin || workspaceUser.Role == models.UserRoleUser, nil
 }
 
-func (ws *workspaceService) WorkspaceCompetitorExists(ctx context.Context, workspaceID, competitorID uuid.UUID) (bool, err.Error) {
-	wErr := err.New()
+func (ws *workspaceService) WorkspaceCompetitorExists(ctx context.Context, workspaceID, competitorID uuid.UUID) (bool, errs.Error) {
+	wErr := errs.New()
 	workspaceExists, err := ws.WorkspaceExists(ctx, workspaceID)
 	if err != nil && err.HasErrors() {
 		wErr.Merge(err)
@@ -418,8 +418,8 @@ func (ws *workspaceService) WorkspaceCompetitorExists(ctx context.Context, works
 	return ws.competitorService.CompetitorExists(ctx, workspaceID, competitorID)
 }
 
-func (ws *workspaceService) WorkspaceCompetitorPageExists(ctx context.Context, workspaceID, competitorID, pageID uuid.UUID) (bool, err.Error) {
-	wErr := err.New()
+func (ws *workspaceService) WorkspaceCompetitorPageExists(ctx context.Context, workspaceID, competitorID, pageID uuid.UUID) (bool, errs.Error) {
+	wErr := errs.New()
 
 	workspaceAndCompetitorExists, err := ws.WorkspaceCompetitorExists(ctx, workspaceID, competitorID)
 	if err != nil && err.HasErrors() {
@@ -440,8 +440,8 @@ func (ws *workspaceService) WorkspaceCompetitorPageExists(ctx context.Context, w
 	return pageExists, nil
 }
 
-func (ws *workspaceService) CreateWorkspaceCompetitor(ctx context.Context, clerkUser *clerk.User, workspaceID uuid.UUID, page api.CreatePageRequest) err.Error {
-	wErr := err.New()
+func (ws *workspaceService) CreateWorkspaceCompetitor(ctx context.Context, clerkUser *clerk.User, workspaceID uuid.UUID, page api.CreatePageRequest) errs.Error {
+	wErr := errs.New()
 	workspace, err := ws.GetWorkspace(ctx, workspaceID)
 	if err != nil {
 		wErr.Merge(err)
@@ -460,8 +460,8 @@ func (ws *workspaceService) CreateWorkspaceCompetitor(ctx context.Context, clerk
 	return nil
 }
 
-func (ws *workspaceService) AddPageToCompetitor(ctx context.Context, clerkUser *clerk.User, competitorID string, pageRequest []api.CreatePageRequest) ([]models.Page, err.Error) {
-	wErr := err.New()
+func (ws *workspaceService) AddPageToCompetitor(ctx context.Context, clerkUser *clerk.User, competitorID string, pageRequest []api.CreatePageRequest) ([]models.Page, errs.Error) {
+	wErr := errs.New()
 	competitorUUID, err := uuid.Parse(competitorID)
 	if err != nil {
 		wErr.Add(err, map[string]any{"uuid": competitorID})
@@ -477,8 +477,8 @@ func (ws *workspaceService) AddPageToCompetitor(ctx context.Context, clerkUser *
 	return pages, nil
 }
 
-func (ws *workspaceService) ListWorkspaceCompetitors(ctx context.Context, clerkUser *clerk.User, workspaceID uuid.UUID, params api.PaginationParams) ([]api.GetWorkspaceCompetitorResponse, err.Error) {
-	wErr := err.New()
+func (ws *workspaceService) ListWorkspaceCompetitors(ctx context.Context, clerkUser *clerk.User, workspaceID uuid.UUID, params api.PaginationParams) ([]api.GetWorkspaceCompetitorResponse, errs.Error) {
+	wErr := errs.New()
 
 	workspace, err := ws.GetWorkspace(ctx, workspaceID)
 	if err != nil {
@@ -495,8 +495,8 @@ func (ws *workspaceService) ListWorkspaceCompetitors(ctx context.Context, clerkU
 	return competitorsWithPages, nil
 }
 
-func (ws *workspaceService) ListWorkspacePageHistory(ctx context.Context, clerkUser *clerk.User, workspaceID, competitorID, pageID uuid.UUID, param api.PaginationParams) ([]models.PageHistory, err.Error) {
-	wErr := err.New()
+func (ws *workspaceService) ListWorkspacePageHistory(ctx context.Context, clerkUser *clerk.User, workspaceID, competitorID, pageID uuid.UUID, param api.PaginationParams) ([]models.PageHistory, errs.Error) {
+	wErr := errs.New()
 	pageHistory, err := ws.competitorService.GetCompetitorPage(ctx, competitorID, pageID, param)
 	if err != nil && err.HasErrors() {
 		wErr.Merge(err)
@@ -506,8 +506,8 @@ func (ws *workspaceService) ListWorkspacePageHistory(ctx context.Context, clerkU
 	return pageHistory.History, nil
 }
 
-func (ws *workspaceService) RemovePageFromWorkspace(ctx context.Context, clerkUser *clerk.User, competitorID, pageID uuid.UUID) err.Error {
-	wErr := err.New()
+func (ws *workspaceService) RemovePageFromWorkspace(ctx context.Context, clerkUser *clerk.User, competitorID, pageID uuid.UUID) errs.Error {
+	wErr := errs.New()
 	pageIDs := []uuid.UUID{pageID}
 	err := ws.competitorService.RemovePagesFromCompetitor(ctx, competitorID, pageIDs)
 	if err != nil && err.HasErrors() {
@@ -518,8 +518,8 @@ func (ws *workspaceService) RemovePageFromWorkspace(ctx context.Context, clerkUs
 	return nil
 }
 
-func (ws *workspaceService) RemoveCompetitorFromWorkspace(ctx context.Context, clerkUser *clerk.User, workspaceID, competitorID uuid.UUID) err.Error {
-	wErr := err.New()
+func (ws *workspaceService) RemoveCompetitorFromWorkspace(ctx context.Context, clerkUser *clerk.User, workspaceID, competitorID uuid.UUID) errs.Error {
+	wErr := errs.New()
 
 	err := ws.competitorService.RemoveCompetitors(ctx, workspaceID, []uuid.UUID{competitorID})
 	if err != nil && err.HasErrors() {
@@ -536,8 +536,8 @@ func (ws *workspaceService) RemoveCompetitorFromWorkspace(ctx context.Context, c
 	return nil
 }
 
-func (ws *workspaceService) UpdateCompetitorPage(ctx context.Context, competitorID, pageID uuid.UUID, req api.UpdatePageRequest) err.Error {
-	wErr := err.New()
+func (ws *workspaceService) UpdateCompetitorPage(ctx context.Context, competitorID, pageID uuid.UUID, req api.UpdatePageRequest) errs.Error {
+	wErr := errs.New()
 	_, err := ws.competitorService.UpdatePage(ctx, competitorID, pageID, req)
 	if err != nil && err.HasErrors() {
 		wErr.Merge(err)

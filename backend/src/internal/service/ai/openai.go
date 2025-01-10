@@ -13,7 +13,7 @@ import (
 	"github.com/openai/openai-go/option"
 	svc "github.com/wizenheimer/byrd/src/internal/interfaces/service"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
-	"github.com/wizenheimer/byrd/src/pkg/err"
+	"github.com/wizenheimer/byrd/src/pkg/errs"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"go.uber.org/zap"
 )
@@ -49,8 +49,8 @@ func NewOpenAIService(apiKey string, logger *logger.Logger) (svc.AIService, erro
 }
 
 // AnalyzeContentDifferences analyzes the content differences between two versions of a URL
-func (s *openAIService) AnalyzeContentDifferences(ctx context.Context, version1, version2 string, fields []string) (*models.DynamicChanges, err.Error) {
-	pErr := err.New()
+func (s *openAIService) AnalyzeContentDifferences(ctx context.Context, version1, version2 string, fields []string) (*models.DynamicChanges, errs.Error) {
+	pErr := errs.New()
 	profileRequest := ProfileRequest{
 		Name:        "competitor_updates",
 		Description: "Carefully compare these two versions of content, identify and surface changes",
@@ -77,8 +77,8 @@ func (s *openAIService) AnalyzeContentDifferences(ctx context.Context, version1,
 }
 
 // AnalyzeVisualDifferences analyzes the visual differences between two screenshots
-func (s *openAIService) AnalyzeVisualDifferences(ctx context.Context, screenshot1, screenshot2 image.Image, fields []string) (*models.DynamicChanges, err.Error) {
-	dErr := err.New()
+func (s *openAIService) AnalyzeVisualDifferences(ctx context.Context, screenshot1, screenshot2 image.Image, fields []string) (*models.DynamicChanges, errs.Error) {
+	dErr := errs.New()
 	profileRequest := ProfileRequest{
 		Name:        "competitor_updates",
 		Description: "Carefully compare and contrast visual changes in the webpage",
@@ -119,8 +119,8 @@ func (s *openAIService) validate() error {
 	return err
 }
 
-func (s *openAIService) prepareTextCompletion(ctx context.Context, version1, version2 string, profile models.Profile) (*openai.ChatCompletion, err.Error) {
-	dErr := err.New()
+func (s *openAIService) prepareTextCompletion(ctx context.Context, version1, version2 string, profile models.Profile) (*openai.ChatCompletion, errs.Error) {
+	dErr := errs.New()
 	opts := s.prepareCompareOptions(&profile)
 
 	userPrompt := fmt.Sprintf("Compare these two versions of content and identify changes:\n\nVersion 1:\n%s\n\nVersion 2:\n%s", version1, version2)
@@ -156,8 +156,8 @@ func (s *openAIService) prepareTextCompletion(ctx context.Context, version1, ver
 	return chat, dErr
 }
 
-func (s *openAIService) prepareImageCompletion(ctx context.Context, version1, version2 image.Image, profile models.Profile) (*openai.ChatCompletion, err.Error) {
-	dErr := err.New()
+func (s *openAIService) prepareImageCompletion(ctx context.Context, version1, version2 image.Image, profile models.Profile) (*openai.ChatCompletion, errs.Error) {
+	dErr := errs.New()
 	// convert images to base64
 	version1Base64, err := imageToBase64URL(version1)
 	if err != nil {
@@ -213,8 +213,8 @@ func (s *openAIService) prepareImageCompletion(ctx context.Context, version1, ve
 	return chat, dErr
 }
 
-func (s *openAIService) parseCompletion(chat *openai.ChatCompletion) (*models.DynamicChanges, err.Error) {
-	dErr := err.New()
+func (s *openAIService) parseCompletion(chat *openai.ChatCompletion) (*models.DynamicChanges, errs.Error) {
+	dErr := errs.New()
 	if chat.Choices[0].Message.Refusal != "" {
 		dErr.Add(svc.ErrEncounteredRefusal, map[string]interface{}{
 			"refusal": chat.Choices[0].Message.Refusal,

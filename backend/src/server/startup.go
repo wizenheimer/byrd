@@ -84,6 +84,7 @@ func initializer(cfg *config.Config, tm *transaction.TxManager, logger *logger.L
 		aiService,
 		userService,
 		workspaceService,
+		tm,
 		logger,
 	)
 

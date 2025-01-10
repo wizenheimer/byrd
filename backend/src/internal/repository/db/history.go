@@ -9,7 +9,7 @@ import (
 	repo "github.com/wizenheimer/byrd/src/internal/interfaces/repository"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/internal/repository/transaction"
-	"github.com/wizenheimer/byrd/src/pkg/err"
+	"github.com/wizenheimer/byrd/src/pkg/errs"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"github.com/wizenheimer/byrd/src/pkg/utils"
 )
@@ -27,8 +27,8 @@ func NewPageHistoryRepository(tm *transaction.TxManager, logger *logger.Logger) 
 }
 
 // CreatePageHistory creates a new page history entry
-func (r *historyRepo) CreatePageHistory(ctx context.Context, pageID uuid.UUID, pageHistory models.PageHistory) (models.PageHistory, err.Error) {
-	pageHistoryErr := err.New()
+func (r *historyRepo) CreatePageHistory(ctx context.Context, pageID uuid.UUID, pageHistory models.PageHistory) (models.PageHistory, errs.Error) {
+	pageHistoryErr := errs.New()
 	runner := r.tm.GetRunner(ctx)
 
 	if err := utils.SetDefaultsAndValidate(&pageHistory); err != nil {
@@ -106,9 +106,9 @@ func (r *historyRepo) CreatePageHistory(ctx context.Context, pageID uuid.UUID, p
 }
 
 // ListPageHistory lists page history for a page with optional pagination
-func (r *historyRepo) ListPageHistory(ctx context.Context, pageID uuid.UUID, limit, offset *int) ([]models.PageHistory, err.Error) {
+func (r *historyRepo) ListPageHistory(ctx context.Context, pageID uuid.UUID, limit, offset *int) ([]models.PageHistory, errs.Error) {
 	runner := r.tm.GetRunner(ctx)
-	pageHistoryErr := err.New()
+	pageHistoryErr := errs.New()
 
 	// Build the query with optional pagination
 	query := `
@@ -185,8 +185,8 @@ func (r *historyRepo) ListPageHistory(ctx context.Context, pageID uuid.UUID, lim
 }
 
 // RemovePageHistory removes page history for a list of pages
-func (r *historyRepo) RemovePageHistory(ctx context.Context, pageIDs []uuid.UUID) err.Error {
-	pageHistoryErr := err.New()
+func (r *historyRepo) RemovePageHistory(ctx context.Context, pageIDs []uuid.UUID) errs.Error {
+	pageHistoryErr := errs.New()
 	if len(pageIDs) == 0 {
 		pageHistoryErr.Add(repo.ErrPageIDsUnspecified, map[string]any{
 			"pageIDs": pageIDs,

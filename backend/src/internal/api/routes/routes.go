@@ -6,6 +6,7 @@ import (
 	"github.com/wizenheimer/byrd/src/internal/api/middleware"
 	"github.com/wizenheimer/byrd/src/internal/config"
 	svc "github.com/wizenheimer/byrd/src/internal/interfaces/service"
+	"github.com/wizenheimer/byrd/src/internal/repository/transaction"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 )
 
@@ -22,6 +23,7 @@ func NewHandlerContainer(
 	aiService svc.AIService,
 	userService svc.UserService,
 	workspaceService svc.WorkspaceService,
+	tx *transaction.TxManager,
 	logger *logger.Logger,
 ) *HandlerContainer {
 	return &HandlerContainer{
@@ -34,6 +36,7 @@ func NewHandlerContainer(
 		// Handlers for workspace management
 		WorkspaceHandler: handlers.NewWorkspaceHandler(
 			workspaceService,
+			tx,
 			logger,
 		),
 		// Handlers for workflow management
