@@ -1,3 +1,4 @@
+// ./src/internal/interfaces/client/auth.go
 package interfaces
 
 import "net/http"

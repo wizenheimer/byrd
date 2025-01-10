@@ -1,3 +1,4 @@
+// ./src/internal/interfaces/repository/errors.go
 package interfaces
 
 import "errors"

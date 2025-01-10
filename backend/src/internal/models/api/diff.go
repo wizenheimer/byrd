@@ -1,3 +1,4 @@
+// ./src/internal/models/api/diff.go
 package models
 
 // WeeklyReportRequest represents parameters for generating a weekly report for a list of URLs for a competitor

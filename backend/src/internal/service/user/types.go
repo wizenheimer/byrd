@@ -1,3 +1,4 @@
+// ./src/internal/service/user/types.go
 package user
 
 import (

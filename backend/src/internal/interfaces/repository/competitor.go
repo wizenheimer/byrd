@@ -1,3 +1,4 @@
+// ./src/internal/interfaces/repository/competitor.go
 package interfaces
 
 import (

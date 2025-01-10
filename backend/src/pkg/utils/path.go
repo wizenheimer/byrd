@@ -1,3 +1,4 @@
+// ./src/pkg/utils/path.go
 package utils
 
 import (

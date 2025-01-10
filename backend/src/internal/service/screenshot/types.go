@@ -1,3 +1,4 @@
+// ./src/internal/service/screenshot/types.go
 package screenshot
 
 import (

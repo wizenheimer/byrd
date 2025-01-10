@@ -1,3 +1,4 @@
+// ./src/internal/service/competitor/finder.go
 package competitor
 
 import (

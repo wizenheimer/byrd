@@ -1,3 +1,4 @@
+// ./src/internal/api/middleware/path.go
 package middleware
 
 import (

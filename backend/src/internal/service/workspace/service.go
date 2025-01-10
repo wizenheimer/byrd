@@ -1,3 +1,4 @@
+// ./src/internal/service/workspace/service.go
 package workspace
 
 import (

@@ -1,3 +1,4 @@
+// ./src/internal/api/auth/const.go
 package auth
 
 const (

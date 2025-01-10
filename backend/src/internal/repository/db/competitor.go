@@ -1,3 +1,4 @@
+// ./src/internal/repository/db/competitor.go
 package db
 
 import (

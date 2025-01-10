@@ -1,3 +1,4 @@
+// ./src/internal/interfaces/service/ai.go
 package interfaces
 
 import (

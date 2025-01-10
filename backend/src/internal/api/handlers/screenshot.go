@@ -1,3 +1,4 @@
+// ./src/internal/api/handlers/screenshot.go
 package handlers
 
 import (

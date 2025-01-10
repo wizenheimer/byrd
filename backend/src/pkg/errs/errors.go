@@ -1,3 +1,4 @@
+// ./src/pkg/errs/errors.go
 package errs
 
 import (

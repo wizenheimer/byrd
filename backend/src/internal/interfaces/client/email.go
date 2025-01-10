@@ -1,3 +1,4 @@
+// ./src/internal/interfaces/client/email.go
 package interfaces
 
 type EmailClient interface {

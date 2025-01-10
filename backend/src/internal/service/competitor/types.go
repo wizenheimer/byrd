@@ -1,3 +1,4 @@
+// ./src/internal/service/competitor/types.go
 package competitor
 
 import (

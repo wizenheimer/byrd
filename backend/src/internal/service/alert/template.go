@@ -1,3 +1,4 @@
+// ./src/internal/service/alert/template.go
 package alert
 
 import (

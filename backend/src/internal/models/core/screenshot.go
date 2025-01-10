@@ -1,3 +1,4 @@
+// ./src/internal/models/core/screenshot.go
 package models
 
 import (

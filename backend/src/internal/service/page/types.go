@@ -1,3 +1,4 @@
+// ./src/internal/service/page/types.go
 package page
 
 import (

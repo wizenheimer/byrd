@@ -1,3 +1,4 @@
+// ./src/internal/interfaces/service/diff.go
 package interfaces
 
 import (

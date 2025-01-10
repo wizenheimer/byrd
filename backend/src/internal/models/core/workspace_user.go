@@ -1,3 +1,4 @@
+// ./src/internal/models/core/workspace_user.go
 package models
 
 type UserWorkspaceRole string

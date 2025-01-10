@@ -1,3 +1,4 @@
+// ./src/internal/api/middleware/auth.go
 package middleware
 
 import (

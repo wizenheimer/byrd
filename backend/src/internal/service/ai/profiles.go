@@ -1,3 +1,4 @@
+// ./src/internal/service/ai/profiles.go
 package ai
 
 import (
