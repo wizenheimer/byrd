@@ -139,11 +139,13 @@ func (cs *competitorService) RemoveCompetitors(ctx context.Context, workspaceID 
 		// Remove pages for the competitor
 		err := cs.pageService.RemovePage(ctx, competitorID, nil)
 		if err != nil && err.HasErrors() {
+			cs.logger.Info(err.Error())
 			cErr.Merge(err)
 		}
 	}
 
 	// TODO: make clean ups atomic and transactional
+	cs.logger.Info(cErr.Error())
 	return cErr
 }
 

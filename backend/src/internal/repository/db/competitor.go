@@ -257,23 +257,10 @@ func (r *competitorRepo) RemoveWorkspaceCompetitors(ctx context.Context, workspa
         `, strings.Join(placeholders, ","))
 	}
 
-	result, err := runner.ExecContext(ctx, query, args...)
+	_, err := runner.ExecContext(ctx, query, args...)
 	if err != nil {
 		remErr.Add(err, map[string]any{
 			"query": query,
-		})
-		return remErr
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		remErr.Add(err, nil)
-		return remErr
-	}
-
-	if rowsAffected == 0 {
-		remErr.Add(repo.ErrNoWorkspaceCompetitorsFound, map[string]any{
-			"workspaceID": workspaceID,
 		})
 		return remErr
 	}

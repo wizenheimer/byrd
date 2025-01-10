@@ -11,6 +11,7 @@ import (
 	"github.com/wizenheimer/byrd/src/pkg/err"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"github.com/wizenheimer/byrd/src/pkg/utils"
+	"go.uber.org/zap"
 )
 
 func NewPageService(pageRepo repo.PageRepository, pageHistoryService svc.PageHistoryService, logger *logger.Logger) svc.PageService {
@@ -119,6 +120,7 @@ func (ps *pageService) RemovePage(ctx context.Context, competitorID uuid.UUID, p
 	)
 	if pErr != nil && pErr.HasErrors() {
 		cErr.Merge(pErr)
+		ps.logger.Error("Failed to remove pages from competitor", zap.Error(pErr))
 		return cErr
 	}
 	return nil

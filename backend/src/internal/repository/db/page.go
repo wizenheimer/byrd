@@ -162,24 +162,10 @@ func (r *pageRepo) RemovePagesFromCompetitor(ctx context.Context, competitorID u
 		`, strings.Join(placeholders, ","))
 	}
 
-	result, err := runner.ExecContext(ctx, query, args...)
+	_, err := runner.ExecContext(ctx, query, args...)
 	if err != nil {
 		pageErr.Add(err, map[string]any{
 			"query": query,
-		})
-		return pageErr
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		pageErr.Add(err, map[string]any{
-			"query": query,
-		})
-	}
-
-	if rowsAffected == 0 {
-		pageErr.Add(repo.ErrNoCompetitorPages, map[string]any{
-			"pageIDs": pageIDs,
 		})
 		return pageErr
 	}

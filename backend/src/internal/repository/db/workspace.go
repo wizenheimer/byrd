@@ -358,24 +358,9 @@ func (r *workspaceRepo) RemoveWorkspaces(ctx context.Context, workspaceIDs []uui
         AND status = '%s'
     `, models.WorkspaceStatusInactive, strings.Join(placeholders, ","), models.WorkspaceStatusActive)
 
-	result, err := runner.ExecContext(ctx, query, args...)
+	_, err := runner.ExecContext(ctx, query, args...)
 	if err != nil {
 		wErr.Add(err, map[string]any{
-			"workspaceIDs": workspaceIDs,
-		})
-		return wErr
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		wErr.Add(err, map[string]any{
-			"workspaceIDs": workspaceIDs,
-		})
-		return wErr
-	}
-
-	if rowsAffected == 0 {
-		wErr.Add(repo.ErrWorkspaceNotFound, map[string]any{
 			"workspaceIDs": workspaceIDs,
 		})
 		return wErr

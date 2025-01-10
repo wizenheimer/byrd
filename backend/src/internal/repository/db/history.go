@@ -210,28 +210,13 @@ func (r *historyRepo) RemovePageHistory(ctx context.Context, pageIDs []uuid.UUID
     WHERE page_id = ANY($2)
     AND status = $3
 `
-	result, err := runner.ExecContext(ctx, query,
+	_, err := runner.ExecContext(ctx, query,
 		models.HistoryStatusInactive,
 		pq.Array(pageIDs),
 		models.HistoryStatusActive,
 	)
 	if err != nil {
 		pageHistoryErr.Add(err, map[string]any{
-			"pageIDs": pageIDs,
-		})
-		return pageHistoryErr
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		pageHistoryErr.Add(err, map[string]any{
-			"pageIDs": pageIDs,
-		})
-		return pageHistoryErr
-	}
-
-	if rowsAffected == 0 {
-		pageHistoryErr.Add(repo.ErrPageHistoryNotFound, map[string]any{
 			"pageIDs": pageIDs,
 		})
 		return pageHistoryErr
