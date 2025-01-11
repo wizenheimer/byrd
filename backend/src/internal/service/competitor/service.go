@@ -5,15 +5,23 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-	repo "github.com/wizenheimer/byrd/src/internal/interfaces/repository"
-	svc "github.com/wizenheimer/byrd/src/internal/interfaces/service"
 	api "github.com/wizenheimer/byrd/src/internal/models/api"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
-	"github.com/wizenheimer/byrd/src/pkg/errs"
+	"github.com/wizenheimer/byrd/src/internal/repository/competitor"
+	"github.com/wizenheimer/byrd/src/internal/service/page"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 )
 
-func NewCompetitorService(competitorRepository repo.CompetitorRepository, pageService svc.PageService, logger *logger.Logger) svc.CompetitorService {
+type competitorService struct {
+	competitorRepository competitor.CompetitorRepository
+	pageService          page.PageService
+	nameFinder           *CompanyNameFinder
+	logger               *logger.Logger
+}
+
+var _ CompetitorService = (*competitorService)(nil)
+
+func NewCompetitorService(competitorRepository competitor.CompetitorRepository, pageService page.PageService, logger *logger.Logger) CompetitorService {
 	return &competitorService{
 		competitorRepository: competitorRepository,
 		pageService:          pageService,
@@ -22,181 +30,90 @@ func NewCompetitorService(competitorRepository repo.CompetitorRepository, pageSe
 	}
 }
 
-func (cs *competitorService) CreateCompetitor(ctx context.Context, workspaceID uuid.UUID, competitorReq api.CreateCompetitorRequest) (api.CreateWorkspaceCompetitorResponse, errs.Error) {
-	cErr := errs.New()
-	competitors := make([]models.Competitor, 0)
-
-	// Iterate over the list of pages in the request
-	for _, page := range competitorReq.Pages {
-		// Get the page URL and find the competitor name
-		urls := []string{page.URL}
-		competitorName := cs.nameFinder.ProcessURLs(urls)
-
-		// Create competitor using the competitor name
-		createdCompetitors, err := cs.competitorRepository.CreateCompetitors(ctx, workspaceID, []string{competitorName})
-		if err != nil && err.HasErrors() {
-			cErr.Merge(err)
-			continue
-		}
-
-		// Sync the page url in capture profile
-		page.CaptureProfile.URL = page.URL
-
-		// Add the page to the competitor
-		if _, err := cs.pageService.CreatePage(ctx, createdCompetitors[0].ID, []api.CreatePageRequest{page}); err != nil && err.HasErrors() {
-			cErr.Merge(err)
-			continue
-		}
-
-		// Append the created competitor to the list of competitors
-		competitors = append(competitors, createdCompetitors...)
-	}
-
-	// Return the list of competitors and errors that occurred during the creation
-	return api.CreateWorkspaceCompetitorResponse{
-		Competitors: competitors,
-	}, cErr
-
+// CreateCompetitor creates a competitor in a workspace.
+// It returns the created competitor and any errors that occurred.
+// This is triggered when a user creates a competitor during workspace creation
+// or otherwise.
+func (cs *competitorService) CreateCompetitor(ctx context.Context, workspaceID uuid.UUID, competitorReq api.CreateCompetitorRequest) (api.CreateWorkspaceCompetitorResponse, error) {
+	return api.CreateWorkspaceCompetitorResponse{}, nil
 }
 
-func (cs *competitorService) GetCompetitor(ctx context.Context, workspaceID, competitorID uuid.UUID, pagePaginationParam api.PaginationParams) (api.GetWorkspaceCompetitorResponse, errs.Error) {
-	cErr := errs.New()
-	competitor, err := cs.competitorRepository.GetCompetitor(ctx, competitorID)
-	if err != nil && err.HasErrors() {
-		cErr.Merge(err)
-		return api.GetWorkspaceCompetitorResponse{}, cErr
-	}
-
-	pages, err := cs.pageService.ListCompetitorPages(ctx, competitorID, &pagePaginationParam)
-	if err != nil {
-		cErr.Merge(err)
-		return api.GetWorkspaceCompetitorResponse{}, cErr
-	}
-
-	return api.GetWorkspaceCompetitorResponse{
-		Competitor: competitor,
-		Pages:      pages,
-	}, cErr
+// GetCompetitor gets a competitor by ID.
+// It returns the competitor if it exists, otherwise it returns an error.
+// This is triggered when a user wants to get a competitor by ID.
+// Pagination is used to limit the number of pages returned per competitor.
+func (cs *competitorService) GetCompetitor(ctx context.Context, workspaceID, competitorID uuid.UUID, pagePaginationParam api.PaginationParams) (api.GetWorkspaceCompetitorResponse, error) {
+	return api.GetWorkspaceCompetitorResponse{}, nil
 }
 
-func (cs *competitorService) CompetitorExists(ctx context.Context, workspaceID, competitorID uuid.UUID) (bool, errs.Error) {
-	cErr := errs.New()
-	competitor, err := cs.competitorRepository.GetCompetitor(ctx, competitorID)
-	if err != nil && err.HasErrors() {
-		cErr.Merge(err)
-		return false, cErr
-	}
-
-	return competitor.WorkspaceID == workspaceID, nil
+// CompetitorExists checks if a competitor exists in a workspace.
+// Its optimized for quick lookups over the competitor table.
+func (cs *competitorService) CompetitorExists(ctx context.Context, workspaceID, competitorID uuid.UUID) (bool, error) {
+	return false, nil
 }
 
-func (cs *competitorService) PageExists(ctx context.Context, competitorID, pageID uuid.UUID) (bool, errs.Error) {
-	cErr := errs.New()
-	if _, err := cs.pageService.GetPage(ctx, competitorID, pageID); err != nil {
-		cErr.Merge(err)
-		return false, cErr
-	}
-
-	return true, nil
+// PageExists checks if a page exists in a competitor.
+// Its optimized for quick lookups over the page table.
+func (cs *competitorService) PageExists(ctx context.Context, competitorID, pageID uuid.UUID) (bool, error) {
+	return false, nil
 }
 
-func (cs *competitorService) ListWorkspaceCompetitors(ctx context.Context, workspaceID uuid.UUID, param api.PaginationParams) ([]api.GetWorkspaceCompetitorResponse, errs.Error) {
-	cErr := errs.New()
-	competitors, err := cs.competitorRepository.ListWorkspaceCompetitors(ctx, workspaceID, param.GetLimit(), param.GetOffset())
-	if err != nil && err.HasErrors() {
-		cErr.Merge(err)
-		return nil, cErr
-	}
-
-	var competitorResponses []api.GetWorkspaceCompetitorResponse
-	for _, competitor := range competitors {
-		// Setting pagination as nil would list all pages for the competitor
-		pages, err := cs.pageService.ListCompetitorPages(ctx, competitor.ID, nil)
-		if err != nil && err.HasErrors() {
-			cErr.Merge(err)
-			continue
-		}
-
-		competitorResponses = append(competitorResponses, api.GetWorkspaceCompetitorResponse{
-			Competitor: competitor,
-			Pages:      pages,
-		})
-	}
-
-	return competitorResponses, cErr
+// ListWorkspaceCompetitors lists the competitors of a workspace.
+// It returns the competitors of the workspace.
+// This is triggered when a user wants to list all competitors in a workspace.
+// Pagination is used to limit the number of competitors returned.
+// The pages are returned in their entirety for every competitor requested.
+func (cs *competitorService) ListWorkspaceCompetitors(ctx context.Context, workspaceID uuid.UUID, competitorListingParam api.PaginationParams) ([]api.GetWorkspaceCompetitorResponse, error) {
+	return []api.GetWorkspaceCompetitorResponse{}, nil
 }
 
-func (cs *competitorService) RemoveCompetitors(ctx context.Context, workspaceID uuid.UUID, competitorIDs []uuid.UUID) errs.Error {
-	cErr := errs.New()
-	// Remove workspace competitors
-
-	if err := cs.competitorRepository.RemoveWorkspaceCompetitors(ctx, workspaceID, competitorIDs); err != nil && err.HasErrors() {
-		cErr.Merge(err)
-		return cErr
-	}
-
-	// Remove pages for the competitors
-	for _, competitorID := range competitorIDs {
-		// Remove pages for the competitor
-		err := cs.pageService.RemovePage(ctx, competitorID, nil)
-		if err != nil && err.HasErrors() {
-			cs.logger.Info(err.Error())
-			cErr.Merge(err)
-		}
-	}
-
-	// TODO: make clean ups atomic and transactional
-	cs.logger.Info(cErr.Error())
-	return cErr
-}
-
-func (cs *competitorService) AddPagesToCompetitor(ctx context.Context, competitorID uuid.UUID, pageReq []api.CreatePageRequest) ([]models.Page, errs.Error) {
-	cErr := errs.New()
-	page, err := cs.pageService.CreatePage(ctx, competitorID, pageReq)
-	if err != nil && err.HasErrors() {
-		cErr.Merge(err)
-		return nil, cErr
-	}
-	return page, nil
-}
-
-func (cs *competitorService) GetCompetitorPage(ctx context.Context, competitorID, pageID uuid.UUID, historyPaginationParams api.PaginationParams) (api.GetPageResponse, errs.Error) {
-	cErr := errs.New()
-	page, err := cs.pageService.GetPageWithHistory(ctx, competitorID, pageID, historyPaginationParams)
-	if err != nil && err.HasErrors() {
-		return api.GetPageResponse{}, cErr
-	}
-	return page, nil
-}
-
-func (cs *competitorService) UpdatePage(ctx context.Context, competitorID, pageID uuid.UUID, pageReq api.UpdatePageRequest) (models.Page, errs.Error) {
-	cErr := errs.New()
-	page, err := cs.pageService.UpdatePage(ctx, competitorID, pageID, pageReq)
-	if err != nil {
-		cErr.Merge(err)
-		return models.Page{}, cErr
-	}
-
-	return page, nil
-}
-
-func (cs *competitorService) RemovePagesFromCompetitor(ctx context.Context, competitorID uuid.UUID, pageID []uuid.UUID) errs.Error {
-	cErr := errs.New()
-	// Remove pages for the competitor
-	errs := cs.pageService.RemovePage(ctx, competitorID, pageID)
-	if len(errs) > 0 {
-		cErr.Merge(errs)
-		return cErr
-	}
+// RemoveCompetitors removes a list of competitors from a workspace.
+// Removing a competitor also removes all its pages from the workspace.
+// It returns an error if the competitor could not be removed.
+// When competitorIDs are nil, all competitors and their pages
+// are removed from the workspace.
+func (cs *competitorService) RemoveCompetitors(ctx context.Context, workspaceID uuid.UUID, competitorIDs []uuid.UUID) error {
 	return nil
 }
 
-func (cs *competitorService) ListCompetitorPages(ctx context.Context, competitorID uuid.UUID) ([]models.Page, errs.Error) {
-	cErr := errs.New()
-	pages, err := cs.pageService.ListCompetitorPages(ctx, competitorID, nil)
-	if err != nil {
-		cErr.Merge(err)
-		return nil, cErr
-	}
-	return pages, nil
+// <--------- Page Management --------->
+// Page management is operational within the context of a competitor
+// Creat, Read, Update, Delete operations for pages
+
+// AddPagesToCompetitor adds a list of pages to an existing competitor.
+// It returns the created page and any errors that occurred.
+// This is triggered when a user adds a page to an existing competitor.
+func (cs *competitorService) AddPagesToCompetitor(ctx context.Context, competitorID uuid.UUID, pageReq []api.CreatePageRequest) ([]models.Page, error) {
+	return []models.Page{}, nil
+}
+
+// GetCompetitorPage gets a competitor's page by ID.
+// It returns the page if it exists, otherwise it returns an error.
+// This is triggered when a user wants to get a page by ID.
+// Pagination is used to limit the number of page history returned per page.
+func (cs *competitorService) GetCompetitorPage(ctx context.Context, competitorID, pageID uuid.UUID, pageHistoryPaginationParam api.PaginationParams) (api.GetPageResponse, error) {
+	return api.GetPageResponse{}, nil
+}
+
+// UpdatePage updates a page.
+// It returns the updated page and any errors that occurred.
+// This is triggered when a user updates a page in a competitor.
+func (cs *competitorService) UpdatePage(ctx context.Context, competitorID, pageID uuid.UUID, pageReq api.UpdatePageRequest) (models.Page, error) {
+	return models.Page{}, nil
+}
+
+// RemovePagesFromCompetitor removes pages from a competitor.
+// It returns an error if the page could not be removed.
+// This is triggered when a user removes a page from a competitor.
+// When pageIDs are nil, all pages are removed from the competitor.
+func (cs *competitorService) RemovePagesFromCompetitor(ctx context.Context, competitorID uuid.UUID, pageID []uuid.UUID) error {
+	return nil
+}
+
+// ListCompetitorPages lists the pages of a competitor.
+// It returns the pages of the competitor.
+// This is triggered when a user wants to list all pages in a competitor.
+// This is helpful for reporting workflow.
+func (cs *competitorService) ListCompetitorPages(ctx context.Context, competitorID uuid.UUID) ([]models.Page, error) {
+	return []models.Page{}, nil
 }

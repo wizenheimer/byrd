@@ -4,19 +4,18 @@ package alert
 import (
 	"context"
 
-	clf "github.com/wizenheimer/byrd/src/internal/interfaces/client"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 )
 
 type workflowAlertClient struct {
 	// client for Slack
-	clf.AlertClient
+	AlertClient
 	// logger for logging
 	logger *logger.Logger
 }
 
-func NewWorkflowAlertClient(embeddedClient clf.AlertClient, logger *logger.Logger) (clf.WorkflowAlertClient, error) {
+func NewWorkflowAlertClient(embeddedClient AlertClient, logger *logger.Logger) (WorkflowAlertClient, error) {
 
 	workflowAlertClient := workflowAlertClient{
 		AlertClient: embeddedClient,

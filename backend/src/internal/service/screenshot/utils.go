@@ -9,7 +9,6 @@ import (
 	"reflect"
 	"strconv"
 
-	svc "github.com/wizenheimer/byrd/src/internal/interfaces/service"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/pkg/utils"
 	"go.uber.org/zap"
@@ -18,7 +17,7 @@ import (
 // prepareImageResponse prepares the image response from the HTTP response
 func (s *screenshotService) prepareScreenshotImageResponse(resp *http.Response, url string, year int, weekNumber int, weekDay int) (*models.ScreenshotImageResponse, error) {
 	if resp.StatusCode != http.StatusOK {
-		return nil, svc.ErrNon200StatusCode
+		return nil, ErrNon200StatusCode
 	}
 
 	img, width, height, err := parseImageFromResponse(resp)
@@ -28,7 +27,7 @@ func (s *screenshotService) prepareScreenshotImageResponse(resp *http.Response, 
 
 	renderedURL := resp.Header.Get("X-ScreenshotOne-Content-URL")
 	if renderedURL == "" {
-		return nil, svc.ErrNoContentURLFoundInHeaders
+		return nil, ErrNoContentURLFoundInHeaders
 	}
 
 	screenshotResponse := models.ScreenshotImageResponse{
@@ -51,13 +50,13 @@ func (s *screenshotService) prepareScreenshotImageResponse(resp *http.Response, 
 // prepareHTMLContentResponse prepares the HTML content response from the HTTP response
 func (s *screenshotService) prepareScreenshotHTMLContentResponse(resp *http.Response, sourceURL, renderedURL string, year int, weekNumber int, weekDay int) (*models.ScreenshotHTMLContentResponse, error) {
 	if resp.StatusCode != http.StatusOK {
-		return nil, svc.ErrNon200StatusCode
+		return nil, ErrNon200StatusCode
 	}
 
 	// Read the HTML content
 	htmlBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, svc.ErrReadingHTMLBody
+		return nil, ErrReadingHTMLBody
 	}
 
 	htmlContent := string(htmlBytes)
@@ -80,7 +79,7 @@ func (s *screenshotService) prepareScreenshotHTMLContentResponse(resp *http.Resp
 // parseImageFromResponse parses an image from an HTTP response
 func parseImageFromResponse(resp *http.Response) (image.Image, int, int, error) {
 	if resp.StatusCode != http.StatusOK {
-		return nil, -1, -1, svc.ErrNon200StatusCode
+		return nil, -1, -1, ErrNon200StatusCode
 	}
 
 	imageContentTypes := []string{
@@ -90,12 +89,12 @@ func parseImageFromResponse(resp *http.Response) (image.Image, int, int, error) 
 	}
 
 	if !utils.Contains(imageContentTypes, resp.Header.Get("Content-Type")) {
-		return nil, -1, -1, svc.ErrUnexpectedContentType
+		return nil, -1, -1, ErrUnexpectedContentType
 	}
 
 	img, _, err := image.Decode(resp.Body)
 	if err != nil {
-		return nil, -1, -1, svc.ErrCannotDecodeImage
+		return nil, -1, -1, ErrCannotDecodeImage
 	}
 
 	var width, height int
@@ -126,14 +125,14 @@ func parseImageFromResponse(resp *http.Response) (image.Image, int, int, error) 
 func (s *screenshotService) getExistingScreenshotImage(ctx context.Context, url string) (*models.ScreenshotImageResponse, error) {
 	screenshotPath, err := utils.GetCurrentScreenshotPath(url)
 	if err != nil {
-		return nil, svc.ErrFailedToGetCurrentScreenshotPath
+		return nil, ErrFailedToGetCurrentScreenshotPath
 	}
 
 	var screenshotImageResp models.ScreenshotImageResponse
 
 	screenshotImageResp, errs := s.storage.GetScreenshotImage(ctx, screenshotPath)
 	if errs != nil {
-		return nil, svc.ErrFailedToGetScreenshotImage
+		return nil, ErrFailedToGetScreenshotImage
 	}
 	return &screenshotImageResp, nil
 }
@@ -143,14 +142,14 @@ func (s *screenshotService) getExistingScreenshotImage(ctx context.Context, url 
 func (s *screenshotService) getExistingHTMLContent(ctx context.Context, url string) (*models.ScreenshotHTMLContentResponse, error) {
 	contentPath, err := utils.GetCurrentContentPath(url)
 	if err != nil {
-		return nil, svc.ErrFailedToGetCurrentContentPath
+		return nil, ErrFailedToGetCurrentContentPath
 	}
 
 	var screenshotContentResponse models.ScreenshotHTMLContentResponse
 
 	screenshotContentResponse, errs := s.storage.GetScreenshotHTMLContent(ctx, contentPath)
 	if errs != nil {
-		return nil, svc.ErrFailedToGetScreenshotImage
+		return nil, ErrFailedToGetScreenshotImage
 	}
 
 	return &screenshotContentResponse, nil
@@ -182,11 +181,11 @@ func (s *screenshotService) prepareScreenshotHTML(opts models.ScreenshotHTMLRequ
 	// Get HTML content
 	htmlResp, err := http.Get(opts.RenderedURL)
 	if err != nil {
-		return nil, svc.ErrFailedToGetHTMLContent
+		return nil, ErrFailedToGetHTMLContent
 	}
 
 	if htmlResp.StatusCode != http.StatusOK {
-		return nil, svc.ErrNon200StatusCode
+		return nil, ErrNon200StatusCode
 	}
 
 	// Prepare the request

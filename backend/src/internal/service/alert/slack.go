@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/slack-go/slack"
-	clf "github.com/wizenheimer/byrd/src/internal/interfaces/client"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"go.uber.org/zap"
@@ -38,7 +37,7 @@ type slackAlertClient struct {
 	recent map[string]time.Time
 }
 
-func NewSlackAlertClient(config models.SlackConfig, logger *logger.Logger) (clf.AlertClient, error) {
+func NewSlackAlertClient(config models.SlackConfig, logger *logger.Logger) (AlertClient, error) {
 	if config.Token == "" {
 		return nil, ErrSlackTokenMissing
 	}

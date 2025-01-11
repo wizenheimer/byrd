@@ -4,24 +4,42 @@ package executor
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/google/uuid"
-	clf "github.com/wizenheimer/byrd/src/internal/interfaces/client"
-	exc "github.com/wizenheimer/byrd/src/internal/interfaces/executor"
-	repo "github.com/wizenheimer/byrd/src/internal/interfaces/repository"
 	api "github.com/wizenheimer/byrd/src/internal/models/api"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
+	"github.com/wizenheimer/byrd/src/internal/repository/workflow"
+	"github.com/wizenheimer/byrd/src/internal/service/alert"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"go.uber.org/zap"
 )
 
+type workflowExecutor struct {
+	workflowType models.WorkflowType
+	config       models.ExecutorConfig
+	repository   workflow.WorkflowRepository
+	alertClient  alert.WorkflowAlertClient
+	taskExecutor TaskExecutor
+	logger       *logger.Logger
+
+	activeWorkflows sync.Map // map[string]*workflowContext
+}
+
+type workflowContext struct {
+	cancel context.CancelFunc
+	task   models.Task
+	state  api.WorkflowState
+	mutex  sync.RWMutex
+}
+
 func NewWorkflowExecutor(
 	wfType models.WorkflowType,
-	repository repo.WorkflowRepository,
-	alertClient clf.WorkflowAlertClient,
-	taskExecutor exc.TaskExecutor,
+	repository workflow.WorkflowRepository,
+	alertClient alert.WorkflowAlertClient,
+	taskExecutor TaskExecutor,
 	logger *logger.Logger,
-) (exc.WorkflowExecutor, error) {
+) (WorkflowExecutor, error) {
 	config, err := models.GetExecutorConfig(wfType)
 	if err != nil {
 		return nil, err

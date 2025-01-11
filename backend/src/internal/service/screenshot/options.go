@@ -2,9 +2,9 @@
 package screenshot
 
 import (
-	clf "github.com/wizenheimer/byrd/src/internal/interfaces/client"
-	repo "github.com/wizenheimer/byrd/src/internal/interfaces/repository"
+	"github.com/wizenheimer/byrd/src/internal/client"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
+	"github.com/wizenheimer/byrd/src/internal/repository/screenshot"
 )
 
 // ScreenshotServiceOption is a function type that modifies ScreenshotService
@@ -21,14 +21,14 @@ func defaultConfig() *models.ScreenshotServiceConfig {
 }
 
 // WithStorage sets the storage repository
-func WithStorage(storage repo.ScreenshotRepository) ScreenshotServiceOption {
+func WithStorage(storage screenshot.ScreenshotRepository) ScreenshotServiceOption {
 	return func(s *screenshotService) {
 		s.storage = storage
 	}
 }
 
 // WithHTTPClient sets the HTTP client
-func WithHTTPClient(client clf.HTTPClient) ScreenshotServiceOption {
+func WithHTTPClient(client client.HTTPClient) ScreenshotServiceOption {
 	return func(s *screenshotService) {
 		s.httpClient = client
 	}

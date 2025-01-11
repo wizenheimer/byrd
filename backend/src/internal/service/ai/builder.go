@@ -3,10 +3,9 @@ package ai
 
 import (
 	"encoding/json"
+	"errors"
 
-	svc "github.com/wizenheimer/byrd/src/internal/interfaces/service"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
-	"github.com/wizenheimer/byrd/src/pkg/errs"
 )
 
 // UserProfileRequest represents the user's request to create a profile
@@ -29,28 +28,19 @@ func NewProfileBuilder(registry *FieldRegistry) *ProfileBuilder {
 }
 
 // BuildProfileFromJSON builds a profile from a JSON request
-func (pb *ProfileBuilder) BuildProfileFromJSON(jsonData string) (models.Profile, errs.Error) {
+func (pb *ProfileBuilder) BuildProfileFromJSON(jsonData string) (models.Profile, error) {
 	var request ProfileRequest
-	pErr := errs.New()
 	if err := json.Unmarshal([]byte(jsonData), &request); err != nil {
-		pErr.Add(svc.ErrProfileParsing, map[string]any{
-			"jsonData": jsonData,
-		})
-		return models.Profile{}, pErr // TODO: make it non-fatal
+		return models.Profile{}, err
 	}
 
 	return pb.BuildProfile(request, false)
 }
 
 // BuildProfile builds a profile from a request
-func (pb *ProfileBuilder) BuildProfile(request ProfileRequest, fallback bool) (models.Profile, errs.Error) {
-	pErr := errs.New()
+func (pb *ProfileBuilder) BuildProfile(request ProfileRequest, fallback bool) (models.Profile, error) {
 	if request.Name == "" {
-		pErr.Add(svc.ErrProfileNameMissing, map[string]any{
-			"request":  request,
-			"fallback": fallback,
-		})
-		return DefaultUpdates, pErr // TODO: make it non-fatal
+		return DefaultUpdates, errors.New("profile name is required")
 	}
 
 	// Deduplicate field names
@@ -68,11 +58,7 @@ func (pb *ProfileBuilder) BuildProfile(request ProfileRequest, fallback bool) (m
 	for _, fieldName := range request.FieldNames {
 		field, err := pb.registry.GetField(fieldName, fallback)
 		if err != nil {
-			pErr.Add(svc.ErrProfileFieldNotFound, map[string]any{
-				"fieldName": fieldName,
-				"fallback":  fallback,
-			})
-			return models.Profile{}, pErr // TODO: make it non-fatal
+			return models.Profile{}, err
 		}
 		fields = append(fields, field)
 	}

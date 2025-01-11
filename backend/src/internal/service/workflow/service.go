@@ -6,15 +6,20 @@ import (
 	"errors"
 	"fmt"
 
-	exc "github.com/wizenheimer/byrd/src/internal/interfaces/executor"
-	repo "github.com/wizenheimer/byrd/src/internal/interfaces/repository"
-	svc "github.com/wizenheimer/byrd/src/internal/interfaces/service"
 	api "github.com/wizenheimer/byrd/src/internal/models/api"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
+	"github.com/wizenheimer/byrd/src/internal/repository/workflow"
+	"github.com/wizenheimer/byrd/src/internal/service/executor"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 )
 
-func NewWorkflowService(logger *logger.Logger, repository repo.WorkflowRepository, screenshotWorkflowExecutor, reportWorkflowExecutor exc.WorkflowExecutor) (svc.WorkflowService, error) {
+type workflowService struct {
+	executors  map[models.WorkflowType]executor.WorkflowExecutor
+	logger     *logger.Logger
+	repository workflow.WorkflowRepository
+}
+
+func NewWorkflowService(logger *logger.Logger, repository workflow.WorkflowRepository, screenshotWorkflowExecutor, reportWorkflowExecutor executor.WorkflowExecutor) (WorkflowService, error) {
 	if logger == nil {
 		return nil, errors.New("logger is required")
 	}
@@ -41,13 +46,11 @@ func NewWorkflowService(logger *logger.Logger, repository repo.WorkflowRepositor
 func (s *workflowService) Initialize(ctx context.Context) []error {
 	var errors []error
 	// Initialize each executor
-	s.executors.Range(func(key, value interface{}) bool {
-		executor := value.(exc.WorkflowExecutor)
+	for key, executor := range s.executors {
 		if err := executor.Initialize(ctx); err != nil {
 			errors = append(errors, fmt.Errorf("failed to initialize %s executor: %w", key, err))
 		}
-		return true
-	})
+	}
 
 	return errors
 }

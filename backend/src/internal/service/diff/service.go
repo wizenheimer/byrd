@@ -4,21 +4,20 @@ package diff
 import (
 	"context"
 
-	svc "github.com/wizenheimer/byrd/src/internal/interfaces/service"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
-	"github.com/wizenheimer/byrd/src/pkg/errs"
+	"github.com/wizenheimer/byrd/src/internal/service/ai"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"github.com/wizenheimer/byrd/src/pkg/utils"
 )
 
 type diffService struct {
-	aiService svc.AIService
+	aiService ai.AIService
 	processor *utils.MarkdownProcessor
 	logger    *logger.Logger
 }
 
 // NewDiffService creates a new diff service
-func NewDiffService(aiService svc.AIService, logger *logger.Logger) (svc.DiffService, error) {
+func NewDiffService(aiService ai.AIService, logger *logger.Logger) (DiffService, error) {
 	processor, err := utils.NewMarkdownProcessor()
 	if err != nil {
 		return nil, err
@@ -30,6 +29,6 @@ func NewDiffService(aiService svc.AIService, logger *logger.Logger) (svc.DiffSer
 	}, nil
 }
 
-func (d *diffService) Compare(ctx context.Context, content1, content2 *models.ScreenshotHTMLContentResponse, profileStr string, persist bool) (*models.DynamicChanges, errs.Error) {
+func (d *diffService) Compare(ctx context.Context, content1, content2 *models.ScreenshotHTMLContentResponse, profileStr string, persist bool) (*models.DynamicChanges, error) {
 	return nil, nil
 }

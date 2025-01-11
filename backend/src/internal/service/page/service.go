@@ -5,17 +5,23 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-	repo "github.com/wizenheimer/byrd/src/internal/interfaces/repository"
-	svc "github.com/wizenheimer/byrd/src/internal/interfaces/service"
 	api "github.com/wizenheimer/byrd/src/internal/models/api"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
-	"github.com/wizenheimer/byrd/src/pkg/errs"
+	"github.com/wizenheimer/byrd/src/internal/repository/page"
+	"github.com/wizenheimer/byrd/src/internal/service/history"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
-	"github.com/wizenheimer/byrd/src/pkg/utils"
-	"go.uber.org/zap"
 )
 
-func NewPageService(pageRepo repo.PageRepository, pageHistoryService svc.PageHistoryService, logger *logger.Logger) svc.PageService {
+// compile time check if the interface is implemented
+var _ PageService = (*pageService)(nil)
+
+type pageService struct {
+	pageRepo           page.PageRepository
+	pageHistoryService history.PageHistoryService
+	logger             *logger.Logger
+}
+
+func NewPageService(pageRepo page.PageRepository, pageHistoryService history.PageHistoryService, logger *logger.Logger) PageService {
 	return &pageService{
 		pageRepo:           pageRepo,
 		pageHistoryService: pageHistoryService,
@@ -23,106 +29,62 @@ func NewPageService(pageRepo repo.PageRepository, pageHistoryService svc.PageHis
 	}
 }
 
-func (ps *pageService) CreatePage(ctx context.Context, competitorID uuid.UUID, pageReq []api.CreatePageRequest) ([]models.Page, errs.Error) {
-	cErr := errs.New()
-	pages, pErr := ps.pageRepo.AddPagesToCompetitor(ctx, competitorID, pageReq)
-	if pErr != nil && pErr.HasErrors() {
-		cErr.Merge(pErr)
-		return nil, cErr.Propagate(svc.ErrFailedToCreatePageForCompetitor)
-	}
-
-	return pages, nil
-}
-
-func (ps *pageService) GetPage(ctx context.Context, competitorID uuid.UUID, pageID uuid.UUID) (models.Page, errs.Error) {
-	cErr := errs.New()
-	page, pErr := ps.pageRepo.GetCompetitorPage(ctx, competitorID, pageID)
-	if pErr != nil && pErr.HasErrors() {
-		cErr.Merge(pErr)
-		return models.Page{}, cErr.Propagate(svc.ErrFailedToGetPageForCompetitor)
-	}
-
-	return page, nil
-}
-
-func (ps *pageService) GetPageWithHistory(ctx context.Context, competitorID uuid.UUID, pageID uuid.UUID, historyPaginationParams api.PaginationParams) (api.GetPageResponse, errs.Error) {
-	cErr := errs.New()
-	page, err := ps.GetPage(ctx, competitorID, pageID)
-	if err != nil {
-		cErr.Merge(err)
-		return api.GetPageResponse{}, cErr.Propagate(svc.ErrFailedToGetPageHistoryForCompetitor)
-	}
-
-	pageHistory, err := ps.pageHistoryService.ListPageHistory(ctx, pageID, historyPaginationParams)
-	if err != nil {
-		cErr.Merge(err)
-		return api.GetPageResponse{}, cErr.Propagate(svc.ErrFailedToGetPageHistoryForCompetitor)
-	}
-
-	return api.GetPageResponse{
-		Page:    page,
-		History: pageHistory,
-	}, nil
-}
-
-func (ps *pageService) UpdatePage(ctx context.Context, competitorID uuid.UUID, pageID uuid.UUID, pageReq api.UpdatePageRequest) (models.Page, errs.Error) {
-	cErr := errs.New()
-	updatedPage, pErr := ps.pageRepo.UpdateCompetitorPage(ctx, competitorID, pageID, pageReq)
-	if pErr != nil && pErr.HasErrors() {
-		cErr.Merge(pErr)
-		return models.Page{}, cErr.Propagate(svc.ErrFailedToUpdatePageForCompetitor)
-	}
-
-	return updatedPage, nil
-}
-
-func (ps *pageService) ListCompetitorPages(ctx context.Context, competitorID uuid.UUID, param *api.PaginationParams) ([]models.Page, errs.Error) {
-	cErr := errs.New()
-	var limit, offset *int
-	if param != nil {
-		limit, offset = utils.ToPtr(param.GetLimit()), utils.ToPtr(param.GetOffset())
-	}
-
-	page, pErr := ps.pageRepo.ListCompetitorPages(ctx, competitorID, limit, offset)
-	if pErr != nil && pErr.HasErrors() {
-		cErr.Merge(pErr)
-		return nil, cErr.Propagate(svc.ErrFailedToListPagesForCompetitor)
-	}
-
-	return page, nil
-}
-
-func (ps *pageService) ListActivePages(ctx context.Context, batchSize int, lastPageID *uuid.UUID) (<-chan []models.Page, <-chan error) {
-	// TODO: TBD
+// CreatePage creates a page for a competitor
+// It returns the created page and any errors that occurred
+// This is triggered when a user creates a page for a competitor
+func (ps *pageService) CreatePage(ctx context.Context, competitorID uuid.UUID, pageReq []api.CreatePageRequest) ([]models.Page, error) {
 	return nil, nil
 }
 
-func (ps *pageService) ListPageHistory(ctx context.Context, competitorID uuid.UUID, pageID uuid.UUID, param api.PaginationParams) ([]models.PageHistory, errs.Error) {
-	cErr := errs.New()
-	pageHistory, err := ps.pageHistoryService.ListPageHistory(
-		ctx,
-		pageID,
-		param,
-	)
-	if err != nil {
-		cErr.Merge(err)
-		return nil, cErr.Propagate(svc.ErrFailedToGetPageHistoryForCompetitor)
-	}
-
-	return pageHistory, nil
+// GetPage gets a page by ID.
+// It returns the page if it exists, otherwise it returns an error.
+func (ps *pageService) GetPage(ctx context.Context, competitorID uuid.UUID, pageID uuid.UUID) (models.Page, error) {
+	return models.Page{}, nil
 }
 
-func (ps *pageService) RemovePage(ctx context.Context, competitorID uuid.UUID, pageIDs []uuid.UUID) errs.Error {
-	cErr := errs.New()
-	pErr := ps.pageRepo.RemovePagesFromCompetitor(
-		ctx,
-		competitorID,
-		pageIDs,
-	)
-	if pErr != nil && pErr.HasErrors() {
-		cErr.Merge(pErr)
-		ps.logger.Error("Failed to remove pages from competitor", zap.Error(pErr))
-		return cErr.Propagate(svc.ErrFailedToRemovePageFromCompetitor)
-	}
+// GetPageWithHistory gets a page along with its history.
+// It returns the page if it exists, otherwise it returns an error.
+func (ps *pageService) GetPageWithHistory(ctx context.Context, competitorID uuid.UUID, pageID uuid.UUID, historyPaginationParams api.PaginationParams) (api.GetPageResponse, error) {
+	return api.GetPageResponse{}, nil
+}
+
+// UpdatePage updates a page.
+// It returns the updated page and any errors that occurred.
+// This is triggered when a user updates a page.
+func (ps *pageService) UpdatePage(ctx context.Context, competitorID uuid.UUID, pageID uuid.UUID, pageReq api.UpdatePageRequest) (models.Page, error) {
+	return models.Page{}, nil
+}
+
+// ListCompetitorPages lists the pages of a competitor.
+// It returns the pages of the competitor
+// This is triggered when a user wants to list all pages in a competitor.
+// Pagination is used to limit the number of pages returned.
+// When pagination param is nil all the pages are returned for the competitor.
+func (ps *pageService) ListCompetitorPages(ctx context.Context, competitorID uuid.UUID, param *api.PaginationParams) ([]models.Page, error) {
+	return nil, nil
+}
+
+// ListActivePages lists all active pages.
+// It returns the active pages.
+// This is triggered by workflow to list all active pages.
+// lastPageID serves as a checkpoint and is used to seek to the last page in the previous batch.
+// batchSize is used to limit the number of pages returned.
+func (ps *pageService) ListActivePages(ctx context.Context, batchSize int, lastPageID *uuid.UUID) (<-chan []models.Page, <-chan error) {
+	return nil, nil
+}
+
+// ListPageHistory lists the history of a page
+// It returns the history of the page.
+// This is triggered when a user wants to list the history of a page.
+// Pagination is used to limit the number of history returned.
+func (ps *pageService) ListPageHistory(ctx context.Context, competitorID uuid.UUID, pageID uuid.UUID, param api.PaginationParams) ([]models.PageHistory, error) {
+	return nil, nil
+}
+
+// RemovePage removes pages from a competitor
+// It returns any errors that occurred
+// This is triggered when a user wants to remove pages from a competitor
+// When pageIDs are nil all pages are removed from the competitor.
+func (ps *pageService) RemovePage(ctx context.Context, competitorID uuid.UUID, pageIDs []uuid.UUID) error {
 	return nil
 }

@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 
-	clf "github.com/wizenheimer/byrd/src/internal/interfaces/client"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"go.uber.org/zap"
@@ -21,7 +20,7 @@ type localWorkflowClient struct {
 }
 
 // NewLocalWorkflowClient creates a new local workflow client that logs alerts
-func NewLocalWorkflowClient(_ models.SlackConfig, logger *logger.Logger) clf.AlertClient {
+func NewLocalWorkflowClient(_ models.SlackConfig, logger *logger.Logger) AlertClient {
 	return &localWorkflowClient{
 		logger: logger.WithFields(map[string]interface{}{"module": "local_workflow_alert_client"}),
 	}

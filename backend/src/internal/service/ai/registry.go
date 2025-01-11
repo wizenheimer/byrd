@@ -2,7 +2,6 @@
 package ai
 
 import (
-	svc "github.com/wizenheimer/byrd/src/internal/interfaces/service"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 )
 
@@ -162,7 +161,7 @@ func (r *FieldRegistry) GetField(name string, fallback bool) (models.FieldConfig
 		if fallback {
 			return field, nil
 		}
-		return field, svc.ErrProfileFieldNotFound
+		return field, ErrProfileFieldNotFound
 	}
 	return field, nil
 }

@@ -1,4 +1,3 @@
-// ./src/internal/service/user/service.go
 package user
 
 import (
@@ -6,245 +5,115 @@ import (
 
 	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/google/uuid"
-	repo "github.com/wizenheimer/byrd/src/internal/interfaces/repository"
-	svc "github.com/wizenheimer/byrd/src/internal/interfaces/service"
 	api "github.com/wizenheimer/byrd/src/internal/models/api"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
-	"github.com/wizenheimer/byrd/src/pkg/errs"
+	"github.com/wizenheimer/byrd/src/internal/repository/user"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
-	"github.com/wizenheimer/byrd/src/pkg/utils"
 )
 
-func NewUserService(userRepository repo.UserRepository, logger *logger.Logger) svc.UserService {
+var _ UserService = (*userService)(nil)
+
+// TODO: rethink retrieval methods
+type userService struct {
+	userRepository user.UserRepository
+	logger         *logger.Logger
+}
+
+func NewUserService(userRepository user.UserRepository, logger *logger.Logger) UserService {
 	return &userService{
 		userRepository: userRepository,
 		logger:         logger,
 	}
 }
 
-func (us *userService) CreateWorkspaceOwner(ctx context.Context, clerk *clerk.User, workspaceID uuid.UUID) (*models.User, errs.Error) {
-	wErr := errs.New()
-	email, err := utils.GetClerkUserEmail(clerk)
-	if err != nil {
-		wErr.Add(svc.ErrFailedToGetUserEmail, map[string]any{"error": err.Error()})
-		return nil, wErr.Propagate(svc.ErrFailedToCreateWorkspaceOwner)
-	}
-
-	name := utils.GetClerkUserFullName(clerk)
-
-	userID, err := uuid.NewUUID()
-	if err != nil {
-		wErr.Add(err, map[string]any{"userID": userID})
-		return nil, wErr.Propagate(svc.ErrFailedToCreateWorkspaceOwner)
-	}
-
-	partialUser := models.User{
-		ID:      userID,
-		ClerkID: &clerk.ID,
-		Name:    &name,
-		Email:   &email,
-		Status:  models.AccountStatusActive,
-	}
-
-	user, uErr := us.userRepository.GetOrCreateUser(ctx, partialUser)
-	if uErr != nil && uErr.HasErrors() {
-		wErr.Merge(uErr)
-		return nil, wErr.Propagate(svc.ErrFailedToCreateWorkspaceOwner)
-	}
-
-	addUsers := []models.WorkspaceUserProps{
-		{
-			Email:  email,
-			Role:   models.UserRoleAdmin,
-			Status: models.UserWorkspaceStatusActive,
-		},
-	}
-
-	if _, uErr := us.userRepository.AddUsersToWorkspace(ctx, addUsers, workspaceID); uErr != nil && uErr.HasErrors() {
-		wErr.Merge(uErr)
-		return nil, wErr.Propagate(svc.ErrFailedToCreateWorkspaceOwner)
-	}
-
-	return &user, nil
+// CreateWorkspaceOwner creates a owner in a workspace if it does not exist
+// Once the owner is created or found, it returns the owner's user model
+// It returns an error if the user could not be created
+// This is triggered when workspace owner creates a workspace
+func (us *userService) CreateWorkspaceOwner(ctx context.Context, clerk *clerk.User, workspaceID uuid.UUID) (*models.User, error) {
+	return nil, nil
 }
 
-func (us *userService) AddUserToWorkspace(ctx context.Context, workspaceID uuid.UUID, invitedUsers []api.InviteUserToWorkspaceRequest) ([]api.CreateWorkspaceUserResponse, errs.Error) {
-	wErr := errs.New()
-	if len(invitedUsers) == 0 {
-		wErr.Add(svc.ErrInvitedUserCountShouldBeNonZero, map[string]any{"error": "no users to add"})
-		return nil, wErr.Propagate(svc.ErrFailedToAddUserToWorkspace)
-	}
-
-	err := utils.SetDefaultsAndValidateArray(&invitedUsers)
-	if err != nil {
-		wErr.Add(err, map[string]any{"users": invitedUsers})
-		return nil, wErr.Propagate(svc.ErrFailedToAddUserToWorkspace)
-	}
-
-	workspaceUsers, uErr := us.userRepository.AddUsersToWorkspace(ctx, invitedUsers, workspaceID)
-	if uErr != nil && uErr.HasErrors() {
-		wErr.Merge(uErr)
-		return nil, wErr.Propagate(svc.ErrFailedToAddUserToWorkspace)
-	}
-
-	return workspaceUsers, wErr
+// AddUserToWorkspace adds a user to a workspace
+// It returns an error if the user could not be added to the workspace
+// It returns nil if the user was added successfully
+// This is triggered when workspace owner invites a user to a workspace
+func (us *userService) AddUserToWorkspace(ctx context.Context, workspaceID uuid.UUID, invitedUsers []api.InviteUserToWorkspaceRequest) ([]api.CreateWorkspaceUserResponse, error) {
+	return nil, nil
 }
 
-func (us *userService) GetWorkspaceUser(ctx context.Context, clerk *clerk.User, workspaceID uuid.UUID) (models.WorkspaceUser, errs.Error) {
-	wErr := errs.New()
-	userEmail, err := utils.GetClerkUserEmail(clerk)
-	if err != nil {
-		wErr.Add(svc.ErrFailedToGetUserEmail, map[string]any{"error": err.Error()})
-		return models.WorkspaceUser{}, wErr.Propagate(svc.ErrWorkspaceUserNotFound)
-	}
-
-	workspaceUser, uErr := us.userRepository.GetWorkspaceClerkUser(ctx, workspaceID, clerk.ID, userEmail)
-	if uErr != nil && uErr.HasErrors() {
-		wErr.Merge(uErr)
-		return models.WorkspaceUser{}, wErr.Propagate(svc.ErrWorkspaceUserNotFound)
-	}
-
-	return workspaceUser, nil
+// GetWorkspaceUser gets a user from a workspace
+// Once the user is found, it returns the user
+// It returns an error if the user could not be found
+// This is triggered whenever signs in to the application
+func (us *userService) GetWorkspaceUser(ctx context.Context, clerk *clerk.User, workspaceID uuid.UUID) (models.WorkspaceUser, error) {
+	return models.WorkspaceUser{}, nil
 }
 
-func (us *userService) GetWorkspaceUserByID(ctx context.Context, userID, workspaceID uuid.UUID) (models.WorkspaceUser, errs.Error) {
-	wErr := errs.New()
-	workspaceUser, uErr := us.userRepository.GetWorkspaceUser(ctx, workspaceID, userID)
-	if uErr != nil && uErr.HasErrors() {
-		wErr.Merge(uErr)
-		return models.WorkspaceUser{}, wErr.Propagate(svc.ErrWorkspaceUserNotFound)
-	}
-
-	return workspaceUser, nil
+// GetWorkspaceUserByID gets a user from a workspace by ID
+// Once the user is found, it returns the user
+// This is triggered when workspace owner or member wants to get a user by ID
+func (us *userService) GetWorkspaceUserByID(ctx context.Context, userID, workspaceID uuid.UUID) (models.WorkspaceUser, error) {
+	return models.WorkspaceUser{}, nil
 }
 
-func (us *userService) ListWorkspaceUsers(ctx context.Context, workspaceID uuid.UUID) ([]models.WorkspaceUser, errs.Error) {
-	wErr := errs.New()
-	workspaceUsers, uErr := us.userRepository.ListWorkspaceUsers(ctx, workspaceID)
-	if uErr != nil && uErr.HasErrors() {
-		wErr.Merge(uErr)
-		return nil, wErr.Propagate(svc.ErrFailedToListWorkspaceUsers)
-	}
-
-	return workspaceUsers, nil
+// ListWorkspaceUsers lists the users of a workspace
+// It returns the users of the workspace
+// It returns an error if the workspace does not exist
+func (us *userService) ListWorkspaceUsers(ctx context.Context, workspaceID uuid.UUID) ([]models.WorkspaceUser, error) {
+	return nil, nil
 }
 
-func (us *userService) ListUserWorkspaces(ctx context.Context, clerk *clerk.User) ([]uuid.UUID, errs.Error) {
-	wErr := errs.New()
-
-	primaryEmail, err := utils.GetClerkUserEmail(clerk)
-	if err != nil {
-		wErr.Add(svc.ErrFailedToGetUserEmail, map[string]any{"error": err.Error()})
-		return nil, wErr.Propagate(svc.ErrFailedToListUserWorkspaces)
-	}
-
-	user, uErr := us.userRepository.GetClerkUser(ctx, clerk.ID, primaryEmail)
-	if uErr != nil && uErr.HasErrors() {
-		wErr.Merge(uErr)
-		return nil, wErr.Propagate(svc.ErrFailedToListUserWorkspaces)
-	}
-
-	workspaceIDs, uErr := us.userRepository.ListUserWorkspaces(ctx, user.ID)
-	if uErr != nil && uErr.HasErrors() {
-		wErr.Merge(uErr)
-		return nil, wErr.Propagate(svc.ErrFailedToListUserWorkspaces)
-	}
-
-	return workspaceIDs, nil
+// ListUserWorkspaces lists the workspaces of a user
+// It returns the workspaces of the user
+// It returns an error if the user does not exist
+// This is triggered when the user signs in to the application
+func (us *userService) ListUserWorkspaces(ctx context.Context, clerk *clerk.User) ([]uuid.UUID, error) {
+	return nil, nil
 }
 
-func (us *userService) UpdateWorkspaceUserRole(ctx context.Context, userID, workspaceID uuid.UUID, role models.UserWorkspaceRole) (models.WorkspaceUser, errs.Error) {
-	wErr := errs.New()
-
-	userIDs := []uuid.UUID{userID}
-	_, uErr := us.userRepository.UpdateWorkspaceUserRole(ctx, workspaceID, userIDs, role)
-	if uErr != nil && uErr.HasErrors() {
-		wErr.Merge(uErr)
-		return models.WorkspaceUser{}, wErr.Propagate(svc.ErrFailedToUpdateWorkspaceUserRole)
-	}
-
-	workspaceUser, uErr := us.userRepository.GetWorkspaceUser(ctx, workspaceID, userID)
-	if uErr != nil && uErr.HasErrors() {
-		wErr.Merge(uErr)
-		return models.WorkspaceUser{}, wErr.Propagate(svc.ErrFailedToUpdateWorkspaceUserRole)
-	}
-
-	return workspaceUser, nil
+// UpdateWorkspaceUserRole updates a user role in a workspace
+// It returns an error if the user could not be updated
+// It returns nil if the user was updated successfully
+// It can update the user's role in the workspace
+func (us *userService) UpdateWorkspaceUserRole(ctx context.Context, userID, workspaceID uuid.UUID, role models.UserWorkspaceRole) (models.WorkspaceUser, error) {
+	return models.WorkspaceUser{}, nil
 }
 
-func (us *userService) UpdateWorkspaceUserStatus(ctx context.Context, userID, workspaceID uuid.UUID, status models.UserWorkspaceStatus) errs.Error {
-	wErr := errs.New()
-	userIDs := []uuid.UUID{userID}
-	_, uErr := us.userRepository.UpdateWorkspaceUserStatus(ctx, workspaceID, userIDs, status)
-	if uErr != nil && uErr.HasErrors() {
-		wErr.Merge(uErr)
-		return wErr.Propagate(svc.ErrFailedToUpdateWorkspaceUserStatus)
-	}
-
+func (us *userService) UpdateWorkspaceUserStatus(ctx context.Context, userID, workspaceID uuid.UUID, status models.UserWorkspaceStatus) error {
 	return nil
 }
 
-func (us *userService) RemoveWorkspaceUsers(ctx context.Context, userIDs []uuid.UUID, workspaceID uuid.UUID) errs.Error {
-	wErr := errs.New()
-	uErr := us.userRepository.RemoveUsersFromWorkspace(ctx, userIDs, workspaceID)
-	if uErr != nil && uErr.HasErrors() {
-		wErr.Merge(uErr)
-		return wErr.Propagate(svc.ErrFailedToRemoveWorkspaceUsers)
-	}
-
+// RemoveUserFromWorkspace removes users from a workspace
+// It returns an error if the users could not be removed
+// It returns nil if the users were removed successfully
+// When the userIDs are nil, it removes all users from the workspace
+func (us *userService) RemoveWorkspaceUsers(ctx context.Context, userIDs []uuid.UUID, workspaceID uuid.UUID) error {
 	return nil
 }
 
-func (us *userService) GetWorkspaceUserCountByRole(ctx context.Context, workspaceID uuid.UUID) (int, int, errs.Error) {
-	wErr := errs.New()
-	admin, member, uErr := us.userRepository.GetWorkspaceUserCountByRole(ctx, workspaceID)
-	if uErr != nil && uErr.HasErrors() {
-		wErr.Merge(uErr)
-		return 0, 0, wErr.Propagate(svc.ErrFailedToGetWorkspaceUserCountByRole)
-	}
-
-	return admin, member, nil
+// GetWorkspaceUserCount gets the count of users in a workspace
+// It returns the count of users in the workspace
+// It returns an error if the workspace does not exist
+// This is triggered when workspace owner or member wants to get the count of users in a workspace
+func (us *userService) GetWorkspaceUserCountByRole(ctx context.Context, workspaceID uuid.UUID) (map[models.UserWorkspaceRole]int, error) {
+	return nil, nil
 }
 
-func (us *userService) SyncUser(ctx context.Context, clerk *clerk.User) errs.Error {
-	wErr := errs.New()
-	primaryEmail, err := utils.GetClerkUserEmail(clerk)
-	if err != nil {
-		wErr.Add(svc.ErrFailedToGetUserEmail, map[string]any{"error": err.Error()})
-		return wErr.Propagate(svc.ErrFailedToSyncUser)
-	}
-	user, uErr := us.userRepository.GetClerkUser(ctx, clerk.ID, primaryEmail)
-	if uErr != nil && uErr.HasErrors() {
-		wErr.Merge(uErr)
-		return wErr.Propagate(svc.ErrFailedToSyncUser)
-	}
+// <------ User Management ------>
 
-	if uErr := us.userRepository.SyncUser(ctx, user.ID, clerk); uErr != nil && uErr.HasErrors() {
-		wErr.Merge(uErr)
-		return wErr.Propagate(svc.ErrFailedToSyncUser)
-	}
-
+// SyncUser syncs a user with Clerk
+// It returns an error if the user could not be synced
+// When sync is triggered, it marks the account status as active
+// And updates the user's email and name if they have changed
+func (us *userService) SyncUser(ctx context.Context, clerk *clerk.User) error {
 	return nil
 }
 
-func (us *userService) DeleteUser(ctx context.Context, clerk *clerk.User) errs.Error {
-	wErr := errs.New()
-
-	primaryEmail, err := utils.GetClerkUserEmail(clerk)
-	if err != nil {
-		wErr.Add(svc.ErrFailedToGetUserEmail, map[string]any{"error": err.Error()})
-		return wErr.Propagate(svc.ErrFailedToDeleteUser)
-	}
-	user, uErr := us.userRepository.GetClerkUser(ctx, clerk.ID, primaryEmail)
-	if uErr != nil && uErr.HasErrors() {
-		wErr.Merge(uErr)
-		return wErr.Propagate(svc.ErrFailedToDeleteUser)
-	}
-
-	if uErr := us.userRepository.DeleteUser(ctx, user.ID); uErr != nil && uErr.HasErrors() {
-		wErr.Merge(uErr)
-		return wErr.Propagate(svc.ErrFailedToDeleteUser)
-	}
-
+// DeleteUser deletes a user from Clerk
+// It returns an error if the user could not be deleted
+// It returns nil if the user was deleted successfully
+// This is the only user-facing and handler-owned method
+func (us *userService) DeleteUser(ctx context.Context, clerk *clerk.User) error {
 	return nil
 }
