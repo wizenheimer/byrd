@@ -3,6 +3,7 @@ package interfaces
 
 import (
 	"context"
+	"errors"
 
 	"github.com/google/uuid"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
@@ -45,3 +46,29 @@ type WorkspaceRepository interface {
 	// This is used to update the workspace details
 	UpdateWorkspace(ctx context.Context, workspaceID uuid.UUID, workspaceReq models.WorkspaceProps) errs.Error
 }
+
+var (
+    // ErrFailedToCreateWorkspaceInWorkspaceRepository is returned when the workspace creation fails
+	ErrFailedToCreateWorkspaceInWorkspaceRepository = errors.New("failed to create workspace in workspace repository")
+
+    // ErrFailedToGetWorkspaceFromWorkspaceRepository is returned when the workspace get fails
+    ErrFailedToGetWorkspaceFromWorkspaceRepository = errors.New("failed to get workspace from workspace repository")
+
+    // ErrFailedToCheckIfWorkspaceExistsInWorkspaceRepository is returned when the workspace exists check fails
+    ErrFailedToCheckIfWorkspaceExistsInWorkspaceRepository = errors.New("failed to check if workspace exists in workspace repository")
+
+    // ErrFailedToUpdateWorkspaceBillingEmailInWorkspaceRepository is returned when the workspace billing email update fails
+    ErrFailedToUpdateWorkspaceBillingEmailInWorkspaceRepository = errors.New("failed to update workspace billing email in workspace repository")
+
+    // ErrFailedToUpdateWorkspaceNameInWorkspaceRepository is returned when the workspace name update fails
+    ErrFailedToUpdateWorkspaceNameInWorkspaceRepository = errors.New("failed to update workspace name in workspace repository")
+
+    // ErrFailedToUpdateWorkspaceStatusInWorkspaceRepository is returned when the workspace status update fails
+    ErrFailedToUpdateWorkspaceStatusInWorkspaceRepository = errors.New("failed to update workspace status in workspace repository")
+
+    // ErrFailedToUpdateWorkspaceInWorkspaceRepository is returned when the workspace update fails
+    ErrFailedToUpdateWorkspaceInWorkspaceRepository = errors.New("failed to update workspace in workspace repository")
+
+    // ErrFailedToRemoveWorkspacesInWorkspaceRepository is returned when the workspace removal fails
+    ErrFailedToRemoveWorkspacesInWorkspaceRepository = errors.New("failed to remove workspaces in workspace repository")
+)

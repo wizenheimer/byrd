@@ -3,6 +3,7 @@ package interfaces
 
 import (
 	"context"
+	"errors"
 
 	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/google/uuid"
@@ -109,3 +110,50 @@ type UserRepository interface {
 	// Optimized for quick lookups over the workspace_user table
 	ClerkUserIsMember(ctx context.Context, workspaceID uuid.UUID, clerkID string) (bool, errs.Error)
 }
+
+var (
+	// ErrFailedToGetUserFromUserRepository is an error that indicates that the user could not be fetched
+	ErrFailedToGetUserFromUserRepository = errors.New("failed to get user from user repository")
+
+	// ErrFailedToGetClerkUserFromUserRepository is an error that indicates that the clerk user could not be fetched
+	ErrFailedToGetClerkUserFromUserRepository = errors.New("failed to get clerk user from user repository")
+
+	// ErrFailedToGetOrCreateUserFromUserRepository is an error that indicates that the user could not be created or fetched
+	ErrFailedToGetOrCreateUserFromUserRepository = errors.New("failed to get or create user from user repository")
+
+	// ErrFailedToAddUsersToWorkspaceInUserRepository is an error that indicates that the users could not be added
+	ErrFailedToAddUsersToWorkspaceInUserRepository = errors.New("failed to add users to workspace in user repository")
+
+	// ErrFailedToRemoveUsersFromWorkspaceInUserRepository is an error that indicates that the users could not be removed
+	ErrFailedToRemoveUsersFromWorkspaceInUserRepository = errors.New("failed to remove users from workspace in user repository")
+
+	// ErrFailedToListWorkspaceUsersFromUserRepository is an error that indicates that the workspace users could not be listed
+	ErrFailedToListWorkspaceUsersFromUserRepository = errors.New("failed to list workspace users from user repository")
+
+	// ErrFailedToListUserWorkspacesFromUserRepository is an error that indicates that the user workspaces could not be listed
+	ErrFailedToListUserWorkspacesFromUserRepository = errors.New("failed to list user workspaces from user repository")
+
+	// ErrFailedToUpdateWorkspaceUserRoleInUserRepository is an error that indicates that the workspace user role could not be updated
+	ErrFailedToUpdateWorkspaceUserRoleInUserRepository = errors.New("failed to update workspace user role in user repository")
+
+	// ErrFailedToUpdateWorkspaceUserStatusInUserRepository is an error that indicates that the workspace user status could not be updated
+	ErrFailedToUpdateWorkspaceUserStatusInUserRepository = errors.New("failed to update workspace user status in user repository")
+
+	// ErrFailedToGetWorkspaceUserCountByRoleFromUserRepository is an error that indicates that the workspace user count by role could not be fetched
+	ErrFailedToGetWorkspaceUserCountByRoleFromUserRepository = errors.New("failed to get workspace user count by role from user repository")
+
+    // ErrFailedToSyncUserInUserRepository is an error that indicates that the user could not be synced
+    ErrFailedToSyncUserInUserRepository = errors.New("failed to sync user in user repository")
+
+    // ErrFailedToDeleteUserInUserRepository is an error that indicates that the user could not be deleted
+    ErrFailedToDeleteUserInUserRepository = errors.New("failed to delete user in user repository")
+
+    // ErrFailedToCheckIfUserExistsInUserRepository is an error that indicates that the user existence could not be checked
+    ErrFailedToCheckIfUserExistsInUserRepository = errors.New("failed to check if user exists in user repository")
+
+    // ErrFailedToCheckIfClerkUserExistsInUserRepository is an error that indicates that the clerk user existence could not be checked
+    ErrFailedToCheckIfClerkUserExistsInUserRepository = errors.New("failed to check if clerk user exists in user repository")
+
+    // ErrFailedToCheckUserRoleInUserRepository is an error that indicates that the user role could not be checked
+    ErrFailedToCheckUserRoleInUserRepository = errors.New("failed to check user role in user repository")
+)

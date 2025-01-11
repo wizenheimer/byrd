@@ -28,7 +28,7 @@ func (ps *pageService) CreatePage(ctx context.Context, competitorID uuid.UUID, p
 	pages, pErr := ps.pageRepo.AddPagesToCompetitor(ctx, competitorID, pageReq)
 	if pErr != nil && pErr.HasErrors() {
 		cErr.Merge(pErr)
-		return nil, cErr
+		return nil, cErr.Propagate(svc.ErrFailedToCreatePageForCompetitor)
 	}
 
 	return pages, nil
@@ -39,7 +39,7 @@ func (ps *pageService) GetPage(ctx context.Context, competitorID uuid.UUID, page
 	page, pErr := ps.pageRepo.GetCompetitorPage(ctx, competitorID, pageID)
 	if pErr != nil && pErr.HasErrors() {
 		cErr.Merge(pErr)
-		return models.Page{}, cErr
+		return models.Page{}, cErr.Propagate(svc.ErrFailedToGetPageForCompetitor)
 	}
 
 	return page, nil
@@ -50,13 +50,13 @@ func (ps *pageService) GetPageWithHistory(ctx context.Context, competitorID uuid
 	page, err := ps.GetPage(ctx, competitorID, pageID)
 	if err != nil {
 		cErr.Merge(err)
-		return api.GetPageResponse{}, cErr
+		return api.GetPageResponse{}, cErr.Propagate(svc.ErrFailedToGetPageHistoryForCompetitor)
 	}
 
 	pageHistory, err := ps.pageHistoryService.ListPageHistory(ctx, pageID, historyPaginationParams)
 	if err != nil {
 		cErr.Merge(err)
-		return api.GetPageResponse{}, cErr
+		return api.GetPageResponse{}, cErr.Propagate(svc.ErrFailedToGetPageHistoryForCompetitor)
 	}
 
 	return api.GetPageResponse{
@@ -70,7 +70,7 @@ func (ps *pageService) UpdatePage(ctx context.Context, competitorID uuid.UUID, p
 	updatedPage, pErr := ps.pageRepo.UpdateCompetitorPage(ctx, competitorID, pageID, pageReq)
 	if pErr != nil && pErr.HasErrors() {
 		cErr.Merge(pErr)
-		return models.Page{}, cErr
+		return models.Page{}, cErr.Propagate(svc.ErrFailedToUpdatePageForCompetitor)
 	}
 
 	return updatedPage, nil
@@ -86,7 +86,7 @@ func (ps *pageService) ListCompetitorPages(ctx context.Context, competitorID uui
 	page, pErr := ps.pageRepo.ListCompetitorPages(ctx, competitorID, limit, offset)
 	if pErr != nil && pErr.HasErrors() {
 		cErr.Merge(pErr)
-		return nil, cErr
+		return nil, cErr.Propagate(svc.ErrFailedToListPagesForCompetitor)
 	}
 
 	return page, nil
@@ -106,7 +106,7 @@ func (ps *pageService) ListPageHistory(ctx context.Context, competitorID uuid.UU
 	)
 	if err != nil {
 		cErr.Merge(err)
-		return nil, cErr
+		return nil, cErr.Propagate(svc.ErrFailedToGetPageHistoryForCompetitor)
 	}
 
 	return pageHistory, nil
@@ -122,7 +122,7 @@ func (ps *pageService) RemovePage(ctx context.Context, competitorID uuid.UUID, p
 	if pErr != nil && pErr.HasErrors() {
 		cErr.Merge(pErr)
 		ps.logger.Error("Failed to remove pages from competitor", zap.Error(pErr))
-		return cErr
+		return cErr.Propagate(svc.ErrFailedToRemovePageFromCompetitor)
 	}
 	return nil
 }

@@ -3,6 +3,7 @@ package interfaces
 
 import (
 	"context"
+	"errors"
 
 	"github.com/google/uuid"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
@@ -30,3 +31,13 @@ type CompetitorRepository interface {
 	// This is optimized for quick lookups over the competitor table
 	WorkspaceCompetitorExists(ctx context.Context, workspaceID, competitorID uuid.UUID) (bool, errs.Error)
 }
+
+var (
+	ErrFailedToCreateCompetitorsInCompetitorRepository = errors.New("failed to create competitors in competitor repository")
+
+    ErrFailedToGetCompetitorFromCompetitorRepository = errors.New("failed to get competitor from competitor repository")
+
+    ErrFailedToListCompetitorsFromCompetitorRepository = errors.New("failed to list competitors from competitor repository")
+
+    ErrFailedToRemoveCompetitorsFromCompetitorRepository = errors.New("failed to remove competitors from competitor repository")
+)

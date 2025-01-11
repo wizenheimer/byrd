@@ -90,17 +90,36 @@ type UserService interface {
 }
 
 var (
-	ErrFailedToGetUserEmail              = errors.New("failed to get user email")
-	ErrFailedToCreateWorkspaceOwner      = errors.New("failed to create workspace owner")
-	ErrFailedToGetUser                   = errors.New("failed to get user")
-	ErrFailedToListWorkspaceUsers        = errors.New("failed to list workspace users")
-	ErrFailedToListWorkspaceForUser      = errors.New("failed to list workspace for user")
-	ErrFailedToCreateUser                = errors.New("failed to create user")
-	ErrFailedToAddUserToWorkspace        = errors.New("failed to add user to workspace")
-	ErrFailedToUpdateWorkspaceUserRole   = errors.New("failed to update workspace user role")
+	// ErrFailedToGetClerkUserEmail is an error that indicates that the clerk user email could not be fetched
+	ErrFailedToGetClerkUserEmail = errors.New("failed to get clerk user email")
+
+	// ErrFailedToGetUserEmail is an error that indicates that the user email could not be fetched
+	ErrFailedToGetUserEmail = errors.New("failed to get user email")
+
+	// ErrFailedToCreateWorkspaceOwner is an error that indicates that the workspace owner could not be created
+	ErrFailedToCreateWorkspaceOwner = errors.New("failed to create workspace owner")
+
+	ErrFailedToGetUser = errors.New("failed to get user")
+
+	ErrFailedToListWorkspaceUsers = errors.New("failed to list workspace users")
+
+	ErrFailedToListWorkspaceForUser = errors.New("failed to list workspace for user")
+
+	ErrFailedToCreateUser = errors.New("failed to create user")
+
+	ErrFailedToAddUserToWorkspace = errors.New("failed to add user to workspace")
+
+	ErrFailedToUpdateWorkspaceUserRole = errors.New("failed to update workspace user role")
+
 	ErrFailedToUpdateWorkspaceUserStatus = errors.New("failed to update workspace user status")
-	ErrFailedToRemoveWorkspaceUsers      = errors.New("failed to remove workspace users")
+
+	ErrFailedToRemoveWorkspaceUsers = errors.New("failed to remove workspace users")
+
 	ErrFailedToGetWorkspaceUserRoleCount = errors.New("failed to get workspace user role count")
-	ErrFailedToSyncUser                  = errors.New("failed to sync user")
-	ErrFailedToDeleteUser                = errors.New("failed to delete user")
+
+	ErrFailedToSyncUser = errors.New("failed to sync user")
+
+	ErrFailedToDeleteUser = errors.New("failed to delete user")
+
+	ErrInvitedUserCountShouldBeNonZero = errors.New("invited user count should be non-zero")
 )

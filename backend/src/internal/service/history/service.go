@@ -36,7 +36,7 @@ func (ph *pageHistoryService) ListPageHistory(ctx context.Context, pageID uuid.U
 		cErr.Merge(hErr)
 		ph.logger.Info(hErr.Error())
 		// Initialize an empty slice instead of returning nil
-		return make([]models.PageHistory, 0), cErr
+		return make([]models.PageHistory, 0), cErr.Propagate(svc.ErrFailedToListPageHistory)
 	}
 
 	// If history is nil, return an empty slice
@@ -52,7 +52,7 @@ func (ph *pageHistoryService) ClearPageHistory(ctx context.Context, pageIDs []uu
 	hErr := ph.pageHistoryRepo.RemovePageHistory(ctx, pageIDs)
 	if hErr != nil && hErr.HasErrors() {
 		cErr.Merge(hErr)
-		return cErr
+		return cErr.Propagate(svc.ErrFailedToClearPageHistory)
 	}
 
 	return nil

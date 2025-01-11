@@ -11,7 +11,7 @@ type ErrorResponse struct {
 	ErrorDetails any    `json:"details,omitempty"` // add omitempty to hide when empty
 }
 
-func SendErrorResponse(c *fiber.Ctx, status int, message string, details ...any) error {
+func SendErrorResponse(c *fiber.Ctx, status int, message string, details any) error {
 	// Check if debug header exists or if the app is in development mode
 	isDebug := c.Get("X-Debug") == "true" || config.IsDevelopment()
 

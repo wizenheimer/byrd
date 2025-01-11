@@ -69,7 +69,7 @@ func (r *workspaceRepo) CreateWorkspace(ctx context.Context, workspaceName, bill
 		wErr.Add(err, map[string]any{
 			"query": query,
 		})
-		return models.Workspace{}, wErr
+		return models.Workspace{}, wErr.Propagate(repo.ErrFailedToCreateWorkspaceInWorkspaceRepository)
 	}
 
 	return workspace, nil
@@ -82,7 +82,7 @@ func (r *workspaceRepo) GetWorkspaces(ctx context.Context, workspaceIDs []uuid.U
 		wErr.Add(repo.ErrNoWorkspaceSpecified, map[string]any{
 			"workspaceIDs": workspaceIDs,
 		})
-		return []models.Workspace{}, wErr
+		return []models.Workspace{}, wErr.Propagate(repo.ErrFailedToGetWorkspaceFromWorkspaceRepository)
 	}
 
 	runner := r.tm.GetRunner(ctx)
@@ -109,7 +109,7 @@ func (r *workspaceRepo) GetWorkspaces(ctx context.Context, workspaceIDs []uuid.U
 		wErr.Add(err, map[string]any{
 			"query": query,
 		})
-		return nil, wErr
+		return nil, wErr.Propagate(repo.ErrFailedToGetWorkspaceFromWorkspaceRepository)
 	}
 	defer rows.Close()
 
@@ -142,14 +142,14 @@ func (r *workspaceRepo) GetWorkspaces(ctx context.Context, workspaceIDs []uuid.U
 	}
 
 	if wErr.HasErrors() {
-		return nil, wErr
+		return nil, wErr.Propagate(repo.ErrFailedToGetWorkspaceFromWorkspaceRepository)
 	}
 
 	if len(workspaces) == 0 {
 		wErr.Add(repo.ErrWorkspaceNotFound, map[string]any{
 			"workspaceIDs": workspaceIDs,
 		})
-		return nil, wErr
+		return nil, wErr.Propagate(repo.ErrFailedToGetWorkspaceFromWorkspaceRepository)
 	}
 
 	return workspaces, nil
@@ -174,7 +174,7 @@ func (r *workspaceRepo) WorkspaceExists(ctx context.Context, workspaceID uuid.UU
 		wErr.Add(err, map[string]any{
 			"workspaceID": workspaceID,
 		})
-		return false, wErr
+		return false, wErr.Propagate(repo.ErrFailedToCheckIfWorkspaceExistsInWorkspaceRepository)
 	}
 
 	return exists, nil
@@ -195,7 +195,7 @@ func (r *workspaceRepo) UpdateWorkspaceBillingEmail(ctx context.Context, workspa
 		wErr.Add(err, map[string]any{
 			"workspaceID": workspaceID,
 		})
-		return wErr
+		return wErr.Propagate(repo.ErrFailedToUpdateWorkspaceBillingEmailInWorkspaceRepository)
 	}
 
 	rowsAffected, err := result.RowsAffected()
@@ -203,14 +203,14 @@ func (r *workspaceRepo) UpdateWorkspaceBillingEmail(ctx context.Context, workspa
 		wErr.Add(err, map[string]any{
 			"workspaceID": workspaceID,
 		})
-		return wErr
+		return wErr.Propagate(repo.ErrFailedToUpdateWorkspaceBillingEmailInWorkspaceRepository)
 	}
 
 	if rowsAffected == 0 {
 		wErr.Add(repo.ErrWorkspaceNotFound, map[string]any{
 			"workspaceID": workspaceID,
 		})
-		return wErr
+		return wErr.Propagate(repo.ErrFailedToUpdateWorkspaceBillingEmailInWorkspaceRepository)
 	}
 
 	return nil
@@ -234,7 +234,7 @@ func (r *workspaceRepo) UpdateWorkspaceName(ctx context.Context, workspaceID uui
 		wErr.Add(err, map[string]any{
 			"workspaceID": workspaceID,
 		})
-		return wErr
+		return wErr.Propagate(repo.ErrFailedToUpdateWorkspaceNameInWorkspaceRepository)
 	}
 
 	rowsAffected, err := result.RowsAffected()
@@ -242,14 +242,14 @@ func (r *workspaceRepo) UpdateWorkspaceName(ctx context.Context, workspaceID uui
 		wErr.Add(err, map[string]any{
 			"workspaceID": workspaceID,
 		})
-		return wErr
+		return wErr.Propagate(repo.ErrFailedToUpdateWorkspaceNameInWorkspaceRepository)
 	}
 
 	if rowsAffected == 0 {
 		wErr.Add(repo.ErrWorkspaceNotFound, map[string]any{
 			"workspaceID": workspaceID,
 		})
-		return wErr
+		return wErr.Propagate(repo.ErrFailedToUpdateWorkspaceNameInWorkspaceRepository)
 	}
 
 	return nil
@@ -270,7 +270,7 @@ func (r *workspaceRepo) UpdateWorkspaceStatus(ctx context.Context, workspaceID u
 		wErr.Add(err, map[string]any{
 			"workspaceID": workspaceID,
 		})
-		return wErr
+		return wErr.Propagate(repo.ErrFailedToUpdateWorkspaceStatusInWorkspaceRepository)
 	}
 
 	rowsAffected, err := result.RowsAffected()
@@ -278,14 +278,14 @@ func (r *workspaceRepo) UpdateWorkspaceStatus(ctx context.Context, workspaceID u
 		wErr.Add(err, map[string]any{
 			"workspaceID": workspaceID,
 		})
-		return wErr
+		return wErr.Propagate(repo.ErrFailedToUpdateWorkspaceStatusInWorkspaceRepository)
 	}
 
 	if rowsAffected == 0 {
 		wErr.Add(repo.ErrWorkspaceNotFound, map[string]any{
 			"workspaceID": workspaceID,
 		})
-		return wErr
+		return wErr.Propagate(repo.ErrFailedToUpdateWorkspaceStatusInWorkspaceRepository)
 	}
 
 	return nil
@@ -312,7 +312,7 @@ func (r *workspaceRepo) UpdateWorkspace(ctx context.Context, workspaceID uuid.UU
 		wErr.Add(err, map[string]any{
 			"workspaceID": workspaceID,
 		})
-		return wErr
+		return wErr.Propagate(repo.ErrFailedToUpdateWorkspaceInWorkspaceRepository)
 	}
 
 	rowsAffected, err := result.RowsAffected()
@@ -320,14 +320,14 @@ func (r *workspaceRepo) UpdateWorkspace(ctx context.Context, workspaceID uuid.UU
 		wErr.Add(err, map[string]any{
 			"workspaceID": workspaceID,
 		})
-		return wErr
+		return wErr.Propagate(repo.ErrFailedToUpdateWorkspaceInWorkspaceRepository)
 	}
 
 	if rowsAffected == 0 {
 		wErr.Add(repo.ErrWorkspaceNotFound, map[string]any{
 			"workspaceID": workspaceID,
 		})
-		return wErr
+		return wErr.Propagate(repo.ErrFailedToUpdateWorkspaceInWorkspaceRepository)
 	}
 
 	return nil
@@ -339,7 +339,7 @@ func (r *workspaceRepo) RemoveWorkspaces(ctx context.Context, workspaceIDs []uui
 		wErr.Add(repo.ErrNoWorkspaceSpecified, map[string]any{
 			"workspaceIDs": workspaceIDs,
 		})
-		return wErr
+		return wErr.Propagate(repo.ErrFailedToRemoveWorkspacesInWorkspaceRepository)
 	}
 
 	runner := r.tm.GetRunner(ctx)
@@ -364,7 +364,7 @@ func (r *workspaceRepo) RemoveWorkspaces(ctx context.Context, workspaceIDs []uui
 		wErr.Add(err, map[string]any{
 			"workspaceIDs": workspaceIDs,
 		})
-		return wErr
+		return wErr.Propagate(repo.ErrFailedToRemoveWorkspacesInWorkspaceRepository)
 	}
 
 	return nil

@@ -156,15 +156,93 @@ type WorkspaceService interface {
 }
 
 var (
-	ErrFailedToCreateWorkspace         = errors.New("failed to create workspace")
-	ErrFailedToGetClerkUserEmail       = errors.New("failed to get clerk user email")
-	ErrFailedToInviteUserToWorkspace   = errors.New("failed to invite user to workspace")
-	ErrFailedToListWorkspaces          = errors.New("failed to list workspaces")
-	ErrFailedToGetWorkspace            = errors.New("failed to get workspace")
-	ErrWorkspaceDoesntExist            = errors.New("workspace doesn't exist")
-	ErrFailedToUpdateWorkspace         = errors.New("failed to update workspace")
-	ErrFailedToDeleteWorkspace         = errors.New("failed to delete workspace")
-	ErrCannotLeaveWorkspaceAsOnlyAdmin = errors.New("cannot leave workspace as the only admin")
-	ErrUserNotInvitedToWorkspace       = errors.New("user is not invited to the workspace")
-	ErrWorkspaceDoesNotExist           = errors.New("workspace does not exist")
+	// ErrFailedToCreateWorkspace is returned when the workspace creation fails
+	ErrFailedToCreateWorkspace = errors.New("failed to create workspace")
+
+	// ErrFailedToListUserWorkspaces is returned when the user workspace listing fails
+	ErrFailedToListUserWorkspaces = errors.New("failed to list user workspaces")
+
+	// ErrFailedToGetWorkspace is returned when the workspace retrieval fails
+	ErrFailedToGetWorkspace = errors.New("failed to get workspace")
+
+	// ErrFailedToUpdateWorkspace is returned when the workspace update fails
+	ErrFailedToUpdateWorkspace = errors.New("failed to update workspace")
+
+	// ErrFailedToUpdateWorkspaceMemberStatus is returned when the workspace member status update fails
+	ErrFailedToUpdateWorkspaceMemberStatus = errors.New("failed to update workspace member status")
+
+	// ErrFailedToUpdateWorkspaceMemberRole is returned when the workspace member role update fails
+	ErrFailedToUpdateWorkspaceMemberRole = errors.New("failed to update workspace member role")
+
+	// ErrFailedToDeleteWorkspace is returned when the workspace deletion fails
+	ErrFailedToDeleteWorkspace = errors.New("failed to delete workspace")
+
+	// ErrFailedToListWorkspaceMembers is returned when the workspace member listing fails
+	ErrFailedToListWorkspaceMembers = errors.New("failed to list workspace members")
+
+	// ErrFailedToJoinWorkspace is returned when the user joining the workspace fails
+	ErrFailedToJoinWorkspace = errors.New("failed to join workspace")
+
+	// ErrFailedToInviteUserToWorkspace is returned when the user invitation to workspace fails
+	ErrFailedToInviteUserToWorkspace = errors.New("failed to invite user to workspace")
+
+	// ErrUserNotInvitedToWorkspace is returned when the user is not invited to the workspace
+	ErrUserNotInvitedToWorkspace = errors.New("user not invited to workspace")
+
+	// ErrFailedToLeaveWorkspace is returned when the user leaving the workspace fails
+	ErrFailedToLeaveWorkspace = errors.New("failed to leave workspace")
+
+	// ErrFailedToLeaveWorkspaceAsSoleAdmin is returned when the user leaving the workspace as the sole admin fails
+	ErrFailedToLeaveWorkspaceAsSoleAdmin = errors.New("failed to leave workspace as the sole admin")
+
+	// ErrFailedToRemoveUserFromWorkspace is returned when the user removal from workspace fails
+	ErrFailedToRemoveUserFromWorkspace = errors.New("failed to remove user from workspace")
+
+	// ErrWorkspaceNotFound is returned when the workspace is not found
+	ErrWorkspaceNotFound = errors.New("workspace not found")
+
+	// ErrWorkspaceUserNotFound is returned when the workspace user is not found
+	ErrWorkspaceUserNotFound = errors.New("workspace user not found")
+
+	// ErrWorkspaceMemberNotFound is returned when the workspace member is not found
+	ErrWorkspaceMemberNotFound = errors.New("workspace member not found")
+
+	// ErrWorkspaceAdminNotFound is returned when the workspace admin is not found
+	ErrWorkspaceAdminNotFound = errors.New("workspace admin not found")
+
+	// ErrWorkspaceCompetitorNotFound is returned when the workspace competitor is not found
+	ErrWorkspaceCompetitorNotFound = errors.New("workspace competitor not found")
+
+	// ErrCompetitorPageNotFound is returned when the competitor page is not found
+	ErrCompetitorPageNotFound = errors.New("competitor page not found")
+
+	// ErrFailedToCreateCompetitor is returned when the competitor creation fails
+	ErrFailedToCreateWorkspaceCompetitor = errors.New("failed to create workspace competitor")
+
+	// ErrWorkspacceInactive is returned when the workspace is inactive
+	ErrWorkspaceInactive = errors.New("workspace is inactive")
+
+	// ErrWorkspaceLookupEmpty is returned when the workspace lookup is empty
+	ErrWorkspaceLookupEmpty = errors.New("workspace lookup is empty")
+
+	// ErrUserLeftWorkspaceNeedReinvite is returned when the user left the workspace and needs to be reinvited
+	ErrUserLeftWorkspaceNeedReinvite = errors.New("user left workspace and needs to be reinvited")
+
+    // ErrFailedToAddPageToCompetitor is returned when the page addition to competitor fails
+    ErrFailedToAddPageToCompetitor = errors.New("failed to add page to competitor")
+
+    // ErrFailedToListWorkspacePageHistory is returned when the page history listing fails
+    ErrFailedToListWorkspacePageHistory = errors.New("failed to list workspace page history")
+
+    // ErrFailedToRemovePageFromWorkspace is returned when the page removal from workspace fails
+    ErrFailedToRemovePageFromWorkspace = errors.New("failed to remove page from workspace")
+
+    // ErrFailedToRemoveCompetitorFromWorkspace is returned when the competitor removal from workspace fails
+    ErrFailedToRemoveCompetitorFromWorkspace = errors.New("failed to remove competitor from workspace")
+
+    // ErrFailedToUpdateCompetitorPage is returned when the competitor page update fails
+    ErrFailedToUpdateCompetitorPage = errors.New("failed to update competitor page")
+
+    // ErrFailedToGetWorkspaceUserCountByRole is returned when the workspace user count by role retrieval fails
+    ErrFailedToGetWorkspaceUserCountByRole = errors.New("failed to get workspace user count by role")
 )

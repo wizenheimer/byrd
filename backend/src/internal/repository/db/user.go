@@ -75,7 +75,7 @@ func (r *userRepo) GetUserByUserID(ctx context.Context, userID uuid.UUID) (model
 				"userID": userID,
 			})
 		}
-		return models.User{}, userErr
+		return models.User{}, userErr.Propagate(repo.ErrFailedToGetUserFromUserRepository)
 	}
 
 	return user, nil
@@ -121,7 +121,7 @@ func (r *userRepo) GetUserByEmail(ctx context.Context, email string) (models.Use
 				"email": email,
 			})
 		}
-		return models.User{}, userErr
+		return models.User{}, userErr.Propagate(repo.ErrFailedToGetUserFromUserRepository)
 	}
 
 	return user, nil
@@ -167,7 +167,7 @@ func (r *userRepo) GetClerkUser(ctx context.Context, clerkID string, clerkEmail 
 				"clerkEmail": clerkEmail,
 			})
 		}
-		return models.User{}, userErr
+		return models.User{}, userErr.Propagate(repo.ErrFailedToGetClerkUserFromUserRepository)
 	}
 
 	return user, nil
@@ -187,7 +187,7 @@ func (r *userRepo) GetOrCreateUser(ctx context.Context, partialUser models.User)
 			"email":   partialUser.Email,
 			"clerkID": partialUser.ClerkID,
 		})
-		return models.User{}, userErr
+		return models.User{}, userErr.Propagate(repo.ErrFailedToGetOrCreateUserFromUserRepository)
 	}
 
 	partialUser.Email = utils.ToPtr(utils.NormalizeEmail(*partialUser.Email))
@@ -236,7 +236,7 @@ func (r *userRepo) GetOrCreateUser(ctx context.Context, partialUser models.User)
 				"clerkID": partialUser.ClerkID,
 				"email":   partialUser.Email,
 			})
-			return models.User{}, userErr
+			return models.User{}, userErr.Propagate(repo.ErrFailedToGetOrCreateUserFromUserRepository)
 		}
 
 		err = row.Scan(
@@ -254,7 +254,7 @@ func (r *userRepo) GetOrCreateUser(ctx context.Context, partialUser models.User)
 				"clerkID": partialUser.ClerkID,
 				"email":   partialUser.Email,
 			})
-			return models.User{}, userErr
+			return models.User{}, userErr.Propagate(repo.ErrFailedToGetOrCreateUserFromUserRepository)
 		}
 	} else if err != nil {
 		// Handle other errors
@@ -262,7 +262,7 @@ func (r *userRepo) GetOrCreateUser(ctx context.Context, partialUser models.User)
 			"clerkID": partialUser.ClerkID,
 			"email":   partialUser.Email,
 		})
-		return models.User{}, userErr
+		return models.User{}, userErr.Propagate(repo.ErrFailedToGetOrCreateUserFromUserRepository)
 	} else if existingUser.Status == models.AccountStatusInactive {
 		// User exists but is soft-deleted, restore it
 		updateQuery := `
@@ -303,7 +303,7 @@ func (r *userRepo) GetOrCreateUser(ctx context.Context, partialUser models.User)
 				"clerkID": partialUser.ClerkID,
 				"email":   partialUser.Email,
 			})
-			return models.User{}, userErr
+			return models.User{}, userErr.Propagate(repo.ErrFailedToGetOrCreateUserFromUserRepository)
 		}
 	}
 
@@ -426,7 +426,7 @@ func (r *userRepo) GetOrCreateUserByEmail(ctx context.Context, emails []string) 
 
 	// Return both users and any errors that occurred
 	if userErr.HasErrors() {
-		return users, userErr
+		return users, userErr.Propagate(repo.ErrFailedToGetOrCreateUserFromUserRepository)
 	}
 
 	return users, nil
@@ -462,7 +462,11 @@ func (r *userRepo) AddUsersToWorkspace(ctx context.Context, workspaceUserProps [
 	}
 
 	if len(users) == 0 {
-		return nil, userErr
+		userErr.Add(errors.New("no users fetched"), map[string]any{
+			"workspaceID":        workspaceID,
+			"workspaceUserProps": workspaceUserProps,
+		})
+		return nil, userErr.Propagate(repo.ErrFailedToAddUsersToWorkspaceInUserRepository)
 	}
 
 	for _, user := range users {
@@ -501,7 +505,7 @@ func (r *userRepo) AddUsersToWorkspace(ctx context.Context, workspaceUserProps [
 			"workspaceID":        workspaceID,
 			"workspaceUserProps": workspaceUserProps,
 		})
-		return nil, userErr
+		return nil, userErr.Propagate(repo.ErrFailedToAddUsersToWorkspaceInUserRepository)
 	}
 
 	insertQuery := fmt.Sprintf(`
@@ -518,7 +522,7 @@ func (r *userRepo) AddUsersToWorkspace(ctx context.Context, workspaceUserProps [
 		userErr.Add(err, map[string]any{
 			"query": insertQuery,
 		})
-		return nil, userErr
+		return nil, userErr.Propagate(repo.ErrFailedToAddUsersToWorkspaceInUserRepository)
 	}
 	defer rows.Close()
 
@@ -554,14 +558,14 @@ func (r *userRepo) AddUsersToWorkspace(ctx context.Context, workspaceUserProps [
 	}
 
 	if userErr.HasErrors() {
-		return nil, userErr
+		return nil, userErr.Propagate(repo.ErrFailedToAddUsersToWorkspaceInUserRepository)
 	}
 
 	if err = rows.Err(); err != nil {
 		userErr.Add(err, map[string]any{
 			"query": insertQuery,
 		})
-		return nil, userErr
+		return nil, userErr.Propagate(repo.ErrFailedToAddUsersToWorkspaceInUserRepository)
 	}
 
 	r.logger.Debug("workspace users added",
@@ -641,7 +645,7 @@ func (r *userRepo) RemoveUsersFromWorkspace(ctx context.Context, userIDs []uuid.
 			"userIDs":     userIDs,
 			"query":       query,
 		})
-		return userErr
+		return userErr.Propagate(repo.ErrFailedToRemoveUsersFromWorkspaceInUserRepository)
 	}
 
 	// Only return error if no users were affected and specific users were requested
@@ -650,7 +654,7 @@ func (r *userRepo) RemoveUsersFromWorkspace(ctx context.Context, userIDs []uuid.
 			"workspaceID": workspaceID,
 			"userIDs":     userIDs,
 		})
-		return userErr
+		return userErr.Propagate(repo.ErrFailedToRemoveUsersFromWorkspaceInUserRepository)
 	}
 
 	return nil
@@ -707,14 +711,14 @@ func (r *userRepo) GetWorkspaceUser(ctx context.Context, workspaceID, userID uui
 			"workspaceID": workspaceID,
 			"userID":      userID,
 		})
-		return models.WorkspaceUser{}, userErr
+		return models.WorkspaceUser{}, userErr.Propagate(repo.ErrFailedToGetUserFromUserRepository)
 	}
 	if err != nil {
 		userErr.Add(err, map[string]any{
 			"workspaceID": workspaceID,
 			"userID":      userID,
 		})
-		return models.WorkspaceUser{}, userErr
+		return models.WorkspaceUser{}, userErr.Propagate(repo.ErrFailedToGetUserFromUserRepository)
 	}
 
 	return wu, nil
@@ -767,7 +771,7 @@ func (r *userRepo) GetWorkspaceClerkUser(ctx context.Context, workspaceID uuid.U
 			"clerkID":     clerkID,
 			"clerkEmail":  clerkEmail,
 		})
-		return models.WorkspaceUser{}, userErr
+		return models.WorkspaceUser{}, userErr.Propagate(repo.ErrFailedToGetClerkUserFromUserRepository)
 	}
 	if err != nil {
 		userErr.Add(err, map[string]any{
@@ -775,7 +779,7 @@ func (r *userRepo) GetWorkspaceClerkUser(ctx context.Context, workspaceID uuid.U
 			"clerkID":     clerkID,
 			"clerkEmail":  clerkEmail,
 		})
-		return models.WorkspaceUser{}, userErr
+		return models.WorkspaceUser{}, userErr.Propagate(repo.ErrFailedToGetClerkUserFromUserRepository)
 	}
 
 	return wu, nil
@@ -811,7 +815,7 @@ func (r *userRepo) ListWorkspaceUsers(ctx context.Context, workspaceID uuid.UUID
 		userErr.Add(err, map[string]any{
 			"workspaceID": workspaceID,
 		})
-		return nil, userErr
+		return nil, userErr.Propagate(repo.ErrFailedToListWorkspaceUsersFromUserRepository)
 	}
 	defer rows.Close()
 
@@ -843,7 +847,7 @@ func (r *userRepo) ListWorkspaceUsers(ctx context.Context, workspaceID uuid.UUID
 		userErr.Add(err, map[string]any{
 			"workspaceID": workspaceID,
 		})
-		return nil, userErr
+		return nil, userErr.Propagate(repo.ErrFailedToListWorkspaceUsersFromUserRepository)
 	}
 
 	// Only return ErrWorkspaceUsersNotFound if we got no results
@@ -851,7 +855,7 @@ func (r *userRepo) ListWorkspaceUsers(ctx context.Context, workspaceID uuid.UUID
 		userErr.Add(repo.ErrWorkspaceUsersNotFound, map[string]any{
 			"workspaceID": workspaceID,
 		})
-		return nil, userErr
+		return nil, userErr.Propagate(repo.ErrFailedToListWorkspaceUsersFromUserRepository)
 	}
 
 	return users, nil
@@ -893,7 +897,7 @@ func (r *userRepo) ListUserWorkspaces(ctx context.Context, userID uuid.UUID) ([]
 				"query":  query,
 			})
 		}
-		return nil, userErr
+		return nil, userErr.Propagate(repo.ErrFailedToListUserWorkspacesFromUserRepository)
 	}
 	defer rows.Close()
 
@@ -917,7 +921,7 @@ func (r *userRepo) ListUserWorkspaces(ctx context.Context, userID uuid.UUID) ([]
 	}
 
 	if userErr.HasErrors() {
-		return nil, userErr
+		return nil, userErr.Propagate(repo.ErrFailedToListUserWorkspacesFromUserRepository)
 	}
 
 	return workspaces, nil // Will return empty slice if no rows found
@@ -932,7 +936,7 @@ func (r *userRepo) UpdateWorkspaceUserRole(ctx context.Context, workspaceID uuid
 			"workspaceID": workspaceID,
 			"role":        role,
 		})
-		return nil, userErr
+		return nil, userErr.Propagate(repo.ErrFailedToUpdateWorkspaceUserRoleInUserRepository)
 	}
 
 	runner := r.tm.GetRunner(ctx)
@@ -972,7 +976,7 @@ func (r *userRepo) UpdateWorkspaceUserRole(ctx context.Context, workspaceID uuid
 			"userIDs":     userIDs,
 			"query":       query,
 		})
-		return nil, userErr
+		return nil, userErr.Propagate(repo.ErrFailedToUpdateWorkspaceUserRoleInUserRepository)
 	}
 	defer rows.Close()
 
@@ -1000,7 +1004,7 @@ func (r *userRepo) UpdateWorkspaceUserRole(ctx context.Context, workspaceID uuid
 	}
 
 	if userErr.HasErrors() {
-		return nil, userErr
+		return nil, userErr.Propagate(repo.ErrFailedToUpdateWorkspaceUserRoleInUserRepository)
 	}
 
 	return updatedRoles, nil
@@ -1015,7 +1019,7 @@ func (r *userRepo) UpdateWorkspaceUserStatus(ctx context.Context, workspaceID uu
 			"workspaceID": workspaceID,
 			"status":      status,
 		})
-		return nil, userErr
+		return nil, userErr.Propagate(repo.ErrFailedToUpdateWorkspaceUserStatusInUserRepository)
 	}
 	runner := r.tm.GetRunner(ctx)
 
@@ -1057,7 +1061,7 @@ func (r *userRepo) UpdateWorkspaceUserStatus(ctx context.Context, workspaceID uu
 			"userIDs":     userIDs,
 			"query":       query,
 		})
-		return nil, userErr
+		return nil, userErr.Propagate(repo.ErrFailedToUpdateWorkspaceUserStatusInUserRepository)
 	}
 	defer rows.Close()
 
@@ -1090,7 +1094,7 @@ func (r *userRepo) UpdateWorkspaceUserStatus(ctx context.Context, workspaceID uu
 			"workspaceID": workspaceID,
 			"userIDs":     userIDs,
 		})
-		return nil, userErr
+		return nil, userErr.Propagate(repo.ErrFailedToUpdateWorkspaceUserStatusInUserRepository)
 	}
 
 	return updatedStatuses, nil
@@ -1124,7 +1128,7 @@ func (r *userRepo) GetWorkspaceUserCountByRole(ctx context.Context, workspaceID 
 			"workspaceID": workspaceID,
 			"query":       query,
 		})
-		return 0, 0, userErr
+		return 0, 0, userErr.Propagate(repo.ErrFailedToGetWorkspaceUserCountByRoleFromUserRepository)
 	}
 
 	return adminCount, userCount, nil
@@ -1156,7 +1160,7 @@ func (r *userRepo) SyncUser(ctx context.Context, userID uuid.UUID, clerkUser *cl
 		userErr.Add(err, map[string]any{
 			"userID": userID,
 		})
-		return userErr
+		return userErr.Propagate(repo.ErrFailedToSyncUserInUserRepository)
 	}
 
 	userFullName := utils.GetClerkUserFullName(clerkUser)
@@ -1173,7 +1177,7 @@ func (r *userRepo) SyncUser(ctx context.Context, userID uuid.UUID, clerkUser *cl
 			"userID": userID,
 			"query":  query,
 		})
-		return userErr
+		return userErr.Propagate(repo.ErrFailedToSyncUserInUserRepository)
 	}
 
 	rowsAffected, err := result.RowsAffected()
@@ -1181,14 +1185,14 @@ func (r *userRepo) SyncUser(ctx context.Context, userID uuid.UUID, clerkUser *cl
 		userErr.Add(err, map[string]any{
 			"userID": userID,
 		})
-		return userErr
+		return userErr.Propagate(repo.ErrFailedToSyncUserInUserRepository)
 	}
 
 	if rowsAffected == 0 {
 		userErr.Add(repo.ErrUserNotFoundByID, map[string]any{
 			"userID": userID,
 		})
-		return userErr
+		return userErr.Propagate(repo.ErrFailedToSyncUserInUserRepository)
 	}
 
 	return nil
@@ -1215,13 +1219,13 @@ func (r *userRepo) DeleteUser(ctx context.Context, userID uuid.UUID) errs.Error 
 				"userID": userID,
 			})
 		}
-		return userErr
+		return userErr.Propagate(repo.ErrFailedToDeleteUserInUserRepository)
 	}
 	if !exists {
 		userErr.Add(repo.ErrUserNotFoundByID, map[string]any{
 			"userID": userID,
 		})
-		return userErr
+		return userErr.Propagate(repo.ErrFailedToDeleteUserInUserRepository)
 	}
 
 	// First update all workspace_users entries to inactive
@@ -1236,7 +1240,7 @@ func (r *userRepo) DeleteUser(ctx context.Context, userID uuid.UUID) errs.Error 
 		userErr.Add(err, map[string]any{
 			"userID": userID,
 		})
-		return userErr
+		return userErr.Propagate(repo.ErrFailedToDeleteUserInUserRepository)
 	}
 
 	// Then mark the user as inactive
@@ -1254,7 +1258,7 @@ func (r *userRepo) DeleteUser(ctx context.Context, userID uuid.UUID) errs.Error 
 		userErr.Add(err, map[string]any{
 			"userID": userID,
 		})
-		return userErr
+		return userErr.Propagate(repo.ErrFailedToDeleteUserInUserRepository)
 	}
 
 	rowsAffected, err := result.RowsAffected()
@@ -1262,14 +1266,14 @@ func (r *userRepo) DeleteUser(ctx context.Context, userID uuid.UUID) errs.Error 
 		userErr.Add(err, map[string]any{
 			"userID": userID,
 		})
-		return userErr
+		return userErr.Propagate(repo.ErrFailedToDeleteUserInUserRepository)
 	}
 
 	if rowsAffected == 0 {
 		userErr.Add(repo.ErrUserNotFoundByID, map[string]any{
 			"userID": userID,
 		})
-		return userErr
+		return userErr.Propagate(repo.ErrFailedToDeleteUserInUserRepository)
 	}
 
 	return nil
@@ -1303,7 +1307,7 @@ func (r *userRepo) UserExists(ctx context.Context, userID uuid.UUID) (bool, errs
 		userErr.Add(err, map[string]any{
 			"userID": userID,
 		})
-		return false, userErr
+		return false, userErr.Propagate(repo.ErrFailedToCheckIfUserExistsInUserRepository)
 	}
 	return exists, nil
 }
@@ -1341,7 +1345,7 @@ func (r *userRepo) ClerkUserExists(ctx context.Context, clerkID, clerkEmail stri
 			"clerkID":    clerkID,
 			"clerkEmail": clerkEmail,
 		})
-		return false, userErr
+		return false, userErr.Propagate(repo.ErrFailedToCheckIfClerkUserExistsInUserRepository)
 	}
 	return exists, nil
 }
@@ -1379,7 +1383,7 @@ func (r *userRepo) WorkspaceUserExists(ctx context.Context, workspaceID, userID 
 			"workspaceID": workspaceID,
 			"userID":      userID,
 		})
-		return false, userErr
+		return false, userErr.Propagate(repo.ErrFailedToCheckIfUserExistsInUserRepository)
 	}
 	return exists, nil
 }
@@ -1420,7 +1424,7 @@ func (r *userRepo) WorkspaceClerkUserExists(ctx context.Context, workspaceID uui
 			"clerkID":     clerkID,
 			"clerkEmail":  clerkEmail,
 		})
-		return false, userErr
+		return false, userErr.Propagate(repo.ErrFailedToCheckIfClerkUserExistsInUserRepository)
 	}
 
 	return exists, nil
@@ -1461,7 +1465,7 @@ func (r *userRepo) ClerkUserIsAdmin(ctx context.Context, workspaceID uuid.UUID, 
 			"workspaceID": workspaceID,
 			"clerkID":     clerkID,
 		})
-		return false, userErr
+		return false, userErr.Propagate(repo.ErrFailedToCheckUserRoleInUserRepository)
 	}
 
 	return isAdmin, nil
@@ -1501,7 +1505,7 @@ func (r *userRepo) ClerkUserIsMember(ctx context.Context, workspaceID uuid.UUID,
 			"workspaceID": workspaceID,
 			"clerkID":     clerkID,
 		})
-		return false, userErr
+		return false, userErr.Propagate(repo.ErrFailedToCheckUserRoleInUserRepository)
 	}
 
 	return isMember, nil

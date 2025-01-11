@@ -36,7 +36,7 @@ func (r *historyRepo) CreatePageHistory(ctx context.Context, pageID uuid.UUID, p
 		pageHistoryErr.Add(repo.ErrInvalidPageHistory, map[string]interface{}{
 			"pageHistory": pageHistory,
 		})
-		return models.PageHistory{}, pageHistoryErr
+		return models.PageHistory{}, pageHistoryErr.Propagate(repo.ErrFailedToCreatePageHistoryInPageHistoryRepository)
 	}
 
 	query := `
@@ -77,7 +77,7 @@ func (r *historyRepo) CreatePageHistory(ctx context.Context, pageID uuid.UUID, p
 		pageHistoryErr.Add(err, map[string]interface{}{
 			"pageID": pageID,
 		})
-		return models.PageHistory{}, pageHistoryErr
+		return models.PageHistory{}, pageHistoryErr.Propagate(repo.ErrFailedToCreatePageHistoryInPageHistoryRepository)
 	}
 
 	var created models.PageHistory
@@ -100,7 +100,7 @@ func (r *historyRepo) CreatePageHistory(ctx context.Context, pageID uuid.UUID, p
 		pageHistoryErr.Add(repo.ErrFailedToScanPageHistory, map[string]interface{}{
 			"pageID": pageID,
 		})
-		return models.PageHistory{}, pageHistoryErr
+		return models.PageHistory{}, pageHistoryErr.Propagate(repo.ErrFailedToCreatePageHistoryInPageHistoryRepository)
 	}
 
 	return created, nil
@@ -134,7 +134,7 @@ func (r *historyRepo) ListPageHistory(ctx context.Context, pageID uuid.UUID, lim
 			})
 		}
 		if pageHistoryErr.HasErrors() {
-			return nil, pageHistoryErr
+			return nil, pageHistoryErr.Propagate(repo.ErrFailedToListPageHistoryFromPageHistoryRepository)
 		}
 		query += " LIMIT $3 OFFSET $4"
 		args = append(args, *limit, *offset)
@@ -145,7 +145,7 @@ func (r *historyRepo) ListPageHistory(ctx context.Context, pageID uuid.UUID, lim
 		pageHistoryErr.Add(err, map[string]interface{}{
 			"pageID": pageID,
 		})
-		return nil, pageHistoryErr
+		return nil, pageHistoryErr.Propagate(repo.ErrFailedToListPageHistoryFromPageHistoryRepository)
 	}
 	defer rows.Close()
 
@@ -182,7 +182,7 @@ func (r *historyRepo) ListPageHistory(ctx context.Context, pageID uuid.UUID, lim
 		})
 	}
 
-	return history, pageHistoryErr
+	return history, pageHistoryErr.Propagate(repo.ErrFailedToListPageHistoryFromPageHistoryRepository)
 }
 
 // RemovePageHistory removes page history for a list of pages
@@ -192,7 +192,7 @@ func (r *historyRepo) RemovePageHistory(ctx context.Context, pageIDs []uuid.UUID
 		pageHistoryErr.Add(repo.ErrPageIDsUnspecified, map[string]any{
 			"pageIDs": pageIDs,
 		})
-		return pageHistoryErr
+		return pageHistoryErr.Propagate(repo.ErrFailedToRemovePageHistoryFromPageHistoryRepository)
 	}
 
 	runner := r.tm.GetRunner(ctx)
@@ -220,7 +220,7 @@ func (r *historyRepo) RemovePageHistory(ctx context.Context, pageIDs []uuid.UUID
 		pageHistoryErr.Add(err, map[string]any{
 			"pageIDs": pageIDs,
 		})
-		return pageHistoryErr
+		return pageHistoryErr.Propagate(repo.ErrFailedToRemovePageHistoryFromPageHistoryRepository)
 	}
 
 	return nil

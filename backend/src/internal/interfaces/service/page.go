@@ -67,6 +67,7 @@ type PageService interface {
 var (
 	ErrFailedToCreatePageForCompetitor  = errors.New("failed to create page")
 	ErrFailedToGetPageForCompetitor     = errors.New("failed to get page")
+    ErrFailedToGetPageHistoryForCompetitor = errors.New("failed to get page history")
 	ErrFailedToUpdatePageForCompetitor  = errors.New("failed to update page")
 	ErrFaileToListPagesForCompetitor    = errors.New("failed to list pages")
 	ErrFailedToRemovePageFromCompetitor = errors.New("failed to remove page")

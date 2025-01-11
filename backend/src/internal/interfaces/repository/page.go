@@ -3,6 +3,7 @@ package interfaces
 
 import (
 	"context"
+	"errors"
 
 	"github.com/google/uuid"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
@@ -37,3 +38,17 @@ type PageRepository interface {
 	// UpdateCompetitorPage updates a page for a competitor
 	UpdateCompetitorPage(ctx context.Context, competitorID, pageID uuid.UUID, page models.PageProps) (models.Page, errs.Error)
 }
+
+var (
+	ErrFailedToAddPagesToCompetitorInPageRepository = errors.New("failed to add pages to competitor in page repository")
+
+	ErrFailedToRemovePagesFromCompetitorInPageRepository = errors.New("failed to remove pages from competitor in page repository")
+
+    ErrFailedToListPagesFromCompetitorInPageRepository = errors.New("failed to list pages from competitor in page repository")
+
+    ErrFailedToListActivePagesFromPageRepository = errors.New("failed to list active pages from page repository")
+
+    ErrFailedToGetPageFromPageRepository = errors.New("failed to get page from page repository")
+
+    ErrFailedToUpdatePageInPageRepository = errors.New("failed to update page in page repository")
+)

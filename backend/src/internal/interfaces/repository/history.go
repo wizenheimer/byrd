@@ -3,6 +3,7 @@ package interfaces
 
 import (
 	"context"
+	"errors"
 
 	"github.com/google/uuid"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
@@ -25,3 +26,11 @@ type PageHistoryRepository interface {
 	// Returns an error if pageIDs are nil
 	RemovePageHistory(ctx context.Context, pageIDs []uuid.UUID) errs.Error
 }
+
+var (
+    ErrFailedToCreatePageHistoryInPageHistoryRepository = errors.New("failed to create page history in page history repository")
+
+    ErrFailedToListPageHistoryFromPageHistoryRepository = errors.New("failed to list page history from page history repository")
+
+    ErrFailedToRemovePageHistoryFromPageHistoryRepository = errors.New("failed to remove page history from page history repository")
+)

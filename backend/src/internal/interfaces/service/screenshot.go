@@ -44,6 +44,12 @@ type ScreenshotService interface {
 }
 
 var (
+    ErrFailedToRefreshScreenshot = errors.New("failed to refresh screenshot")
+
+    ErrFailedToRetrieveScreenshot = errors.New("failed to retrieve screenshot")
+
+    ErrFailedToPrepareScreenshot = errors.New("failed to prepare screenshot")
+
 	ErrStorageRepositoryRequired = errors.New("storage repository is required")
 	ErrHTTPClientRequired        = errors.New("HTTP client is required")
 	ErrScreenshotKeyRequired     = errors.New("screenshot key is required")

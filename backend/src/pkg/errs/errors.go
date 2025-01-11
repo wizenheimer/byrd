@@ -101,12 +101,12 @@ func (e Error) FilterFatalErrors(nonFatalErrors ...error) Error {
 }
 
 // Propagate consolidates errors to a higher level with a new error type
-func (e Error) Propagate(levelError error, nonFatalErrors ...error) (Error, bool) {
+func (e Error) Propagate(levelError error, nonFatalErrors ...error) (Error) {
 	// Filter out non-fatal errors
 	fatalErrors := e.FilterFatalErrors(nonFatalErrors...)
 
 	if len(fatalErrors) == 0 {
-		return nil, false
+		return nil
 	}
 
 	// Create new error store for the higher level
@@ -128,7 +128,7 @@ func (e Error) Propagate(levelError error, nonFatalErrors ...error) (Error, bool
 	// Add consolidated error to higher level with the array structure
 	higherLevel.AddContexts(levelError, errContexts)
 
-	return higherLevel, true
+	return higherLevel
 }
 
 // Error implements the error interface and returns a string representation of all errors

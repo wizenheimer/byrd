@@ -38,7 +38,7 @@ func (r *pageRepo) AddPagesToCompetitor(ctx context.Context, competitorID uuid.U
 		pageErr.Add(repo.ErrPagesUnspecified, map[string]any{
 			"competitor_id": competitorID,
 		})
-		return nil, pageErr
+		return nil, pageErr.Propagate(repo.ErrFailedToAddPagesToCompetitorInPageRepository)
 	}
 
 	runner := r.tm.GetRunner(ctx)
@@ -54,7 +54,7 @@ func (r *pageRepo) AddPagesToCompetitor(ctx context.Context, competitorID uuid.U
 				"pageURL": page.URL,
 				"error":   "failed to set capture profile defaults",
 			})
-			return nil, pageErr
+			return nil, pageErr.Propagate(repo.ErrFailedToAddPagesToCompetitorInPageRepository)
 		}
 
 		// Sync the page url in capture profile
@@ -76,7 +76,7 @@ func (r *pageRepo) AddPagesToCompetitor(ctx context.Context, competitorID uuid.U
 				"pageURL": page.URL,
 				"error":   err.Error(),
 			})
-			return nil, pageErr
+			return nil, pageErr.Propagate(repo.ErrFailedToAddPagesToCompetitorInPageRepository)
 		}
 
 		// Marshal the diff profile
@@ -86,7 +86,7 @@ func (r *pageRepo) AddPagesToCompetitor(ctx context.Context, competitorID uuid.U
 				"pageURL": page.URL,
 				"error":   err.Error(),
 			})
-			return nil, pageErr
+			return nil, pageErr.Propagate(repo.ErrFailedToAddPagesToCompetitorInPageRepository)
 		}
 
 		valueArgs = append(valueArgs,
@@ -109,7 +109,7 @@ func (r *pageRepo) AddPagesToCompetitor(ctx context.Context, competitorID uuid.U
 			"competitor_id": competitorID,
 			"error":         err.Error(),
 		})
-		return nil, pageErr
+		return nil, pageErr.Propagate(repo.ErrFailedToAddPagesToCompetitorInPageRepository)
 	}
 	defer rows.Close()
 
@@ -119,7 +119,7 @@ func (r *pageRepo) AddPagesToCompetitor(ctx context.Context, competitorID uuid.U
 			"competitor_id": competitorID,
 			"error":         err.Error(),
 		})
-		return nil, pageErr
+		return nil, pageErr.Propagate(repo.ErrFailedToAddPagesToCompetitorInPageRepository)
 	}
 
 	return createdPages, nil
@@ -168,7 +168,7 @@ func (r *pageRepo) RemovePagesFromCompetitor(ctx context.Context, competitorID u
 		pageErr.Add(err, map[string]any{
 			"query": query,
 		})
-		return pageErr
+		return pageErr.Propagate(repo.ErrFailedToRemovePagesFromCompetitorInPageRepository)
 	}
 
 	return nil
@@ -192,7 +192,7 @@ func (r *pageRepo) ListCompetitorPages(ctx context.Context, competitorID uuid.UU
 	if limit != nil {
 		if *limit < 0 {
 			pageErr.Add(repo.ErrInvalidLimit, nil)
-			return nil, pageErr
+			return nil, pageErr.Propagate(repo.ErrFailedToListPagesFromCompetitorInPageRepository)
 		}
 		paramCount++
 		query += fmt.Sprintf(" LIMIT $%d", paramCount)
@@ -203,7 +203,7 @@ func (r *pageRepo) ListCompetitorPages(ctx context.Context, competitorID uuid.UU
 	if offset != nil {
 		if *offset < 0 {
 			pageErr.Add(repo.ErrInvalidOffset, nil)
-			return nil, pageErr
+			return nil, pageErr.Propagate(repo.ErrFailedToListPagesFromCompetitorInPageRepository)
 		}
 		paramCount++
 		query += fmt.Sprintf(" OFFSET $%d", paramCount)
@@ -215,7 +215,7 @@ func (r *pageRepo) ListCompetitorPages(ctx context.Context, competitorID uuid.UU
 		pageErr.Add(err, map[string]any{
 			"competitorID": competitorID,
 		})
-		return nil, pageErr
+		return nil, pageErr.Propagate(repo.ErrFailedToListPagesFromCompetitorInPageRepository)
 	}
 	defer rows.Close()
 
@@ -224,14 +224,14 @@ func (r *pageRepo) ListCompetitorPages(ctx context.Context, competitorID uuid.UU
 		pageErr.Add(err, map[string]any{
 			"competitorID": competitorID,
 		})
-		return nil, pageErr
+		return nil, pageErr.Propagate(repo.ErrFailedToListPagesFromCompetitorInPageRepository)
 	}
 
 	if len(pages) == 0 {
 		pageErr.Add(repo.ErrNoCompetitorPages, map[string]any{
 			"competitorID": competitorID,
 		})
-		return nil, pageErr
+		return nil, pageErr.Propagate(repo.ErrFailedToListPagesFromCompetitorInPageRepository)
 	}
 
 	return pages, nil
@@ -242,7 +242,7 @@ func (r *pageRepo) ListActivePages(ctx context.Context, batchSize int, lastPageI
 	pageErr := errs.New()
 	if batchSize <= 0 {
 		pageErr.Add(repo.ErrInvalidBatchSize, nil)
-		return models.ActivePageBatch{}, pageErr
+		return models.ActivePageBatch{}, pageErr.Propagate(repo.ErrFailedToListActivePagesFromPageRepository)
 	}
 
 	runner := r.tm.GetRunner(ctx)
@@ -270,7 +270,7 @@ func (r *pageRepo) ListActivePages(ctx context.Context, batchSize int, lastPageI
 			"batchSize":  batchSize,
 			"lastPageID": lastPageID,
 		})
-		return models.ActivePageBatch{}, pageErr
+		return models.ActivePageBatch{}, pageErr.Propagate(repo.ErrFailedToListActivePagesFromPageRepository)
 	}
 	defer rows.Close()
 
@@ -281,7 +281,7 @@ func (r *pageRepo) ListActivePages(ctx context.Context, batchSize int, lastPageI
 			"lastPageID": lastPageID,
 			"batchSize":  batchSize,
 		})
-		return models.ActivePageBatch{}, pageErr
+		return models.ActivePageBatch{}, pageErr.Propagate(repo.ErrFailedToListActivePagesFromPageRepository)
 	}
 
 	result := models.ActivePageBatch{
@@ -314,12 +314,12 @@ func (r *pageRepo) GetCompetitorPage(ctx context.Context, competitorID, pageID u
 			"competitorID": competitorID,
 			"pageID":       pageID,
 		})
-		return models.Page{}, pageErr
+		return models.Page{}, pageErr.Propagate(repo.ErrFailedToGetPageFromPageRepository)
 	}
 
 	if page == nil {
 		pageErr.Add(repo.ErrPageNotFound, nil)
-		return models.Page{}, pageErr
+		return models.Page{}, pageErr.Propagate(repo.ErrFailedToGetPageFromPageRepository)
 	}
 
 	return *page, nil
@@ -336,7 +336,7 @@ func (r *pageRepo) UpdateCompetitorPage(ctx context.Context, competitorID, pageI
 			"competitorID": competitorID,
 			"pageID":       pageID,
 		})
-		return models.Page{}, pageErr
+		return models.Page{}, pageErr.Propagate(repo.ErrFailedToUpdatePageInPageRepository)
 	}
 
 	// Merge the existing capture profile with the new capture profile
@@ -354,7 +354,7 @@ func (r *pageRepo) UpdateCompetitorPage(ctx context.Context, competitorID, pageI
 			"pageID": pageID,
 			"error":  err.Error(),
 		})
-		return models.Page{}, pageErr
+		return models.Page{}, pageErr.Propagate(repo.ErrFailedToUpdatePageInPageRepository)
 	}
 
 	// Initialize empty diff profile if nil
@@ -373,7 +373,7 @@ func (r *pageRepo) UpdateCompetitorPage(ctx context.Context, competitorID, pageI
 			"pageID": pageID,
 			"error":  err.Error(),
 		})
-		return models.Page{}, pageErr
+		return models.Page{}, pageErr.Propagate(repo.ErrFailedToUpdatePageInPageRepository)
 	}
 
 	query := `
@@ -397,7 +397,7 @@ func (r *pageRepo) UpdateCompetitorPage(ctx context.Context, competitorID, pageI
 			"competitorID": competitorID,
 			"pageID":       pageID,
 		})
-		return models.Page{}, pageErr
+		return models.Page{}, pageErr.Propagate(repo.ErrFailedToUpdatePageInPageRepository)
 	}
 
 	return *finalPage, nil

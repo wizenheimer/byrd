@@ -36,7 +36,7 @@ func (r *competitorRepo) CreateCompetitors(ctx context.Context, workspaceID uuid
 		competitorErr.Add(repo.ErrCompetitorNamesListEmpty, map[string]any{
 			"competitorNames": competitorNames,
 		})
-		return nil, competitorErr
+		return nil, competitorErr.Propagate(repo.ErrFailedToCreateCompetitorsInCompetitorRepository)
 	}
 
 	// Get the runner (either tx from context or db)
@@ -63,7 +63,7 @@ func (r *competitorRepo) CreateCompetitors(ctx context.Context, workspaceID uuid
 		competitorErr.Add(err, map[string]any{
 			"query": query,
 		})
-		return nil, competitorErr
+		return nil, competitorErr.Propagate(repo.ErrFailedToCreateCompetitorsInCompetitorRepository)
 	}
 	defer rows.Close()
 
@@ -96,7 +96,7 @@ func (r *competitorRepo) CreateCompetitors(ctx context.Context, workspaceID uuid
 		})
 	}
 
-	return competitors, competitorErr
+	return competitors, competitorErr.Propagate(repo.ErrFailedToCreateCompetitorsInCompetitorRepository)
 }
 
 // GetCompetitor gets a competitor by its ID
@@ -135,7 +135,7 @@ func (r *competitorRepo) GetCompetitor(ctx context.Context, competitorID uuid.UU
 		}
 	}
 
-	return competitor, competitorErr
+	return competitor, competitorErr.Propagate(repo.ErrFailedToGetCompetitorFromCompetitorRepository)
 }
 
 // ListWorkspaceCompetitors lists all competitors in a workspace with pagination
@@ -153,7 +153,7 @@ func (r *competitorRepo) ListWorkspaceCompetitors(ctx context.Context, workspace
 	}
 
 	if listErr.HasErrors() {
-		return nil, listErr
+		return nil, listErr.Propagate(repo.ErrFailedToListCompetitorsFromCompetitorRepository)
 	}
 
 	runner := r.tm.GetRunner(ctx)
@@ -172,7 +172,7 @@ func (r *competitorRepo) ListWorkspaceCompetitors(ctx context.Context, workspace
 		listErr.Add(err, map[string]any{
 			"query": query,
 		})
-		return nil, listErr
+		return nil, listErr.Propagate(repo.ErrFailedToListCompetitorsFromCompetitorRepository)
 	}
 	defer rows.Close()
 
@@ -201,7 +201,7 @@ func (r *competitorRepo) ListWorkspaceCompetitors(ctx context.Context, workspace
 	}
 
 	if listErr.HasErrors() {
-		return nil, listErr
+		return nil, listErr.Propagate(repo.ErrFailedToListCompetitorsFromCompetitorRepository)
 	}
 
 	// If no competitors found in the workspace, return an error
@@ -209,7 +209,7 @@ func (r *competitorRepo) ListWorkspaceCompetitors(ctx context.Context, workspace
 		listErr.Add(repo.ErrNoWorkspaceCompetitorsFound, map[string]any{
 			"workspaceID": workspaceID,
 		})
-		return nil, listErr
+		return nil, listErr.Propagate(repo.ErrFailedToListCompetitorsFromCompetitorRepository)
 	}
 
 	return competitors, nil
@@ -263,7 +263,7 @@ func (r *competitorRepo) RemoveWorkspaceCompetitors(ctx context.Context, workspa
 		remErr.Add(err, map[string]any{
 			"query": query,
 		})
-		return remErr
+		return remErr.Propagate(repo.ErrFailedToRemoveCompetitorsFromCompetitorRepository)
 	}
 
 	return nil
@@ -290,7 +290,7 @@ func (r *competitorRepo) WorkspaceCompetitorExists(ctx context.Context, workspac
 			"workspaceID":  workspaceID,
 			"competitorID": competitorID,
 		})
-		return false, competitorErr
+		return false, competitorErr.Propagate(repo.ErrFailedToGetCompetitorFromCompetitorRepository)
 	}
 
 	return exists, nil

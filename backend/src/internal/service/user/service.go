@@ -26,16 +26,16 @@ func (us *userService) CreateWorkspaceOwner(ctx context.Context, clerk *clerk.Us
 	wErr := errs.New()
 	email, err := utils.GetClerkUserEmail(clerk)
 	if err != nil {
-		wErr.Add(svc.ErrFailedToCreateWorkspaceOwner, map[string]any{"error": err.Error()})
-		return nil, wErr
+		wErr.Add(svc.ErrFailedToGetUserEmail, map[string]any{"error": err.Error()})
+		return nil, wErr.Propagate(svc.ErrFailedToCreateWorkspaceOwner)
 	}
 
 	name := utils.GetClerkUserFullName(clerk)
 
 	userID, err := uuid.NewUUID()
 	if err != nil {
-		wErr.Add(svc.ErrFailedToCreateWorkspaceOwner, map[string]any{"error": err.Error()})
-		return nil, wErr
+		wErr.Add(err, map[string]any{"userID": userID})
+		return nil, wErr.Propagate(svc.ErrFailedToCreateWorkspaceOwner)
 	}
 
 	partialUser := models.User{
@@ -49,7 +49,7 @@ func (us *userService) CreateWorkspaceOwner(ctx context.Context, clerk *clerk.Us
 	user, uErr := us.userRepository.GetOrCreateUser(ctx, partialUser)
 	if uErr != nil && uErr.HasErrors() {
 		wErr.Merge(uErr)
-		return nil, wErr
+		return nil, wErr.Propagate(svc.ErrFailedToCreateWorkspaceOwner)
 	}
 
 	addUsers := []models.WorkspaceUserProps{
@@ -62,7 +62,7 @@ func (us *userService) CreateWorkspaceOwner(ctx context.Context, clerk *clerk.Us
 
 	if _, uErr := us.userRepository.AddUsersToWorkspace(ctx, addUsers, workspaceID); uErr != nil && uErr.HasErrors() {
 		wErr.Merge(uErr)
-		return nil, wErr
+		return nil, wErr.Propagate(svc.ErrFailedToCreateWorkspaceOwner)
 	}
 
 	return &user, nil
@@ -71,20 +71,20 @@ func (us *userService) CreateWorkspaceOwner(ctx context.Context, clerk *clerk.Us
 func (us *userService) AddUserToWorkspace(ctx context.Context, workspaceID uuid.UUID, invitedUsers []api.InviteUserToWorkspaceRequest) ([]api.CreateWorkspaceUserResponse, errs.Error) {
 	wErr := errs.New()
 	if len(invitedUsers) == 0 {
-		wErr.Add(svc.ErrFailedToAddUserToWorkspace, map[string]any{"error": "no users to add"})
-		return nil, wErr
+		wErr.Add(svc.ErrInvitedUserCountShouldBeNonZero, map[string]any{"error": "no users to add"})
+		return nil, wErr.Propagate(svc.ErrFailedToAddUserToWorkspace)
 	}
 
 	err := utils.SetDefaultsAndValidateArray(&invitedUsers)
 	if err != nil {
-		wErr.Add(svc.ErrFailedToAddUserToWorkspace, map[string]any{"error": err.Error()})
-		return nil, wErr
+		wErr.Add(err, map[string]any{"users": invitedUsers})
+		return nil, wErr.Propagate(svc.ErrFailedToAddUserToWorkspace)
 	}
 
 	workspaceUsers, uErr := us.userRepository.AddUsersToWorkspace(ctx, invitedUsers, workspaceID)
 	if uErr != nil && uErr.HasErrors() {
 		wErr.Merge(uErr)
-		return nil, wErr
+		return nil, wErr.Propagate(svc.ErrFailedToAddUserToWorkspace)
 	}
 
 	return workspaceUsers, wErr
@@ -95,13 +95,13 @@ func (us *userService) GetWorkspaceUser(ctx context.Context, clerk *clerk.User, 
 	userEmail, err := utils.GetClerkUserEmail(clerk)
 	if err != nil {
 		wErr.Add(svc.ErrFailedToGetUserEmail, map[string]any{"error": err.Error()})
-		return models.WorkspaceUser{}, wErr
+		return models.WorkspaceUser{}, wErr.Propagate(svc.ErrWorkspaceUserNotFound)
 	}
 
 	workspaceUser, uErr := us.userRepository.GetWorkspaceClerkUser(ctx, workspaceID, clerk.ID, userEmail)
 	if uErr != nil && uErr.HasErrors() {
 		wErr.Merge(uErr)
-		return models.WorkspaceUser{}, wErr
+		return models.WorkspaceUser{}, wErr.Propagate(svc.ErrWorkspaceUserNotFound)
 	}
 
 	return workspaceUser, nil
@@ -112,7 +112,7 @@ func (us *userService) GetWorkspaceUserByID(ctx context.Context, userID, workspa
 	workspaceUser, uErr := us.userRepository.GetWorkspaceUser(ctx, workspaceID, userID)
 	if uErr != nil && uErr.HasErrors() {
 		wErr.Merge(uErr)
-		return models.WorkspaceUser{}, wErr
+		return models.WorkspaceUser{}, wErr.Propagate(svc.ErrWorkspaceUserNotFound)
 	}
 
 	return workspaceUser, nil
@@ -123,7 +123,7 @@ func (us *userService) ListWorkspaceUsers(ctx context.Context, workspaceID uuid.
 	workspaceUsers, uErr := us.userRepository.ListWorkspaceUsers(ctx, workspaceID)
 	if uErr != nil && uErr.HasErrors() {
 		wErr.Merge(uErr)
-		return nil, wErr
+		return nil, wErr.Propagate(svc.ErrFailedToListWorkspaceUsers)
 	}
 
 	return workspaceUsers, nil
@@ -135,19 +135,19 @@ func (us *userService) ListUserWorkspaces(ctx context.Context, clerk *clerk.User
 	primaryEmail, err := utils.GetClerkUserEmail(clerk)
 	if err != nil {
 		wErr.Add(svc.ErrFailedToGetUserEmail, map[string]any{"error": err.Error()})
-		return nil, wErr
+		return nil, wErr.Propagate(svc.ErrFailedToListUserWorkspaces)
 	}
 
 	user, uErr := us.userRepository.GetClerkUser(ctx, clerk.ID, primaryEmail)
 	if uErr != nil && uErr.HasErrors() {
 		wErr.Merge(uErr)
-		return nil, wErr
+		return nil, wErr.Propagate(svc.ErrFailedToListUserWorkspaces)
 	}
 
 	workspaceIDs, uErr := us.userRepository.ListUserWorkspaces(ctx, user.ID)
 	if uErr != nil && uErr.HasErrors() {
 		wErr.Merge(uErr)
-		return nil, wErr
+		return nil, wErr.Propagate(svc.ErrFailedToListUserWorkspaces)
 	}
 
 	return workspaceIDs, nil
@@ -160,13 +160,13 @@ func (us *userService) UpdateWorkspaceUserRole(ctx context.Context, userID, work
 	_, uErr := us.userRepository.UpdateWorkspaceUserRole(ctx, workspaceID, userIDs, role)
 	if uErr != nil && uErr.HasErrors() {
 		wErr.Merge(uErr)
-		return models.WorkspaceUser{}, wErr
+		return models.WorkspaceUser{}, wErr.Propagate(svc.ErrFailedToUpdateWorkspaceUserRole)
 	}
 
 	workspaceUser, uErr := us.userRepository.GetWorkspaceUser(ctx, workspaceID, userID)
 	if uErr != nil && uErr.HasErrors() {
 		wErr.Merge(uErr)
-		return models.WorkspaceUser{}, wErr
+		return models.WorkspaceUser{}, wErr.Propagate(svc.ErrFailedToUpdateWorkspaceUserRole)
 	}
 
 	return workspaceUser, nil
@@ -178,7 +178,7 @@ func (us *userService) UpdateWorkspaceUserStatus(ctx context.Context, userID, wo
 	_, uErr := us.userRepository.UpdateWorkspaceUserStatus(ctx, workspaceID, userIDs, status)
 	if uErr != nil && uErr.HasErrors() {
 		wErr.Merge(uErr)
-		return wErr
+		return wErr.Propagate(svc.ErrFailedToUpdateWorkspaceUserStatus)
 	}
 
 	return nil
@@ -189,7 +189,7 @@ func (us *userService) RemoveWorkspaceUsers(ctx context.Context, userIDs []uuid.
 	uErr := us.userRepository.RemoveUsersFromWorkspace(ctx, userIDs, workspaceID)
 	if uErr != nil && uErr.HasErrors() {
 		wErr.Merge(uErr)
-		return wErr
+		return wErr.Propagate(svc.ErrFailedToRemoveWorkspaceUsers)
 	}
 
 	return nil
@@ -200,7 +200,7 @@ func (us *userService) GetWorkspaceUserCountByRole(ctx context.Context, workspac
 	admin, member, uErr := us.userRepository.GetWorkspaceUserCountByRole(ctx, workspaceID)
 	if uErr != nil && uErr.HasErrors() {
 		wErr.Merge(uErr)
-		return 0, 0, wErr
+		return 0, 0, wErr.Propagate(svc.ErrFailedToGetWorkspaceUserCountByRole)
 	}
 
 	return admin, member, nil
@@ -211,17 +211,17 @@ func (us *userService) SyncUser(ctx context.Context, clerk *clerk.User) errs.Err
 	primaryEmail, err := utils.GetClerkUserEmail(clerk)
 	if err != nil {
 		wErr.Add(svc.ErrFailedToGetUserEmail, map[string]any{"error": err.Error()})
-		return wErr
+		return wErr.Propagate(svc.ErrFailedToSyncUser)
 	}
 	user, uErr := us.userRepository.GetClerkUser(ctx, clerk.ID, primaryEmail)
 	if uErr != nil && uErr.HasErrors() {
 		wErr.Merge(uErr)
-		return wErr
+		return wErr.Propagate(svc.ErrFailedToSyncUser)
 	}
 
 	if uErr := us.userRepository.SyncUser(ctx, user.ID, clerk); uErr != nil && uErr.HasErrors() {
 		wErr.Merge(uErr)
-		return wErr
+		return wErr.Propagate(svc.ErrFailedToSyncUser)
 	}
 
 	return nil
@@ -233,17 +233,17 @@ func (us *userService) DeleteUser(ctx context.Context, clerk *clerk.User) errs.E
 	primaryEmail, err := utils.GetClerkUserEmail(clerk)
 	if err != nil {
 		wErr.Add(svc.ErrFailedToGetUserEmail, map[string]any{"error": err.Error()})
-		return wErr
+		return wErr.Propagate(svc.ErrFailedToDeleteUser)
 	}
 	user, uErr := us.userRepository.GetClerkUser(ctx, clerk.ID, primaryEmail)
 	if uErr != nil && uErr.HasErrors() {
 		wErr.Merge(uErr)
-		return wErr
+		return wErr.Propagate(svc.ErrFailedToDeleteUser)
 	}
 
 	if uErr := us.userRepository.DeleteUser(ctx, user.ID); uErr != nil && uErr.HasErrors() {
 		wErr.Merge(uErr)
-		return wErr
+		return wErr.Propagate(svc.ErrFailedToDeleteUser)
 	}
 
 	return nil
