@@ -4,7 +4,6 @@ package client
 import (
 	"time"
 
-	clf "github.com/wizenheimer/byrd/src/internal/interfaces/client"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 )
 
@@ -30,7 +29,7 @@ func WithTimeout(timeout time.Duration) ClientOption {
 }
 
 // WithAuth adds authentication to the client
-func WithAuth(auth clf.AuthMethod) ClientOption {
+func WithAuth(auth AuthMethod) ClientOption {
 	return func(c *Client) {
 		c.authMethod = auth
 	}

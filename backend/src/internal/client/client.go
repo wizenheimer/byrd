@@ -10,7 +10,6 @@ import (
 	"net/url"
 	"time"
 
-	clf "github.com/wizenheimer/byrd/src/internal/interfaces/client"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"go.uber.org/zap"
 )
@@ -18,7 +17,7 @@ import (
 // Client implements the HTTPClient interface
 type Client struct {
 	client     *http.Client
-	authMethod clf.AuthMethod
+	authMethod AuthMethod
 	retryCodes []int
 	maxRetries int
 	logger     *logger.Logger
@@ -28,7 +27,7 @@ type Client struct {
 type ClientOption func(*Client)
 
 // NewClient creates a new Client with the given options
-func NewClient(options ...ClientOption) (clf.HTTPClient, error) {
+func NewClient(options ...ClientOption) (HTTPClient, error) {
 	c := &Client{
 		client: &http.Client{
 			Timeout: 30 * time.Second,
@@ -93,8 +92,8 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 }
 
 // NewRequest creates a new RequestBuilder
-func (c *Client) NewRequest() clf.RequestBuilder {
-	return &RequestBuilder{
+func (c *Client) NewRequest() RequestBuilder {
+	return &requestBuilder{
 		queryParams: url.Values{},
 		headers:     make(map[string]string),
 		ctx:         context.Background(),
@@ -102,19 +101,19 @@ func (c *Client) NewRequest() clf.RequestBuilder {
 }
 
 // Convenience methods
-func (c *Client) Get(path string) clf.RequestBuilder {
+func (c *Client) Get(path string) RequestBuilder {
 	return c.NewRequest().Method(http.MethodGet).Path(path)
 }
 
-func (c *Client) Post(path string) clf.RequestBuilder {
+func (c *Client) Post(path string) RequestBuilder {
 	return c.NewRequest().Method(http.MethodPost).Path(path)
 }
 
-func (c *Client) Put(path string) clf.RequestBuilder {
+func (c *Client) Put(path string) RequestBuilder {
 	return c.NewRequest().Method(http.MethodPut).Path(path)
 }
 
-func (c *Client) Delete(path string) clf.RequestBuilder {
+func (c *Client) Delete(path string) RequestBuilder {
 	return c.NewRequest().Method(http.MethodDelete).Path(path)
 }
 

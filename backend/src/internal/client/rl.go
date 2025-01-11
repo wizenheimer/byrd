@@ -5,18 +5,17 @@ import (
 	"context"
 	"net/http"
 
-	clf "github.com/wizenheimer/byrd/src/internal/interfaces/client"
 	"golang.org/x/time/rate"
 )
 
 // RateLimitedClient wraps HTTPClient with rate limiting
 type RateLimitedClient struct {
-	client  clf.HTTPClient
+	client  HTTPClient
 	limiter *rate.Limiter
 }
 
 // NewRateLimitedClient creates a new rate-limited HTTP client
-func NewRateLimitedClient(client clf.HTTPClient, qps float64) clf.HTTPClient {
+func NewRateLimitedClient(client HTTPClient, qps float64) HTTPClient {
 	return &RateLimitedClient{
 		client:  client,
 		limiter: rate.NewLimiter(rate.Limit(qps), 1), // burst size of 1
@@ -33,23 +32,23 @@ func (c *RateLimitedClient) Do(req *http.Request) (*http.Response, error) {
 }
 
 // Forward all other HTTPClient methods to the underlying client
-func (c *RateLimitedClient) NewRequest() clf.RequestBuilder {
+func (c *RateLimitedClient) NewRequest() RequestBuilder {
 	return c.client.NewRequest()
 }
 
-func (c *RateLimitedClient) Get(path string) clf.RequestBuilder {
+func (c *RateLimitedClient) Get(path string) RequestBuilder {
 	return c.client.Get(path)
 }
 
-func (c *RateLimitedClient) Post(path string) clf.RequestBuilder {
+func (c *RateLimitedClient) Post(path string) RequestBuilder {
 	return c.client.Post(path)
 }
 
-func (c *RateLimitedClient) Put(path string) clf.RequestBuilder {
+func (c *RateLimitedClient) Put(path string) RequestBuilder {
 	return c.client.Put(path)
 }
 
-func (c *RateLimitedClient) Delete(path string) clf.RequestBuilder {
+func (c *RateLimitedClient) Delete(path string) RequestBuilder {
 	return c.client.Delete(path)
 }
 
