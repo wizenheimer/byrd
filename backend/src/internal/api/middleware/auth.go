@@ -1,24 +1,31 @@
-// ./src/internal/api/middleware/auth.go
+// ./src/internal/api/middleware/go
 package middleware
 
 import (
+	"fmt"
 	"strings"
 
+	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/clerk/clerk-sdk-go/v2/jwt"
+	"github.com/clerk/clerk-sdk-go/v2/user"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
-	"github.com/wizenheimer/byrd/src/internal/api/auth"
-	svc "github.com/wizenheimer/byrd/src/internal/interfaces/service"
+	"github.com/wizenheimer/byrd/src/internal/service/workspace"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"go.uber.org/zap"
 )
 
+const (
+	ClaimsContextKey = "claims"
+	UserIDContextKey = "userId"
+)
+
 type AuthorizationMiddleware struct {
-	workspaceService svc.WorkspaceService
+	workspaceService workspace.WorkspaceService
 	logger           *logger.Logger
 }
 
-func NewAuthorizationMiddleware(ws svc.WorkspaceService, logger *logger.Logger) *AuthorizationMiddleware {
+func NewAuthorizationMiddleware(ws workspace.WorkspaceService, logger *logger.Logger) *AuthorizationMiddleware {
 	return &AuthorizationMiddleware{
 		workspaceService: ws,
 		logger:           logger,
@@ -32,7 +39,7 @@ func (m *AuthorizationMiddleware) RequireWorkspaceAdmin(c *fiber.Ctx) error {
 		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid workspace ID", map[string]interface{}{"workspaceID": workspaceID})
 	}
 
-	clerkUser, err := auth.GetClerkUserFromContext(c)
+	clerkUser, err := getClerkUserFromContext(c)
 	if clerkUser == nil || err != nil {
 		return sendErrorResponse(c, fiber.StatusUnauthorized, "Unauthorized", map[string]interface{}{"error": err.Error()})
 	}
@@ -42,8 +49,8 @@ func (m *AuthorizationMiddleware) RequireWorkspaceAdmin(c *fiber.Ctx) error {
 		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid workspace ID", map[string]interface{}{"error": err.Error(), "workspaceID": workspaceID})
 	}
 
-	if exists, e := m.workspaceService.ClerkUserIsWorkspaceAdmin(c.Context(), workspaceUUID, clerkUser); !exists || (e != nil && e.HasErrors()) {
-		return sendErrorResponse(c, fiber.StatusUnauthorized, "Unauthorized", map[string]interface{}{"error": e.Error(), "workspaceID": workspaceID})
+	if exists, err := m.workspaceService.ClerkUserIsWorkspaceAdmin(c.Context(), workspaceUUID, clerkUser); !exists || err != nil {
+		return sendErrorResponse(c, fiber.StatusUnauthorized, "Unauthorized")
 	}
 
 	return c.Next()
@@ -56,7 +63,7 @@ func (m *AuthorizationMiddleware) RequireWorkspaceMembership(c *fiber.Ctx) error
 		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid workspace ID", map[string]interface{}{"workspaceID": workspaceID})
 	}
 
-	clerkUser, err := auth.GetClerkUserFromContext(c)
+	clerkUser, err := getClerkUserFromContext(c)
 	if clerkUser == nil || err != nil {
 		return sendErrorResponse(c, fiber.StatusUnauthorized, "Unauthorized", map[string]interface{}{"error": err.Error()})
 	}
@@ -66,8 +73,8 @@ func (m *AuthorizationMiddleware) RequireWorkspaceMembership(c *fiber.Ctx) error
 		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid workspace ID", map[string]interface{}{"error": err.Error(), "workspaceID": workspaceID})
 	}
 
-	if exists, e := m.workspaceService.ClerkUserIsWorkspaceMember(c.Context(), workspaceUUID, clerkUser); !exists || (e != nil && e.HasErrors()) {
-		return sendErrorResponse(c, fiber.StatusUnauthorized, "Unauthorized", map[string]interface{}{"error": e.Error(), "workspaceID": workspaceID})
+	if exists, err := m.workspaceService.ClerkUserIsWorkspaceMember(c.Context(), workspaceUUID, clerkUser); !exists || err != nil {
+		return sendErrorResponse(c, fiber.StatusUnauthorized, "Unauthorized")
 	}
 
 	return c.Next()
@@ -109,8 +116,45 @@ func (m *AuthenticatedMiddleware) AuthenticationMiddleware(c *fiber.Ctx) error {
 	}
 
 	// Store session info in context
-	auth.StoreSessionInfoInContext(c, claims)
+	storeSessionInfoInContext(c, claims)
 
 	// Continue to next middleware
 	return c.Next()
+}
+
+// getClerkUserIDFromContext gets the Clerk user ID from the context
+// This function returns an error if the Clerk user ID is not found in the context
+func getClerkUserIDFromContext(c *fiber.Ctx) (string, error) {
+	clerkUserID, ok := c.Locals(UserIDContextKey).(string)
+	if !ok || clerkUserID == "" {
+		return "", fmt.Errorf("clerk user ID not found in context")
+	}
+
+	return clerkUserID, nil
+}
+
+// storeSessionInfoInContext stores the session info in the context
+func storeSessionInfoInContext(c *fiber.Ctx, claims *clerk.SessionClaims) {
+	c.Locals(UserIDContextKey, claims.Subject)
+	c.Locals(ClaimsContextKey, claims)
+}
+
+// getClerkUserFromContext gets the Clerk user from the context
+// This function returns an error if the Clerk user is not found in the context
+func getClerkUserFromContext(c *fiber.Ctx) (*clerk.User, error) {
+	userID, err := getClerkUserIDFromContext(c)
+	if err != nil {
+		return nil, c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Unauthorized",
+		})
+	}
+
+	clerkUser, err := user.Get(c.Context(), userID)
+	if err != nil {
+		return nil, c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to get user",
+		})
+	}
+
+	return clerkUser, nil
 }

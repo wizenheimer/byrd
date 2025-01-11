@@ -11,7 +11,7 @@ import (
 	"github.com/wizenheimer/byrd/src/internal/api/middleware"
 	"github.com/wizenheimer/byrd/src/internal/api/routes"
 	"github.com/wizenheimer/byrd/src/internal/config"
-	"github.com/wizenheimer/byrd/src/internal/repository/transaction"
+	"github.com/wizenheimer/byrd/src/internal/transaction"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"go.uber.org/zap"
 )

@@ -10,26 +10,33 @@ import (
 	"github.com/wizenheimer/byrd/src/internal/api/routes"
 	"github.com/wizenheimer/byrd/src/internal/client"
 	"github.com/wizenheimer/byrd/src/internal/config"
-	clf "github.com/wizenheimer/byrd/src/internal/interfaces/client"
-	repo "github.com/wizenheimer/byrd/src/internal/interfaces/repository"
-	svc "github.com/wizenheimer/byrd/src/internal/interfaces/service"
-	"github.com/wizenheimer/byrd/src/internal/repository/db"
-	"github.com/wizenheimer/byrd/src/internal/repository/storage"
-	"github.com/wizenheimer/byrd/src/internal/repository/transaction"
-	"github.com/wizenheimer/byrd/src/internal/service/ai"
-	"github.com/wizenheimer/byrd/src/internal/service/competitor"
-	"github.com/wizenheimer/byrd/src/internal/service/diff"
-	"github.com/wizenheimer/byrd/src/internal/service/history"
-	"github.com/wizenheimer/byrd/src/internal/service/page"
-	"github.com/wizenheimer/byrd/src/internal/service/screenshot"
-	"github.com/wizenheimer/byrd/src/internal/service/user"
-	"github.com/wizenheimer/byrd/src/internal/service/workspace"
+	"github.com/wizenheimer/byrd/src/internal/transaction"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"github.com/wizenheimer/byrd/src/pkg/utils"
 	"go.uber.org/zap"
+
+	// ----- clf imports -----
+
+	// ----- repo imports -----
+	competitor_repo "github.com/wizenheimer/byrd/src/internal/repository/competitor"
+	history_repo "github.com/wizenheimer/byrd/src/internal/repository/history"
+	page_repo "github.com/wizenheimer/byrd/src/internal/repository/page"
+	screenshot_repo "github.com/wizenheimer/byrd/src/internal/repository/screenshot"
+	user_repo "github.com/wizenheimer/byrd/src/internal/repository/user"
+	workspace_repo "github.com/wizenheimer/byrd/src/internal/repository/workspace"
+
+	// ----- service imports -----
+	ai_svc "github.com/wizenheimer/byrd/src/internal/service/ai"
+	competitor_svc "github.com/wizenheimer/byrd/src/internal/service/competitor"
+	diff_svc "github.com/wizenheimer/byrd/src/internal/service/diff"
+	history_svc "github.com/wizenheimer/byrd/src/internal/service/history"
+	page_svc "github.com/wizenheimer/byrd/src/internal/service/page"
+	screenshot_svc "github.com/wizenheimer/byrd/src/internal/service/screenshot"
+	user_svc "github.com/wizenheimer/byrd/src/internal/service/user"
+	workspace_svc "github.com/wizenheimer/byrd/src/internal/service/workspace"
 )
 
-func initializer(cfg *config.Config, tm *transaction.TxManager, logger *logger.Logger) (*routes.HandlerContainer, svc.WorkspaceService, error) {
+func initializer(cfg *config.Config, tm *transaction.TxManager, logger *logger.Logger) (*routes.HandlerContainer, workspace_svc.WorkspaceService, error) {
 	// Initialize HTTP client for services
 	screenshotClientOpts := []client.ClientOption{
 		client.WithLogger(logger),
@@ -60,24 +67,24 @@ func initializer(cfg *config.Config, tm *transaction.TxManager, logger *logger.L
 		return nil, nil, err
 	}
 
-	diffService, err := diff.NewDiffService(aiService, logger)
+	diffService, err := diff_svc.NewDiffService(aiService, logger)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	// Intialize repository
-	competitorRepo := db.NewCompetitorRepository(tm, logger)
-	workspaceRepo := db.NewWorkspaceRepository(tm, logger)
-	userRepo := db.NewUserRepository(tm, logger)
-	pageRepo := db.NewPageRepository(tm, logger)
-	historyRepo := db.NewPageHistoryRepository(tm, logger)
+	competitorRepo := competitor_repo.NewCompetitorRepository(tm, logger)
+	workspaceRepo := workspace_repo.NewWorkspaceRepository(tm, logger)
+	userRepo := user_repo.NewUserRepository(tm, logger)
+	pageRepo := page_repo.NewPageRepository(tm, logger)
+	historyRepo := history_repo.NewPageHistoryRepository(tm, logger)
 
 	// Initialize services
-	historyService := history.NewPageHistoryService(historyRepo, screenshotService, diffService, logger)
-	pageService := page.NewPageService(pageRepo, historyService, logger)
-	competitorService := competitor.NewCompetitorService(competitorRepo, pageService, logger)
-	userService := user.NewUserService(userRepo, logger)
-	workspaceService := workspace.NewWorkspaceService(workspaceRepo, competitorService, userService, logger)
+	historyService := history_svc.NewPageHistoryService(historyRepo, screenshotService, diffService, logger)
+	pageService := page_svc.NewPageService(pageRepo, historyService, logger)
+	competitorService := competitor_svc.NewCompetitorService(competitorRepo, pageService, logger)
+	userService := user_svc.NewUserService(userRepo, logger)
+	workspaceService := workspace_svc.NewWorkspaceService(workspaceRepo, competitorService, userService, logger)
 
 	// Initialize handlers
 	handlers := routes.NewHandlerContainer(
@@ -92,7 +99,7 @@ func initializer(cfg *config.Config, tm *transaction.TxManager, logger *logger.L
 	return handlers, workspaceService, nil
 }
 
-func setupScreenshotService(cfg *config.Config, screenshotHTTPClient clf.HTTPClient, logger *logger.Logger) (svc.ScreenshotService, error) {
+func setupScreenshotService(cfg *config.Config, screenshotHTTPClient client.HTTPClient, logger *logger.Logger) (screenshot_svc.ScreenshotService, error) {
 	logger.Debug("setting up screenshot service", zap.Any("storage_config", cfg.Storage))
 
 	if logger == nil {
@@ -119,11 +126,11 @@ func setupScreenshotService(cfg *config.Config, screenshotHTTPClient clf.HTTPCli
 		logger.Warn("Region is empty", zap.String("type", cfg.Storage.Type))
 	}
 
-	var storageRepo repo.ScreenshotRepository
+	var storageRepo screenshot_repo.ScreenshotRepository
 	var err error
 	switch cfg.Storage.Type {
 	case "r2":
-		storageRepo, err = storage.NewR2Storage(
+		storageRepo, err = screenshot_repo.NewR2ScreenshotRepo(
 			cfg.Storage.AccessKey,
 			cfg.Storage.SecretKey,
 			cfg.Storage.Bucket,
@@ -131,9 +138,9 @@ func setupScreenshotService(cfg *config.Config, screenshotHTTPClient clf.HTTPCli
 			logger,
 		)
 	case "local":
-		storageRepo, err = storage.NewLocalStorage(cfg.Storage.Bucket, logger)
+		storageRepo, err = screenshot_repo.NewLocalScreenshotRepo(cfg.Storage.Bucket, logger)
 	case "s3":
-		storageRepo, err = storage.NewS3Storage(
+		storageRepo, err = screenshot_repo.NewS3ScreenshotRepo(
 			cfg.Storage.BaseEndpoint,
 			cfg.Storage.AccessKey,
 			cfg.Storage.SecretKey,
@@ -143,7 +150,7 @@ func setupScreenshotService(cfg *config.Config, screenshotHTTPClient clf.HTTPCli
 		)
 	default:
 		logger.Warn("Unknown storage type, defaulting to local storage", zap.String("type", cfg.Storage.Type))
-		storageRepo, err = storage.NewLocalStorage(cfg.Storage.Bucket, logger)
+		storageRepo, err = screenshot_repo.NewLocalScreenshotRepo(cfg.Storage.Bucket, logger)
 	}
 
 	if err != nil {
@@ -159,24 +166,24 @@ func setupScreenshotService(cfg *config.Config, screenshotHTTPClient clf.HTTPCli
 	}
 
 	// Create screenshot service option
-	screenshotServiceOptions := []screenshot.ScreenshotServiceOption{
-		screenshot.WithStorage(storageRepo),
-		screenshot.WithHTTPClient(screenshotHTTPClient),
-		screenshot.WithKey(cfg.Services.ScreenshotServiceAPIKey),
-		screenshot.WithOrigin(cfg.Services.ScreenshotServiceOrigin),
+	screenshotServiceOptions := []screenshot_svc.ScreenshotServiceOption{
+		screenshot_svc.WithStorage(storageRepo),
+		screenshot_svc.WithHTTPClient(screenshotHTTPClient),
+		screenshot_svc.WithKey(cfg.Services.ScreenshotServiceAPIKey),
+		screenshot_svc.WithOrigin(cfg.Services.ScreenshotServiceOrigin),
 	}
 
 	// Create a new screenshot service
-	return screenshot.NewScreenshotService(
+	return screenshot_svc.NewScreenshotService(
 		logger,
 		screenshotServiceOptions...,
 	)
 }
 
-func setupAIService(cfg *config.Config, logger *logger.Logger) (svc.AIService, error) {
+func setupAIService(cfg *config.Config, logger *logger.Logger) (ai_svc.AIService, error) {
 	logger.Debug("setting up AI service", zap.Any("service_config", cfg.Services))
 
-	aiService, err := ai.NewOpenAIService(cfg.Services.OpenAIKey, logger)
+	aiService, err := ai_svc.NewOpenAIService(cfg.Services.OpenAIKey, logger)
 	if err != nil {
 		logger.Fatal("Failed to initialize AI service: %v", zap.Any("error", err))
 	}

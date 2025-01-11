@@ -4,7 +4,7 @@ package middleware
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
-	svc "github.com/wizenheimer/byrd/src/internal/interfaces/service"
+	"github.com/wizenheimer/byrd/src/internal/service/workspace"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 )
 
@@ -15,11 +15,11 @@ const (
 )
 
 type WorkspacePathValidationMiddleware struct {
-	ws     svc.WorkspaceService
+	ws     workspace.WorkspaceService
 	logger *logger.Logger
 }
 
-func NewWorkspacePathValidationMiddleware(ws svc.WorkspaceService, logger *logger.Logger) *WorkspacePathValidationMiddleware {
+func NewWorkspacePathValidationMiddleware(ws workspace.WorkspaceService, logger *logger.Logger) *WorkspacePathValidationMiddleware {
 	return &WorkspacePathValidationMiddleware{
 		ws:     ws,
 		logger: logger,
@@ -38,10 +38,10 @@ func (m *WorkspacePathValidationMiddleware) ValidateWorkspacePath(c *fiber.Ctx) 
 	if err != nil {
 		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid workspace ID", map[string]interface{}{"workspaceID": workspaceID})
 	}
-	exists, e := m.ws.WorkspaceExists(c.Context(), workspaceUUID)
+	exists, err := m.ws.WorkspaceExists(c.Context(), workspaceUUID)
 
-	if e != nil && e.HasErrors() {
-		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not verify workspace", e)
+	if err != nil {
+		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not verify workspace", err)
 	}
 
 	if !exists {

@@ -6,8 +6,11 @@ import (
 	"github.com/wizenheimer/byrd/src/internal/api/handlers"
 	"github.com/wizenheimer/byrd/src/internal/api/middleware"
 	"github.com/wizenheimer/byrd/src/internal/config"
-	svc "github.com/wizenheimer/byrd/src/internal/interfaces/service"
-	"github.com/wizenheimer/byrd/src/internal/repository/transaction"
+	"github.com/wizenheimer/byrd/src/internal/service/ai"
+	"github.com/wizenheimer/byrd/src/internal/service/screenshot"
+	"github.com/wizenheimer/byrd/src/internal/service/user"
+	"github.com/wizenheimer/byrd/src/internal/service/workspace"
+	"github.com/wizenheimer/byrd/src/internal/transaction"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 )
 
@@ -20,10 +23,10 @@ type HandlerContainer struct {
 }
 
 func NewHandlerContainer(
-	screenshotService svc.ScreenshotService,
-	aiService svc.AIService,
-	userService svc.UserService,
-	workspaceService svc.WorkspaceService,
+	screenshotService screenshot.ScreenshotService,
+	aiService ai.AIService,
+	userService user.UserService,
+	workspaceService workspace.WorkspaceService,
 	tx *transaction.TxManager,
 	logger *logger.Logger,
 ) *HandlerContainer {
@@ -47,7 +50,7 @@ func NewHandlerContainer(
 
 // SetupRoutes sets up the routes for the application
 // This includes public and private routes
-func SetupRoutes(app *fiber.App, handlers *HandlerContainer, ws svc.WorkspaceService, logger *logger.Logger) {
+func SetupRoutes(app *fiber.App, handlers *HandlerContainer, ws workspace.WorkspaceService, logger *logger.Logger) {
 	authMiddleware := middleware.NewAuthenticatedMiddleware(logger)
 	authorizationMiddleware := middleware.NewAuthorizationMiddleware(ws, logger)
 	pathMiddleware := middleware.NewWorkspacePathValidationMiddleware(ws, logger)
