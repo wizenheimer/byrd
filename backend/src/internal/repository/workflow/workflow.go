@@ -1,5 +1,4 @@
-// ./src/internal/repository/db/workflow.go
-package db
+package workflow
 
 import (
 	"context"
@@ -9,7 +8,6 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
-	interfaces "github.com/wizenheimer/byrd/src/internal/interfaces/repository"
 	api "github.com/wizenheimer/byrd/src/internal/models/api"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
@@ -28,7 +26,7 @@ type workflowRepository struct {
 	logger *logger.Logger
 }
 
-func NewWorkflowRepository(client *redis.Client, logger *logger.Logger) (interfaces.WorkflowRepository, error) {
+func NewWorkflowRepository(client *redis.Client, logger *logger.Logger) (WorkflowRepository, error) {
 	workflowRepo := workflowRepository{
 		client: client,
 		logger: logger.WithFields(map[string]interface{}{"module": "workflow_repository"}),

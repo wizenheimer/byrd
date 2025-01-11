@@ -1,5 +1,4 @@
-// ./src/internal/repository/storage/s3.go
-package storage
+package screenshot
 
 import (
 	"bytes"
@@ -14,15 +13,14 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	interfaces "github.com/wizenheimer/byrd/src/internal/interfaces/repository"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"github.com/wizenheimer/byrd/src/pkg/utils"
 	"go.uber.org/zap"
 )
 
-// s3Storage is a storage repository that uses S3 as the backend
-type s3Storage struct {
+// s3ScreenshotRepo is a storage repository that uses S3 as the backend
+type s3ScreenshotRepo struct {
 	// client is the S3 client
 	client *s3.Client
 	// bucket is the S3 bucket name
@@ -31,8 +29,8 @@ type s3Storage struct {
 	logger *logger.Logger
 }
 
-// NewS3Storage creates a new S3 storage repository
-func NewS3Storage(baseEndpoint, accessKey, secretKey, bucket, region string, logger *logger.Logger) (interfaces.ScreenshotRepository, error) {
+// NewS3ScreenshotRepo creates a new S3 storage repository
+func NewS3ScreenshotRepo(baseEndpoint, accessKey, secretKey, bucket, region string, logger *logger.Logger) (ScreenshotRepository, error) {
 	if logger == nil {
 		return nil, fmt.Errorf("can't initialize S3, logger is required")
 	}
@@ -51,7 +49,7 @@ func NewS3Storage(baseEndpoint, accessKey, secretKey, bucket, region string, log
 		o.BaseEndpoint = aws.String(baseEndpoint)
 	})
 
-	return &s3Storage{
+	return &s3ScreenshotRepo{
 		client: client,
 		bucket: bucket,
 		logger: logger.WithFields(map[string]interface{}{"module": "storage"}),
@@ -59,7 +57,7 @@ func NewS3Storage(baseEndpoint, accessKey, secretKey, bucket, region string, log
 }
 
 // StoreScreenshot stores a screenshot in S3 storage
-func (s *s3Storage) StoreScreenshotImage(ctx context.Context, data models.ScreenshotImageResponse, path string) error {
+func (s *s3ScreenshotRepo) StoreScreenshotImage(ctx context.Context, data models.ScreenshotImageResponse, path string) error {
 	s.logger.Debug("storing screenshot",
 		zap.String("path", path))
 
@@ -86,7 +84,7 @@ func (s *s3Storage) StoreScreenshotImage(ctx context.Context, data models.Screen
 }
 
 // StoreContent stores text content in S3 storage
-func (s *s3Storage) StoreScreenshotHTMLContent(ctx context.Context, data models.ScreenshotHTMLContentResponse, path string) error {
+func (s *s3ScreenshotRepo) StoreScreenshotHTMLContent(ctx context.Context, data models.ScreenshotHTMLContentResponse, path string) error {
 	s.logger.Debug("storing content", zap.String("path", path))
 
 	_, err := s.client.PutObject(ctx, &s3.PutObjectInput{
@@ -104,7 +102,7 @@ func (s *s3Storage) StoreScreenshotHTMLContent(ctx context.Context, data models.
 }
 
 // GetContent retrieves text content from S3 storage
-func (s *s3Storage) GetScreenshotHTMLContent(ctx context.Context, path string) (models.ScreenshotHTMLContentResponse, []error) {
+func (s *s3ScreenshotRepo) GetScreenshotHTMLContent(ctx context.Context, path string) (models.ScreenshotHTMLContentResponse, []error) {
 	errs := []error{}
 
 	data, metadata, err := s.Get(ctx, path)
@@ -128,7 +126,7 @@ func (s *s3Storage) GetScreenshotHTMLContent(ctx context.Context, path string) (
 }
 
 // GetScreenshot retrieves a screenshot from S3 storage
-func (s *s3Storage) GetScreenshotImage(ctx context.Context, path string) (models.ScreenshotImageResponse, []error) {
+func (s *s3ScreenshotRepo) GetScreenshotImage(ctx context.Context, path string) (models.ScreenshotImageResponse, []error) {
 
 	data, metadata, err := s.Get(ctx, path)
 	if err != nil {
@@ -162,7 +160,7 @@ func (s *s3Storage) GetScreenshotImage(ctx context.Context, path string) (models
 }
 
 // Get retrieves binary data from S3 storage
-func (s *s3Storage) Get(ctx context.Context, path string) ([]byte, map[string]string, error) {
+func (s *s3ScreenshotRepo) Get(ctx context.Context, path string) ([]byte, map[string]string, error) {
 	s.logger.Debug("getting binary", zap.String("path", path))
 
 	output, err := s.client.GetObject(ctx, &s3.GetObjectInput{
@@ -183,7 +181,7 @@ func (s *s3Storage) Get(ctx context.Context, path string) ([]byte, map[string]st
 }
 
 // Delete removes a file from S3 storage
-func (s *s3Storage) Delete(ctx context.Context, path string) error {
+func (s *s3ScreenshotRepo) Delete(ctx context.Context, path string) error {
 	s.logger.Debug("deleting file", zap.String("path", path))
 
 	_, err := s.client.DeleteObject(ctx, &s3.DeleteObjectInput{
@@ -198,7 +196,7 @@ func (s *s3Storage) Delete(ctx context.Context, path string) error {
 }
 
 // Listlists the latest content (images or text) for a given URL
-func (s *s3Storage) List(ctx context.Context, prefix string, maxItems int) ([]models.ScreenshotListResponse, error) {
+func (s *s3ScreenshotRepo) List(ctx context.Context, prefix string, maxItems int) ([]models.ScreenshotListResponse, error) {
 	input := &s3.ListObjectsV2Input{
 		Bucket:  aws.String(s.bucket),
 		Prefix:  aws.String(prefix),

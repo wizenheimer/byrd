@@ -1,5 +1,5 @@
 // ./src/internal/repository/storage/r2.go
-package storage
+package screenshot
 
 import (
 	"bytes"
@@ -16,15 +16,14 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	interfaces "github.com/wizenheimer/byrd/src/internal/interfaces/repository"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"github.com/wizenheimer/byrd/src/pkg/utils"
 	"go.uber.org/zap"
 )
 
-// r2Storage is a storage repository that uses R2 as the backend
-type r2Storage struct {
+// r2ScreenshotRepo is a storage repository that uses R2 as the backend
+type r2ScreenshotRepo struct {
 	// client is the S3 client
 	client *s3.Client
 	// bucket is the S3 bucket name
@@ -33,8 +32,8 @@ type r2Storage struct {
 	logger *logger.Logger
 }
 
-// NewR2Storage creates a new R2 storage repository
-func NewR2Storage(accessKey, secretKey, bucket, accountID string, logger *logger.Logger) (interfaces.ScreenshotRepository, error) {
+// NewR2ScreenshotRepo creates a new R2 storage repository
+func NewR2ScreenshotRepo(accessKey, secretKey, bucket, accountID string, logger *logger.Logger) (ScreenshotRepository, error) {
 	if logger == nil {
 		return nil, fmt.Errorf("can't initialize r2, logger is required")
 	}
@@ -53,7 +52,7 @@ func NewR2Storage(accessKey, secretKey, bucket, accountID string, logger *logger
 		o.BaseEndpoint = aws.String(fmt.Sprintf("https://%s.r2.cloudflarestorage.com", accountID))
 	})
 
-	return &r2Storage{
+	return &r2ScreenshotRepo{
 		client: client,
 		bucket: bucket,
 		logger: logger.WithFields(map[string]interface{}{"module": "storage"}),
@@ -61,7 +60,7 @@ func NewR2Storage(accessKey, secretKey, bucket, accountID string, logger *logger
 }
 
 // StoreScreenshot stores a screenshot in R2 storage
-func (s *r2Storage) StoreScreenshotImage(ctx context.Context, data models.ScreenshotImageResponse, path string) error {
+func (s *r2ScreenshotRepo) StoreScreenshotImage(ctx context.Context, data models.ScreenshotImageResponse, path string) error {
 	s.logger.Debug("storing screenshot",
 		zap.String("path", path))
 
@@ -88,7 +87,7 @@ func (s *r2Storage) StoreScreenshotImage(ctx context.Context, data models.Screen
 }
 
 // StoreContent stores text content in R2 storage
-func (s *r2Storage) StoreScreenshotHTMLContent(ctx context.Context, data models.ScreenshotHTMLContentResponse, path string) error {
+func (s *r2ScreenshotRepo) StoreScreenshotHTMLContent(ctx context.Context, data models.ScreenshotHTMLContentResponse, path string) error {
 	s.logger.Debug("storing content", zap.String("path", path))
 
 	_, err := s.client.PutObject(ctx, &s3.PutObjectInput{
@@ -106,7 +105,7 @@ func (s *r2Storage) StoreScreenshotHTMLContent(ctx context.Context, data models.
 }
 
 // GetContent retrieves text content from R2 storage
-func (s *r2Storage) GetScreenshotHTMLContent(ctx context.Context, path string) (models.ScreenshotHTMLContentResponse, []error) {
+func (s *r2ScreenshotRepo) GetScreenshotHTMLContent(ctx context.Context, path string) (models.ScreenshotHTMLContentResponse, []error) {
 	errs := []error{}
 
 	data, metadata, err := s.Get(ctx, path)
@@ -130,7 +129,7 @@ func (s *r2Storage) GetScreenshotHTMLContent(ctx context.Context, path string) (
 }
 
 // GetScreenshot retrieves a screenshot from R2 storage
-func (s *r2Storage) GetScreenshotImage(ctx context.Context, path string) (models.ScreenshotImageResponse, []error) {
+func (s *r2ScreenshotRepo) GetScreenshotImage(ctx context.Context, path string) (models.ScreenshotImageResponse, []error) {
 
 	data, metadata, err := s.Get(ctx, path)
 	if err != nil {
@@ -164,7 +163,7 @@ func (s *r2Storage) GetScreenshotImage(ctx context.Context, path string) (models
 }
 
 // Get retrieves binary data from R2 storage
-func (s *r2Storage) Get(ctx context.Context, path string) ([]byte, map[string]string, error) {
+func (s *r2ScreenshotRepo) Get(ctx context.Context, path string) ([]byte, map[string]string, error) {
 	s.logger.Debug("getting binary", zap.String("path", path))
 
 	output, err := s.client.GetObject(ctx, &s3.GetObjectInput{
@@ -185,7 +184,7 @@ func (s *r2Storage) Get(ctx context.Context, path string) ([]byte, map[string]st
 }
 
 // Delete removes a file from R2 storage
-func (s *r2Storage) Delete(ctx context.Context, path string) error {
+func (s *r2ScreenshotRepo) Delete(ctx context.Context, path string) error {
 	s.logger.Debug("deleting file", zap.String("path", path))
 
 	_, err := s.client.DeleteObject(ctx, &s3.DeleteObjectInput{
@@ -200,7 +199,7 @@ func (s *r2Storage) Delete(ctx context.Context, path string) error {
 }
 
 // Listlists the latest content (images or text) for a given URL
-func (s *r2Storage) List(ctx context.Context, prefix string, maxItems int) ([]models.ScreenshotListResponse, error) {
+func (s *r2ScreenshotRepo) List(ctx context.Context, prefix string, maxItems int) ([]models.ScreenshotListResponse, error) {
 	input := &s3.ListObjectsV2Input{
 		Bucket:  aws.String(s.bucket),
 		Prefix:  aws.String(prefix),

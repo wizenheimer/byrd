@@ -1,5 +1,4 @@
-// ./src/internal/repository/storage/local.go
-package storage
+package screenshot
 
 import (
 	"bytes"
@@ -13,24 +12,23 @@ import (
 	"sort"
 	"strings"
 
-	interfaces "github.com/wizenheimer/byrd/src/internal/interfaces/repository"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"github.com/wizenheimer/byrd/src/pkg/utils"
 	"go.uber.org/zap"
 )
 
-// localStorage is a storage repository that uses the local filesystem as the backend
-type localStorage struct {
+// localScreenshotRepo is a storage repository that uses the local filesystem as the backend
+type localScreenshotRepo struct {
 	// directory is the directory where the files are stored
 	directory string
 	// logger is the logger
 	logger *logger.Logger
 }
 
-// NewLocalStorage creates a new local storage repository
+// NewLocalScreenshotRepo creates a new local storage repository
 // It requires the directory where the files will be stored and a logger
-func NewLocalStorage(directory string, logger *logger.Logger) (interfaces.ScreenshotRepository, error) {
+func NewLocalScreenshotRepo(directory string, logger *logger.Logger) (ScreenshotRepository, error) {
 	if logger == nil {
 		return nil, fmt.Errorf("logger is required")
 	}
@@ -45,25 +43,25 @@ func NewLocalStorage(directory string, logger *logger.Logger) (interfaces.Screen
 	}
 
 	logger.Debug("creating new local storage", zap.String("directory", directory))
-	return &localStorage{
+	return &localScreenshotRepo{
 		directory: directory,
 		logger:    logger.WithFields(map[string]interface{}{"module": "storage"}),
 	}, nil
 }
 
 // ensurePath ensures the directory structure exists for a given path
-func (s *localStorage) ensurePath(path string) error {
+func (s *localScreenshotRepo) ensurePath(path string) error {
 	dir := filepath.Dir(filepath.Join(s.directory, path))
 	return os.MkdirAll(dir, 0755)
 }
 
 // getMetadataPath returns the path for the metadata file
-func (s *localStorage) getMetadataPath(path string) string {
+func (s *localScreenshotRepo) getMetadataPath(path string) string {
 	return filepath.Join(s.directory, path+".metadata.json")
 }
 
 // saveMetadata saves metadata to a separate file
-func (s *localStorage) saveMetadata(path string, metadata *models.ScreenshotMetadata) error {
+func (s *localScreenshotRepo) saveMetadata(path string, metadata *models.ScreenshotMetadata) error {
 	if metadata == nil {
 		metadata = &models.ScreenshotMetadata{}
 	}
@@ -82,7 +80,7 @@ func (s *localStorage) saveMetadata(path string, metadata *models.ScreenshotMeta
 }
 
 // loadMetadata loads metadata from the metadata file
-func (s *localStorage) loadMetadata(path string) (models.ScreenshotMetadata, error) {
+func (s *localScreenshotRepo) loadMetadata(path string) (models.ScreenshotMetadata, error) {
 	metadataPath := s.getMetadataPath(path)
 	data, err := os.ReadFile(metadataPath)
 	if err != nil {
@@ -101,7 +99,7 @@ func (s *localStorage) loadMetadata(path string) (models.ScreenshotMetadata, err
 }
 
 // StoreScreenshot stores a screenshot in the local storage
-func (s *localStorage) StoreScreenshotImage(ctx context.Context, data models.ScreenshotImageResponse, path string) error {
+func (s *localScreenshotRepo) StoreScreenshotImage(ctx context.Context, data models.ScreenshotImageResponse, path string) error {
 	s.logger.Debug("storing screenshot", zap.String("path", path))
 
 	if err := s.ensurePath(path); err != nil {
@@ -123,7 +121,7 @@ func (s *localStorage) StoreScreenshotImage(ctx context.Context, data models.Scr
 }
 
 // StoreContent stores a text content in the local storage
-func (s *localStorage) StoreScreenshotHTMLContent(ctx context.Context, data models.ScreenshotHTMLContentResponse, path string) error {
+func (s *localScreenshotRepo) StoreScreenshotHTMLContent(ctx context.Context, data models.ScreenshotHTMLContentResponse, path string) error {
 	s.logger.Debug("storing content", zap.String("path", path))
 
 	if err := s.ensurePath(path); err != nil {
@@ -139,7 +137,7 @@ func (s *localStorage) StoreScreenshotHTMLContent(ctx context.Context, data mode
 }
 
 // GetContent retrieves a text content from the local storage
-func (s *localStorage) GetScreenshotHTMLContent(ctx context.Context, path string) (models.ScreenshotHTMLContentResponse, []error) {
+func (s *localScreenshotRepo) GetScreenshotHTMLContent(ctx context.Context, path string) (models.ScreenshotHTMLContentResponse, []error) {
 	s.logger.Debug("getting content", zap.String("path", path))
 
 	data, metadata, err := s.Get(ctx, path)
@@ -162,7 +160,7 @@ func (s *localStorage) GetScreenshotHTMLContent(ctx context.Context, path string
 }
 
 // GetScreenshot retrieves a screenshot from the local storage
-func (s *localStorage) GetScreenshotImage(ctx context.Context, path string) (models.ScreenshotImageResponse, []error) {
+func (s *localScreenshotRepo) GetScreenshotImage(ctx context.Context, path string) (models.ScreenshotImageResponse, []error) {
 	s.logger.Debug("getting screenshot", zap.String("path", path))
 
 	data, metadata, err := s.Get(ctx, path)
@@ -197,7 +195,7 @@ func (s *localStorage) GetScreenshotImage(ctx context.Context, path string) (mod
 }
 
 // Get retrieves a binary from the local storage
-func (s *localStorage) Get(ctx context.Context, path string) ([]byte, map[string]string, error) {
+func (s *localScreenshotRepo) Get(ctx context.Context, path string) ([]byte, map[string]string, error) {
 	s.logger.Debug("getting binary", zap.String("path", path))
 
 	fullPath := filepath.Join(s.directory, path)
@@ -215,7 +213,7 @@ func (s *localStorage) Get(ctx context.Context, path string) ([]byte, map[string
 }
 
 // Delete deletes a file from the local storage
-func (s *localStorage) Delete(ctx context.Context, path string) error {
+func (s *localScreenshotRepo) Delete(ctx context.Context, path string) error {
 	s.logger.Debug("deleting file", zap.String("path", path))
 
 	fullPath := filepath.Join(s.directory, path)
@@ -230,7 +228,7 @@ func (s *localStorage) Delete(ctx context.Context, path string) error {
 	return nil
 }
 
-func (s *localStorage) List(ctx context.Context, prefix string, maxItems int) ([]models.ScreenshotListResponse, error) {
+func (s *localScreenshotRepo) List(ctx context.Context, prefix string, maxItems int) ([]models.ScreenshotListResponse, error) {
 	s.logger.Debug("listing files",
 		zap.String("prefix", prefix),
 		zap.Int("maxItems", maxItems))
