@@ -3,13 +3,10 @@ package db
 
 import (
 	"context"
-	"database/sql"
-	"fmt"
-	"strings"
 
 	"github.com/google/uuid"
 	"github.com/gosimple/slug"
-	_ "github.com/lib/pq"
+	"github.com/jackc/pgx/v5"
 	repo "github.com/wizenheimer/byrd/src/internal/interfaces/repository"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/internal/repository/transaction"
@@ -38,7 +35,7 @@ func generateSlug(name string) string {
 // CreateWorkspace creates a new workspace
 func (r *workspaceRepo) CreateWorkspace(ctx context.Context, workspaceName, billingEmail string) (models.Workspace, errs.Error) {
 	wErr := errs.New()
-	runner := r.tm.GetRunner(ctx)
+	querier := r.tm.GetQuerier(ctx)
 
 	// Generate initial slug
 	slug := generateSlug(workspaceName)
@@ -50,7 +47,7 @@ func (r *workspaceRepo) CreateWorkspace(ctx context.Context, workspaceName, bill
 	`
 
 	var workspace models.Workspace
-	err := runner.QueryRowContext(ctx, query,
+	err := querier.QueryRow(ctx, query,
 		workspaceName,
 		slug,
 		billingEmail,
@@ -85,26 +82,16 @@ func (r *workspaceRepo) GetWorkspaces(ctx context.Context, workspaceIDs []uuid.U
 		return []models.Workspace{}, wErr.Propagate(repo.ErrFailedToGetWorkspaceFromWorkspaceRepository)
 	}
 
-	runner := r.tm.GetRunner(ctx)
+	querier := r.tm.GetQuerier(ctx)
 
-	// Create placeholders for the IN clause
-	placeholders := make([]string, len(workspaceIDs))
-	args := make([]interface{}, len(workspaceIDs))
-	for i, id := range workspaceIDs {
-		placeholders[i] = fmt.Sprintf("$%d", i+1)
-		args[i] = id
-	}
-
-	query := fmt.Sprintf(`
+	query := `
         SELECT id, name, slug, billing_email, status, created_at, updated_at
         FROM workspaces
-        WHERE id IN (%s)
-        AND status = $%d
-    `, strings.Join(placeholders, ","), len(workspaceIDs)+1)
+        WHERE id = ANY($1)
+        AND status = $2
+    `
 
-	args = append(args, models.WorkspaceStatusActive)
-
-	rows, err := runner.QueryContext(ctx, query, args...)
+	rows, err := querier.Query(ctx, query, workspaceIDs, models.WorkspaceStatusActive)
 	if err != nil {
 		wErr.Add(err, map[string]any{
 			"query": query,
@@ -155,20 +142,19 @@ func (r *workspaceRepo) GetWorkspaces(ctx context.Context, workspaceIDs []uuid.U
 	return workspaces, nil
 }
 
-// WorkspaceExists checks if a workspace exists
-// And is active
+// WorkspaceExists checks if a workspace exists and is active
 func (r *workspaceRepo) WorkspaceExists(ctx context.Context, workspaceID uuid.UUID) (bool, errs.Error) {
 	wErr := errs.New()
-	runner := r.tm.GetRunner(ctx)
+	querier := r.tm.GetQuerier(ctx)
 
 	var exists bool
-	err := runner.QueryRowContext(ctx,
+	err := querier.QueryRow(ctx,
 		"SELECT EXISTS(SELECT 1 FROM workspaces WHERE id = $1 AND status = 'active')",
 		workspaceID,
 	).Scan(&exists)
 
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			return false, nil
 		}
 		wErr.Add(err, map[string]any{
@@ -183,9 +169,9 @@ func (r *workspaceRepo) WorkspaceExists(ctx context.Context, workspaceID uuid.UU
 // UpdateWorkspaceBillingEmail updates the billing email
 func (r *workspaceRepo) UpdateWorkspaceBillingEmail(ctx context.Context, workspaceID uuid.UUID, billingEmail string) errs.Error {
 	wErr := errs.New()
-	runner := r.tm.GetRunner(ctx)
+	querier := r.tm.GetQuerier(ctx)
 
-	result, err := runner.ExecContext(ctx, `
+	commandTag, err := querier.Exec(ctx, `
 		UPDATE workspaces
 		SET billing_email = $1, updated_at = CURRENT_TIMESTAMP
 		WHERE id = $2
@@ -198,15 +184,7 @@ func (r *workspaceRepo) UpdateWorkspaceBillingEmail(ctx context.Context, workspa
 		return wErr.Propagate(repo.ErrFailedToUpdateWorkspaceBillingEmailInWorkspaceRepository)
 	}
 
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		wErr.Add(err, map[string]any{
-			"workspaceID": workspaceID,
-		})
-		return wErr.Propagate(repo.ErrFailedToUpdateWorkspaceBillingEmailInWorkspaceRepository)
-	}
-
-	if rowsAffected == 0 {
+	if commandTag.RowsAffected() == 0 {
 		wErr.Add(repo.ErrWorkspaceNotFound, map[string]any{
 			"workspaceID": workspaceID,
 		})
@@ -219,12 +197,12 @@ func (r *workspaceRepo) UpdateWorkspaceBillingEmail(ctx context.Context, workspa
 // UpdateWorkspaceName updates the workspace name
 func (r *workspaceRepo) UpdateWorkspaceName(ctx context.Context, workspaceID uuid.UUID, workspaceName string) errs.Error {
 	wErr := errs.New()
-	runner := r.tm.GetRunner(ctx)
+	querier := r.tm.GetQuerier(ctx)
 
 	// Generate and verify unique slug
 	slug := generateSlug(workspaceName)
 
-	result, err := runner.ExecContext(ctx, `
+	commandTag, err := querier.Exec(ctx, `
 		UPDATE workspaces
 		SET name = $1, slug = $2, updated_at = CURRENT_TIMESTAMP
 		WHERE id = $3
@@ -237,15 +215,7 @@ func (r *workspaceRepo) UpdateWorkspaceName(ctx context.Context, workspaceID uui
 		return wErr.Propagate(repo.ErrFailedToUpdateWorkspaceNameInWorkspaceRepository)
 	}
 
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		wErr.Add(err, map[string]any{
-			"workspaceID": workspaceID,
-		})
-		return wErr.Propagate(repo.ErrFailedToUpdateWorkspaceNameInWorkspaceRepository)
-	}
-
-	if rowsAffected == 0 {
+	if commandTag.RowsAffected() == 0 {
 		wErr.Add(repo.ErrWorkspaceNotFound, map[string]any{
 			"workspaceID": workspaceID,
 		})
@@ -258,9 +228,9 @@ func (r *workspaceRepo) UpdateWorkspaceName(ctx context.Context, workspaceID uui
 // UpdateWorkspaceStatus updates the workspace status
 func (r *workspaceRepo) UpdateWorkspaceStatus(ctx context.Context, workspaceID uuid.UUID, status models.WorkspaceStatus) errs.Error {
 	wErr := errs.New()
-	runner := r.tm.GetRunner(ctx)
+	querier := r.tm.GetQuerier(ctx)
 
-	result, err := runner.ExecContext(ctx, `
+	commandTag, err := querier.Exec(ctx, `
 		UPDATE workspaces
 		SET status = $1, updated_at = CURRENT_TIMESTAMP
 		WHERE id = $2
@@ -273,15 +243,7 @@ func (r *workspaceRepo) UpdateWorkspaceStatus(ctx context.Context, workspaceID u
 		return wErr.Propagate(repo.ErrFailedToUpdateWorkspaceStatusInWorkspaceRepository)
 	}
 
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		wErr.Add(err, map[string]any{
-			"workspaceID": workspaceID,
-		})
-		return wErr.Propagate(repo.ErrFailedToUpdateWorkspaceStatusInWorkspaceRepository)
-	}
-
-	if rowsAffected == 0 {
+	if commandTag.RowsAffected() == 0 {
 		wErr.Add(repo.ErrWorkspaceNotFound, map[string]any{
 			"workspaceID": workspaceID,
 		})
@@ -294,12 +256,12 @@ func (r *workspaceRepo) UpdateWorkspaceStatus(ctx context.Context, workspaceID u
 // UpdateWorkspace updates the workspace details
 func (r *workspaceRepo) UpdateWorkspace(ctx context.Context, workspaceID uuid.UUID, workspaceReq models.WorkspaceProps) errs.Error {
 	wErr := errs.New()
-	runner := r.tm.GetRunner(ctx)
+	querier := r.tm.GetQuerier(ctx)
 
 	// Generate and verify unique slug
 	slug := generateSlug(workspaceReq.Name)
 
-	result, err := runner.ExecContext(ctx, `
+	commandTag, err := querier.Exec(ctx, `
 		UPDATE workspaces
 		SET name = $1,
 			slug = $2,
@@ -315,15 +277,7 @@ func (r *workspaceRepo) UpdateWorkspace(ctx context.Context, workspaceID uuid.UU
 		return wErr.Propagate(repo.ErrFailedToUpdateWorkspaceInWorkspaceRepository)
 	}
 
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		wErr.Add(err, map[string]any{
-			"workspaceID": workspaceID,
-		})
-		return wErr.Propagate(repo.ErrFailedToUpdateWorkspaceInWorkspaceRepository)
-	}
-
-	if rowsAffected == 0 {
+	if commandTag.RowsAffected() == 0 {
 		wErr.Add(repo.ErrWorkspaceNotFound, map[string]any{
 			"workspaceID": workspaceID,
 		})
@@ -333,6 +287,7 @@ func (r *workspaceRepo) UpdateWorkspace(ctx context.Context, workspaceID uuid.UU
 	return nil
 }
 
+// RemoveWorkspaces removes workspaces by setting their status to inactive
 func (r *workspaceRepo) RemoveWorkspaces(ctx context.Context, workspaceIDs []uuid.UUID) errs.Error {
 	wErr := errs.New()
 	if len(workspaceIDs) == 0 {
@@ -342,24 +297,21 @@ func (r *workspaceRepo) RemoveWorkspaces(ctx context.Context, workspaceIDs []uui
 		return wErr.Propagate(repo.ErrFailedToRemoveWorkspacesInWorkspaceRepository)
 	}
 
-	runner := r.tm.GetRunner(ctx)
+	querier := r.tm.GetQuerier(ctx)
 
-	placeholders := make([]string, len(workspaceIDs))
-	args := make([]interface{}, len(workspaceIDs))
-	for i, id := range workspaceIDs {
-		placeholders[i] = fmt.Sprintf("$%d", i+1)
-		args[i] = id
-	}
-
-	query := fmt.Sprintf(`
+	query := `
         UPDATE workspaces
-        SET status = '%s',
+        SET status = $1,
             updated_at = CURRENT_TIMESTAMP
-        WHERE id IN (%s)
-        AND status = '%s'
-    `, models.WorkspaceStatusInactive, strings.Join(placeholders, ","), models.WorkspaceStatusActive)
+        WHERE id = ANY($2)
+        AND status = $3
+    `
 
-	_, err := runner.ExecContext(ctx, query, args...)
+	_, err := querier.Exec(ctx, query,
+		models.WorkspaceStatusInactive,
+		workspaceIDs,
+		models.WorkspaceStatusActive,
+	)
 	if err != nil {
 		wErr.Add(err, map[string]any{
 			"workspaceIDs": workspaceIDs,

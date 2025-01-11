@@ -3,13 +3,12 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
-	_ "github.com/lib/pq"
+	"github.com/jackc/pgx/v5"
 	repo "github.com/wizenheimer/byrd/src/internal/interfaces/repository"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/internal/repository/transaction"
@@ -39,8 +38,8 @@ func (r *competitorRepo) CreateCompetitors(ctx context.Context, workspaceID uuid
 		return nil, competitorErr.Propagate(repo.ErrFailedToCreateCompetitorsInCompetitorRepository)
 	}
 
-	// Get the runner (either tx from context or db)
-	runner := r.tm.GetRunner(ctx)
+	// Get the querier (either tx from context or pool)
+	querier := r.tm.GetQuerier(ctx)
 
 	// Prepare the batch insert query
 	valueStrings := make([]string, len(competitorNames))
@@ -58,7 +57,7 @@ func (r *competitorRepo) CreateCompetitors(ctx context.Context, workspaceID uuid
 	`, strings.Join(valueStrings, ","))
 
 	// Execute the batch insert
-	rows, err := runner.QueryContext(ctx, query, valueArgs...)
+	rows, err := querier.Query(ctx, query, valueArgs...)
 	if err != nil {
 		competitorErr.Add(err, map[string]any{
 			"query": query,
@@ -102,7 +101,7 @@ func (r *competitorRepo) CreateCompetitors(ctx context.Context, workspaceID uuid
 // GetCompetitor gets a competitor by its ID
 func (r *competitorRepo) GetCompetitor(ctx context.Context, competitorID uuid.UUID) (models.Competitor, errs.Error) {
 	competitorErr := errs.New()
-	runner := r.tm.GetRunner(ctx)
+	querier := r.tm.GetQuerier(ctx)
 
 	query := `
 		SELECT id, workspace_id, name, status, created_at, updated_at
@@ -112,7 +111,7 @@ func (r *competitorRepo) GetCompetitor(ctx context.Context, competitorID uuid.UU
 	`
 
 	var competitor models.Competitor
-	err := runner.QueryRowContext(ctx, query, competitorID, models.CompetitorStatusActive).Scan(
+	err := querier.QueryRow(ctx, query, competitorID, models.CompetitorStatusActive).Scan(
 		&competitor.ID,
 		&competitor.WorkspaceID,
 		&competitor.Name,
@@ -122,8 +121,8 @@ func (r *competitorRepo) GetCompetitor(ctx context.Context, competitorID uuid.UU
 	)
 
 	if err != nil {
-		if err == sql.ErrNoRows {
-			// Remap sql.ErrNoRows to ErrCompetitorNotFound
+		if err == pgx.ErrNoRows {
+			// Remap pgx.ErrNoRows to ErrCompetitorNotFound
 			competitorErr.Add(repo.ErrCompetitorNotFound, map[string]any{
 				"competitorID": competitorID,
 			})
@@ -156,7 +155,7 @@ func (r *competitorRepo) ListWorkspaceCompetitors(ctx context.Context, workspace
 		return nil, listErr.Propagate(repo.ErrFailedToListCompetitorsFromCompetitorRepository)
 	}
 
-	runner := r.tm.GetRunner(ctx)
+	querier := r.tm.GetQuerier(ctx)
 
 	query := `
 		SELECT id, workspace_id, name, status, created_at, updated_at
@@ -167,7 +166,7 @@ func (r *competitorRepo) ListWorkspaceCompetitors(ctx context.Context, workspace
         LIMIT $3 OFFSET $4
 	`
 
-	rows, err := runner.QueryContext(ctx, query, workspaceID, models.CompetitorStatusActive, limit, offset)
+	rows, err := querier.Query(ctx, query, workspaceID, models.CompetitorStatusActive, limit, offset)
 	if err != nil {
 		listErr.Add(err, map[string]any{
 			"query": query,
@@ -218,7 +217,7 @@ func (r *competitorRepo) ListWorkspaceCompetitors(ctx context.Context, workspace
 // RemoveWorkspaceCompetitors removes competitors from a workspace
 func (r *competitorRepo) RemoveWorkspaceCompetitors(ctx context.Context, workspaceID uuid.UUID, competitorIDs []uuid.UUID) errs.Error {
 	remErr := errs.New()
-	runner := r.tm.GetRunner(ctx)
+	querier := r.tm.GetQuerier(ctx)
 
 	var query string
 	var args []interface{}
@@ -258,7 +257,7 @@ func (r *competitorRepo) RemoveWorkspaceCompetitors(ctx context.Context, workspa
         `, strings.Join(placeholders, ","))
 	}
 
-	_, err := runner.ExecContext(ctx, query, args...)
+	_, err := querier.Exec(ctx, query, args...)
 	if err != nil {
 		remErr.Add(err, map[string]any{
 			"query": query,
@@ -272,7 +271,7 @@ func (r *competitorRepo) RemoveWorkspaceCompetitors(ctx context.Context, workspa
 // WorkspaceCompetitorExists checks if a competitor exists in a workspace
 func (r *competitorRepo) WorkspaceCompetitorExists(ctx context.Context, workspaceID, competitorID uuid.UUID) (bool, errs.Error) {
 	competitorErr := errs.New()
-	runner := r.tm.GetRunner(ctx)
+	querier := r.tm.GetQuerier(ctx)
 	query := `
 		SELECT EXISTS(
             SELECT 1
@@ -284,7 +283,7 @@ func (r *competitorRepo) WorkspaceCompetitorExists(ctx context.Context, workspac
 	`
 
 	var exists bool
-	err := runner.QueryRowContext(ctx, query, workspaceID, competitorID, models.CompetitorStatusActive).Scan(&exists)
+	err := querier.QueryRow(ctx, query, workspaceID, competitorID, models.CompetitorStatusActive).Scan(&exists)
 	if err != nil {
 		competitorErr.Add(err, map[string]any{
 			"workspaceID":  workspaceID,

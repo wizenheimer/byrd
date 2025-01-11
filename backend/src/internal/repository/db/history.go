@@ -3,10 +3,8 @@ package db
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/lib/pq"
 	repo "github.com/wizenheimer/byrd/src/internal/interfaces/repository"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/internal/repository/transaction"
@@ -30,7 +28,7 @@ func NewPageHistoryRepository(tm *transaction.TxManager, logger *logger.Logger) 
 // CreatePageHistory creates a new page history entry
 func (r *historyRepo) CreatePageHistory(ctx context.Context, pageID uuid.UUID, pageHistory models.PageHistory) (models.PageHistory, errs.Error) {
 	pageHistoryErr := errs.New()
-	runner := r.tm.GetRunner(ctx)
+	querier := r.tm.GetQuerier(ctx)
 
 	if err := utils.SetDefaultsAndValidate(&pageHistory); err != nil {
 		pageHistoryErr.Add(repo.ErrInvalidPageHistory, map[string]interface{}{
@@ -59,7 +57,7 @@ func (r *historyRepo) CreatePageHistory(ctx context.Context, pageID uuid.UUID, p
                   created_at, status
     `
 
-	row := runner.QueryRowContext(ctx, query,
+	row := querier.QueryRow(ctx, query,
 		pageID,
 		pageHistory.WeekNumber1,
 		pageHistory.WeekNumber2,
@@ -72,13 +70,6 @@ func (r *historyRepo) CreatePageHistory(ctx context.Context, pageID uuid.UUID, p
 		pageHistory.ScreenshotURL2,
 		models.HistoryStatusActive,
 	)
-
-	if err := row.Err(); err != nil {
-		pageHistoryErr.Add(err, map[string]interface{}{
-			"pageID": pageID,
-		})
-		return models.PageHistory{}, pageHistoryErr.Propagate(repo.ErrFailedToCreatePageHistoryInPageHistoryRepository)
-	}
 
 	var created models.PageHistory
 	err := row.Scan(
@@ -99,6 +90,7 @@ func (r *historyRepo) CreatePageHistory(ctx context.Context, pageID uuid.UUID, p
 	if err != nil {
 		pageHistoryErr.Add(repo.ErrFailedToScanPageHistory, map[string]interface{}{
 			"pageID": pageID,
+			"error":  err,
 		})
 		return models.PageHistory{}, pageHistoryErr.Propagate(repo.ErrFailedToCreatePageHistoryInPageHistoryRepository)
 	}
@@ -108,7 +100,7 @@ func (r *historyRepo) CreatePageHistory(ctx context.Context, pageID uuid.UUID, p
 
 // ListPageHistory lists page history for a page with optional pagination
 func (r *historyRepo) ListPageHistory(ctx context.Context, pageID uuid.UUID, limit, offset *int) ([]models.PageHistory, errs.Error) {
-	runner := r.tm.GetRunner(ctx)
+	querier := r.tm.GetQuerier(ctx)
 	pageHistoryErr := errs.New()
 
 	// Build the query with optional pagination
@@ -140,7 +132,7 @@ func (r *historyRepo) ListPageHistory(ctx context.Context, pageID uuid.UUID, lim
 		args = append(args, *limit, *offset)
 	}
 
-	rows, err := runner.QueryContext(ctx, query, args...)
+	rows, err := querier.Query(ctx, query, args...)
 	if err != nil {
 		pageHistoryErr.Add(err, map[string]interface{}{
 			"pageID": pageID,
@@ -195,25 +187,18 @@ func (r *historyRepo) RemovePageHistory(ctx context.Context, pageIDs []uuid.UUID
 		return pageHistoryErr.Propagate(repo.ErrFailedToRemovePageHistoryFromPageHistoryRepository)
 	}
 
-	runner := r.tm.GetRunner(ctx)
-
-	// Create placeholders for the IN clause
-	placeholders := make([]string, len(pageIDs))
-	args := make([]interface{}, len(pageIDs))
-	for i, id := range pageIDs {
-		placeholders[i] = fmt.Sprintf("$%d", i+1)
-		args[i] = id
-	}
+	querier := r.tm.GetQuerier(ctx)
 
 	query := `
-    UPDATE page_history
-    SET status = $1
-    WHERE page_id = ANY($2)
-    AND status = $3
-`
-	_, err := runner.ExecContext(ctx, query,
+        UPDATE page_history
+        SET status = $1
+        WHERE page_id = ANY($2)
+        AND status = $3
+    `
+
+	_, err := querier.Exec(ctx, query,
 		models.HistoryStatusInactive,
-		pq.Array(pageIDs),
+		pageIDs, // pgx handles array parameters natively
 		models.HistoryStatusActive,
 	)
 	if err != nil {

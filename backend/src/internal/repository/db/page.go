@@ -3,14 +3,13 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"strings"
 
 	"github.com/creasty/defaults"
 	"github.com/google/uuid"
-	_ "github.com/lib/pq"
+	"github.com/jackc/pgx/v5"
 	repo "github.com/wizenheimer/byrd/src/internal/interfaces/repository"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/internal/repository/transaction"
@@ -32,6 +31,7 @@ func NewPageRepository(tm *transaction.TxManager, logger *logger.Logger) repo.Pa
 }
 
 // AddPagesToCompetitor adds pages to a competitor
+// AddPagesToCompetitor adds pages to a competitor
 func (r *pageRepo) AddPagesToCompetitor(ctx context.Context, competitorID uuid.UUID, pages []models.PageProps) ([]models.Page, errs.Error) {
 	pageErr := errs.New()
 	if len(pages) == 0 {
@@ -41,7 +41,7 @@ func (r *pageRepo) AddPagesToCompetitor(ctx context.Context, competitorID uuid.U
 		return nil, pageErr.Propagate(repo.ErrFailedToAddPagesToCompetitorInPageRepository)
 	}
 
-	runner := r.tm.GetRunner(ctx)
+	querier := r.tm.GetQuerier(ctx)
 
 	// Build batch insert query
 	valueStrings := make([]string, 0, len(pages))
@@ -65,7 +65,6 @@ func (r *pageRepo) AddPagesToCompetitor(ctx context.Context, competitorID uuid.U
 			page.DiffProfile = make(map[string]interface{})
 		}
 
-		// Add the placeholder for the prepared statement
 		valueStrings = append(valueStrings, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d)",
 			i*5+1, i*5+2, i*5+3, i*5+4, i*5+5))
 
@@ -94,7 +93,7 @@ func (r *pageRepo) AddPagesToCompetitor(ctx context.Context, competitorID uuid.U
 			page.URL,
 			captureProfileJSON,
 			diffProfileJSON,
-			models.PageStatusActive) // Default status for new pages
+			models.PageStatusActive)
 	}
 
 	query := fmt.Sprintf(`
@@ -103,7 +102,7 @@ func (r *pageRepo) AddPagesToCompetitor(ctx context.Context, competitorID uuid.U
 		RETURNING id, competitor_id, url, capture_profile::jsonb, diff_profile::jsonb, last_checked_at, status, created_at, updated_at
 	`, strings.Join(valueStrings, ","))
 
-	rows, err := runner.QueryContext(ctx, query, valueArgs...)
+	rows, err := querier.Query(ctx, query, valueArgs...)
 	if err != nil {
 		pageErr.Add(err, map[string]any{
 			"competitor_id": competitorID,
@@ -128,13 +127,12 @@ func (r *pageRepo) AddPagesToCompetitor(ctx context.Context, competitorID uuid.U
 // RemovePagesFromCompetitor removes pages from a competitor
 func (r *pageRepo) RemovePagesFromCompetitor(ctx context.Context, competitorID uuid.UUID, pageIDs []uuid.UUID) errs.Error {
 	pageErr := errs.New()
-	runner := r.tm.GetRunner(ctx)
+	querier := r.tm.GetQuerier(ctx)
 
 	var query string
 	var args []interface{}
 
 	if pageIDs == nil {
-		// Soft delete all active pages for the competitor
 		query = `
 			UPDATE pages
 			SET status = $2, updated_at = CURRENT_TIMESTAMP
@@ -142,28 +140,17 @@ func (r *pageRepo) RemovePagesFromCompetitor(ctx context.Context, competitorID u
 		`
 		args = []interface{}{competitorID, models.PageStatusInactive, models.PageStatusActive}
 	} else {
-		// Soft delete specific active pages
-		placeholders := make([]string, len(pageIDs))
-		args = make([]interface{}, len(pageIDs)+3) // +3 for competitorID, new status, and current status
-		args[0] = competitorID
-		args[1] = models.PageStatusInactive
-		args[2] = models.PageStatusActive
-
-		for i, id := range pageIDs {
-			placeholders[i] = fmt.Sprintf("$%d", i+4) // Start from $4 since we have 3 fixed params
-			args[i+3] = id
-		}
-
-		query = fmt.Sprintf(`
+		query = `
 			UPDATE pages
 			SET status = $2, updated_at = CURRENT_TIMESTAMP
 			WHERE competitor_id = $1
 			AND status = $3
-			AND id IN (%s)
-		`, strings.Join(placeholders, ","))
+			AND id = ANY($4)
+		`
+		args = []interface{}{competitorID, models.PageStatusInactive, models.PageStatusActive, pageIDs}
 	}
 
-	_, err := runner.ExecContext(ctx, query, args...)
+	_, err := querier.Exec(ctx, query, args...)
 	if err != nil {
 		pageErr.Add(err, map[string]any{
 			"query": query,
@@ -177,7 +164,7 @@ func (r *pageRepo) RemovePagesFromCompetitor(ctx context.Context, competitorID u
 // ListCompetitorPages gets the pages for a competitor with optional pagination
 func (r *pageRepo) ListCompetitorPages(ctx context.Context, competitorID uuid.UUID, limit, offset *int) ([]models.Page, errs.Error) {
 	pageErr := errs.New()
-	runner := r.tm.GetRunner(ctx)
+	querier := r.tm.GetQuerier(ctx)
 
 	query := `
 		SELECT id, competitor_id, url, capture_profile, diff_profile, last_checked_at, status, created_at, updated_at
@@ -188,7 +175,6 @@ func (r *pageRepo) ListCompetitorPages(ctx context.Context, competitorID uuid.UU
 	args := []interface{}{competitorID}
 	paramCount := 1
 
-	// Only add LIMIT if limit is provided and valid
 	if limit != nil {
 		if *limit < 0 {
 			pageErr.Add(repo.ErrInvalidLimit, nil)
@@ -199,7 +185,6 @@ func (r *pageRepo) ListCompetitorPages(ctx context.Context, competitorID uuid.UU
 		args = append(args, *limit)
 	}
 
-	// Only add OFFSET if offset is provided and valid
 	if offset != nil {
 		if *offset < 0 {
 			pageErr.Add(repo.ErrInvalidOffset, nil)
@@ -210,7 +195,7 @@ func (r *pageRepo) ListCompetitorPages(ctx context.Context, competitorID uuid.UU
 		args = append(args, *offset)
 	}
 
-	rows, err := runner.QueryContext(ctx, query, args...)
+	rows, err := querier.Query(ctx, query, args...)
 	if err != nil {
 		pageErr.Add(err, map[string]any{
 			"competitorID": competitorID,
@@ -245,7 +230,7 @@ func (r *pageRepo) ListActivePages(ctx context.Context, batchSize int, lastPageI
 		return models.ActivePageBatch{}, pageErr.Propagate(repo.ErrFailedToListActivePagesFromPageRepository)
 	}
 
-	runner := r.tm.GetRunner(ctx)
+	querier := r.tm.GetQuerier(ctx)
 
 	query := `
 		SELECT id, competitor_id, url, capture_profile, diff_profile, last_checked_at, status, created_at, updated_at
@@ -262,9 +247,9 @@ func (r *pageRepo) ListActivePages(ctx context.Context, batchSize int, lastPageI
 	query += fmt.Sprintf(`
 		ORDER BY created_at ASC
 		LIMIT %d
-	`, batchSize+1) // Get one extra to determine if there are more pages
+	`, batchSize+1)
 
-	rows, err := runner.QueryContext(ctx, query, args...)
+	rows, err := querier.Query(ctx, query, args...)
 	if err != nil {
 		pageErr.Add(err, map[string]any{
 			"batchSize":  batchSize,
@@ -274,8 +259,7 @@ func (r *pageRepo) ListActivePages(ctx context.Context, batchSize int, lastPageI
 	}
 	defer rows.Close()
 
-	var pages []models.Page
-	pages, err = scanPages(rows)
+	pages, err := scanPages(rows)
 	if err != nil {
 		pageErr.Add(err, map[string]any{
 			"lastPageID": lastPageID,
@@ -300,14 +284,14 @@ func (r *pageRepo) ListActivePages(ctx context.Context, batchSize int, lastPageI
 // GetCompetitorPage gets a page for a competitor
 func (r *pageRepo) GetCompetitorPage(ctx context.Context, competitorID, pageID uuid.UUID) (models.Page, errs.Error) {
 	pageErr := errs.New()
-	runner := r.tm.GetRunner(ctx)
+	querier := r.tm.GetQuerier(ctx)
 
 	query := `
-    SELECT id, competitor_id, url, capture_profile, diff_profile, last_checked_at, status, created_at, updated_at
-    FROM pages
-    WHERE id = $1 AND competitor_id = $2 AND status = $3
-`
-	row := runner.QueryRowContext(ctx, query, pageID, competitorID, models.PageStatusActive)
+		SELECT id, competitor_id, url, capture_profile, diff_profile, last_checked_at, status, created_at, updated_at
+		FROM pages
+		WHERE id = $1 AND competitor_id = $2 AND status = $3
+	`
+	row := querier.QueryRow(ctx, query, pageID, competitorID, models.PageStatusActive)
 	page, err := scanPage(row)
 	if err != nil {
 		pageErr.Add(err, map[string]any{
@@ -328,7 +312,7 @@ func (r *pageRepo) GetCompetitorPage(ctx context.Context, competitorID, pageID u
 // UpdateCompetitorPage updates a page for a competitor
 func (r *pageRepo) UpdateCompetitorPage(ctx context.Context, competitorID, pageID uuid.UUID, updatedPage models.PageProps) (models.Page, errs.Error) {
 	pageErr := errs.New()
-	runner := r.tm.GetRunner(ctx)
+	querier := r.tm.GetQuerier(ctx)
 
 	existingPage, pErr := r.GetCompetitorPage(ctx, competitorID, pageID)
 	if pErr != nil && pErr.HasErrors() {
@@ -339,15 +323,12 @@ func (r *pageRepo) UpdateCompetitorPage(ctx context.Context, competitorID, pageI
 		return models.Page{}, pageErr.Propagate(repo.ErrFailedToUpdatePageInPageRepository)
 	}
 
-	// Merge the existing capture profile with the new capture profile
+	// Merge capture profiles and sync URL
 	updatedPage.CaptureProfile = screenshot.MergeScreenshotRequestOptions(existingPage.CaptureProfile, updatedPage.CaptureProfile)
-
-	// Sync the page url in capture profile
 	if updatedPage.URL != "" {
 		updatedPage.CaptureProfile.URL = updatedPage.URL
 	}
 
-	// Marshal the capture profile
 	captureProfileJSON, err := json.Marshal(updatedPage.CaptureProfile)
 	if err != nil {
 		pageErr.Add(repo.ErrFailedToMarshallCaptureProfile, map[string]any{
@@ -357,7 +338,7 @@ func (r *pageRepo) UpdateCompetitorPage(ctx context.Context, competitorID, pageI
 		return models.Page{}, pageErr.Propagate(repo.ErrFailedToUpdatePageInPageRepository)
 	}
 
-	// Initialize empty diff profile if nil
+	// Handle diff profile
 	if updatedPage.DiffProfile == nil {
 		if existingPage.DiffProfile != nil {
 			updatedPage.DiffProfile = existingPage.DiffProfile
@@ -366,7 +347,6 @@ func (r *pageRepo) UpdateCompetitorPage(ctx context.Context, competitorID, pageI
 		}
 	}
 
-	// Marshal the diff profile
 	diffProfileJSON, err := json.Marshal(updatedPage.DiffProfile)
 	if err != nil {
 		pageErr.Add(repo.ErrFailedToMarshallDiffProfile, map[string]any{
@@ -377,18 +357,19 @@ func (r *pageRepo) UpdateCompetitorPage(ctx context.Context, competitorID, pageI
 	}
 
 	query := `
-		UPDATE pages
-		SET url = $1, capture_profile = $2, diff_profile = $3, updated_at = CURRENT_TIMESTAMP
-		WHERE id = $4 AND competitor_id = $5
-		RETURNING id, competitor_id, url, capture_profile, diff_profile, last_checked_at, status, created_at, updated_at
-	`
+    UPDATE pages
+    SET url = $1, capture_profile = $2, diff_profile = $3, updated_at = CURRENT_TIMESTAMP
+    WHERE id = $4 AND competitor_id = $5 AND status = $6
+    RETURNING id, competitor_id, url, capture_profile, diff_profile, last_checked_at, status, created_at, updated_at
+`
 
-	row := runner.QueryRowContext(ctx, query,
+	row := querier.QueryRow(ctx, query,
 		updatedPage.URL,
 		captureProfileJSON,
 		diffProfileJSON,
 		pageID,
 		competitorID,
+		models.PageStatusActive,
 	)
 
 	finalPage, err := scanPage(row)
@@ -419,10 +400,10 @@ func scanPage(row dbScanner) (*models.Page, error) {
 		&page.CreatedAt,
 		&page.UpdatedAt,
 	)
-	if err == sql.ErrNoRows {
-		return nil, repo.ErrPageNotFound
-	}
 	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, repo.ErrPageNotFound
+		}
 		return nil, fmt.Errorf("%w: %v", repo.ErrFailedToScanPages, err)
 	}
 
@@ -461,7 +442,7 @@ func scanPage(row dbScanner) (*models.Page, error) {
 }
 
 // scanPages scans multiple rows into a slice of Page objects
-func scanPages(rows *sql.Rows) ([]models.Page, error) {
+func scanPages(rows pgx.Rows) ([]models.Page, error) {
 	var pages []models.Page
 	for rows.Next() {
 		page, err := scanPage(rows)
