@@ -7,16 +7,16 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
-	interfaces "github.com/wizenheimer/byrd/src/internal/interfaces/service"
+	"github.com/wizenheimer/byrd/src/internal/service/ai"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 )
 
 type AIHandler struct {
-	aiService interfaces.AIService
+	aiService ai.AIService
 	logger    *logger.Logger
 }
 
-func NewAIHandler(aiService interfaces.AIService, logger *logger.Logger) *AIHandler {
+func NewAIHandler(aiService ai.AIService, logger *logger.Logger) *AIHandler {
 	logger.Debug("creating new AI handler")
 
 	return &AIHandler{
@@ -39,7 +39,10 @@ func (h *AIHandler) AnalyzeContentDifferences(c *fiber.Ctx) error {
 
 	// Validate files
 	if len(version1Files) == 0 || len(version2Files) == 0 {
-		return sendErrorResponse(c, fiber.StatusBadRequest, "Both versions are required")
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Both versions are required", map[string]interface{}{
+			"version1": len(version1Files),
+			"version2": len(version2Files),
+		})
 	}
 
 	// Get first file from each
@@ -73,21 +76,23 @@ func (h *AIHandler) AnalyzeContentDifferences(c *fiber.Ctx) error {
 	// Get profile from form values
 	profiles := form.Value["profile_fields"]
 	if len(profiles) == 0 {
-		return sendErrorResponse(c, fiber.StatusBadRequest, "profile_fields is required")
+		return sendErrorResponse(c, fiber.StatusBadRequest, "profile_fields is required", map[string]interface{}{
+			"profiles": profiles,
+		})
 	}
 	profileFieldsString := profiles[0]
 
 	// Convert profile fields to slice
 	profileFields := strings.Split(profileFieldsString, ",")
 
-	result, e := h.aiService.AnalyzeContentDifferences(
+	result, err := h.aiService.AnalyzeContentDifferences(
 		c.Context(),
 		string(content1),
 		string(content2),
 		profileFields,
 	)
-	if e != nil && e.HasErrors() {
-		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not analyze content differences", e)
+	if err != nil {
+		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not analyze content differences", err)
 	}
 
 	return sendDataResponse(c, fiber.StatusOK, "Content analysis successfully", result)
@@ -107,7 +112,10 @@ func (h *AIHandler) AnalyzeVisualDifferences(c *fiber.Ctx) error {
 
 	// Validate files
 	if len(screenshots1) == 0 || len(screenshots2) == 0 {
-		return sendErrorResponse(c, fiber.StatusBadRequest, "Both screenshots are required")
+		return sendErrorResponse(c, fiber.StatusBadRequest, "Both screenshots are required", map[string]interface{}{
+			"screenshots1 exists": len(screenshots1) == 0,
+			"screenshots2 exists": len(screenshots2) == 0,
+		})
 	}
 
 	// Get first file from each
@@ -141,16 +149,18 @@ func (h *AIHandler) AnalyzeVisualDifferences(c *fiber.Ctx) error {
 	// Get profile from form values
 	profiles := form.Value["profile_fields"]
 	if len(profiles) == 0 {
-		return sendErrorResponse(c, fiber.StatusBadRequest, "profile_fields is required")
+		return sendErrorResponse(c, fiber.StatusBadRequest, "profile_fields is required", map[string]interface{}{
+			"profiles": profiles,
+		})
 	}
 	profileString := profiles[0]
 
 	// Convert profile fields to slice
 	profileFields := strings.Split(profileString, ",")
 
-	result, e := h.aiService.AnalyzeVisualDifferences(c.Context(), img1, img2, profileFields)
-	if e != nil && e.HasErrors() {
-		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not analyze visual differences", e)
+	result, err := h.aiService.AnalyzeVisualDifferences(c.Context(), img1, img2, profileFields)
+	if err != nil {
+		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not analyze visual differences", err)
 	}
 
 	return sendDataResponse(c, fiber.StatusOK, "Analyzed visual difference successfully", result)
