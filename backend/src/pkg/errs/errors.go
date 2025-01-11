@@ -71,7 +71,7 @@ func (e Error) Log(msg string, logger *logger.Logger, fields ...zap.Field) {
 		return
 	}
 
-	fields = append(fields, zap.String("errors", e.Error()))
+	fields = append(fields, zap.Any("errors", e))
 
 	logger.Error(msg, fields...)
 }
@@ -101,7 +101,7 @@ func (e Error) FilterFatalErrors(nonFatalErrors ...error) Error {
 }
 
 // Propagate consolidates errors to a higher level with a new error type
-func (e Error) Propagate(levelError error, nonFatalErrors ...error) (Error) {
+func (e Error) Propagate(levelError error, nonFatalErrors ...error) Error {
 	// Filter out non-fatal errors
 	fatalErrors := e.FilterFatalErrors(nonFatalErrors...)
 

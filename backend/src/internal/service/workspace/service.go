@@ -34,6 +34,7 @@ func (ws *workspaceService) CreateWorkspace(ctx context.Context, workspaceOwner 
 	billingEmail, err := utils.GetClerkUserEmail(workspaceOwner)
 	if err != nil {
 		wErr.Add(svc.ErrFailedToGetClerkUserEmail, map[string]any{"error": err.Error()})
+		wErr.Log("Failed to get clerk user email", ws.logger)
 		return nil, wErr.Propagate(svc.ErrFailedToCreateWorkspace)
 	}
 
@@ -41,6 +42,7 @@ func (ws *workspaceService) CreateWorkspace(ctx context.Context, workspaceOwner 
 	workspace, rErr := ws.workspaceRepo.CreateWorkspace(ctx, workspaceName, billingEmail)
 	if rErr != nil && rErr.HasErrors() {
 		wErr.Merge(rErr)
+		wErr.Log("Failed to create workspace", ws.logger)
 		return nil, wErr.Propagate(svc.ErrFailedToCreateWorkspace)
 	}
 
@@ -77,6 +79,7 @@ func (ws *workspaceService) CreateWorkspace(ctx context.Context, workspaceOwner 
 	_, rErr = ws.userService.AddUserToWorkspace(ctx, workspace.ID, invitedUsers)
 	if rErr != nil && rErr.HasErrors() {
 		wErr.Merge(rErr)
+		wErr.Log("Failed to invite users to workspace", ws.logger)
 		return nil, wErr.Propagate(svc.ErrFailedToCreateWorkspace)
 	}
 
@@ -89,7 +92,7 @@ func (ws *workspaceService) CreateWorkspace(ctx context.Context, workspaceOwner 
 
 		_, err := ws.competitorService.CreateCompetitor(ctx, workspace.ID, competitorReq)
 		if err != nil && err.HasErrors() {
-			// TODO: non-fatal error handling
+			err.Log("Failed to create competitor", ws.logger)
 			wErr.Merge(err)
 		}
 	}
@@ -103,12 +106,14 @@ func (ws *workspaceService) ListUserWorkspaces(ctx context.Context, workspaceMem
 	workspaceIDs, err := ws.userService.ListUserWorkspaces(ctx, workspaceMember)
 	if err != nil && err.HasErrors() {
 		wErr.Merge(err)
+		wErr.Log("Failed to list user workspaces", ws.logger)
 		return nil, wErr.Propagate(svc.ErrFailedToListUserWorkspaces)
 	}
 
 	workspaces, err := ws.workspaceRepo.GetWorkspaces(ctx, workspaceIDs)
 	if err != nil && err.HasErrors() {
 		wErr.Merge(err)
+		wErr.Log("Failed to get workspaces", ws.logger)
 		return nil, wErr.Propagate(svc.ErrFailedToListUserWorkspaces)
 	}
 
@@ -122,6 +127,7 @@ func (ws *workspaceService) GetWorkspace(ctx context.Context, workspaceID uuid.U
 	workspaces, err := ws.workspaceRepo.GetWorkspaces(ctx, workspaceIDs)
 	if err != nil && err.HasErrors() {
 		wErr.Merge(err)
+		wErr.Log("Failed to get workspaces", ws.logger)
 		return nil, wErr.Propagate(svc.ErrWorkspaceNotFound)
 	}
 
@@ -167,6 +173,7 @@ func (ws *workspaceService) UpdateWorkspace(ctx context.Context, workspaceID uui
 
 	if err := ws.workspaceRepo.UpdateWorkspace(ctx, workspaceID, workspaceReq); err != nil && err.HasErrors() {
 		wErr.Merge(err)
+		wErr.Log("Failed to update workspace", ws.logger)
 		return wErr.Propagate(svc.ErrFailedToUpdateWorkspace)
 	}
 
@@ -179,27 +186,29 @@ func (ws *workspaceService) DeleteWorkspace(ctx context.Context, workspaceID uui
 	workspace, err := ws.GetWorkspace(ctx, workspaceID)
 	if err != nil && err.HasErrors() {
 		wErr.Merge(err)
+		wErr.Log("Failed to get workspace", ws.logger)
 		return models.WorkspaceStatusInactive, wErr.Propagate(svc.ErrFailedToDeleteWorkspace)
 	}
 
 	// Handle workspace user deletion
 	if err := ws.userService.RemoveWorkspaceUsers(ctx, nil, workspaceID); err != nil && err.HasErrors() {
-		// TODO: non-fatal error handling
 		wErr.Merge(err)
+		wErr.Log("Failed to remove workspace users", ws.logger)
 		return models.WorkspaceStatusInactive, wErr.Propagate(svc.ErrFailedToDeleteWorkspace)
 	}
 
 	// Handle workspace competitor deletion
 
 	if err = ws.competitorService.RemoveCompetitors(ctx, workspace.ID, nil); err != nil && err.HasErrors() {
-		// TODO: non-fatal error handling
 		wErr.Merge(err)
+		wErr.Log("Failed to remove workspace competitors", ws.logger)
 		return models.WorkspaceStatusInactive, wErr.Propagate(svc.ErrFailedToDeleteWorkspace)
 	}
 
 	// Handle workspace deletion
 	if err := ws.workspaceRepo.RemoveWorkspaces(ctx, []uuid.UUID{workspace.ID}); err != nil && err.HasErrors() {
 		wErr.Merge(err)
+		wErr.Log("Failed to remove workspace", ws.logger)
 		return models.WorkspaceStatusInactive, wErr.Propagate(svc.ErrFailedToDeleteWorkspace)
 	}
 
@@ -211,12 +220,14 @@ func (ws *workspaceService) ListWorkspaceMembers(ctx context.Context, workspaceI
 	_, err := ws.GetWorkspace(ctx, workspaceID)
 	if err != nil && err.HasErrors() {
 		wErr.Merge(err)
+		wErr.Log("Failed to get workspace", ws.logger)
 		return nil, wErr.Propagate(svc.ErrFailedToListWorkspaceMembers)
 	}
 
 	wu, err := ws.userService.ListWorkspaceUsers(ctx, workspaceID)
 	if err != nil && err.HasErrors() {
 		wErr.Merge(err)
+		wErr.Log("Failed to list workspace users", ws.logger)
 		return nil, wErr.Propagate(svc.ErrFailedToListWorkspaceMembers)
 	}
 
@@ -228,12 +239,14 @@ func (ws *workspaceService) InviteUsersToWorkspace(ctx context.Context, workspac
 	workspace, err := ws.GetWorkspace(ctx, workspaceID)
 	if err != nil && err.HasErrors() {
 		wErr.Merge(err)
+		wErr.Log("Failed to get workspace", ws.logger)
 		return []api.CreateWorkspaceUserResponse{}, wErr.Propagate(svc.ErrFailedToInviteUserToWorkspace)
 	}
 
 	resp, err := ws.userService.AddUserToWorkspace(ctx, workspace.ID, invitedUsers)
 	if err != nil && err.HasErrors() {
 		wErr.Merge(err)
+		wErr.Log("Failed to invite users to workspace", ws.logger)
 		return nil, wErr.Propagate(svc.ErrFailedToInviteUserToWorkspace)
 	}
 
@@ -245,29 +258,34 @@ func (ws *workspaceService) LeaveWorkspace(ctx context.Context, workspaceMember 
 	workspace, err := ws.GetWorkspace(ctx, workspaceID)
 	if err != nil && err.HasErrors() {
 		wErr.Merge(err)
+		wErr.Log("Failed to get workspace", ws.logger)
 		return wErr.Propagate(svc.ErrFailedToLeaveWorkspace)
 	}
 
 	adminUsers, _, err := ws.userService.GetWorkspaceUserCountByRole(ctx, workspace.ID)
 	if err != nil && err.HasErrors() {
 		wErr.Merge(err)
+		wErr.Log("Failed to get workspace user count by role", ws.logger)
 		return wErr.Propagate(svc.ErrFailedToLeaveWorkspace)
 	}
 
 	workspaceUser, err := ws.userService.GetWorkspaceUser(ctx, workspaceMember, workspace.ID)
 	if err != nil && err.HasErrors() {
 		wErr.Merge(err)
+		wErr.Log("Failed to get workspace user", ws.logger)
 		return wErr.Propagate(svc.ErrFailedToLeaveWorkspace)
 	}
 
 	if adminUsers == 1 && workspaceUser.Role == models.UserRoleAdmin {
 		wErr.Add(svc.ErrFailedToLeaveWorkspaceAsSoleAdmin, map[string]any{"workspace_id": workspace.ID})
+		wErr.Log("Failed to leave workspace as sole admin", ws.logger)
 		return wErr.Propagate(svc.ErrFailedToLeaveWorkspace)
 	}
 
 	users := []uuid.UUID{workspaceUser.ID}
 	if err := ws.userService.RemoveWorkspaceUsers(ctx, users, workspace.ID); err != nil && err.HasErrors() {
 		wErr.Merge(err)
+		wErr.Log("Failed to remove workspace users", ws.logger)
 		return wErr.Propagate(svc.ErrFailedToLeaveWorkspace)
 	}
 
@@ -278,11 +296,13 @@ func (ws *workspaceService) UpdateWorkspaceMemberRole(ctx context.Context, works
 	wErr := errs.New()
 	if _, err := ws.GetWorkspace(ctx, workspaceID); err != nil && err.HasErrors() {
 		wErr.Merge(err)
+		wErr.Log("Failed to get workspace", ws.logger)
 		return wErr.Propagate(svc.ErrFailedToUpdateWorkspaceMemberRole)
 	}
 
 	if _, err := ws.userService.UpdateWorkspaceUserRole(ctx, workspaceMemberID, workspaceID, role); err != nil && err.HasErrors() {
 		wErr.Merge(err)
+		wErr.Log("Failed to update workspace user role", ws.logger)
 		return wErr.Propagate(svc.ErrFailedToUpdateWorkspaceMemberRole)
 	}
 
@@ -294,22 +314,26 @@ func (ws *workspaceService) RemoveUserFromWorkspace(ctx context.Context, workspa
 	workspace, err := ws.GetWorkspace(ctx, workspaceID)
 	if err != nil && err.HasErrors() {
 		wErr.Merge(err)
+		wErr.Log("Failed to get workspace", ws.logger)
 		return wErr.Propagate(svc.ErrFailedToRemoveUserFromWorkspace)
 	}
 
 	workspaceUser, err := ws.userService.GetWorkspaceUserByID(ctx, workspaceMemberID, workspaceID)
 	if err != nil && err.HasErrors() {
 		wErr.Merge(err)
+		wErr.Log("Failed to get workspace user", ws.logger)
 		return wErr.Propagate(svc.ErrFailedToRemoveUserFromWorkspace)
 	}
 
 	if workspaceUser.WorkspaceUserStatus == models.UserWorkspaceStatusInactive {
 		wErr.Add(svc.ErrUserLeftWorkspaceNeedReinvite, map[string]any{"workspace_id": workspace.ID})
+		wErr.Log("User left workspace need reinvite", ws.logger)
 		return wErr.Propagate(svc.ErrFailedToRemoveUserFromWorkspace)
 	}
 
 	if err := ws.userService.RemoveWorkspaceUsers(ctx, []uuid.UUID{workspaceMemberID}, workspace.ID); err != nil && err.HasErrors() {
 		wErr.Merge(err)
+		wErr.Log("Failed to remove workspace users", ws.logger)
 		return wErr.Propagate(svc.ErrFailedToRemoveUserFromWorkspace)
 	}
 
@@ -322,36 +346,41 @@ func (ws *workspaceService) JoinWorkspace(ctx context.Context, invitedMember *cl
 	workspace, err := ws.GetWorkspace(ctx, workspaceID)
 	if err != nil && err.HasErrors() {
 		wErr.Merge(err)
+		wErr.Log("Failed to get workspace", ws.logger)
 		return wErr.Propagate(svc.ErrFailedToJoinWorkspace)
 	}
 
 	if workspace.Status == models.WorkspaceStatusInactive {
 		wErr.Add(svc.ErrWorkspaceInactive, map[string]any{"workspace_id": workspace.ID})
+		wErr.Log("Workspace is inactive", ws.logger)
 		return wErr.Propagate(svc.ErrFailedToJoinWorkspace)
 	}
 
 	// Sync the user to the workspace
 	if err := ws.userService.SyncUser(ctx, invitedMember); err != nil && err.HasErrors() {
 		wErr.Merge(err)
+		wErr.Log("Failed to sync user", ws.logger)
 		return wErr.Propagate(svc.ErrFailedToJoinWorkspace)
 	}
 
 	workspaceUser, err := ws.userService.GetWorkspaceUser(ctx, invitedMember, workspaceID)
 	if err != nil && err.HasErrors() {
 		wErr.Merge(err)
+		wErr.Log("Failed to get workspace user", ws.logger)
 		return wErr.Propagate(svc.ErrFailedToJoinWorkspace)
 	}
 
 	// The user was removed from the workspace, requires re-invite
 	if workspaceUser.WorkspaceUserStatus == models.UserWorkspaceStatusInactive {
-
 		wErr.Add(svc.ErrUserLeftWorkspaceNeedReinvite, map[string]any{"workspace_id": workspace.ID})
+		wErr.Log("User left workspace need reinvite", ws.logger)
 		return wErr.Propagate(svc.ErrFailedToJoinWorkspace)
 	}
 
 	// Activate the user in the workspace
 	if err := ws.userService.UpdateWorkspaceUserStatus(ctx, workspaceUser.ID, workspaceID, models.UserWorkspaceStatusActive); err != nil && err.HasErrors() {
 		wErr.Merge(err)
+		wErr.Log("Failed to update workspace user status", ws.logger)
 		return wErr.Propagate(svc.ErrFailedToJoinWorkspace)
 	}
 
@@ -360,9 +389,9 @@ func (ws *workspaceService) JoinWorkspace(ctx context.Context, invitedMember *cl
 
 func (ws *workspaceService) WorkspaceExists(ctx context.Context, workspaceID uuid.UUID) (bool, errs.Error) {
 	wErr := errs.New()
-	// TODO: optimize this for quick lookiups
 	if _, err := ws.GetWorkspace(ctx, workspaceID); err != nil && err.HasErrors() {
 		wErr.Merge(err)
+		wErr.Log("Failed to get workspace", ws.logger)
 		return false, wErr.Propagate(svc.ErrWorkspaceNotFound)
 	}
 
@@ -374,12 +403,14 @@ func (ws *workspaceService) ClerkUserIsWorkspaceAdmin(ctx context.Context, works
 	workspace, err := ws.GetWorkspace(ctx, workspaceID)
 	if err != nil && err.HasErrors() {
 		wErr.Merge(err)
+		wErr.Log("Failed to get workspace", ws.logger)
 		return false, wErr.Propagate(svc.ErrWorkspaceAdminNotFound)
 	}
 
 	workspaceUser, err := ws.userService.GetWorkspaceUser(ctx, clerkUser, workspace.ID)
 	if err != nil && err.HasErrors() {
 		wErr.Merge(err)
+		wErr.Log("Failed to get workspace user", ws.logger)
 		return false, wErr.Propagate(svc.ErrWorkspaceAdminNotFound)
 	}
 
@@ -391,12 +422,14 @@ func (ws *workspaceService) ClerkUserIsWorkspaceMember(ctx context.Context, work
 	workspace, err := ws.GetWorkspace(ctx, workspaceID)
 	if err != nil && err.HasErrors() {
 		wErr.Merge(err)
+		wErr.Log("Failed to get workspace", ws.logger)
 		return false, wErr.Propagate(svc.ErrWorkspaceMemberNotFound)
 	}
 
 	workspaceUser, err := ws.userService.GetWorkspaceUser(ctx, clerkUser, workspace.ID)
 	if err != nil && err.HasErrors() {
 		wErr.Merge(err)
+		wErr.Log("Failed to get workspace user", ws.logger)
 		return false, wErr.Propagate(svc.ErrWorkspaceMemberNotFound)
 	}
 
@@ -408,6 +441,7 @@ func (ws *workspaceService) WorkspaceCompetitorExists(ctx context.Context, works
 	workspaceExists, err := ws.WorkspaceExists(ctx, workspaceID)
 	if err != nil && err.HasErrors() {
 		wErr.Merge(err)
+		wErr.Log("Failed to check if workspace exists", ws.logger)
 		return false, wErr.Propagate(svc.ErrWorkspaceCompetitorNotFound)
 	}
 
@@ -418,6 +452,7 @@ func (ws *workspaceService) WorkspaceCompetitorExists(ctx context.Context, works
 	exists, err := ws.competitorService.CompetitorExists(ctx, workspaceID, competitorID)
 	if err != nil && err.HasErrors() {
 		wErr.Merge(err)
+		wErr.Log("Failed to check if competitor exists", ws.logger)
 		return false, wErr.Propagate(svc.ErrWorkspaceCompetitorNotFound)
 	}
 
@@ -430,6 +465,7 @@ func (ws *workspaceService) WorkspaceCompetitorPageExists(ctx context.Context, w
 	workspaceAndCompetitorExists, err := ws.WorkspaceCompetitorExists(ctx, workspaceID, competitorID)
 	if err != nil && err.HasErrors() {
 		wErr.Merge(err)
+		wErr.Log("Failed to check if workspace competitor exists", ws.logger)
 		return false, wErr.Propagate(svc.ErrCompetitorPageNotFound)
 	}
 
@@ -440,6 +476,7 @@ func (ws *workspaceService) WorkspaceCompetitorPageExists(ctx context.Context, w
 	pageExists, err := ws.competitorService.PageExists(ctx, competitorID, pageID)
 	if err != nil && err.HasErrors() {
 		wErr.Merge(err)
+		wErr.Log("Failed to check if page exists", ws.logger)
 		return false, wErr.Propagate(svc.ErrCompetitorPageNotFound)
 	}
 
@@ -451,6 +488,7 @@ func (ws *workspaceService) CreateWorkspaceCompetitor(ctx context.Context, clerk
 	workspace, err := ws.GetWorkspace(ctx, workspaceID)
 	if err != nil {
 		wErr.Merge(err)
+		wErr.Log("Failed to get workspace", ws.logger)
 		return wErr.Propagate(svc.ErrFailedToCreateWorkspaceCompetitor)
 	}
 
@@ -460,6 +498,7 @@ func (ws *workspaceService) CreateWorkspaceCompetitor(ctx context.Context, clerk
 
 	if _, err := ws.competitorService.CreateCompetitor(ctx, workspace.ID, competitorReq); err != nil && err.HasErrors() {
 		wErr.Merge(err)
+		wErr.Log("Failed to create competitor", ws.logger)
 		return wErr.Propagate(svc.ErrFailedToCreateWorkspaceCompetitor)
 	}
 
@@ -471,12 +510,14 @@ func (ws *workspaceService) AddPageToCompetitor(ctx context.Context, clerkUser *
 	competitorUUID, err := uuid.Parse(competitorID)
 	if err != nil {
 		wErr.Add(err, map[string]any{"uuid": competitorID})
+		wErr.Log("Failed to parse competitor id", ws.logger)
 		return nil, wErr.Propagate(svc.ErrFailedToAddPageToCompetitor)
 	}
 
 	pages, pErr := ws.competitorService.AddPagesToCompetitor(ctx, competitorUUID, pageRequest)
 	if pErr != nil && pErr.HasErrors() {
 		wErr.Merge(pErr)
+		wErr.Log("Failed to add pages to competitor", ws.logger)
 		return nil, wErr.Propagate(svc.ErrFailedToAddPageToCompetitor)
 	}
 
@@ -489,12 +530,14 @@ func (ws *workspaceService) ListWorkspaceCompetitors(ctx context.Context, clerkU
 	workspace, err := ws.GetWorkspace(ctx, workspaceID)
 	if err != nil {
 		wErr.Merge(err)
+		wErr.Log("Failed to get workspace", ws.logger)
 		return nil, wErr.Propagate(svc.ErrFailedToListWorkspaceCompetitors)
 	}
 
 	competitorsWithPages, err := ws.competitorService.ListWorkspaceCompetitors(ctx, workspace.ID, params)
 	if err != nil && err.HasErrors() {
 		wErr.Merge(err)
+		wErr.Log("Failed to list workspace competitors", ws.logger)
 		return nil, wErr.Propagate(svc.ErrFailedToListWorkspaceCompetitors)
 	}
 
@@ -506,6 +549,7 @@ func (ws *workspaceService) ListWorkspacePageHistory(ctx context.Context, clerkU
 	pageHistory, err := ws.competitorService.GetCompetitorPage(ctx, competitorID, pageID, param)
 	if err != nil && err.HasErrors() {
 		wErr.Merge(err)
+		wErr.Log("Failed to get competitor page", ws.logger)
 		return nil, wErr.Propagate(svc.ErrFailedToListWorkspacePageHistory)
 	}
 
@@ -518,6 +562,7 @@ func (ws *workspaceService) RemovePageFromWorkspace(ctx context.Context, clerkUs
 	err := ws.competitorService.RemovePagesFromCompetitor(ctx, competitorID, pageIDs)
 	if err != nil && err.HasErrors() {
 		wErr.Merge(err)
+		wErr.Log("Failed to remove pages from competitor", ws.logger)
 		return wErr.Propagate(svc.ErrFailedToRemovePageFromWorkspace)
 	}
 
@@ -530,12 +575,14 @@ func (ws *workspaceService) RemoveCompetitorFromWorkspace(ctx context.Context, c
 	err := ws.competitorService.RemoveCompetitors(ctx, workspaceID, []uuid.UUID{competitorID})
 	if err != nil && err.HasErrors() {
 		wErr.Merge(err)
+		wErr.Log("Failed to remove competitors", ws.logger)
 		return wErr.Propagate(svc.ErrFailedToRemoveCompetitorFromWorkspace)
 	}
 
 	err = ws.competitorService.RemovePagesFromCompetitor(ctx, competitorID, nil)
 	if err != nil && err.HasErrors() {
 		wErr.Merge(err)
+		wErr.Log("Failed to remove pages from competitor", ws.logger)
 		return wErr.Propagate(svc.ErrFailedToRemoveCompetitorFromWorkspace)
 	}
 
@@ -547,6 +594,7 @@ func (ws *workspaceService) UpdateCompetitorPage(ctx context.Context, competitor
 	_, err := ws.competitorService.UpdatePage(ctx, competitorID, pageID, req)
 	if err != nil && err.HasErrors() {
 		wErr.Merge(err)
+		wErr.Log("Failed to update competitor page", ws.logger)
 		return wErr.Propagate(svc.ErrFailedToUpdateCompetitorPage)
 	}
 
