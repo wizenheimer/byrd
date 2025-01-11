@@ -2,11 +2,11 @@
 package main
 
 import (
-	"database/sql"
+	"context"
 	"fmt"
 
-	_ "github.com/lib/pq"
-
+	_ "github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/wizenheimer/byrd/src/internal/api/routes"
 	"github.com/wizenheimer/byrd/src/internal/client"
 	"github.com/wizenheimer/byrd/src/internal/config"
@@ -184,12 +184,35 @@ func setupAIService(cfg *config.Config, logger *logger.Logger) (svc.AIService, e
 	return aiService, nil
 }
 
-func setupDB(cfg *config.Config) (*sql.DB, error) {
+func setupDB(cfg *config.Config) (*pgxpool.Pool, error) {
 	// Prepare connection string
 	connString := prepareConnectionString(cfg)
 
-	// initialize db connection
-	return sql.Open(cfg.Database.Driver, connString)
+	// Create connection pool configuration
+	poolConfig, err := pgxpool.ParseConfig(connString)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing connection string: %w", err)
+	}
+
+	// You can configure pool settings here if needed
+	// poolConfig.MaxConns = 10
+	// poolConfig.MinConns = 1
+	// poolConfig.MaxConnLifetime = time.Hour
+	// poolConfig.MaxConnIdleTime = time.Minute * 30
+
+	// Initialize the connection pool
+	pool, err := pgxpool.NewWithConfig(context.Background(), poolConfig)
+	if err != nil {
+		return nil, fmt.Errorf("error connecting to the database: %w", err)
+	}
+
+	// Test the connection
+	if err := pool.Ping(context.Background()); err != nil {
+		pool.Close()
+		return nil, fmt.Errorf("error connecting to the database: %w", err)
+	}
+
+	return pool, nil
 }
 
 func prepareConnectionString(cfg *config.Config) string {
@@ -201,13 +224,10 @@ func prepareConnectionString(cfg *config.Config) string {
 	var sslMode string
 	switch cfg.Environment.EnvProfile {
 	case "development":
-		// Set up development environment
 		sslMode = "disable"
 	case "production":
-		// Set up production environment
-		sslMode = "require"
+		sslMode = "verify-full"
 	default:
-		// Set up default environment
 		sslMode = "disable"
 	}
 

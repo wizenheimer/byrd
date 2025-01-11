@@ -60,7 +60,10 @@ func main() {
 	}
 
 	// Intialize transaction manager
-	tm := transaction.NewTxManager(sqlDb)
+	tm := transaction.NewTxManager(
+		sqlDb,
+		logger,
+	)
 
 	// Initialize handlers
 	handlers, ws, err := initializer(cfg, tm, logger)
