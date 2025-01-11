@@ -535,9 +535,6 @@ func (r *userRepo) AddUsersToWorkspace(ctx context.Context, workspaceUserProps [
 		return nil, userErr.Propagate(repo.ErrFailedToAddUsersToWorkspaceInUserRepository)
 	}
 
-	r.logger.Debug("workspace users added",
-		zap.Any("workspaceUsers", workspaceUsers))
-
 	return workspaceUsers, nil
 }
 

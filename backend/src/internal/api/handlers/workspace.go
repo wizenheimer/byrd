@@ -2,8 +2,6 @@
 package handlers
 
 import (
-	"context"
-
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/wizenheimer/byrd/src/internal/api/auth"
@@ -53,16 +51,16 @@ func (wh *WorkspaceHandler) CreateWorkspace(c *fiber.Ctx) error {
 	var workspace *models.Workspace
 	var e errs.Error
 	ctx := c.Context()
-	err = wh.tx.RunInTx(ctx, nil, func(ctx context.Context) error {
-		workspace, e = wh.workspaceService.CreateWorkspace(ctx, clerkUser, req)
-		if e != nil && e.HasErrors() {
-			return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not create workspace", e)
-		}
-		return nil
-	})
-	if err != nil {
-		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not create workspace", err.Error())
+	// err = wh.tx.RunInTx(ctx, nil, func(ctx context.Context) error {
+	workspace, e = wh.workspaceService.CreateWorkspace(ctx, clerkUser, req)
+	if e != nil && e.HasErrors() {
+		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not create workspace", e)
 	}
+	// return nil
+	// })
+	// if err != nil {
+	// 	return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not create workspace", err.Error())
+	// }
 
 	return sendDataResponse(c, fiber.StatusCreated, "Created workspace successfully", workspace)
 
