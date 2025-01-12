@@ -24,4 +24,6 @@ type PageService interface {
 	RemovePage(ctx context.Context, competitorIDs []uuid.UUID, pageIDs []uuid.UUID) error
 
 	PageExists(ctx context.Context, competitorID, pageID uuid.UUID) (bool, error)
+
+	RefreshPage(ctx context.Context, pageID uuid.UUID) error
 }

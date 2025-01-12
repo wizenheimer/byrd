@@ -4,11 +4,14 @@ package page
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/google/uuid"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/internal/repository/page"
+	"github.com/wizenheimer/byrd/src/internal/service/diff"
 	"github.com/wizenheimer/byrd/src/internal/service/history"
+	"github.com/wizenheimer/byrd/src/internal/service/screenshot"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 )
 
@@ -18,13 +21,17 @@ var _ PageService = (*pageService)(nil)
 type pageService struct {
 	pageRepo           page.PageRepository
 	pageHistoryService history.PageHistoryService
+	diffService        diff.DiffService
+	screenshotService  screenshot.ScreenshotService
 	logger             *logger.Logger
 }
 
-func NewPageService(pageRepo page.PageRepository, pageHistoryService history.PageHistoryService, logger *logger.Logger) PageService {
+func NewPageService(pageRepo page.PageRepository, pageHistoryService history.PageHistoryService, diffService diff.DiffService, screenshotService screenshot.ScreenshotService, logger *logger.Logger) PageService {
 	return &pageService{
 		pageRepo:           pageRepo,
 		pageHistoryService: pageHistoryService,
+		diffService:        diffService,
+		screenshotService:  screenshotService,
 		logger:             logger,
 	}
 }
@@ -106,6 +113,33 @@ func (ps *pageService) ListCompetitorPages(ctx context.Context, competitorID uui
 
 func (ps *pageService) ListActivePages(ctx context.Context, batchSize int, lastPageID *uuid.UUID) (<-chan []models.Page, <-chan error) {
 	return nil, nil
+}
+
+func (ps *pageService) RefreshPage(ctx context.Context, pageID uuid.UUID) error {
+	urlContext, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	page, err := ps.pageRepo.GetPageByPageID(ctx, pageID)
+	if err != nil {
+		return err
+	}
+
+	_, currentHTMLContentResp, err := ps.screenshotService.Refresh(urlContext, page.URL, page.CaptureProfile)
+	if err != nil {
+		return err
+	}
+
+	_, previousHtmlContentResp, err := ps.screenshotService.Retrieve(ctx, page.URL)
+	if err != nil {
+		return err
+	}
+
+	diff, err := ps.diffService.Compare(ctx, previousHtmlContentResp, currentHTMLContentResp, page.DiffProfile)
+	if err != nil {
+		return err
+	}
+
+	return ps.pageHistoryService.CreatePageHistory(ctx, pageID, diff)
 }
 
 func (ps *pageService) RemovePage(ctx context.Context, competitorIDs []uuid.UUID, pageIDs []uuid.UUID) error {

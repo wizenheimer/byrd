@@ -82,8 +82,8 @@ func initializer(cfg *config.Config, tm *transaction.TxManager, logger *logger.L
 
 	// Initialize services
 	// Services are responsible for setting transaction boundaries
-	historyService := history_svc.NewPageHistoryService(historyRepo, screenshotService, diffService, logger)
-	pageService := page_svc.NewPageService(pageRepo, historyService, logger)
+	historyService := history_svc.NewPageHistoryService(historyRepo, logger)
+	pageService := page_svc.NewPageService(pageRepo, historyService, diffService, screenshotService, logger)
 	competitorService := competitor_svc.NewCompetitorService(competitorRepo, pageService, tm, logger)
 	userService := user_svc.NewUserService(userRepo, logger)
 	workspaceService := workspace_svc.NewWorkspaceService(workspaceRepo, competitorService, userService, tm, logger)
