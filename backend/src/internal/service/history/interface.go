@@ -3,7 +3,6 @@ package history
 
 import (
 	"context"
-	"errors"
 
 	"github.com/google/uuid"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
@@ -30,9 +29,3 @@ type PageHistoryService interface {
 	// ClearPageHistory clears the history of a page.
 	ClearPageHistory(ctx context.Context, pageIDs []uuid.UUID) error
 }
-
-var (
-	ErrFailedToCreatePageHistory = errors.New("failed to create page history")
-	ErrFailedToListPageHistory   = errors.New("failed to list page history")
-	ErrFailedToClearPageHistory  = errors.New("failed to clear page history")
-)
