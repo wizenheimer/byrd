@@ -19,6 +19,21 @@ func NewUserHandler(userService user.UserService, logger *logger.Logger) *UserHa
 	}
 }
 
+func (uh *UserHandler) GetAccount(c *fiber.Ctx) error {
+	clerkUser, err := getClerkUserFromContext(c)
+	if err != nil {
+		return sendErrorResponse(c, fiber.StatusUnauthorized, "Couldn't get user from context", err.Error())
+	}
+
+	ctx := c.Context()
+	user, err := uh.userService.GetUserByClerkCredentials(ctx, clerkUser)
+	if err != nil {
+		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not get user", err)
+	}
+
+	return sendDataResponse(c, fiber.StatusOK, "User retrieved successfully", user)
+}
+
 func (uh *UserHandler) DeleteAccount(c *fiber.Ctx) error {
 	clerkUser, err := getClerkUserFromContext(c)
 	if err != nil {

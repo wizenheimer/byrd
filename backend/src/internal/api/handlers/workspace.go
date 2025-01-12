@@ -2,9 +2,12 @@
 package handlers
 
 import (
+	"strings"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	api "github.com/wizenheimer/byrd/src/internal/models/api"
+	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/internal/service/workspace"
 	"github.com/wizenheimer/byrd/src/internal/transaction"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
@@ -46,7 +49,7 @@ func (wh *WorkspaceHandler) CreateWorkspace(c *fiber.Ctx) error {
 	}
 
 	ctx := c.Context()
-	workspace, err := wh.workspaceService.CreateWorkspace(ctx, clerkUser, req)
+	workspace, err := wh.workspaceService.CreateWorkspace(ctx, clerkUser, req.Pages, req.Users)
 	if err != nil {
 		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not create workspace", err)
 	}
@@ -185,13 +188,35 @@ func (wh *WorkspaceHandler) ListWorkspaceUsers(c *fiber.Ctx) error {
 		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid workspace ID format", err.Error())
 	}
 
-	params := api.WorkspaceMembersListingParams{
-		IncludeMembers: c.QueryBool("includeMembers", true),
-		IncludeAdmins:  c.QueryBool("includeAdmins", true),
+	pageNumber := c.QueryInt("pageNumber", 10)
+	pageSize := c.QueryInt("pageSize", 0)
+
+	pagination := api.PaginationParams{
+		Page:     pageNumber,
+		PageSize: pageSize,
+	}
+
+	limits := pagination.GetLimit()
+	offsets := pagination.GetOffset()
+
+	roleFilterString := strings.ToLower(c.Query("role", "user"))
+
+	var roleFilter models.WorkspaceRole
+	switch roleFilterString {
+	case "admin":
+		roleFilter = models.RoleAdmin
+	case "user":
+		roleFilter = models.RoleUser
+	case "":
+		wh.logger.Debug("Empty role filter, defaulting to user")
+		roleFilter = models.RoleUser
+	default:
+		wh.logger.Debug("Invalid role filter, defaulting to user")
+		roleFilter = models.RoleUser
 	}
 
 	ctx := c.Context()
-	users, err := wh.workspaceService.ListWorkspaceMembers(ctx, workspaceID, params)
+	users, err := wh.workspaceService.ListWorkspaceMembers(ctx, workspaceID, &limits, &offsets, &roleFilter)
 	if err != nil {
 		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not list workspace users", err)
 	}
@@ -206,12 +231,12 @@ func (wh *WorkspaceHandler) AddUserToWorkspace(c *fiber.Ctx) error {
 		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid workspace ID format", err.Error())
 	}
 
-	var reqs []api.InviteUserToWorkspaceRequest
-	if err := c.BodyParser(&reqs); err != nil {
+	var users api.AddUsersToWorkspaceRequest
+	if err := c.BodyParser(&users); err != nil {
 		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 
-	err = utils.SetDefaultsAndValidateArray(&reqs)
+	err = utils.SetDefaultsAndValidateArray(&users)
 	if err != nil {
 		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
@@ -223,7 +248,7 @@ func (wh *WorkspaceHandler) AddUserToWorkspace(c *fiber.Ctx) error {
 
 	ctx := c.Context()
 
-	responses, err := wh.workspaceService.InviteUsersToWorkspace(ctx, clerkUser, workspaceID, reqs)
+	responses, err := wh.workspaceService.AddUsersToWorkspace(ctx, clerkUser, workspaceID, users.Emails)
 	if err != nil {
 		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not invite users to workspace", err)
 	}
@@ -293,7 +318,7 @@ func (wh *WorkspaceHandler) CreateCompetitorForWorkspace(c *fiber.Ctx) error {
 		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid workspace ID format", err.Error())
 	}
 
-	var req api.CreatePageRequest
+	var req []api.CreatePageRequest
 	if err := c.BodyParser(&req); err != nil {
 		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
@@ -302,19 +327,13 @@ func (wh *WorkspaceHandler) CreateCompetitorForWorkspace(c *fiber.Ctx) error {
 		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 
-	clerkUser, err := getClerkUserFromContext(c)
-	if err != nil {
-		return sendErrorResponse(c, fiber.StatusUnauthorized, "Unauthorized", err.Error())
-	}
-
 	ctx := c.Context()
-	if err := wh.workspaceService.CreateWorkspaceCompetitor(ctx, clerkUser, workspaceID, req); err != nil {
+	competitor, err := wh.workspaceService.AddCompetitorToWorkspace(ctx, workspaceID, req)
+	if err != nil {
 		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not create competitor", err)
 	}
 
-	return sendDataResponse(c, fiber.StatusCreated, "Created competitor successfully", map[string]any{
-		"url": req.URL,
-	})
+	return sendDataResponse(c, fiber.StatusCreated, "Created competitor successfully", competitor)
 }
 
 // AddPageToCompetitor adds a page to a competitor
@@ -333,13 +352,8 @@ func (wh *WorkspaceHandler) AddPageToCompetitor(c *fiber.Ctx) error {
 		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 
-	clerkUser, err := getClerkUserFromContext(c)
-	if err != nil {
-		return sendErrorResponse(c, fiber.StatusUnauthorized, "Unauthorized", err.Error())
-	}
-
 	ctx := c.Context()
-	createdPages, err := wh.workspaceService.AddPageToCompetitor(ctx, clerkUser, competitorID.String(), pages)
+	createdPages, err := wh.workspaceService.AddPageToCompetitor(ctx, competitorID, pages)
 	if err != nil {
 		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not add page to competitor", err)
 	}
@@ -354,39 +368,34 @@ func (wh *WorkspaceHandler) ListWorkspaceCompetitors(c *fiber.Ctx) error {
 		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid workspace ID format", err.Error())
 	}
 
-	clerkUser, err := getClerkUserFromContext(c)
-	if err != nil {
-		return sendErrorResponse(c, fiber.StatusUnauthorized, "Unauthorized", err.Error())
-	}
-
-	limit := c.QueryInt("limit", 10)
-	offset := c.QueryInt("offset", 0)
-
-	pageNumber := offset/limit + 1
-	pageSize := limit
+	pageNumber := c.QueryInt("pageNumber", 10)
+	pageSize := c.QueryInt("pageSize", 0)
 
 	params := api.PaginationParams{
 		Page:     pageNumber,
 		PageSize: pageSize,
 	}
 
+	limit := params.GetLimit()
+	offset := params.GetOffset()
+
 	ctx := c.Context()
-	response, err := wh.workspaceService.ListWorkspaceCompetitors(ctx, clerkUser, workspaceID, params)
+	competitors, err := wh.workspaceService.ListCompetitorsForWorkspace(ctx, workspaceID, &limit, &offset)
 	if err != nil {
 		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not list workspace competitors", err)
 	}
 
-	return sendDataResponse(c, fiber.StatusOK, "Listed workspace competitors successfully", response)
+	return sendDataResponse(c, fiber.StatusOK, "Listed workspace competitors successfully", competitors)
 }
 
 // ListPageHistory lists page history
 func (wh *WorkspaceHandler) ListPageHistory(c *fiber.Ctx) error {
-	workspaceID, err := uuid.Parse(c.Params("workspaceID"))
+	_, err := uuid.Parse(c.Params("workspaceID"))
 	if err != nil {
 		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid workspace ID format", err.Error())
 	}
 
-	competitorID, err := uuid.Parse(c.Params("competitorID"))
+	_, err = uuid.Parse(c.Params("competitorID"))
 	if err != nil {
 		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid competitor ID format", err.Error())
 	}
@@ -394,11 +403,6 @@ func (wh *WorkspaceHandler) ListPageHistory(c *fiber.Ctx) error {
 	pageID, err := uuid.Parse(c.Params("pageID"))
 	if err != nil {
 		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid page ID format", err.Error())
-	}
-
-	clerkUser, err := getClerkUserFromContext(c)
-	if err != nil {
-		return sendErrorResponse(c, fiber.StatusUnauthorized, "Unauthorized", err.Error())
 	}
 
 	pageNumber := c.QueryInt("pageNumber", 10)
@@ -409,8 +413,11 @@ func (wh *WorkspaceHandler) ListPageHistory(c *fiber.Ctx) error {
 		PageSize: pageSize,
 	}
 
+	limit := params.GetLimit()
+	offset := params.GetOffset()
+
 	ctx := c.Context()
-	history, err := wh.workspaceService.ListWorkspacePageHistory(ctx, clerkUser, workspaceID, competitorID, pageID, params)
+	history, err := wh.workspaceService.ListHistoryForPage(ctx, pageID, &limit, &offset)
 	if err != nil {
 		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not list page history", err)
 	}
@@ -430,13 +437,8 @@ func (wh *WorkspaceHandler) RemovePageFromCompetitor(c *fiber.Ctx) error {
 		return sendErrorResponse(c, fiber.StatusBadRequest, "InvalidPageID", err.Error())
 	}
 
-	clerkUser, err := getClerkUserFromContext(c)
-	if err != nil {
-		return sendErrorResponse(c, fiber.StatusUnauthorized, "Unauthorized", err.Error())
-	}
-
 	ctx := c.Context()
-	if err := wh.workspaceService.RemovePageFromWorkspace(ctx, clerkUser, competitorID, pageID); err != nil {
+	if err := wh.workspaceService.RemovePageFromWorkspace(ctx, competitorID, pageID); err != nil {
 		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not remove page from competitor", err)
 	}
 
@@ -455,13 +457,8 @@ func (wh *WorkspaceHandler) RemoveCompetitorFromWorkspace(c *fiber.Ctx) error {
 		return sendErrorResponse(c, fiber.StatusBadRequest, "InvalidCompetitorID", err.Error())
 	}
 
-	clerkUser, err := getClerkUserFromContext(c)
-	if err != nil {
-		return sendErrorResponse(c, fiber.StatusUnauthorized, "Unauthorized", err.Error())
-	}
-
 	ctx := c.Context()
-	if err := wh.workspaceService.RemoveCompetitorFromWorkspace(ctx, clerkUser, workspaceID, competitorID); err != nil {
+	if err := wh.workspaceService.RemoveCompetitorFromWorkspace(ctx, workspaceID, competitorID); err != nil {
 		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not remove competitor from workspace", err)
 	}
 
@@ -490,9 +487,10 @@ func (wh *WorkspaceHandler) UpdatePageInCompetitor(c *fiber.Ctx) error {
 	}
 
 	ctx := c.Context()
-	if err := wh.workspaceService.UpdateCompetitorPage(ctx, competitorID, pageID, req); err != nil {
+	page, err := wh.workspaceService.UpdateCompetitorPage(ctx, competitorID, pageID, req)
+	if err != nil {
 		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not update page in competitor", err)
 	}
 
-	return sendDataResponse(c, fiber.StatusOK, "Updated page in competitor successfully", nil)
+	return sendDataResponse(c, fiber.StatusOK, "Updated page in competitor successfully", page)
 }
