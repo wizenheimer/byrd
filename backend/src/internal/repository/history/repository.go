@@ -21,8 +21,8 @@ func NewPageHistoryRepository(tm *transaction.TxManager, logger *logger.Logger) 
 	}
 }
 
-func (r *historyRepo) CreateHistoryForPage(ctx context.Context, pageID uuid.UUID, pageHistory models.PageHistory) (bool, error) {
-	return false, nil
+func (r *historyRepo) CreateHistoryForPage(ctx context.Context, pageID uuid.UUID, diffContent any) error {
+	return nil
 }
 
 func (r *historyRepo) BatchGetPageHistory(ctx context.Context, pageID uuid.UUID, limit, offset *int) ([]models.PageHistory, error) {

@@ -9,7 +9,6 @@ import (
 
 // PageRepository is the interface that provides page operations
 // This is used to interact with the page repository
-
 type PageRepository interface {
 	AddPageToCompetitor(ctx context.Context, competitorID uuid.UUID, page models.PageProps) (*models.Page, error)
 
@@ -27,7 +26,7 @@ type PageRepository interface {
 
 	UpdateCompetitorCaptureProfile(ctx context.Context, competitorID, pageID uuid.UUID, captureProfile *models.ScreenshotRequestOptions, url string) (*models.Page, error)
 
-	UpdateCompetitorDiffProfile(ctx context.Context, competitorID, pageID uuid.UUID, diffProfile map[string]any) (*models.Page, error)
+	UpdateCompetitorDiffProfile(ctx context.Context, competitorID, pageID uuid.UUID, diffProfile []string) (*models.Page, error)
 
 	UpdateCompetitorURL(ctx context.Context, competitorID, pageID uuid.UUID, url string) (*models.Page, error)
 
@@ -40,4 +39,6 @@ type PageRepository interface {
 	BatchDeleteAllCompetitorPages(ctx context.Context, competitorIDs []uuid.UUID) error
 
 	GetActivePages(ctx context.Context, batchSize int, lastPageID *uuid.UUID) (models.ActivePageBatch, error)
+
+	GetPageByPageID(ctx context.Context, pageID uuid.UUID) (*models.Page, error)
 }

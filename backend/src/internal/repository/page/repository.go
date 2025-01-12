@@ -53,7 +53,7 @@ func (r *pageRepo) UpdateCompetitorCaptureProfile(ctx context.Context, competito
 	return nil, nil
 }
 
-func (r *pageRepo) UpdateCompetitorDiffProfile(ctx context.Context, competitorID, pageID uuid.UUID, diffProfile map[string]any) (*models.Page, error) {
+func (r *pageRepo) UpdateCompetitorDiffProfile(ctx context.Context, competitorID, pageID uuid.UUID, diffProfile []string) (*models.Page, error) {
 	return nil, nil
 }
 
@@ -79,4 +79,8 @@ func (r *pageRepo) BatchDeleteAllCompetitorPages(ctx context.Context, competitor
 
 func (r *pageRepo) GetActivePages(ctx context.Context, batchSize int, lastPageID *uuid.UUID) (models.ActivePageBatch, error) {
 	return models.ActivePageBatch{}, nil
+}
+
+func (r *pageRepo) GetPageByPageID(ctx context.Context, pageID uuid.UUID) (*models.Page, error) {
+	return nil, nil
 }
