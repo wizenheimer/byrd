@@ -33,7 +33,7 @@ type Page struct {
 	CaptureProfile ScreenshotRequestOptions `json:"capture_profile"`
 
 	// DiffProfile is the profile used to diff the page
-	DiffProfile []string `json:"diff_profile"`
+	DiffProfile []string `json:"diff_profile" default:"[\"branding\", \"customers\", \"integration\", \"product\", \"pricing\", \"partnerships\", \"messaging\"]"`
 
 	// LastCheckedAt is the time the page was last checked
 	// this is updated after every check
@@ -73,5 +73,5 @@ type PageProps struct {
 
 	// DiffProfile is the profile used to diff the page
 	// This is optional and defaults to an default diff profile
-	DiffProfile []string `json:"diff_profile"`
+	DiffProfile []string `json:"diff_profile" default:"[\"branding\", \"customers\", \"integration\", \"product\", \"pricing\", \"partnerships\", \"messaging\"]"`
 }
