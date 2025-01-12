@@ -37,8 +37,8 @@ func (r *competitorRepo) BatchGetCompetitorsForWorkspace(ctx context.Context, wo
 	return nil, nil
 }
 
-func (r *competitorRepo) ListCompetitorsForWorkspace(ctx context.Context, workspaceID uuid.UUID, limit, offset *int) ([]models.Competitor, error) {
-	return nil, nil
+func (r *competitorRepo) ListCompetitorsForWorkspace(ctx context.Context, workspaceID uuid.UUID, limit, offset *int) ([]models.Competitor, bool, error) {
+	return nil, false, nil
 }
 
 func (r *competitorRepo) UpdateCompetitorForWorkspace(ctx context.Context, workspaceID, competitorID uuid.UUID, competitorName string) (*models.Competitor, error) {

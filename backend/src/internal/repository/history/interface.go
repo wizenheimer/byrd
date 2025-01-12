@@ -13,7 +13,7 @@ import (
 type PageHistoryRepository interface {
 	CreateHistoryForPage(ctx context.Context, pageID uuid.UUID, diffContent any) error
 
-	BatchGetPageHistory(ctx context.Context, pageID uuid.UUID, limit, offset *int) ([]models.PageHistory, error)
+	BatchGetPageHistory(ctx context.Context, pageID uuid.UUID, limit, offset *int) ([]models.PageHistory, bool, error)
 
 	BatchRemovePageHistory(ctx context.Context, pageIDs []uuid.UUID) error
 }

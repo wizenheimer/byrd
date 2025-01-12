@@ -37,8 +37,8 @@ func (r *workspaceRepo) BatchGetWorkspacesByIDs(ctx context.Context, workspaceID
 	return nil, nil
 }
 
-func (r *workspaceRepo) ListWorkspaceMembers(ctx context.Context, workspaceID uuid.UUID, limit, offset *int, workspaceRole *models.WorkspaceRole) ([]models.PartialWorkspaceUser, error) {
-	return nil, nil
+func (r *workspaceRepo) ListWorkspaceMembers(ctx context.Context, workspaceID uuid.UUID, limit, offset *int, workspaceRole *models.WorkspaceRole) ([]models.PartialWorkspaceUser, bool, error) {
+	return nil, false, nil
 }
 
 func (r *workspaceRepo) GetWorkspaceMemberByUserID(ctx context.Context, workspaceID, userID uuid.UUID) (*models.PartialWorkspaceUser, error) {

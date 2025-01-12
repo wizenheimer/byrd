@@ -192,10 +192,10 @@ func (ws *workspaceService) DeleteWorkspace(ctx context.Context, workspaceID uui
 	return models.WorkspaceInactive, nil
 }
 
-func (ws *workspaceService) ListWorkspaceMembers(ctx context.Context, workspaceID uuid.UUID, limit, offset *int, roleFilter *models.WorkspaceRole) ([]models.WorkspaceUser, error) {
-	members, err := ws.workspaceRepo.ListWorkspaceMembers(ctx, workspaceID, limit, offset, roleFilter)
+func (ws *workspaceService) ListWorkspaceMembers(ctx context.Context, workspaceID uuid.UUID, limit, offset *int, roleFilter *models.WorkspaceRole) ([]models.WorkspaceUser, bool, error) {
+	members, hasMore, err := ws.workspaceRepo.ListWorkspaceMembers(ctx, workspaceID, limit, offset, roleFilter)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	membersIDs := make([]uuid.UUID, 0)
@@ -205,7 +205,7 @@ func (ws *workspaceService) ListWorkspaceMembers(ctx context.Context, workspaceI
 
 	users, err := ws.userService.ListUsersByUserIDs(ctx, membersIDs)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	userIDToUserMap := make(map[uuid.UUID]models.User)
 	for _, user := range users {
@@ -229,7 +229,7 @@ func (ws *workspaceService) ListWorkspaceMembers(ctx context.Context, workspaceI
 		workspaceUsers = append(workspaceUsers, workspaceUser)
 	}
 
-	return workspaceUsers, nil
+	return workspaceUsers, hasMore, nil
 }
 
 func (ws *workspaceService) AddUsersToWorkspace(ctx context.Context, workspaceMember *clerk.User, workspaceID uuid.UUID, emails []string) ([]models.WorkspaceUser, error) {
@@ -431,33 +431,33 @@ func (ws *workspaceService) AddPageToCompetitor(ctx context.Context, competitorI
 	return createdPages, nil
 }
 
-func (ws *workspaceService) ListCompetitorsForWorkspace(ctx context.Context, workspaceID uuid.UUID, limit, offset *int) ([]models.Competitor, error) {
-	competitors, err := ws.competitorService.ListCompetitorsForWorkspace(ctx, workspaceID, limit, offset)
+func (ws *workspaceService) ListCompetitorsForWorkspace(ctx context.Context, workspaceID uuid.UUID, limit, offset *int) ([]models.Competitor, bool, error) {
+	competitors, hasMore, err := ws.competitorService.ListCompetitorsForWorkspace(ctx, workspaceID, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
-	return competitors, nil
+	return competitors, hasMore, nil
 }
 
 // ListPagesForCompetitor lists the pages for a competitor
-func (ws *workspaceService) ListPagesForCompetitor(ctx context.Context, workspaceID, competitorID uuid.UUID, limit, offset *int) ([]models.Page, error) {
-	pages, err := ws.competitorService.ListCompetitorPages(ctx, competitorID, limit, offset)
+func (ws *workspaceService) ListPagesForCompetitor(ctx context.Context, workspaceID, competitorID uuid.UUID, limit, offset *int) ([]models.Page, bool, error) {
+	pages, hasMore, err := ws.competitorService.ListCompetitorPages(ctx, competitorID, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, hasMore, err
 	}
 
-	return pages, nil
+	return pages, hasMore, nil
 }
 
 // ListHistoryForPage lists the history of a page
-func (ws *workspaceService) ListHistoryForPage(ctx context.Context, pageID uuid.UUID, limit, offset *int) ([]models.PageHistory, error) {
-	pageHistory, err := ws.competitorService.ListPageHistory(ctx, pageID, limit, offset)
+func (ws *workspaceService) ListHistoryForPage(ctx context.Context, pageID uuid.UUID, limit, offset *int) ([]models.PageHistory, bool, error) {
+	pageHistory, hasMore, err := ws.competitorService.ListPageHistory(ctx, pageID, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, hasMore, err
 	}
 
-	return pageHistory, nil
+	return pageHistory, hasMore, nil
 }
 
 func (ws *workspaceService) RemovePageFromWorkspace(ctx context.Context, competitorID, pageID uuid.UUID) error {

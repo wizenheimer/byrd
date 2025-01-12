@@ -33,12 +33,12 @@ func (r *pageRepo) GetCompetitorPageByID(ctx context.Context, competitorID, page
 	return nil, nil
 }
 
-func (r *pageRepo) BatchGetCompetitorPagesByIDs(ctx context.Context, competitorID uuid.UUID, pageIDs []uuid.UUID, limit, offset *int) ([]models.Page, error) {
-	return nil, nil
+func (r *pageRepo) BatchGetCompetitorPagesByIDs(ctx context.Context, competitorID uuid.UUID, pageIDs []uuid.UUID, limit, offset *int) ([]models.Page, bool, error) {
+	return nil, false, nil
 }
 
-func (r *pageRepo) GetCompetitorPages(ctx context.Context, competitorID uuid.UUID, limit, offset *int) ([]models.Page, error) {
-	return nil, nil
+func (r *pageRepo) GetCompetitorPages(ctx context.Context, competitorID uuid.UUID, limit, offset *int) ([]models.Page, bool, error) {
+	return nil, false, nil
 }
 
 func (r *pageRepo) UpdateCompetitorPage(ctx context.Context, competitorID, pageID uuid.UUID, page models.PageProps) (*models.Page, error) {

@@ -216,12 +216,15 @@ func (wh *WorkspaceHandler) ListWorkspaceUsers(c *fiber.Ctx) error {
 	}
 
 	ctx := c.Context()
-	users, err := wh.workspaceService.ListWorkspaceMembers(ctx, workspaceID, &limits, &offsets, &roleFilter)
+	users, hasMore, err := wh.workspaceService.ListWorkspaceMembers(ctx, workspaceID, &limits, &offsets, &roleFilter)
 	if err != nil {
 		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not list workspace users", err)
 	}
 
-	return sendDataResponse(c, fiber.StatusOK, "Listed workspace users successfully", users)
+	return sendDataResponse(c, fiber.StatusOK, "Listed workspace users successfully", map[string]any{
+		"users":   users,
+		"hasMore": hasMore,
+	})
 }
 
 // AddUserToWorkspace adds a user to a workspace
@@ -380,12 +383,15 @@ func (wh *WorkspaceHandler) ListWorkspaceCompetitors(c *fiber.Ctx) error {
 	offset := params.GetOffset()
 
 	ctx := c.Context()
-	competitors, err := wh.workspaceService.ListCompetitorsForWorkspace(ctx, workspaceID, &limit, &offset)
+	competitors, hasMore, err := wh.workspaceService.ListCompetitorsForWorkspace(ctx, workspaceID, &limit, &offset)
 	if err != nil {
 		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not list workspace competitors", err)
 	}
 
-	return sendDataResponse(c, fiber.StatusOK, "Listed workspace competitors successfully", competitors)
+	return sendDataResponse(c, fiber.StatusOK, "Listed workspace competitors successfully", map[string]any{
+		"competitors": competitors,
+		"hasMore":     hasMore,
+	})
 }
 
 // ListPageHistory lists page history
@@ -417,12 +423,15 @@ func (wh *WorkspaceHandler) ListPageHistory(c *fiber.Ctx) error {
 	offset := params.GetOffset()
 
 	ctx := c.Context()
-	history, err := wh.workspaceService.ListHistoryForPage(ctx, pageID, &limit, &offset)
+	history, hasMore, err := wh.workspaceService.ListHistoryForPage(ctx, pageID, &limit, &offset)
 	if err != nil {
 		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not list page history", err)
 	}
 
-	return sendDataResponse(c, fiber.StatusOK, "Listed page history successfully", history)
+	return sendDataResponse(c, fiber.StatusOK, "Listed page history successfully", map[string]any{
+		"history": history,
+		"hasMore": hasMore,
+	})
 }
 
 // RemovePageFromCompetitor removes a page from a competitor

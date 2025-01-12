@@ -76,7 +76,7 @@ func (ps *pageService) GetPage(ctx context.Context, competitorID uuid.UUID, page
 	return ps.pageRepo.GetCompetitorPageByID(ctx, competitorID, pageID)
 }
 
-func (ps *pageService) ListPageHistory(ctx context.Context, pageID uuid.UUID, limit, offset *int) ([]models.PageHistory, error) {
+func (ps *pageService) ListPageHistory(ctx context.Context, pageID uuid.UUID, limit, offset *int) ([]models.PageHistory, bool, error) {
 	return ps.pageHistoryService.ListPageHistory(ctx, pageID, limit, offset)
 }
 
@@ -107,7 +107,7 @@ func (ps *pageService) UpdatePage(ctx context.Context, competitorID uuid.UUID, p
 	return updatedPage, nil
 }
 
-func (ps *pageService) ListCompetitorPages(ctx context.Context, competitorID uuid.UUID, limit, offset *int) ([]models.Page, error) {
+func (ps *pageService) ListCompetitorPages(ctx context.Context, competitorID uuid.UUID, limit, offset *int) ([]models.Page, bool, error) {
 	return ps.pageRepo.GetCompetitorPages(ctx, competitorID, limit, offset)
 }
 

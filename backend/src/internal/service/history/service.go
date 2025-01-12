@@ -35,7 +35,7 @@ func (ph *pageHistoryService) CreatePageHistory(ctx context.Context, pageID uuid
 
 // ListPageHistory lists the history of a page, paginated by pageHistoryPaginationParam
 // This is triggered when a user wants to list all page histories of a page
-func (ph *pageHistoryService) ListPageHistory(ctx context.Context, pageID uuid.UUID, limit, offset *int) ([]models.PageHistory, error) {
+func (ph *pageHistoryService) ListPageHistory(ctx context.Context, pageID uuid.UUID, limit, offset *int) ([]models.PageHistory, bool, error) {
 	return ph.pageHistoryRepo.BatchGetPageHistory(ctx, pageID, limit, offset)
 }
 

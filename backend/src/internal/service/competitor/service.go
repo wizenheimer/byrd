@@ -102,7 +102,7 @@ func (cs *competitorService) GetCompetitorForWorkspace(ctx context.Context, work
 	)
 }
 
-func (cs *competitorService) ListCompetitorsForWorkspace(ctx context.Context, workspaceID uuid.UUID, limit, offset *int) ([]models.Competitor, error) {
+func (cs *competitorService) ListCompetitorsForWorkspace(ctx context.Context, workspaceID uuid.UUID, limit, offset *int) ([]models.Competitor, bool, error) {
 	return cs.competitorRepository.ListCompetitorsForWorkspace(
 		ctx,
 		workspaceID,
@@ -212,7 +212,7 @@ func (cs *competitorService) RemovePagesFromCompetitor(ctx context.Context, comp
 	)
 }
 
-func (cs *competitorService) ListCompetitorPages(ctx context.Context, competitorID uuid.UUID, limit, offset *int) ([]models.Page, error) {
+func (cs *competitorService) ListCompetitorPages(ctx context.Context, competitorID uuid.UUID, limit, offset *int) ([]models.Page, bool, error) {
 	return cs.pageService.ListCompetitorPages(
 		ctx,
 		competitorID,
@@ -221,7 +221,7 @@ func (cs *competitorService) ListCompetitorPages(ctx context.Context, competitor
 	)
 }
 
-func (cs *competitorService) ListPageHistory(ctx context.Context, pageID uuid.UUID, limit, offset *int) ([]models.PageHistory, error) {
+func (cs *competitorService) ListPageHistory(ctx context.Context, pageID uuid.UUID, limit, offset *int) ([]models.PageHistory, bool, error) {
 	return cs.pageService.ListPageHistory(
 		ctx,
 		pageID,
