@@ -55,8 +55,8 @@ func NewTxManager(pool *pgxpool.Pool, logger *logger.Logger) *TxManager {
 		pool:   pool,
 		logger: logger.WithFields(map[string]interface{}{"module": "transaction_manager"}),
 	}
-    tm.logger.Debug("created a new transaction manager")
-    return &tm
+	tm.logger.Debug("created a new transaction manager")
+	return &tm
 }
 
 // GetTx retrieves an existing transaction from context
@@ -78,7 +78,7 @@ func MustGetTx(ctx context.Context) pgx.Tx {
 
 // GetPool returns the underlying connection pool
 func (tm *TxManager) GetPool() *pgxpool.Pool {
-    tm.logger.Debug("getting pool for making query")
+	tm.logger.Debug("getting pool for making query")
 	return tm.pool
 }
 
@@ -89,10 +89,10 @@ func (tm *TxManager) GetQuerier(ctx context.Context) interface {
 	QueryRow(context.Context, string, ...interface{}) pgx.Row
 } {
 	if tx, ok := GetTx(ctx); ok {
-        tm.logger.Debug("transaction querier found in context, using it for making query")
+		tm.logger.Debug("transaction querier found in context, using it for making query")
 		return tx
 	}
-    tm.logger.Debug("using pool for making query")
+	tm.logger.Debug("using pool for making query")
 	return tm.pool
 }
 
@@ -101,7 +101,7 @@ func (tm *TxManager) GetQuerier(ctx context.Context) interface {
 func (tm *TxManager) RunInTx(ctx context.Context, opts *TxOptions, fn func(context.Context) error) error {
 	// Use default options if none provided
 	if opts == nil {
-        tm.logger.Debug("using default transaction options")
+		tm.logger.Debug("using default transaction options")
 		opts = &DefaultTxOptions
 	}
 

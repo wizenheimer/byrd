@@ -75,17 +75,17 @@ func (ps *pageService) CreatePage(ctx context.Context, competitorID uuid.UUID, p
 }
 
 func (ps *pageService) GetPage(ctx context.Context, competitorID uuid.UUID, pageID uuid.UUID) (*models.Page, error) {
-    ps.logger.Debug("getting page", zap.Any("competitorID", competitorID), zap.Any("pageID", pageID))
+	ps.logger.Debug("getting page", zap.Any("competitorID", competitorID), zap.Any("pageID", pageID))
 	return ps.pageRepo.GetCompetitorPageByID(ctx, competitorID, pageID)
 }
 
 func (ps *pageService) ListPageHistory(ctx context.Context, pageID uuid.UUID, limit, offset *int) ([]models.PageHistory, bool, error) {
-    ps.logger.Debug("listing page history", zap.Any("pageID", pageID), zap.Any("limit", limit), zap.Any("offset", offset))
+	ps.logger.Debug("listing page history", zap.Any("pageID", pageID), zap.Any("limit", limit), zap.Any("offset", offset))
 	return ps.pageHistoryService.ListPageHistory(ctx, pageID, limit, offset)
 }
 
 func (ps *pageService) UpdatePage(ctx context.Context, competitorID uuid.UUID, pageID uuid.UUID, page models.PageProps) (*models.Page, error) {
-    ps.logger.Debug("updating page", zap.Any("competitorID", competitorID), zap.Any("pageID", pageID), zap.Any("page", page))
+	ps.logger.Debug("updating page", zap.Any("competitorID", competitorID), zap.Any("pageID", pageID), zap.Any("page", page))
 	captureProfileRequiresUpdate := page.CaptureProfile != nil || page.URL != ""
 	diffProfileRequiresUpdate := len(page.DiffProfile) > 0
 	urlRequiresUpdate := page.URL != ""
@@ -93,7 +93,7 @@ func (ps *pageService) UpdatePage(ctx context.Context, competitorID uuid.UUID, p
 	var updatedPage *models.Page
 	var err error
 	if captureProfileRequiresUpdate && diffProfileRequiresUpdate && urlRequiresUpdate {
-		ps.pageRepo.UpdateCompetitorPage(ctx, competitorID, pageID, page)
+		updatedPage, err = ps.pageRepo.UpdateCompetitorPage(ctx, competitorID, pageID, page)
 	} else {
 		if captureProfileRequiresUpdate {
 			updatedPage, err = ps.pageRepo.UpdateCompetitorCaptureProfile(ctx, competitorID, pageID, page.CaptureProfile, page.URL)
@@ -113,17 +113,17 @@ func (ps *pageService) UpdatePage(ctx context.Context, competitorID uuid.UUID, p
 }
 
 func (ps *pageService) ListCompetitorPages(ctx context.Context, competitorID uuid.UUID, limit, offset *int) ([]models.Page, bool, error) {
-    ps.logger.Debug("listing competitor pages", zap.Any("competitorID", competitorID), zap.Any("limit", limit), zap.Any("offset", offset))
+	ps.logger.Debug("listing competitor pages", zap.Any("competitorID", competitorID), zap.Any("limit", limit), zap.Any("offset", offset))
 	return ps.pageRepo.GetCompetitorPages(ctx, competitorID, limit, offset)
 }
 
 func (ps *pageService) ListActivePages(ctx context.Context, batchSize int, lastPageID *uuid.UUID) (<-chan []models.Page, <-chan error) {
-    ps.logger.Debug("listing active pages", zap.Any("batchSize", batchSize), zap.Any("lastPageID", lastPageID))
+	ps.logger.Debug("listing active pages", zap.Any("batchSize", batchSize), zap.Any("lastPageID", lastPageID))
 	return nil, nil
 }
 
 func (ps *pageService) RefreshPage(ctx context.Context, pageID uuid.UUID) error {
-    ps.logger.Debug("refreshing page", zap.Any("pageID", pageID))
+	ps.logger.Debug("refreshing page", zap.Any("pageID", pageID))
 	urlContext, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
@@ -151,7 +151,7 @@ func (ps *pageService) RefreshPage(ctx context.Context, pageID uuid.UUID) error 
 }
 
 func (ps *pageService) RemovePage(ctx context.Context, competitorIDs []uuid.UUID, pageIDs []uuid.UUID) error {
-    ps.logger.Debug("removing page", zap.Any("competitorIDs", competitorIDs), zap.Any("pageIDs", pageIDs))
+	ps.logger.Debug("removing page", zap.Any("competitorIDs", competitorIDs), zap.Any("pageIDs", pageIDs))
 	if competitorIDs == nil {
 		return errors.New("non-fatal: competitorIDs unspecified for removing pages")
 	}
@@ -181,7 +181,7 @@ func (ps *pageService) RemovePage(ctx context.Context, competitorIDs []uuid.UUID
 }
 
 func (ps *pageService) PageExists(ctx context.Context, competitorID, pageID uuid.UUID) (bool, error) {
-    ps.logger.Debug("checking if page exists", zap.Any("competitorID", competitorID), zap.Any("pageID", pageID))
+	ps.logger.Debug("checking if page exists", zap.Any("competitorID", competitorID), zap.Any("pageID", pageID))
 	page, err := ps.pageRepo.GetCompetitorPageByID(ctx, competitorID, pageID)
 	if err != nil {
 		return false, err

@@ -37,7 +37,7 @@ func NewWorkspaceService(workspaceRepo workspace.WorkspaceRepository, competitor
 }
 
 func (ws *workspaceService) CreateWorkspace(ctx context.Context, workspaceOwner *clerk.User, pages []models.PageProps, users []models.UserProps) (*models.Workspace, error) {
-    ws.logger.Debug("creating workspace", zap.Any("workspaceOwner", workspaceOwner), zap.Any("pages", pages), zap.Any("users", users))
+	ws.logger.Debug("creating workspace", zap.Any("workspaceOwner", workspaceOwner), zap.Any("pages", pages), zap.Any("users", users))
 	// Step 0: Create workspace along with the owner
 	var workspace *models.Workspace
 	if err := ws.tm.RunInTx(context.Background(), nil, func(ctx context.Context) error {
@@ -113,7 +113,7 @@ func (ws *workspaceService) CreateWorkspace(ctx context.Context, workspaceOwner 
 				memberIDs = append(memberIDs, member.ID)
 			}
 
-			ws.workspaceRepo.BatchAddUsersToWorkspace(ctx, memberIDs, workspace.ID)
+			_, err := ws.workspaceRepo.BatchAddUsersToWorkspace(ctx, memberIDs, workspace.ID)
 			if err != nil {
 				return nil, err
 			}
@@ -124,7 +124,7 @@ func (ws *workspaceService) CreateWorkspace(ctx context.Context, workspaceOwner 
 }
 
 func (ws *workspaceService) ListUserWorkspaces(ctx context.Context, workspaceMember *clerk.User) ([]models.Workspace, error) {
-    ws.logger.Debug("listing user workspaces", zap.Any("workspaceMember", workspaceMember))
+	ws.logger.Debug("listing user workspaces", zap.Any("workspaceMember", workspaceMember))
 	user, err := ws.userService.GetUserByClerkCredentials(ctx, workspaceMember)
 	if err != nil {
 		return nil, err
@@ -140,7 +140,7 @@ func (ws *workspaceService) ListUserWorkspaces(ctx context.Context, workspaceMem
 
 func (ws *workspaceService) GetWorkspace(ctx context.Context, workspaceID uuid.UUID) (*models.Workspace, error) {
 	ws.logger.Debug("getting workspace", zap.Any("workspaceID", workspaceID))
-    workspace, err := ws.workspaceRepo.GetWorkspaceByWorkspaceID(ctx, workspaceID)
+	workspace, err := ws.workspaceRepo.GetWorkspaceByWorkspaceID(ctx, workspaceID)
 	if err != nil {
 		return nil, err
 	}

@@ -84,3 +84,24 @@ type WorkflowState struct {
 	// Checkpoint is the current checkpoint of the workflow
 	Checkpoint models.WorkflowCheckpoint `json:"checkpoint"`
 }
+
+// Parses a string into a WorkflowType
+func ParseWorkflowType(s string) (models.WorkflowType, error) {
+	switch models.WorkflowType(s) {
+	case models.ScreenshotWorkflowType, models.ReportWorkflowType:
+		return models.WorkflowType(s), nil
+	default:
+		return "", fmt.Errorf("invalid workflow type: %s", s)
+	}
+}
+
+// ParseWorkflowStatus converts a string to WorkflowStatus with validation
+func ParseWorkflowStatus(s string) (models.WorkflowStatus, error) {
+	switch models.WorkflowStatus(s) {
+	case models.WorkflowStatusRunning, models.WorkflowStatusCompleted,
+		models.WorkflowStatusFailed, models.WorkflowStatusAborted, models.WorkflowStatusUnknown:
+		return models.WorkflowStatus(s), nil
+	default:
+		return "", fmt.Errorf("invalid workflow status: %s", s)
+	}
+}

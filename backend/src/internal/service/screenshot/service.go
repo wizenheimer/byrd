@@ -62,7 +62,7 @@ func NewScreenshotService(logger *logger.Logger, opts ...ScreenshotServiceOption
 
 // Refresh retrieves the current screenshot and html content for a given URL
 func (s *screenshotService) Refresh(ctx context.Context, url string, opts models.ScreenshotRequestOptions) (*models.ScreenshotImageResponse, *models.ScreenshotHTMLContentResponse, error) {
-    s.logger.Debug("refreshing screenshot", zap.String("url", url), zap.Any("opts", opts))
+	s.logger.Debug("refreshing screenshot", zap.String("url", url), zap.Any("opts", opts))
 	imgResp, err := s.GetCurrentImage(ctx, true, opts)
 	if err != nil {
 		return nil, nil, err
@@ -83,7 +83,7 @@ func (s *screenshotService) Refresh(ctx context.Context, url string, opts models
 
 // Retrieve retrieves the previous screenshot and html content for a given URL
 func (s *screenshotService) Retrieve(ctx context.Context, url string) (*models.ScreenshotImageResponse, *models.ScreenshotHTMLContentResponse, error) {
-    s.logger.Debug("retrieving previous screenshot", zap.String("url", url))
+	s.logger.Debug("retrieving previous screenshot", zap.String("url", url))
 	imgResp, err := s.GetPreviousImage(ctx, url)
 	if err != nil {
 		return nil, nil, err
@@ -100,7 +100,7 @@ func (s *screenshotService) Retrieve(ctx context.Context, url string) (*models.S
 // GetCurrentImage retrieves the current screenshot from the storage if present
 // Or it will take a new screenshot and store it as an image
 func (s *screenshotService) GetCurrentImage(ctx context.Context, save bool, opts models.ScreenshotRequestOptions) (*models.ScreenshotImageResponse, error) {
-    s.logger.Debug("getting current image", zap.Any("opts", opts))
+	s.logger.Debug("getting current image", zap.Any("opts", opts))
 	// Get screenshot if it exists
 	if screenshotResponse, err := s.getExistingScreenshotImage(ctx, opts.URL); err == nil {
 		return screenshotResponse, nil
@@ -141,7 +141,7 @@ func (s *screenshotService) GetCurrentImage(ctx context.Context, save bool, opts
 // GetCurrentHTMLContent retrieves the current html content from the storage if present
 // Or it will take a new screenshot and store it as html
 func (s *screenshotService) GetCurrentHTMLContent(ctx context.Context, save bool, opts models.ScreenshotHTMLRequestOptions) (*models.ScreenshotHTMLContentResponse, error) {
-    s.logger.Debug("getting current html content", zap.Any("opts", opts))
+	s.logger.Debug("getting current html content", zap.Any("opts", opts))
 	// Get screenshot if it exists
 	if htmlContentResp, err := s.getExistingHTMLContent(ctx, opts.RenderedURL); err == nil {
 		return htmlContentResp, nil
@@ -182,7 +182,7 @@ func (s *screenshotService) GetCurrentHTMLContent(ctx context.Context, save bool
 
 // GetPreviousImage retrieves previous screenshot image from the storage
 func (s *screenshotService) GetPreviousImage(ctx context.Context, url string) (*models.ScreenshotImageResponse, error) {
-    s.logger.Debug("getting previous image", zap.String("url", url))
+	s.logger.Debug("getting previous image", zap.String("url", url))
 	screenshotPath, err := utils.GetPreviousScreenshotPath(url)
 	if err != nil {
 		return nil, ErrFailedToGetPreviousScreenshotPath
@@ -198,7 +198,7 @@ func (s *screenshotService) GetPreviousImage(ctx context.Context, url string) (*
 
 // GetPreviousScreenshotContent retrieves previous screenshot content from the storage
 func (s *screenshotService) GetPreviousHTMLContent(ctx context.Context, url string) (*models.ScreenshotHTMLContentResponse, error) {
-    s.logger.Debug("getting previous html content", zap.String("url", url))
+	s.logger.Debug("getting previous html content", zap.String("url", url))
 	contentPath, err := utils.GetPreviousContentPath(url)
 	if err != nil {
 		return nil, ErrFailedToGetPreviousContentPath
@@ -218,7 +218,7 @@ func (s *screenshotService) GetPreviousHTMLContent(ctx context.Context, url stri
 // The URL is used to generate the path to the image
 // The week number and week day are used to generate the path to the image
 func (s *screenshotService) GetImage(ctx context.Context, url string, year int, weekNumber int, weekDay int) (*models.ScreenshotImageResponse, error) {
-    s.logger.Debug("getting image", zap.String("url", url), zap.Int("year", year), zap.Int("week_number", weekNumber), zap.Int("week_day", weekDay))
+	s.logger.Debug("getting image", zap.String("url", url), zap.Int("year", year), zap.Int("week_number", weekNumber), zap.Int("week_day", weekDay))
 	screenshotPath, err := utils.GetScreenshotPath(url, year, weekNumber, weekDay)
 	if err != nil {
 		return nil, ErrFailedToGetScreenshotPath
@@ -236,7 +236,7 @@ func (s *screenshotService) GetImage(ctx context.Context, url string, year int, 
 // The URL is used to generate the path to the image
 // The week number and week day are used to generate the path to the image
 func (s *screenshotService) GetHTMLContent(ctx context.Context, url string, year int, weekNumber int, weekDay int) (*models.ScreenshotHTMLContentResponse, error) {
-    s.logger.Debug("getting html content", zap.String("url", url), zap.Int("year", year), zap.Int("week_number", weekNumber), zap.Int("week_day", weekDay))
+	s.logger.Debug("getting html content", zap.String("url", url), zap.Int("year", year), zap.Int("week_number", weekNumber), zap.Int("week_day", weekDay))
 	contentPath, err := utils.GetContentPath(url, year, weekNumber, weekDay)
 	if err != nil {
 		return nil, ErrFailedToGetContentPath
@@ -252,7 +252,7 @@ func (s *screenshotService) GetHTMLContent(ctx context.Context, url string, year
 
 // ListScreenshots lists the screenshots for a given URL
 func (s *screenshotService) ListScreenshots(ctx context.Context, url string, contentType string, maxItems int) ([]models.ScreenshotListResponse, error) {
-    s.logger.Debug("listing screenshots", zap.String("url", url), zap.String("content_type", contentType), zap.Int("max_items", maxItems))
+	s.logger.Debug("listing screenshots", zap.String("url", url), zap.String("content_type", contentType), zap.Int("max_items", maxItems))
 	prefix, err := utils.GetListingPrefixFromContentType(url, contentType)
 	if err != nil || prefix == nil {
 		return nil, ErrFailedToGetListingPrefixFromContentType

@@ -45,7 +45,7 @@ func NewWorkflowService(logger *logger.Logger, repository workflow.WorkflowRepos
 }
 
 func (s *workflowService) Initialize(ctx context.Context) []error {
-    s.logger.Debug("initializing workflow service")
+	s.logger.Debug("initializing workflow service")
 	var errors []error
 	// Initialize each executor
 	for key, executor := range s.executors {
@@ -58,7 +58,7 @@ func (s *workflowService) Initialize(ctx context.Context) []error {
 }
 
 func (s *workflowService) StartWorkflow(ctx context.Context, req api.WorkflowRequest) (api.WorkflowResponse, error) {
-    s.logger.Debug("starting workflow", zap.Any("request", req))
+	s.logger.Debug("starting workflow", zap.Any("request", req))
 	if err := s.validateRequest(&req); err != nil {
 		return api.WorkflowResponse{}, err
 	}
@@ -86,7 +86,7 @@ func (s *workflowService) StartWorkflow(ctx context.Context, req api.WorkflowReq
 }
 
 func (s *workflowService) StopWorkflow(ctx context.Context, req api.WorkflowRequest) error {
-    s.logger.Debug("stopping workflow", zap.Any("request", req))
+	s.logger.Debug("stopping workflow", zap.Any("request", req))
 	if err := s.validateRequest(&req); err != nil {
 		return err
 	}
@@ -102,7 +102,7 @@ func (s *workflowService) StopWorkflow(ctx context.Context, req api.WorkflowRequ
 }
 
 func (s *workflowService) GetWorkflow(ctx context.Context, req api.WorkflowRequest) (api.WorkflowResponse, error) {
-    s.logger.Debug("getting workflow", zap.Any("request", req))
+	s.logger.Debug("getting workflow", zap.Any("request", req))
 	if err := s.validateRequest(&req); err != nil {
 		return api.WorkflowResponse{}, err
 	}
@@ -126,6 +126,6 @@ func (s *workflowService) GetWorkflow(ctx context.Context, req api.WorkflowReque
 }
 
 func (s *workflowService) ListWorkflows(ctx context.Context, status models.WorkflowStatus, wfType models.WorkflowType) ([]api.WorkflowResponse, error) {
-    s.logger.Debug("listing workflows", zap.Any("status", status), zap.Any("type", wfType))
+	s.logger.Debug("listing workflows", zap.Any("status", status), zap.Any("type", wfType))
 	return s.repository.List(ctx, status, wfType)
 }
