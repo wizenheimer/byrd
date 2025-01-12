@@ -11,7 +11,7 @@ import (
 // This is used to interact with the page history repository
 
 type PageHistoryRepository interface {
-	CreateHistoryForPage(ctx context.Context, pageID uuid.UUID, pageHistory models.PageHistory) (*models.PageHistory, error)
+	CreateHistoryForPage(ctx context.Context, pageID uuid.UUID, pageHistory models.PageHistory) (bool, error)
 
 	BatchGetPageHistory(ctx context.Context, pageID uuid.UUID, limit, offset *int) ([]models.PageHistory, error)
 

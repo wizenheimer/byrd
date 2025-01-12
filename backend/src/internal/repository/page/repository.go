@@ -49,11 +49,11 @@ func (r *pageRepo) UpdateCompetitorPageURL(ctx context.Context, competitorID, pa
 	return nil, nil
 }
 
-func (r *pageRepo) UpdateCompetitorCaptureProfile(ctx context.Context, competitorID, pageID uuid.UUID, name string) (*models.Page, error) {
+func (r *pageRepo) UpdateCompetitorCaptureProfile(ctx context.Context, competitorID, pageID uuid.UUID, captureProfile *models.ScreenshotRequestOptions, url string) (*models.Page, error) {
 	return nil, nil
 }
 
-func (r *pageRepo) UpdateCompetitorDiffProfile(ctx context.Context, competitorID, pageID uuid.UUID, name string) (*models.Page, error) {
+func (r *pageRepo) UpdateCompetitorDiffProfile(ctx context.Context, competitorID, pageID uuid.UUID, diffProfile map[string]any) (*models.Page, error)  {
 	return nil, nil
 }
 

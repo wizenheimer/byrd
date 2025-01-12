@@ -12,10 +12,8 @@ import (
 // It holds the business logic for competitor management
 // PageService is embedded to manage pages within the context of a competitor
 type CompetitorService interface {
-	// AddCompetitorsToWorkspace adds a list of competitors to a workspace.
 	AddCompetitorsToWorkspace(ctx context.Context, workspaceID uuid.UUID, pages []models.PageProps) ([]models.Competitor, error)
 
-	// GetCompetitorForWorkspace gets a competitors by ID.
 	GetCompetitorForWorkspace(ctx context.Context, workspaceID uuid.UUID, competitorIDs []uuid.UUID) ([]models.Competitor, error)
 
 	ListCompetitorsForWorkspace(ctx context.Context, workspaceID uuid.UUID, limit, offset *int) ([]models.Competitor, error)

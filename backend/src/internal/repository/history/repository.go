@@ -21,12 +21,12 @@ func NewPageHistoryRepository(tm *transaction.TxManager, logger *logger.Logger) 
 	}
 }
 
-func (r *historyRepo) CreateHistoryForPage(ctx context.Context, pageID uuid.UUID, pageHistory models.PageHistory) (*models.PageHistory, error) {
-	return nil, nil
+func (r *historyRepo) CreateHistoryForPage(ctx context.Context, pageID uuid.UUID, pageHistory models.PageHistory) (bool, error) {
+	return false, nil
 }
 
 func (r *historyRepo) BatchGetPageHistory(ctx context.Context, pageID uuid.UUID, limit, offset *int) ([]models.PageHistory, error) {
-	return []models.PageHistory{}, nil
+	return nil, nil
 }
 
 func (r *historyRepo) BatchRemovePageHistory(ctx context.Context, pageIDs []uuid.UUID) error {

@@ -11,8 +11,6 @@ import (
 	"github.com/wizenheimer/byrd/src/pkg/utils"
 )
 
-var _ UserService = (*userService)(nil)
-
 type userService struct {
 	userRepository user.UserRepository
 	logger         *logger.Logger

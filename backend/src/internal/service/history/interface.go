@@ -6,7 +6,6 @@ import (
 	"errors"
 
 	"github.com/google/uuid"
-	api "github.com/wizenheimer/byrd/src/internal/models/api"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 )
 
@@ -26,7 +25,7 @@ type PageHistoryService interface {
 
 	// ListPageHistory lists the history of a page, paginated by pageHistoryPaginationParam
 	// This is triggered when a user wants to list all page histories of a page
-	ListPageHistory(ctx context.Context, pageID uuid.UUID, pageHistoryPaginationParam api.PaginationParams) ([]models.PageHistory, error)
+	ListPageHistory(ctx context.Context, pageID uuid.UUID, limit, offset *int) ([]models.PageHistory, error)
 
 	// ClearPageHistory clears the history of a page.
 	ClearPageHistory(ctx context.Context, pageIDs []uuid.UUID) error

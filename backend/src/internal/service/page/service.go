@@ -3,6 +3,7 @@ package page
 
 import (
 	"context"
+	"errors"
 
 	"github.com/google/uuid"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
@@ -29,23 +30,78 @@ func NewPageService(pageRepo page.PageRepository, pageHistoryService history.Pag
 }
 
 func (ps *pageService) CreatePage(ctx context.Context, competitorID uuid.UUID, pages []models.PageProps) ([]models.Page, error) {
-	return nil, nil
+	if len(pages) == 0 {
+		return nil, errors.New("non-fatal: pages unspecified for creating competitors")
+	}
+	var createdPages []models.Page
+	var err error
+	if len(pages) == 1 {
+		createdPages = make([]models.Page, 1)
+		createdPage, err := ps.pageRepo.AddPageToCompetitor(
+			ctx,
+			competitorID,
+			pages[0],
+		)
+		if err != nil {
+			return nil, err
+		}
+		createdPages[0] = *createdPage
+
+	}
+
+	createdPages, err = ps.pageRepo.BatchAddPageToCompetitor(
+		ctx,
+		competitorID,
+		pages,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(createdPages) != len(pages) {
+		return createdPages, errors.New("non-fatal: failed to create all pages")
+	}
+
+	return createdPages, nil
 }
 
 func (ps *pageService) GetPage(ctx context.Context, competitorID uuid.UUID, pageID uuid.UUID) (*models.Page, error) {
-	return nil, nil
+	return ps.pageRepo.GetCompetitorPageByID(ctx, competitorID, pageID)
 }
 
 func (ps *pageService) ListPageHistory(ctx context.Context, pageID uuid.UUID, limit, offset *int) ([]models.PageHistory, error) {
-	return nil, nil
+	return ps.pageHistoryService.ListPageHistory(ctx, pageID, limit, offset)
 }
 
 func (ps *pageService) UpdatePage(ctx context.Context, competitorID uuid.UUID, pageID uuid.UUID, page models.PageProps) (*models.Page, error) {
-	return nil, nil
+	captureProfileRequiresUpdate := page.CaptureProfile != nil || page.URL != ""
+	diffProfileRequiresUpdate := len(page.DiffProfile) > 0
+	urlRequiresUpdate := page.URL != ""
+
+	var updatedPage *models.Page
+	var err error
+	if captureProfileRequiresUpdate && diffProfileRequiresUpdate && urlRequiresUpdate {
+		ps.pageRepo.UpdateCompetitorPage(ctx, competitorID, pageID, page)
+	} else {
+		if captureProfileRequiresUpdate {
+			updatedPage, err = ps.pageRepo.UpdateCompetitorCaptureProfile(ctx, competitorID, pageID, page.CaptureProfile, page.URL)
+		}
+		if diffProfileRequiresUpdate {
+			updatedPage, err = ps.pageRepo.UpdateCompetitorDiffProfile(ctx, competitorID, pageID, page.DiffProfile)
+		}
+		if urlRequiresUpdate {
+			updatedPage, err = ps.pageRepo.UpdateCompetitorPageURL(ctx, competitorID, pageID, page.URL)
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return updatedPage, nil
 }
 
 func (ps *pageService) ListCompetitorPages(ctx context.Context, competitorID uuid.UUID, limit, offset *int) ([]models.Page, error) {
-	return nil, nil
+	return ps.pageRepo.GetCompetitorPages(ctx, competitorID, limit, offset)
 }
 
 func (ps *pageService) ListActivePages(ctx context.Context, batchSize int, lastPageID *uuid.UUID) (<-chan []models.Page, <-chan error) {
@@ -53,9 +109,13 @@ func (ps *pageService) ListActivePages(ctx context.Context, batchSize int, lastP
 }
 
 func (ps *pageService) RemovePage(ctx context.Context, competitorID uuid.UUID, pageIDs []uuid.UUID) error {
-	return nil
+	return ps.RemovePage(ctx, competitorID, pageIDs)
 }
 
 func (ps *pageService) PageExists(ctx context.Context, competitorID, pageID uuid.UUID) (bool, error) {
-	return false, nil
+	page, err := ps.pageRepo.GetCompetitorPageByID(ctx, competitorID, pageID)
+	if err != nil {
+		return false, err
+	}
+	return page != nil, nil
 }

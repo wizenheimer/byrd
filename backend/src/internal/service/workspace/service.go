@@ -26,9 +26,6 @@ type workspaceService struct {
 	tm                *transaction.TxManager
 }
 
-// compile time check if the interface is implemented
-var _ WorkspaceService = (*workspaceService)(nil)
-
 func NewWorkspaceService(workspaceRepo workspace.WorkspaceRepository, competitorService competitor.CompetitorService, userService user.UserService, logger *logger.Logger) WorkspaceService {
 	return &workspaceService{
 		workspaceRepo:     workspaceRepo,

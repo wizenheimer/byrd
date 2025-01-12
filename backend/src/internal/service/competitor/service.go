@@ -19,8 +19,6 @@ type competitorService struct {
 	logger               *logger.Logger
 }
 
-var _ CompetitorService = (*competitorService)(nil)
-
 func NewCompetitorService(competitorRepository competitor.CompetitorRepository, pageService page.PageService, logger *logger.Logger) CompetitorService {
 	return &competitorService{
 		competitorRepository: competitorRepository,
@@ -108,7 +106,6 @@ func (cs *competitorService) UpdateCompetitorForWorkspace(ctx context.Context, w
 	)
 }
 
-
 func (cs *competitorService) RemoveCompetitorForWorkspace(ctx context.Context, workspaceID uuid.UUID, competitorIDs []uuid.UUID) error {
 	if competitorIDs == nil {
 		return cs.competitorRepository.RemoveAllCompetitorsForWorkspace(
@@ -131,7 +128,6 @@ func (cs *competitorService) RemoveCompetitorForWorkspace(ctx context.Context, w
 		competitorIDs,
 	)
 }
-
 
 func (cs *competitorService) CompetitorExists(ctx context.Context, workspaceID, competitorID uuid.UUID) (bool, error) {
 	return cs.competitorRepository.WorkspaceCompetitorExists(
@@ -187,15 +183,15 @@ func (cs *competitorService) ListCompetitorPages(ctx context.Context, competitor
 		ctx,
 		competitorID,
 		limit,
-        offset,
+		offset,
 	)
 }
 
 func (cs *competitorService) ListPageHistory(ctx context.Context, pageID uuid.UUID, limit, offset *int) ([]models.PageHistory, error) {
-    return cs.pageService.ListPageHistory(
-        ctx,
-        pageID,
-        limit,
-        offset,
-    )
+	return cs.pageService.ListPageHistory(
+		ctx,
+		pageID,
+		limit,
+		offset,
+	)
 }

@@ -5,7 +5,6 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-	api "github.com/wizenheimer/byrd/src/internal/models/api"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/internal/repository/history"
 	"github.com/wizenheimer/byrd/src/internal/service/diff"
@@ -37,16 +36,16 @@ func NewPageHistoryService(pageHistoryRepo history.PageHistoryRepository, screen
 // It returns true if the new page history was created or it returns false if the page history already exists.
 // Error is returned if there was an issue creating the page history.
 func (ph *pageHistoryService) CreatePageHistory(ctx context.Context, pageID uuid.UUID) (bool, error) {
-	return false, nil
+	return ph.pageHistoryRepo.CreateHistoryForPage(ctx, pageID, models.PageHistory{})
 }
 
 // ListPageHistory lists the history of a page, paginated by pageHistoryPaginationParam
 // This is triggered when a user wants to list all page histories of a page
-func (ph *pageHistoryService) ListPageHistory(ctx context.Context, pageID uuid.UUID, pageHistoryPaginationParam api.PaginationParams) ([]models.PageHistory, error) {
-	return nil, nil
+func (ph *pageHistoryService) ListPageHistory(ctx context.Context, pageID uuid.UUID, limit, offset *int) ([]models.PageHistory, error) {
+	return ph.pageHistoryRepo.BatchGetPageHistory(ctx, pageID, limit, offset)
 }
 
 // ClearPageHistory clears the history of a page.
 func (ph *pageHistoryService) ClearPageHistory(ctx context.Context, pageIDs []uuid.UUID) error {
-	return nil
+	return ph.pageHistoryRepo.BatchRemovePageHistory(ctx, pageIDs)
 }
