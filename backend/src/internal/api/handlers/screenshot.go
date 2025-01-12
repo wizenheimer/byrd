@@ -33,16 +33,16 @@ func (h *ScreenshotHandler) CreateScreenshot(c *fiber.Ctx) error {
 
 	var sOpts models.ScreenshotRequestOptions
 	if err := c.BodyParser(&sOpts); err != nil {
-		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
+		return sendErrorResponse(c, h.logger, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 
 	if err := utils.SetDefaultsAndValidate(&sOpts); err != nil {
-		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
+		return sendErrorResponse(c, h.logger, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 
 	screenshotResult, err := h.screenshotService.GetCurrentImage(c.Context(), true, sOpts)
 	if err != nil {
-		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not create screenshot", err)
+		return sendErrorResponse(c, h.logger, fiber.StatusInternalServerError, "Could not create screenshot", err)
 	}
 
 	hOpts := models.ScreenshotHTMLRequestOptions{
@@ -52,7 +52,7 @@ func (h *ScreenshotHandler) CreateScreenshot(c *fiber.Ctx) error {
 
 	contentResult, err := h.screenshotService.GetCurrentHTMLContent(c.Context(), true, hOpts)
 	if err != nil {
-		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not create screenshot content", err)
+		return sendErrorResponse(c, h.logger, fiber.StatusInternalServerError, "Could not create screenshot content", err)
 	}
 
 	return sendDataResponse(c, fiber.StatusCreated, "Screenshot created successfully", map[string]interface{}{
@@ -65,11 +65,11 @@ func (h *ScreenshotHandler) CreateScreenshot(c *fiber.Ctx) error {
 func (h *ScreenshotHandler) GetScreenshotImage(c *fiber.Ctx) error {
 	var opts models.GetScreenshotOptions
 	if err := c.BodyParser(&opts); err != nil {
-		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
+		return sendErrorResponse(c, h.logger, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 
 	if err := utils.SetDefaultsAndValidate(&opts); err != nil {
-		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
+		return sendErrorResponse(c, h.logger, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 
 	// handleDefaults sets the year, week number, and week day to the current values if they are not set
@@ -77,7 +77,7 @@ func (h *ScreenshotHandler) GetScreenshotImage(c *fiber.Ctx) error {
 
 	result, err := h.screenshotService.GetImage(c.Context(), opts.URL, *opts.Year, *opts.WeekNumber, *opts.WeekDay)
 	if err != nil {
-		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not get screenshot image", err)
+		return sendErrorResponse(c, h.logger, fiber.StatusInternalServerError, "Could not get screenshot image", err)
 	}
 
 	return h.sendPNGResponse(c, result)
@@ -87,11 +87,11 @@ func (h *ScreenshotHandler) GetScreenshotImage(c *fiber.Ctx) error {
 func (h *ScreenshotHandler) GetScreenshotContent(c *fiber.Ctx) error {
 	var opts models.GetScreenshotOptions
 	if err := c.BodyParser(&opts); err != nil {
-		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
+		return sendErrorResponse(c, h.logger, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 
 	if err := utils.SetDefaultsAndValidate(&opts); err != nil {
-		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
+		return sendErrorResponse(c, h.logger, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 
 	// handleDefaults sets the year, week number, and week day to the current values if they are not set
@@ -99,7 +99,7 @@ func (h *ScreenshotHandler) GetScreenshotContent(c *fiber.Ctx) error {
 
 	result, err := h.screenshotService.GetHTMLContent(c.Context(), opts.URL, *opts.Year, *opts.WeekNumber, *opts.WeekDay)
 	if err != nil {
-		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not get screenshot content", err)
+		return sendErrorResponse(c, h.logger, fiber.StatusInternalServerError, "Could not get screenshot content", err)
 	}
 
 	return sendDataResponse(c, fiber.StatusOK, "Fetched screenshot content successfully", result)
@@ -108,16 +108,16 @@ func (h *ScreenshotHandler) GetScreenshotContent(c *fiber.Ctx) error {
 func (h *ScreenshotHandler) ListScreenshots(c *fiber.Ctx) error {
 	var opts models.ListScreenshotsOptions
 	if err := c.BodyParser(&opts); err != nil {
-		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
+		return sendErrorResponse(c, h.logger, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 
 	if err := utils.SetDefaultsAndValidate(&opts); err != nil {
-		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid request body", err.Error())
+		return sendErrorResponse(c, h.logger, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 
 	result, err := h.screenshotService.ListScreenshots(c.Context(), opts.URL, opts.ContentType, opts.MaxItems)
 	if err != nil {
-		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not list screenshots", err)
+		return sendErrorResponse(c, h.logger, fiber.StatusInternalServerError, "Could not list screenshots", err)
 	}
 
 	return sendDataResponse(c, fiber.StatusOK, "Listed screenshots successfully", result)

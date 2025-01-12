@@ -51,13 +51,14 @@ func NewWorkflowExecutor(
 		repository:   repository,
 		alertClient:  alertClient,
 		taskExecutor: taskExecutor,
-		logger:       logger,
+		logger:       logger.WithFields(map[string]interface{}{"module": "workflow_executor"}),
 	}
 
 	return workflowExecutor, nil
 }
 
 func (e *workflowExecutor) Initialize(ctx context.Context) error {
+	e.logger.Debug("initializing workflow executor")
 	// Iterate over all active workflows
 	workflowList, err := e.repository.List(ctx, models.WorkflowStatusRunning, e.workflowType)
 	if err != nil {
@@ -82,6 +83,7 @@ func (e *workflowExecutor) Initialize(ctx context.Context) error {
 }
 
 func (e *workflowExecutor) Restart(ctx context.Context, workflowID models.WorkflowIdentifier, errChan chan error) {
+	e.logger.Debug("restarting workflow", zap.Any("workflow_id", workflowID))
 	// Create task ID
 	taskID := uuid.New().String()
 
@@ -124,6 +126,7 @@ func (e *workflowExecutor) Restart(ctx context.Context, workflowID models.Workfl
 }
 
 func (e *workflowExecutor) Start(ctx context.Context, workflowID models.WorkflowIdentifier) error {
+    e.logger.Debug("starting workflow", zap.Any("workflow_id", workflowID))
 	// Create task ID
 	taskID := uuid.New().String()
 
@@ -165,6 +168,7 @@ func (e *workflowExecutor) Start(ctx context.Context, workflowID models.Workflow
 }
 
 func (e *workflowExecutor) Stop(ctx context.Context, workflowID models.WorkflowIdentifier) error {
+    e.logger.Debug("stopping workflow", zap.Any("workflow_id", workflowID))
 	var foundCtx *workflowContext
 
 	// Find the workflow context
@@ -205,6 +209,7 @@ func (e *workflowExecutor) Stop(ctx context.Context, workflowID models.WorkflowI
 }
 
 func (e *workflowExecutor) List(ctx context.Context, status models.WorkflowStatus, wfType models.WorkflowType) ([]api.WorkflowState, error) {
+    e.logger.Debug("listing workflows", zap.Any("status", status), zap.Any("type", wfType))
 	workflowList, err := e.repository.List(ctx, status, wfType)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list workflows: %w", err)
@@ -217,10 +222,12 @@ func (e *workflowExecutor) List(ctx context.Context, status models.WorkflowStatu
 }
 
 func (e *workflowExecutor) Get(ctx context.Context, workflowID models.WorkflowIdentifier) (api.WorkflowState, error) {
+    e.logger.Debug("getting workflow", zap.Any("workflow_id", workflowID))
 	return e.repository.GetState(ctx, workflowID)
 }
 
 func (e *workflowExecutor) executeWorkflow(ctx context.Context, wfCtx *workflowContext) {
+    e.logger.Debug("executing workflow", zap.Any("workflow_id", wfCtx.task.WorkflowID))
 	updates, errors := e.taskExecutor.Execute(ctx, wfCtx.task)
 
 	for {
@@ -246,6 +253,7 @@ func (e *workflowExecutor) executeWorkflow(ctx context.Context, wfCtx *workflowC
 }
 
 func (e *workflowExecutor) handleTaskUpdate(ctx context.Context, wfCtx *workflowContext, update models.TaskUpdate) {
+    e.logger.Debug("handling task update", zap.Any("workflow_id", wfCtx.task.WorkflowID), zap.Any("update", update))
 	wfCtx.mutex.Lock()
 	wfCtx.state.Checkpoint = update.NewCheckpoint
 	wfCtx.mutex.Unlock()
@@ -256,6 +264,7 @@ func (e *workflowExecutor) handleTaskUpdate(ctx context.Context, wfCtx *workflow
 }
 
 func (e *workflowExecutor) handleTaskError(ctx context.Context, wfCtx *workflowContext, taskErr models.TaskError) {
+    e.logger.Debug("handling task error", zap.Any("workflow_id", wfCtx.task.WorkflowID), zap.Any("error", taskErr))
 	wfCtx.mutex.Lock()
 	wfCtx.state.Status = models.WorkflowStatusFailed
 	wfCtx.mutex.Unlock()
@@ -274,6 +283,7 @@ func (e *workflowExecutor) handleTaskError(ctx context.Context, wfCtx *workflowC
 }
 
 func (e *workflowExecutor) handleWorkflowCompletion(ctx context.Context, wfCtx *workflowContext) {
+    e.logger.Debug("handling workflow completion", zap.Any("workflow_id", wfCtx.task.WorkflowID))
 	wfCtx.mutex.Lock()
 	wfCtx.state.Status = models.WorkflowStatusCompleted
 	wfCtx.mutex.Unlock()
@@ -290,6 +300,7 @@ func (e *workflowExecutor) handleWorkflowCompletion(ctx context.Context, wfCtx *
 }
 
 func (e *workflowExecutor) handleWorkflowCancellation(ctx context.Context, wfCtx *workflowContext) {
+    e.logger.Debug("handling workflow cancellation", zap.Any("workflow_id", wfCtx.task.WorkflowID))
 	wfCtx.mutex.Lock()
 	wfCtx.state.Status = models.WorkflowStatusAborted
 	wfCtx.mutex.Unlock()

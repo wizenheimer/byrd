@@ -13,6 +13,7 @@ import (
 	"github.com/wizenheimer/byrd/src/internal/service/history"
 	"github.com/wizenheimer/byrd/src/internal/service/screenshot"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
+	"go.uber.org/zap"
 )
 
 // compile time check if the interface is implemented
@@ -32,11 +33,12 @@ func NewPageService(pageRepo page.PageRepository, pageHistoryService history.Pag
 		pageHistoryService: pageHistoryService,
 		diffService:        diffService,
 		screenshotService:  screenshotService,
-		logger:             logger,
+		logger:             logger.WithFields(map[string]interface{}{"module": "page_service"}),
 	}
 }
 
 func (ps *pageService) CreatePage(ctx context.Context, competitorID uuid.UUID, pages []models.PageProps) ([]models.Page, error) {
+	ps.logger.Debug("creating pages", zap.Any("competitorID", competitorID), zap.Any("pages", pages))
 	if len(pages) == 0 {
 		return nil, errors.New("non-fatal: pages unspecified for creating competitors")
 	}
@@ -73,14 +75,17 @@ func (ps *pageService) CreatePage(ctx context.Context, competitorID uuid.UUID, p
 }
 
 func (ps *pageService) GetPage(ctx context.Context, competitorID uuid.UUID, pageID uuid.UUID) (*models.Page, error) {
+    ps.logger.Debug("getting page", zap.Any("competitorID", competitorID), zap.Any("pageID", pageID))
 	return ps.pageRepo.GetCompetitorPageByID(ctx, competitorID, pageID)
 }
 
 func (ps *pageService) ListPageHistory(ctx context.Context, pageID uuid.UUID, limit, offset *int) ([]models.PageHistory, bool, error) {
+    ps.logger.Debug("listing page history", zap.Any("pageID", pageID), zap.Any("limit", limit), zap.Any("offset", offset))
 	return ps.pageHistoryService.ListPageHistory(ctx, pageID, limit, offset)
 }
 
 func (ps *pageService) UpdatePage(ctx context.Context, competitorID uuid.UUID, pageID uuid.UUID, page models.PageProps) (*models.Page, error) {
+    ps.logger.Debug("updating page", zap.Any("competitorID", competitorID), zap.Any("pageID", pageID), zap.Any("page", page))
 	captureProfileRequiresUpdate := page.CaptureProfile != nil || page.URL != ""
 	diffProfileRequiresUpdate := len(page.DiffProfile) > 0
 	urlRequiresUpdate := page.URL != ""
@@ -108,14 +113,17 @@ func (ps *pageService) UpdatePage(ctx context.Context, competitorID uuid.UUID, p
 }
 
 func (ps *pageService) ListCompetitorPages(ctx context.Context, competitorID uuid.UUID, limit, offset *int) ([]models.Page, bool, error) {
+    ps.logger.Debug("listing competitor pages", zap.Any("competitorID", competitorID), zap.Any("limit", limit), zap.Any("offset", offset))
 	return ps.pageRepo.GetCompetitorPages(ctx, competitorID, limit, offset)
 }
 
 func (ps *pageService) ListActivePages(ctx context.Context, batchSize int, lastPageID *uuid.UUID) (<-chan []models.Page, <-chan error) {
+    ps.logger.Debug("listing active pages", zap.Any("batchSize", batchSize), zap.Any("lastPageID", lastPageID))
 	return nil, nil
 }
 
 func (ps *pageService) RefreshPage(ctx context.Context, pageID uuid.UUID) error {
+    ps.logger.Debug("refreshing page", zap.Any("pageID", pageID))
 	urlContext, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
@@ -143,6 +151,7 @@ func (ps *pageService) RefreshPage(ctx context.Context, pageID uuid.UUID) error 
 }
 
 func (ps *pageService) RemovePage(ctx context.Context, competitorIDs []uuid.UUID, pageIDs []uuid.UUID) error {
+    ps.logger.Debug("removing page", zap.Any("competitorIDs", competitorIDs), zap.Any("pageIDs", pageIDs))
 	if competitorIDs == nil {
 		return errors.New("non-fatal: competitorIDs unspecified for removing pages")
 	}
@@ -172,6 +181,7 @@ func (ps *pageService) RemovePage(ctx context.Context, competitorIDs []uuid.UUID
 }
 
 func (ps *pageService) PageExists(ctx context.Context, competitorID, pageID uuid.UUID) (bool, error) {
+    ps.logger.Debug("checking if page exists", zap.Any("competitorID", competitorID), zap.Any("pageID", pageID))
 	page, err := ps.pageRepo.GetCompetitorPageByID(ctx, competitorID, pageID)
 	if err != nil {
 		return false, err

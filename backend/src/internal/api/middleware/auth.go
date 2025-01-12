@@ -28,7 +28,7 @@ type AuthorizationMiddleware struct {
 func NewAuthorizationMiddleware(ws workspace.WorkspaceService, logger *logger.Logger) *AuthorizationMiddleware {
 	return &AuthorizationMiddleware{
 		workspaceService: ws,
-		logger:           logger,
+		logger:           logger.WithFields(map[string]interface{}{"module": "authorization_middleware"}),
 	}
 }
 
@@ -36,21 +36,21 @@ func NewAuthorizationMiddleware(ws workspace.WorkspaceService, logger *logger.Lo
 func (m *AuthorizationMiddleware) RequireWorkspaceAdmin(c *fiber.Ctx) error {
 	workspaceID := c.Params(WorkspaceIDParamKey)
 	if workspaceID == "" {
-		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid workspace ID", map[string]interface{}{"workspaceID": workspaceID})
+		return sendErrorResponse(c, m.logger, fiber.StatusBadRequest, "Invalid workspace ID", map[string]interface{}{"workspaceID": workspaceID})
 	}
 
 	clerkUser, err := getClerkUserFromContext(c)
 	if clerkUser == nil || err != nil {
-		return sendErrorResponse(c, fiber.StatusUnauthorized, "Unauthorized", map[string]interface{}{"error": err.Error()})
+		return sendErrorResponse(c, m.logger, fiber.StatusUnauthorized, "Unauthorized", map[string]interface{}{"error": err.Error()})
 	}
 
 	workspaceUUID, err := uuid.Parse(workspaceID)
 	if err != nil {
-		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid workspace ID", map[string]interface{}{"error": err.Error(), "workspaceID": workspaceID})
+		return sendErrorResponse(c, m.logger, fiber.StatusBadRequest, "Invalid workspace ID", map[string]interface{}{"error": err.Error(), "workspaceID": workspaceID})
 	}
 
 	if exists, err := m.workspaceService.ClerkUserIsWorkspaceAdmin(c.Context(), workspaceUUID, clerkUser); !exists || err != nil {
-		return sendErrorResponse(c, fiber.StatusUnauthorized, "Unauthorized")
+		return sendErrorResponse(c, m.logger, fiber.StatusUnauthorized, "Unauthorized")
 	}
 
 	return c.Next()
@@ -60,21 +60,21 @@ func (m *AuthorizationMiddleware) RequireWorkspaceAdmin(c *fiber.Ctx) error {
 func (m *AuthorizationMiddleware) RequireWorkspaceMembership(c *fiber.Ctx) error {
 	workspaceID := c.Params(WorkspaceIDParamKey)
 	if workspaceID == "" {
-		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid workspace ID", map[string]interface{}{"workspaceID": workspaceID})
+		return sendErrorResponse(c, m.logger, fiber.StatusBadRequest, "Invalid workspace ID", map[string]interface{}{"workspaceID": workspaceID})
 	}
 
 	clerkUser, err := getClerkUserFromContext(c)
 	if clerkUser == nil || err != nil {
-		return sendErrorResponse(c, fiber.StatusUnauthorized, "Unauthorized", map[string]interface{}{"error": err.Error()})
+		return sendErrorResponse(c, m.logger, fiber.StatusUnauthorized, "Unauthorized", map[string]interface{}{"error": err.Error()})
 	}
 
 	workspaceUUID, err := uuid.Parse(workspaceID)
 	if err != nil {
-		return sendErrorResponse(c, fiber.StatusBadRequest, "Invalid workspace ID", map[string]interface{}{"error": err.Error(), "workspaceID": workspaceID})
+		return sendErrorResponse(c, m.logger, fiber.StatusBadRequest, "Invalid workspace ID", map[string]interface{}{"error": err.Error(), "workspaceID": workspaceID})
 	}
 
 	if exists, err := m.workspaceService.ClerkUserIsWorkspaceMember(c.Context(), workspaceUUID, clerkUser); !exists || err != nil {
-		return sendErrorResponse(c, fiber.StatusUnauthorized, "Unauthorized")
+		return sendErrorResponse(c, m.logger, fiber.StatusUnauthorized, "Unauthorized")
 	}
 
 	return c.Next()
@@ -96,14 +96,14 @@ func (m *AuthenticatedMiddleware) AuthenticationMiddleware(c *fiber.Ctx) error {
 	authHeader := c.Get("Authorization")
 	if authHeader == "" {
 		m.logger.Debug("No authorization header", zap.Any("status", fiber.StatusUnauthorized))
-		return sendErrorResponse(c, fiber.StatusUnauthorized, "No authorization header", map[string]interface{}{"status": fiber.StatusUnauthorized})
+		return sendErrorResponse(c, m.logger, fiber.StatusUnauthorized, "No authorization header", map[string]interface{}{"status": fiber.StatusUnauthorized})
 	}
 
 	// Parse Bearer token
 	tokenParts := strings.Split(authHeader, " ")
 	if len(tokenParts) != 2 || tokenParts[0] != "Bearer" {
 		m.logger.Debug("Invalid authorization header format", zap.Any("status", fiber.StatusUnauthorized), zap.Any("tokenParts", tokenParts), zap.Any("len", len(tokenParts)))
-		return sendErrorResponse(c, fiber.StatusUnauthorized, "Invalid authorization header format", map[string]interface{}{"status": fiber.StatusUnauthorized, "tokenParts": tokenParts, "len": len(tokenParts)})
+		return sendErrorResponse(c, m.logger, fiber.StatusUnauthorized, "Invalid authorization header format", map[string]interface{}{"status": fiber.StatusUnauthorized, "tokenParts": tokenParts, "len": len(tokenParts)})
 	}
 
 	// Verify token using jwt.Verify
@@ -112,7 +112,7 @@ func (m *AuthenticatedMiddleware) AuthenticationMiddleware(c *fiber.Ctx) error {
 	})
 	if err != nil {
 		m.logger.Debug("Invalid token", zap.Any("status", fiber.StatusUnauthorized), zap.Any("error", err.Error()))
-		return sendErrorResponse(c, fiber.StatusUnauthorized, "Invalid token", map[string]interface{}{"status": fiber.StatusUnauthorized, "error": err.Error()})
+		return sendErrorResponse(c, m.logger, fiber.StatusUnauthorized, "Invalid token", map[string]interface{}{"status": fiber.StatusUnauthorized, "error": err.Error()})
 	}
 
 	// Store session info in context

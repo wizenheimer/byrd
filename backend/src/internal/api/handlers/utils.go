@@ -9,7 +9,9 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/wizenheimer/byrd/src/internal/api/commons"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
+	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"github.com/wizenheimer/byrd/src/pkg/utils"
+	"go.uber.org/zap"
 )
 
 const (
@@ -22,7 +24,8 @@ func sendDataResponse(c *fiber.Ctx, status int, message string, data any) error 
 	return commons.SendDataResponse(c, status, message, data)
 }
 
-func sendErrorResponse(c *fiber.Ctx, status int, message string, details any) error {
+func sendErrorResponse(c *fiber.Ctx, logger *logger.Logger, status int, message string, details any) error {
+	logger.Debug(message, zap.Int("status", status), zap.Any("details", details))
 	return commons.SendErrorResponse(c, status, message, details)
 }
 
@@ -30,7 +33,7 @@ func sendErrorResponse(c *fiber.Ctx, status int, message string, details any) er
 func (h *ScreenshotHandler) sendPNGResponse(c *fiber.Ctx, result *models.ScreenshotImageResponse) error {
 	// If the result is nil, return a 404 Not Found error
 	if result == nil || result.Image == nil {
-		return sendErrorResponse(c, fiber.StatusNotFound, "Screenshot not found", nil)
+		return sendErrorResponse(c, h.logger, fiber.StatusNotFound, "Screenshot not found", nil)
 	}
 
 	// WritePNGResponse writes the image to a PNG byte array
@@ -38,7 +41,7 @@ func (h *ScreenshotHandler) sendPNGResponse(c *fiber.Ctx, result *models.Screens
 		result.Image,
 	)
 	if err != nil {
-		return sendErrorResponse(c, fiber.StatusInternalServerError, "Could not write PNG response", err)
+		return sendErrorResponse(c, h.logger, fiber.StatusInternalServerError, "Could not write PNG response", err)
 	}
 
 	// Set the Content-Type header to image/png

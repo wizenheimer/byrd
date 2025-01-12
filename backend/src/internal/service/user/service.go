@@ -10,6 +10,7 @@ import (
 	"github.com/wizenheimer/byrd/src/internal/repository/user"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"github.com/wizenheimer/byrd/src/pkg/utils"
+	"go.uber.org/zap"
 )
 
 type userService struct {
@@ -20,12 +21,13 @@ type userService struct {
 func NewUserService(userRepository user.UserRepository, logger *logger.Logger) UserService {
 	return &userService{
 		userRepository: userRepository,
-		logger:         logger,
+		logger:         logger.WithFields(map[string]interface{}{"module": "user_service"}),
 	}
 }
 
 // GetOrCreateWorkspaceOwner gets or creates a single user.
 func (us *userService) GetOrCreateUser(ctx context.Context, clerk *clerk.User) (*models.User, error) {
+    us.logger.Debug("getting or creating user", zap.Any("clerk", clerk))
 	clerkEmail, err := utils.GetClerkUserEmail(clerk)
 	if err != nil {
 		return nil, err
@@ -46,6 +48,7 @@ func (us *userService) GetOrCreateUser(ctx context.Context, clerk *clerk.User) (
 // It returns the created or found users.
 // It returns an error if the users could not be created.
 func (us *userService) BatchGetOrCreateUsers(ctx context.Context, emails []string) ([]models.User, error) {
+    us.logger.Debug("batch getting or creating users", zap.Any("emails", emails))
 	for i, email := range emails {
 		emails[i] = utils.NormalizeEmail(email)
 	}
@@ -69,6 +72,7 @@ func (us *userService) BatchGetOrCreateUsers(ctx context.Context, emails []strin
 // ListUsersByUserIDs lists users by userIDs.
 // This is used to get the user details.
 func (us *userService) ListUsersByUserIDs(ctx context.Context, userIDs []uuid.UUID) ([]models.User, error) {
+    us.logger.Debug("listing users by userIDs", zap.Any("userIDs", userIDs))
 	if len(userIDs) == 0 {
 		return nil, errors.New("non-fatal: no userIDs provided")
 	}
@@ -95,6 +99,7 @@ func (us *userService) ListUsersByUserIDs(ctx context.Context, userIDs []uuid.UU
 // GetUserByClerk gets a clerk user by clerk credentials.
 // This is used to get the clerk user details.
 func (us *userService) GetUserByClerkCredentials(ctx context.Context, clerk *clerk.User) (*models.User, error) {
+    us.logger.Debug("getting user by clerk credentials", zap.Any("clerk", clerk))
 	userEmail, err := utils.GetClerkUserEmail(clerk)
 	if err != nil {
 		return nil, err
@@ -114,6 +119,7 @@ func (us *userService) GetUserByClerkCredentials(ctx context.Context, clerk *cle
 // When sync is triggered, it marks the account status as active
 // And updates the user's email and name if they have changed
 func (us *userService) SyncUser(ctx context.Context, clerk *clerk.User) error {
+    us.logger.Debug("syncing user", zap.Any("clerk", clerk))
 	clerkEmail, err := utils.GetClerkUserEmail(clerk)
 	if err != nil {
 		return err
@@ -133,6 +139,7 @@ func (us *userService) SyncUser(ctx context.Context, clerk *clerk.User) error {
 // It returns nil if the user was deleted successfully
 // This is the only user-facing and handler-owned method
 func (us *userService) DeleteUser(ctx context.Context, clerk *clerk.User) error {
+    us.logger.Debug("deleting user", zap.Any("clerk", clerk))
 	clerkEmail, err := utils.GetClerkUserEmail(clerk)
 	if err != nil {
 		return err
@@ -150,12 +157,14 @@ func (us *userService) DeleteUser(ctx context.Context, clerk *clerk.User) error 
 // UserExistsByUserID checks if a user exists by UserID.
 // It returns true if the user exists, otherwise it returns false.
 func (us *userService) UserExistsByUserID(ctx context.Context, userID uuid.UUID) (bool, error) {
+    us.logger.Debug("checking if user exists", zap.Any("userID", userID))
 	return us.userRepository.UserExists(ctx, userID)
 }
 
 // UserExistsByClerkID checks if a user exists by ClerkID.
 // It returns true if the user exists, otherwise it returns false.
 func (us *userService) ClerkUserExists(ctx context.Context, clerk *clerk.User) (bool, error) {
+	us.logger.Debug("checking if clerk user exists", zap.Any("clerk", clerk))
 	email, err := utils.GetClerkUserEmail(clerk)
 	if err != nil {
 		return false, err

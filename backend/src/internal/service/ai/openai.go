@@ -49,6 +49,8 @@ func NewOpenAIService(apiKey string, logger *logger.Logger) (AIService, error) {
 
 // AnalyzeContentDifferences analyzes the content differences between two versions of a URL
 func (s *openAIService) AnalyzeContentDifferences(ctx context.Context, version1, version2 string, fields []string) (*models.DynamicChanges, error) {
+	s.logger.Debug("analyzing content differences", zap.Int("version1", len(version1)), zap.Int("version2", len(version2)), zap.Strings("requested_fields", fields))
+
 	profileRequest := ProfileRequest{
 		Name:        "competitor_updates",
 		Description: "Carefully compare these two versions of content, identify and surface changes",
@@ -72,6 +74,8 @@ func (s *openAIService) AnalyzeContentDifferences(ctx context.Context, version1,
 
 // AnalyzeVisualDifferences analyzes the visual differences between two screenshots
 func (s *openAIService) AnalyzeVisualDifferences(ctx context.Context, screenshot1, screenshot2 image.Image, fields []string) (*models.DynamicChanges, error) {
+	s.logger.Debug("analyzing visual differences", zap.Any("requested_fields", fields))
+
 	profileRequest := ProfileRequest{
 		Name:        "competitor_updates",
 		Description: "Carefully compare and contrast visual changes in the webpage",

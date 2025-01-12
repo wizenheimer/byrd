@@ -193,6 +193,7 @@ func (f *CompanyNameFinder) fetchPage(url string) PageInfo {
 }
 
 func (f *CompanyNameFinder) FindCompanyName(urls []string) string {
+	f.logger.Debug("finding company name", zap.Strings("urls", urls))
 	var wg sync.WaitGroup
 	pageInfoChan := make(chan PageInfo, len(urls))
 

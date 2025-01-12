@@ -51,10 +51,12 @@ type TxManager struct {
 
 // NewTxManager creates a new transaction manager
 func NewTxManager(pool *pgxpool.Pool, logger *logger.Logger) *TxManager {
-	return &TxManager{
+	tm := TxManager{
 		pool:   pool,
-		logger: logger,
+		logger: logger.WithFields(map[string]interface{}{"module": "transaction_manager"}),
 	}
+    tm.logger.Debug("created a new transaction manager")
+    return &tm
 }
 
 // GetTx retrieves an existing transaction from context
@@ -76,6 +78,7 @@ func MustGetTx(ctx context.Context) pgx.Tx {
 
 // GetPool returns the underlying connection pool
 func (tm *TxManager) GetPool() *pgxpool.Pool {
+    tm.logger.Debug("getting pool for making query")
 	return tm.pool
 }
 
@@ -86,10 +89,10 @@ func (tm *TxManager) GetQuerier(ctx context.Context) interface {
 	QueryRow(context.Context, string, ...interface{}) pgx.Row
 } {
 	if tx, ok := GetTx(ctx); ok {
-		tm.logger.Debug("Using transaction querier")
+        tm.logger.Debug("transaction querier found in context, using it for making query")
 		return tx
 	}
-	tm.logger.Debug("Using pool querier")
+    tm.logger.Debug("using pool for making query")
 	return tm.pool
 }
 
@@ -98,14 +101,14 @@ func (tm *TxManager) GetQuerier(ctx context.Context) interface {
 func (tm *TxManager) RunInTx(ctx context.Context, opts *TxOptions, fn func(context.Context) error) error {
 	// Use default options if none provided
 	if opts == nil {
-		tm.logger.Debug("Using default transaction options")
+        tm.logger.Debug("using default transaction options")
 		opts = &DefaultTxOptions
 	}
 
 	// Check if we already have a transaction
 	if _, exists := GetTx(ctx); exists {
 		// Reuse existing transaction
-		tm.logger.Debug("Reusing existing transaction")
+		tm.logger.Debug("reusing existing transaction")
 		return fn(ctx)
 	}
 
@@ -120,12 +123,12 @@ func (tm *TxManager) RunInTx(ctx context.Context, opts *TxOptions, fn func(conte
 
 		// Check if we should retry on serialization failure
 		if opts.RetryOnSerializationFailure && isSerializationFailure(err) && retries < opts.MaxRetries {
-			tm.logger.Debug("Retrying transaction due to serialization failure", zap.Error(err))
+			tm.logger.Debug("retrying transaction due to serialization failure", zap.Error(err))
 			retries++
 			continue
 		}
 
-		tm.logger.Error("Failed to run transaction", zap.Error(err))
+		tm.logger.Debug("failed to run transaction", zap.Error(err))
 		return err
 	}
 }
@@ -138,7 +141,7 @@ func (tm *TxManager) runSingleTx(ctx context.Context, opts *TxOptions, fn func(c
 		AccessMode: opts.Access,
 	})
 	if err != nil {
-		tm.logger.Error("Failed to begin transaction", zap.Error(err))
+		tm.logger.Debug("failed to begin transaction", zap.Error(err))
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
 
@@ -148,10 +151,10 @@ func (tm *TxManager) runSingleTx(ctx context.Context, opts *TxOptions, fn func(c
 	// Handle panic and rollback
 	defer func() {
 		if p := recover(); p != nil {
-			tm.logger.Error("Panic in transaction", zap.Any("error", p))
+			tm.logger.Error("panic in transaction", zap.Any("error", p))
 			err := tx.Rollback(ctx)
 			if err != nil {
-				tm.logger.Error("Failed to rollback transaction", zap.Error(err))
+				tm.logger.Error("failed to rollback transaction", zap.Error(err))
 				panic(fmt.Errorf("error rolling back transaction: %v (original panic: %v)", err, p))
 			}
 			panic(p) // re-throw panic after rollback
@@ -162,7 +165,7 @@ func (tm *TxManager) runSingleTx(ctx context.Context, opts *TxOptions, fn func(c
 	err = fn(ctxWithTx)
 	if err != nil {
 		if rbErr := tx.Rollback(ctx); rbErr != nil {
-			tm.logger.Error("Failed to rollback transaction", zap.Error(rbErr))
+			tm.logger.Error("failed to rollback transaction", zap.Error(rbErr))
 			return fmt.Errorf("error rolling back transaction: %v (original error: %w)", rbErr, err)
 		}
 		return err
@@ -170,7 +173,7 @@ func (tm *TxManager) runSingleTx(ctx context.Context, opts *TxOptions, fn func(c
 
 	// Commit transaction
 	if err := tx.Commit(ctx); err != nil {
-		tm.logger.Error("Failed to commit transaction", zap.Error(err))
+		tm.logger.Error("failed to commit transaction", zap.Error(err))
 		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
@@ -179,7 +182,7 @@ func (tm *TxManager) runSingleTx(ctx context.Context, opts *TxOptions, fn func(c
 
 // RunInTxReadOnly is a convenience method for running read-only transactions
 func (tm *TxManager) RunInTxReadOnly(ctx context.Context, fn func(context.Context) error) error {
-	tm.logger.Debug("Running read-only transaction")
+	tm.logger.Debug("running read-only transaction")
 	opts := DefaultTxOptions
 	opts.Access = pgx.ReadOnly
 	return tm.RunInTx(ctx, &opts, fn)
@@ -199,13 +202,13 @@ func isSerializationFailure(err error) bool {
 // This is useful when you need more control over the transaction lifecycle
 func (tm *TxManager) WithTx(ctx context.Context, opts *TxOptions) (context.Context, pgx.Tx, error) {
 	if opts == nil {
-		tm.logger.Debug("Using default transaction options")
+		tm.logger.Debug("using default transaction options")
 		opts = &DefaultTxOptions
 	}
 
 	// Check if transaction already exists
 	if _, exists := GetTx(ctx); exists {
-		tm.logger.Error("Transaction already exists in context")
+		tm.logger.Error("transaction already exists in context")
 		return nil, nil, ErrTxAlreadyExists
 	}
 
@@ -220,6 +223,6 @@ func (tm *TxManager) WithTx(ctx context.Context, opts *TxOptions) (context.Conte
 
 	// Add transaction to context
 	ctxWithTx := context.WithValue(ctx, txKey{}, tx)
-	tm.logger.Debug("Transaction created and added to context")
+	tm.logger.Debug("transaction created and added to context")
 	return ctxWithTx, tx, nil
 }

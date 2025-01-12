@@ -16,6 +16,7 @@ import (
 
 // prepareImageResponse prepares the image response from the HTTP response
 func (s *screenshotService) prepareScreenshotImageResponse(resp *http.Response, url string, year int, weekNumber int, weekDay int) (*models.ScreenshotImageResponse, error) {
+    s.logger.Debug("preparing screenshot image response", zap.Any("url", url), zap.Any("year", year), zap.Any("week_number", weekNumber), zap.Any("week_day", weekDay))
 	if resp.StatusCode != http.StatusOK {
 		return nil, ErrNon200StatusCode
 	}
@@ -49,6 +50,7 @@ func (s *screenshotService) prepareScreenshotImageResponse(resp *http.Response, 
 
 // prepareHTMLContentResponse prepares the HTML content response from the HTTP response
 func (s *screenshotService) prepareScreenshotHTMLContentResponse(resp *http.Response, sourceURL, renderedURL string, year int, weekNumber int, weekDay int) (*models.ScreenshotHTMLContentResponse, error) {
+    s.logger.Debug("preparing screenshot HTML content response", zap.Any("source_url", sourceURL), zap.Any("rendered_url", renderedURL), zap.Any("year", year), zap.Any("week_number", weekNumber), zap.Any("week_day", weekDay))
 	if resp.StatusCode != http.StatusOK {
 		return nil, ErrNon200StatusCode
 	}
@@ -123,6 +125,7 @@ func parseImageFromResponse(resp *http.Response) (image.Image, int, int, error) 
 // getExistingScreenshotImage retrieves the existing screenshot image from the storage
 // and returns the image and metadata
 func (s *screenshotService) getExistingScreenshotImage(ctx context.Context, url string) (*models.ScreenshotImageResponse, error) {
+    s.logger.Debug("getting existing screenshot image", zap.String("url", url))
 	screenshotPath, err := utils.GetCurrentScreenshotPath(url)
 	if err != nil {
 		return nil, ErrFailedToGetCurrentScreenshotPath
@@ -140,6 +143,7 @@ func (s *screenshotService) getExistingScreenshotImage(ctx context.Context, url 
 // getExistingHTMLContent retrieves the existing screenshot content from the storage
 // and returns the content and metadata
 func (s *screenshotService) getExistingHTMLContent(ctx context.Context, url string) (*models.ScreenshotHTMLContentResponse, error) {
+    s.logger.Debug("getting existing HTML content", zap.String("url", url))
 	contentPath, err := utils.GetCurrentContentPath(url)
 	if err != nil {
 		return nil, ErrFailedToGetCurrentContentPath
@@ -158,6 +162,7 @@ func (s *screenshotService) getExistingHTMLContent(ctx context.Context, url stri
 // prepareScreenshot creates a request for the screenshot API
 // and returns the response
 func (s *screenshotService) prepareScreenshot(opts models.ScreenshotRequestOptions) (*http.Response, error) {
+    s.logger.Debug("preparing screenshot", zap.Any("opts", opts))
 	// Get default options
 	defaultOpt := getDefaultScreenshotRequestOptions()
 
@@ -178,6 +183,7 @@ func (s *screenshotService) prepareScreenshot(opts models.ScreenshotRequestOptio
 
 // prepareScreenshotHTML creates a request for the screenshot HTML
 func (s *screenshotService) prepareScreenshotHTML(opts models.ScreenshotHTMLRequestOptions) (*http.Response, error) {
+    s.logger.Debug("preparing screenshot HTML", zap.Any("opts", opts))
 	// Get HTML content
 	htmlResp, err := http.Get(opts.RenderedURL)
 	if err != nil {
