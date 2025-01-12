@@ -19,7 +19,7 @@ type WorkspaceRepository interface {
 
 	BatchGetWorkspacesByIDs(ctx context.Context, workspaceIDs []uuid.UUID) ([]models.Workspace, error)
 
-	GetWorkspaceMembers(ctx context.Context, workspaceID uuid.UUID) ([]models.PartialWorkspaceUser, error)
+	ListWorkspaceMembers(ctx context.Context, workspaceID uuid.UUID, limit, offset *int, workspaceRole *models.WorkspaceRole) ([]models.PartialWorkspaceUser, error)
 
 	GetWorkspaceMemberByUserID(ctx context.Context, workspaceID, userID uuid.UUID) (*models.PartialWorkspaceUser, error)
 

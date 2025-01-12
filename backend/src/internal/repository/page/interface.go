@@ -33,5 +33,11 @@ type PageRepository interface {
 
 	DeleteCompetitorPageByID(ctx context.Context, competitorID, pageID uuid.UUID) error
 
+	BatchDeleteCompetitorPagesByIDs(ctx context.Context, competitorID uuid.UUID, pageIDs []uuid.UUID) error
+
+	DeleteAllCompetitorPages(ctx context.Context, competitorID uuid.UUID) error
+
+	BatchDeleteAllCompetitorPages(ctx context.Context, competitorIDs []uuid.UUID) error
+
 	GetActivePages(ctx context.Context, batchSize int, lastPageID *uuid.UUID) (models.ActivePageBatch, error)
 }

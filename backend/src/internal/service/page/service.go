@@ -108,8 +108,33 @@ func (ps *pageService) ListActivePages(ctx context.Context, batchSize int, lastP
 	return nil, nil
 }
 
-func (ps *pageService) RemovePage(ctx context.Context, competitorID uuid.UUID, pageIDs []uuid.UUID) error {
-	return ps.RemovePage(ctx, competitorID, pageIDs)
+func (ps *pageService) RemovePage(ctx context.Context, competitorIDs []uuid.UUID, pageIDs []uuid.UUID) error {
+	if competitorIDs == nil {
+		return errors.New("non-fatal: competitorIDs unspecified for removing pages")
+	}
+
+	if len(competitorIDs) > 1 {
+		// Perform batch delete if multiple competitorIDs are provided
+
+		if pageIDs == nil {
+			// Remove all pages for all competitors
+			return ps.pageRepo.BatchDeleteAllCompetitorPages(ctx, competitorIDs)
+		}
+
+		return errors.New("non-fatal: pageIDs ambiguous for removing pages")
+	}
+
+	// Perform single delete if only one competitorID is provided
+	if pageIDs == nil {
+		// Remove all pages for a competitor
+		return ps.pageRepo.DeleteAllCompetitorPages(ctx, competitorIDs[0])
+	} else if len(pageIDs) == 1 {
+		// Remove a single page for a competitor
+		return ps.pageRepo.DeleteCompetitorPageByID(ctx, competitorIDs[0], pageIDs[0])
+	} else {
+		// Remove multiple pages for a competitor
+		return ps.pageRepo.BatchDeleteCompetitorPagesByIDs(ctx, competitorIDs[0], pageIDs)
+	}
 }
 
 func (ps *pageService) PageExists(ctx context.Context, competitorID, pageID uuid.UUID) (bool, error) {

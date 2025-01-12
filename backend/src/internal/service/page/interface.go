@@ -21,7 +21,7 @@ type PageService interface {
 
 	ListActivePages(ctx context.Context, batchSize int, lastPageID *uuid.UUID) (<-chan []models.Page, <-chan error)
 
-	RemovePage(ctx context.Context, competitorID uuid.UUID, pageIDs []uuid.UUID) error
+	RemovePage(ctx context.Context, competitorIDs []uuid.UUID, pageIDs []uuid.UUID) error
 
 	PageExists(ctx context.Context, competitorID, pageID uuid.UUID) (bool, error)
 }

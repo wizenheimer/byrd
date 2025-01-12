@@ -73,6 +73,7 @@ func initializer(cfg *config.Config, tm *transaction.TxManager, logger *logger.L
 	}
 
 	// Intialize repository
+	// Repositories are responsible for running transactions
 	competitorRepo := competitor_repo.NewCompetitorRepository(tm, logger)
 	workspaceRepo := workspace_repo.NewWorkspaceRepository(tm, logger)
 	userRepo := user_repo.NewUserRepository(tm, logger)
@@ -80,11 +81,12 @@ func initializer(cfg *config.Config, tm *transaction.TxManager, logger *logger.L
 	historyRepo := history_repo.NewPageHistoryRepository(tm, logger)
 
 	// Initialize services
+	// Services are responsible for setting transaction boundaries
 	historyService := history_svc.NewPageHistoryService(historyRepo, screenshotService, diffService, logger)
 	pageService := page_svc.NewPageService(pageRepo, historyService, logger)
-	competitorService := competitor_svc.NewCompetitorService(competitorRepo, pageService, logger)
+	competitorService := competitor_svc.NewCompetitorService(competitorRepo, pageService, tm, logger)
 	userService := user_svc.NewUserService(userRepo, logger)
-	workspaceService := workspace_svc.NewWorkspaceService(workspaceRepo, competitorService, userService, logger)
+	workspaceService := workspace_svc.NewWorkspaceService(workspaceRepo, competitorService, userService, tm, logger)
 
 	// Initialize handlers
 	handlers := routes.NewHandlerContainer(

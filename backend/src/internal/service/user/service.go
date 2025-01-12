@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"errors"
 
 	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/google/uuid"
@@ -69,7 +70,7 @@ func (us *userService) BatchGetOrCreateUsers(ctx context.Context, emails []strin
 // This is used to get the user details.
 func (us *userService) ListUsersByUserIDs(ctx context.Context, userIDs []uuid.UUID) ([]models.User, error) {
 	if len(userIDs) == 0 {
-		return nil, nil
+		return nil, errors.New("non-fatal: no userIDs provided")
 	}
 
 	if len(userIDs) == 1 {
@@ -78,7 +79,9 @@ func (us *userService) ListUsersByUserIDs(ctx context.Context, userIDs []uuid.UU
 			return nil, err
 		}
 
-		return []models.User{*user}, nil
+		return []models.User{
+			*user,
+		}, nil
 	}
 
 	users, err := us.userRepository.BatchGetUsersByUserIDs(ctx, userIDs)

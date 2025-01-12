@@ -26,55 +26,20 @@ type workspaceService struct {
 	tm                *transaction.TxManager
 }
 
-func NewWorkspaceService(workspaceRepo workspace.WorkspaceRepository, competitorService competitor.CompetitorService, userService user.UserService, logger *logger.Logger) WorkspaceService {
+func NewWorkspaceService(workspaceRepo workspace.WorkspaceRepository, competitorService competitor.CompetitorService, userService user.UserService, tm *transaction.TxManager, logger *logger.Logger) WorkspaceService {
 	return &workspaceService{
 		workspaceRepo:     workspaceRepo,
 		competitorService: competitorService,
 		userService:       userService,
 		logger:            logger,
+		tm:                tm,
 	}
 }
 
 func (ws *workspaceService) CreateWorkspace(ctx context.Context, workspaceOwner *clerk.User, pages []models.PageProps, users []models.UserProps) (*models.Workspace, error) {
-	// STEP 0: Validate the workspace creation request
-	err := utils.SetDefaultsAndValidateArray(&pages)
-	if err != nil {
-		return nil, err
-	}
-
-	err = utils.SetDefaultsAndValidateArray(&users)
-	if err != nil {
-		return nil, err
-	}
-
-	ownerEmail, err := utils.GetClerkUserEmail(workspaceOwner)
-	if err != nil {
-		return nil, err
-	}
-
-	ownerEmail = utils.NormalizeEmail(ownerEmail)
-
-	emailMap := make(map[string]bool)
-	emailMap[ownerEmail] = true
-
-	memberEmails := make([]string, 0)
-	for _, member := range users {
-		// Normalize email address
-		member.Email = utils.NormalizeEmail(member.Email)
-
-		// Check if the email is already in the map
-		if _, ok := emailMap[member.Email]; ok {
-			continue
-		}
-		emailMap[member.Email] = true
-
-		// Add the member to the list of invited users
-		memberEmails = append(memberEmails, member.Email)
-	}
-
-	// Step 1: Create workspace along with the owner
+	// Step 0: Create workspace along with the owner
 	var workspace *models.Workspace
-	if err = ws.tm.RunInTx(context.Background(), nil, func(ctx context.Context) error {
+	if err := ws.tm.RunInTx(context.Background(), nil, func(ctx context.Context) error {
 		createdUser, err := ws.userService.GetOrCreateUser(ctx, workspaceOwner)
 		if err != nil {
 			return err
@@ -92,31 +57,66 @@ func (ws *workspaceService) CreateWorkspace(ctx context.Context, workspaceOwner 
 		return nil, err
 	}
 
-	// Step 2: Invite users to the workspace
-	members, err := ws.userService.BatchGetOrCreateUsers(ctx, memberEmails)
+	// STEP 1: Validate and Create Competitors for the workspace
+	err := utils.SetDefaultsAndValidateArray(&pages)
 	if err != nil {
-		ws.logger.Debug("Failed to get or create users", zap.Error(err))
-	}
-	if len(members) == 0 {
-		ws.logger.Debug("No users to invite")
+		ws.logger.Debug("failed to validate pages", zap.Error(err))
 	} else {
-		// Add the users to the workspace
-		memberIDs := make([]uuid.UUID, 0)
-		for _, member := range members {
-			memberIDs = append(memberIDs, member.ID)
+		// Add competitors to the workspace
+		_, err = ws.competitorService.AddCompetitorsToWorkspace(ctx, workspace.ID, pages)
+		if err != nil {
+			ws.logger.Debug("failed to add competitors to workspace", zap.Error(err))
 		}
+	}
 
-		ws.workspaceRepo.BatchAddUsersToWorkspace(ctx, memberIDs, workspace.ID)
+	// Step 2: Validate and invite users to the workspace
+	err = utils.SetDefaultsAndValidateArray(&users)
+	if err != nil {
+		ws.logger.Debug("failed to validate users", zap.Error(err))
+	} else {
+		ownerEmail, err := utils.GetClerkUserEmail(workspaceOwner)
 		if err != nil {
 			return nil, err
 		}
-	}
+		ownerEmail = utils.NormalizeEmail(ownerEmail)
 
-	// Step 3: Create competitors for the workspace
-	// Add competitors to the workspace
-	_, err = ws.competitorService.AddCompetitorsToWorkspace(ctx, workspace.ID, pages)
-	if err != nil {
-		ws.logger.Debug("Failed to add competitors to workspace", zap.Error(err))
+		emailMap := make(map[string]bool)
+		emailMap[ownerEmail] = true
+
+		memberEmails := make([]string, 0)
+		for _, member := range users {
+			// Normalize email address
+			member.Email = utils.NormalizeEmail(member.Email)
+
+			// Check if the email is already in the map
+			if _, ok := emailMap[member.Email]; ok {
+				continue
+			}
+			emailMap[member.Email] = true
+
+			// Add the member to the list of invited users
+			memberEmails = append(memberEmails, member.Email)
+		}
+
+		members, err := ws.userService.BatchGetOrCreateUsers(ctx, memberEmails)
+		if err != nil {
+			ws.logger.Debug("failed to get or create users", zap.Error(err))
+		}
+
+		if len(members) == 0 {
+			ws.logger.Debug("no users to invite")
+		} else {
+			// Add the users to the workspace
+			memberIDs := make([]uuid.UUID, 0)
+			for _, member := range members {
+				memberIDs = append(memberIDs, member.ID)
+			}
+
+			ws.workspaceRepo.BatchAddUsersToWorkspace(ctx, memberIDs, workspace.ID)
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	return workspace, nil
@@ -193,8 +193,7 @@ func (ws *workspaceService) DeleteWorkspace(ctx context.Context, workspaceID uui
 }
 
 func (ws *workspaceService) ListWorkspaceMembers(ctx context.Context, workspaceID uuid.UUID, limit, offset *int, roleFilter *models.WorkspaceRole) ([]models.WorkspaceUser, error) {
-	// TODO: add filtering and pagination support
-	members, err := ws.workspaceRepo.GetWorkspaceMembers(ctx, workspaceID)
+	members, err := ws.workspaceRepo.ListWorkspaceMembers(ctx, workspaceID, limit, offset, roleFilter)
 	if err != nil {
 		return nil, err
 	}
