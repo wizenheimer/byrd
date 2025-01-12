@@ -21,53 +21,42 @@ func NewCompetitorRepository(tm *transaction.TxManager, logger *logger.Logger) C
 	}
 }
 
-// ---- Create operations for competitor ----
-
-// CreateCompetitor creates a competitor
-func (r *competitorRepo) CreateCompetitorForWorkspace(ctx context.Context, workspaceID uuid.UUID, competitorName string) (models.Competitor, error) {
-	return models.Competitor{}, nil
+func (r *competitorRepo) CreateCompetitorForWorkspace(ctx context.Context, workspaceID uuid.UUID, competitorName string) (*models.Competitor, error) {
+	return nil, nil
 }
 
-// BatchCreateCompetitorsForWorkspace creates multiple competitors
 func (r *competitorRepo) BatchCreateCompetitorsForWorkspace(ctx context.Context, workspaceID uuid.UUID, competitorNames []string) ([]models.Competitor, error) {
-	return []models.Competitor{}, nil
+	return nil, nil
 }
 
-// ---- Read operations for competitor ----
-
-// GetCompetitorForWorkspace gets a competitor by its ID
-func (r *competitorRepo) GetCompetitorForWorkspace(ctx context.Context, workspaceID, competitorID uuid.UUID) (models.Competitor, error) {
-	return models.Competitor{}, nil
+func (r *competitorRepo) GetCompetitorForWorkspace(ctx context.Context, workspaceID, competitorID uuid.UUID) (*models.Competitor, error) {
+	return nil, nil
 }
 
-// BatchGetCompetitors gets competitors by their IDs
 func (r *competitorRepo) BatchGetCompetitorsForWorkspace(ctx context.Context, workspaceID uuid.UUID, competitorIDs []uuid.UUID) ([]models.Competitor, error) {
-	return []models.Competitor{}, nil
+	return nil, nil
 }
 
-// ListCompetitorsForWorkspace lists competitors for a workspace
 func (r *competitorRepo) ListCompetitorsForWorkspace(ctx context.Context, workspaceID uuid.UUID, limit, offset *int) ([]models.Competitor, error) {
-	return []models.Competitor{}, nil
+	return nil, nil
 }
 
-// ---- Update operations for competitor ----
-
-// UpdateCompetitorForWorkspace updates a competitor
-func (r *competitorRepo) UpdateCompetitorForWorkspace(ctx context.Context, workspaceID, competitorID uuid.UUID, competitorName string) (models.Competitor, error) {
-	return models.Competitor{}, nil
+func (r *competitorRepo) UpdateCompetitorForWorkspace(ctx context.Context, workspaceID, competitorID uuid.UUID, competitorName string) (*models.Competitor, error) {
+	return nil, nil
 }
 
-// ---- Delete operations for competitor ----
-
-// RemoveCompetitorForWorkspace removes a competitor
 func (r *competitorRepo) RemoveCompetitorForWorkspace(ctx context.Context, workspaceID, competitorID uuid.UUID) error {
 	return nil
 }
 
-// ---- Optimized Lookup for Competitors ----
+func (r *competitorRepo) BatchRemoveCompetitorForWorkspace(ctx context.Context, workspaceID uuid.UUID, competitorID []uuid.UUID) error {
+	return nil
+}
 
-// WorkspaceCompetitorExists checks if a competitor exists in a workspace
-// This is optimized for quick lookups over the competitor table
+func (r *competitorRepo) RemoveAllCompetitorsForWorkspace(ctx context.Context, workspaceID uuid.UUID) error {
+	return nil
+}
+
 func (r *competitorRepo) WorkspaceCompetitorExists(ctx context.Context, workspaceID, competitorID uuid.UUID) (bool, error) {
 	return false, nil
 }
