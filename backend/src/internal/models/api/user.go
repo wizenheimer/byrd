@@ -3,8 +3,10 @@ package models
 
 import models "github.com/wizenheimer/byrd/src/internal/models/core"
 
-// InviteUserToWorkspaceRequest is the request to invite a user to a workspace
-type InviteUserToWorkspaceRequest = models.WorkspaceUserProps
+// AddUsersToWorkspaceRequest is the request to invite a user to a workspace
+type AddUsersToWorkspaceRequest struct {
+	Emails []string `json:"emails" validate:"required,dive,email"`
+}
 
 // UpdateUserRequest is the request to update a user
 // This request can be used to update the user's name, email, role, and status
@@ -16,10 +18,7 @@ type UpdateUserRequest = models.UserProps
 // Admins can create users in the workspace with any role
 type CreateWorkspaceUserRequest = models.WorkspaceUserProps
 
-// CreateWorkspaceUserResponse is the response to creating a user in a workspace
-type CreateWorkspaceUserResponse = models.WorkspaceUser
-
 // UpdateWorkspaceUserRoleRequest is the request to update a user's role in a workspace
 type UpdateWorkspaceUserRoleRequest struct {
-	Role models.UserWorkspaceRole `json:"role" validate:"required,oneof=admin user viewer" default:"user"`
+	Role models.WorkspaceRole `json:"role" validate:"required,oneof=admin user viewer" default:"user"`
 }
