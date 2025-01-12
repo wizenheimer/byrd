@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 
 	api "github.com/wizenheimer/byrd/src/internal/models/api"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
@@ -15,7 +16,7 @@ import (
 )
 
 type workflowService struct {
-	executors  map[models.WorkflowType]executor.WorkflowExecutor
+	executors  sync.Map //map[models.WorkflowType]executor.WorkflowExecutor
 	logger     *logger.Logger
 	repository workflow.WorkflowRepository
 }
@@ -28,7 +29,6 @@ func NewWorkflowService(logger *logger.Logger, repository workflow.WorkflowRepos
 	ws := workflowService{
 		logger:     logger.WithFields(map[string]interface{}{"module": "workflow_service"}),
 		repository: repository,
-		executors:  make(map[models.WorkflowType]executor.WorkflowExecutor),
 	}
 
 	// Register executors
@@ -49,11 +49,13 @@ func (s *workflowService) Initialize(ctx context.Context) []error {
 	s.logger.Debug("initializing workflow service")
 	var errors []error
 	// Initialize each executor
-	for key, executor := range s.executors {
+	s.executors.Range(func(key, value interface{}) bool {
+		executor := value.(executor.WorkflowExecutor)
 		if err := executor.Initialize(ctx); err != nil {
 			errors = append(errors, fmt.Errorf("failed to initialize %s executor: %w", key, err))
 		}
-	}
+		return true
+	})
 
 	return errors
 }
