@@ -5,15 +5,14 @@ import (
 
 	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/google/uuid"
-	api "github.com/wizenheimer/byrd/src/internal/models/api"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/internal/repository/user"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
+	"github.com/wizenheimer/byrd/src/pkg/utils"
 )
 
 var _ UserService = (*userService)(nil)
 
-// TODO: rethink retrieval methods
 type userService struct {
 	userRepository user.UserRepository
 	logger         *logger.Logger
@@ -26,87 +25,105 @@ func NewUserService(userRepository user.UserRepository, logger *logger.Logger) U
 	}
 }
 
-// CreateWorkspaceOwner creates a owner in a workspace if it does not exist
-// Once the owner is created or found, it returns the owner's user model
-// It returns an error if the user could not be created
-// This is triggered when workspace owner creates a workspace
-func (us *userService) CreateWorkspaceOwner(ctx context.Context, clerk *clerk.User, workspaceID uuid.UUID) (*models.User, error) {
-	return nil, nil
+// GetOrCreateWorkspaceOwner gets or creates a single user.
+func (us *userService) GetOrCreateUser(ctx context.Context, clerk *clerk.User) (*models.User, error) {
+	clerkEmail, err := utils.GetClerkUserEmail(clerk)
+	if err != nil {
+		return nil, err
+	}
+	clerkEmail = utils.NormalizeEmail(clerkEmail)
+
+	clerkUserName := utils.GetClerkUserFullName(clerk)
+
+	user, err := us.userRepository.GetOrCreateClerkUser(ctx, clerk.ID, clerkEmail, clerkUserName)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
 }
 
-// AddUserToWorkspace adds a user to a workspace
-// It returns an error if the user could not be added to the workspace
-// It returns nil if the user was added successfully
-// This is triggered when workspace owner invites a user to a workspace
-func (us *userService) AddUserToWorkspace(ctx context.Context, workspaceID uuid.UUID, invitedUsers []api.InviteUserToWorkspaceRequest) ([]api.CreateWorkspaceUserResponse, error) {
-	return nil, nil
+// BatchGetOrCreateUsers creates a batch of users if they do not exist.
+// It returns the created or found users.
+// It returns an error if the users could not be created.
+func (us *userService) BatchGetOrCreateUsers(ctx context.Context, emails []string) ([]models.User, error) {
+	for i, email := range emails {
+		emails[i] = utils.NormalizeEmail(email)
+	}
+
+	if len(emails) == 1 {
+		user, err := us.userRepository.GetOrCreatePartialUsers(ctx, emails[0])
+		if err != nil {
+			return nil, err
+		}
+		return []models.User{*user}, err
+	}
+
+	users, err := us.userRepository.BatchGetOrCreatePartialUsers(ctx, emails)
+	if err != nil {
+		return nil, err
+	}
+
+	return users, nil
 }
 
-// GetWorkspaceUser gets a user from a workspace
-// Once the user is found, it returns the user
-// It returns an error if the user could not be found
-// This is triggered whenever signs in to the application
-func (us *userService) GetWorkspaceUser(ctx context.Context, clerk *clerk.User, workspaceID uuid.UUID) (models.WorkspaceUser, error) {
-	return models.WorkspaceUser{}, nil
+// ListUsersByUserIDs lists users by userIDs.
+// This is used to get the user details.
+func (us *userService) ListUsersByUserIDs(ctx context.Context, userIDs []uuid.UUID) ([]models.User, error) {
+	if len(userIDs) == 0 {
+		return nil, nil
+	}
+
+	if len(userIDs) == 1 {
+		user, err := us.userRepository.GetUserByUserID(ctx, userIDs[0])
+		if err != nil {
+			return nil, err
+		}
+
+		return []models.User{*user}, nil
+	}
+
+	users, err := us.userRepository.BatchGetUsersByUserIDs(ctx, userIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	return users, nil
 }
 
-// GetWorkspaceUserByID gets a user from a workspace by ID
-// Once the user is found, it returns the user
-// This is triggered when workspace owner or member wants to get a user by ID
-func (us *userService) GetWorkspaceUserByID(ctx context.Context, userID, workspaceID uuid.UUID) (models.WorkspaceUser, error) {
-	return models.WorkspaceUser{}, nil
-}
+// GetUserByClerk gets a clerk user by clerk credentials.
+// This is used to get the clerk user details.
+func (us *userService) GetUserByClerkCredentials(ctx context.Context, clerk *clerk.User) (*models.User, error) {
+	userEmail, err := utils.GetClerkUserEmail(clerk)
+	if err != nil {
+		return nil, err
+	}
+	userEmail = utils.NormalizeEmail(userEmail)
 
-// ListWorkspaceUsers lists the users of a workspace
-// It returns the users of the workspace
-// It returns an error if the workspace does not exist
-func (us *userService) ListWorkspaceUsers(ctx context.Context, workspaceID uuid.UUID) ([]models.WorkspaceUser, error) {
-	return nil, nil
-}
+	user, err := us.userRepository.GetUserByClerkCredentials(ctx, clerk.ID, userEmail)
+	if err != nil {
+		return nil, err
+	}
 
-// ListUserWorkspaces lists the workspaces of a user
-// It returns the workspaces of the user
-// It returns an error if the user does not exist
-// This is triggered when the user signs in to the application
-func (us *userService) ListUserWorkspaces(ctx context.Context, clerk *clerk.User) ([]uuid.UUID, error) {
-	return nil, nil
+	return user, nil
 }
-
-// UpdateWorkspaceUserRole updates a user role in a workspace
-// It returns an error if the user could not be updated
-// It returns nil if the user was updated successfully
-// It can update the user's role in the workspace
-func (us *userService) UpdateWorkspaceUserRole(ctx context.Context, userID, workspaceID uuid.UUID, role models.UserWorkspaceRole) (models.WorkspaceUser, error) {
-	return models.WorkspaceUser{}, nil
-}
-
-func (us *userService) UpdateWorkspaceUserStatus(ctx context.Context, userID, workspaceID uuid.UUID, status models.UserWorkspaceStatus) error {
-	return nil
-}
-
-// RemoveUserFromWorkspace removes users from a workspace
-// It returns an error if the users could not be removed
-// It returns nil if the users were removed successfully
-// When the userIDs are nil, it removes all users from the workspace
-func (us *userService) RemoveWorkspaceUsers(ctx context.Context, userIDs []uuid.UUID, workspaceID uuid.UUID) error {
-	return nil
-}
-
-// GetWorkspaceUserCount gets the count of users in a workspace
-// It returns the count of users in the workspace
-// It returns an error if the workspace does not exist
-// This is triggered when workspace owner or member wants to get the count of users in a workspace
-func (us *userService) GetWorkspaceUserCountByRole(ctx context.Context, workspaceID uuid.UUID) (map[models.UserWorkspaceRole]int, error) {
-	return nil, nil
-}
-
-// <------ User Management ------>
 
 // SyncUser syncs a user with Clerk
 // It returns an error if the user could not be synced
 // When sync is triggered, it marks the account status as active
 // And updates the user's email and name if they have changed
 func (us *userService) SyncUser(ctx context.Context, clerk *clerk.User) error {
+	clerkEmail, err := utils.GetClerkUserEmail(clerk)
+	if err != nil {
+		return err
+	}
+	clerkEmail = utils.NormalizeEmail(clerkEmail)
+
+	err = us.userRepository.SyncUser(ctx, clerk.ID, clerkEmail)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -115,5 +132,35 @@ func (us *userService) SyncUser(ctx context.Context, clerk *clerk.User) error {
 // It returns nil if the user was deleted successfully
 // This is the only user-facing and handler-owned method
 func (us *userService) DeleteUser(ctx context.Context, clerk *clerk.User) error {
-	return nil
+	clerkEmail, err := utils.GetClerkUserEmail(clerk)
+	if err != nil {
+		return err
+	}
+	clerkEmail = utils.NormalizeEmail(clerkEmail)
+
+	user, err := us.userRepository.GetUserByClerkCredentials(ctx, clerk.ID, clerkEmail)
+	if err != nil {
+		return err
+	}
+
+	return us.userRepository.DeleteUser(ctx, user.ID)
+}
+
+// UserExistsByUserID checks if a user exists by UserID.
+// It returns true if the user exists, otherwise it returns false.
+func (us *userService) UserExistsByUserID(ctx context.Context, userID uuid.UUID) (bool, error) {
+	return us.userRepository.UserExists(ctx, userID)
+}
+
+// UserExistsByClerkID checks if a user exists by ClerkID.
+// It returns true if the user exists, otherwise it returns false.
+func (us *userService) ClerkUserExists(ctx context.Context, clerk *clerk.User) (bool, error) {
+	email, err := utils.GetClerkUserEmail(clerk)
+	if err != nil {
+		return false, err
+	}
+
+	email = utils.NormalizeEmail(email)
+
+	return us.userRepository.ClerkUserExists(ctx, clerk.ID, email)
 }

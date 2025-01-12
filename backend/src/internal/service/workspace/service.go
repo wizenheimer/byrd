@@ -3,16 +3,19 @@ package workspace
 
 import (
 	"context"
+	"errors"
 
 	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 
-	api "github.com/wizenheimer/byrd/src/internal/models/api"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/internal/repository/workspace"
 	"github.com/wizenheimer/byrd/src/internal/service/competitor"
 	"github.com/wizenheimer/byrd/src/internal/service/user"
+	"github.com/wizenheimer/byrd/src/internal/transaction"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
+	"github.com/wizenheimer/byrd/src/pkg/utils"
 )
 
 type workspaceService struct {
@@ -20,6 +23,7 @@ type workspaceService struct {
 	competitorService competitor.CompetitorService
 	userService       user.UserService
 	logger            *logger.Logger
+	tm                *transaction.TxManager
 }
 
 // compile time check if the interface is implemented
@@ -34,174 +38,440 @@ func NewWorkspaceService(workspaceRepo workspace.WorkspaceRepository, competitor
 	}
 }
 
-// CreateWorkspace creates a new workspace for a user
-// If the user exists, it creates a new workspace and returns it
-// If the user does not exist, it creates a new user and a new workspace and returns the workspace
-func (ws *workspaceService) CreateWorkspace(ctx context.Context, workspaceOwner *clerk.User, workspaceReq api.WorkspaceCreationRequest) (*models.Workspace, error) {
-	return nil, nil
+func (ws *workspaceService) CreateWorkspace(ctx context.Context, workspaceOwner *clerk.User, pages []models.PageProps, users []models.UserProps) (*models.Workspace, error) {
+	// STEP 0: Validate the workspace creation request
+	err := utils.SetDefaultsAndValidateArray(&pages)
+	if err != nil {
+		return nil, err
+	}
+
+	err = utils.SetDefaultsAndValidateArray(&users)
+	if err != nil {
+		return nil, err
+	}
+
+	ownerEmail, err := utils.GetClerkUserEmail(workspaceOwner)
+	if err != nil {
+		return nil, err
+	}
+
+	ownerEmail = utils.NormalizeEmail(ownerEmail)
+
+	emailMap := make(map[string]bool)
+	emailMap[ownerEmail] = true
+
+	memberEmails := make([]string, 0)
+	for _, member := range users {
+		// Normalize email address
+		member.Email = utils.NormalizeEmail(member.Email)
+
+		// Check if the email is already in the map
+		if _, ok := emailMap[member.Email]; ok {
+			continue
+		}
+		emailMap[member.Email] = true
+
+		// Add the member to the list of invited users
+		memberEmails = append(memberEmails, member.Email)
+	}
+
+	// Step 1: Create workspace along with the owner
+	var workspace *models.Workspace
+	if err = ws.tm.RunInTx(context.Background(), nil, func(ctx context.Context) error {
+		createdUser, err := ws.userService.GetOrCreateUser(ctx, workspaceOwner)
+		if err != nil {
+			return err
+		}
+
+		// Step 2: Create the workspace
+		workspaceName := utils.GenerateWorkspaceName(workspaceOwner)
+		workspace, err = ws.workspaceRepo.CreateWorkspace(ctx, workspaceName, *createdUser.Email, createdUser.ID)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	// Step 2: Invite users to the workspace
+	members, err := ws.userService.BatchGetOrCreateUsers(ctx, memberEmails)
+	if err != nil {
+		ws.logger.Debug("Failed to get or create users", zap.Error(err))
+	}
+	if len(members) == 0 {
+		ws.logger.Debug("No users to invite")
+	} else {
+		// Add the users to the workspace
+		memberIDs := make([]uuid.UUID, 0)
+		for _, member := range members {
+			memberIDs = append(memberIDs, member.ID)
+		}
+
+		ws.workspaceRepo.BatchAddUsersToWorkspace(ctx, memberIDs, workspace.ID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Step 3: Create competitors for the workspace
+	// Add competitors to the workspace
+	_, err = ws.competitorService.AddCompetitorsToWorkspace(ctx, workspace.ID, pages)
+	if err != nil {
+		ws.logger.Debug("Failed to add competitors to workspace", zap.Error(err))
+	}
+
+	return workspace, nil
 }
 
-// ListUserWorkspaces lists the workspaces of a clerk user
-// It returns the workspaces of the clerk user
-// It returns an error if the user does not exist
 func (ws *workspaceService) ListUserWorkspaces(ctx context.Context, workspaceMember *clerk.User) ([]models.Workspace, error) {
-	return nil, nil
+	user, err := ws.userService.GetUserByClerkCredentials(ctx, workspaceMember)
+	if err != nil {
+		return nil, err
+	}
+
+	workspaces, err := ws.workspaceRepo.GetWorkspacesForUserID(ctx, user.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	return workspaces, nil
 }
 
-// GetWorkspace gets a workspace by ID
-// It returns the workspace if it exists, otherwise it returns an error
 func (ws *workspaceService) GetWorkspace(ctx context.Context, workspaceID uuid.UUID) (*models.Workspace, error) {
-	return nil, nil
+	workspace, err := ws.workspaceRepo.GetWorkspaceByWorkspaceID(ctx, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+
+	return workspace, nil
 }
 
-// UpdateWorkspace updates a workspace
-// It returns an error if the workspace does not exist
-// It returns an error if the workspace is inactive
-func (ws *workspaceService) UpdateWorkspace(ctx context.Context, workspaceID uuid.UUID, req api.WorkspaceUpdateRequest) error {
+func (ws *workspaceService) UpdateWorkspace(ctx context.Context, workspaceID uuid.UUID, workspaceProps models.WorkspaceProps) error {
+	// Check which fields are being updated, and update them
+	updatedBillingEmail := utils.NormalizeEmail(workspaceProps.BillingEmail)
+	// TODO: add normalization for workspace name
+	updateWorkspaceName := workspaceProps.Name
+
+	updatedNameRequiresUpdate := updateWorkspaceName != ""
+	billingEmailRequiresUpdate := updatedBillingEmail != ""
+
+	if updatedNameRequiresUpdate && billingEmailRequiresUpdate {
+		return ws.workspaceRepo.UpdateWorkspaceDetails(ctx, workspaceID, updateWorkspaceName, updatedBillingEmail)
+	}
+
+	if updatedNameRequiresUpdate {
+		return ws.workspaceRepo.UpdateWorkspaceName(ctx, workspaceID, updateWorkspaceName)
+	}
+
+	if billingEmailRequiresUpdate {
+		return ws.workspaceRepo.UpdateWorkspaceBillingEmail(ctx, workspaceID, updatedBillingEmail)
+	}
+
 	return nil
 }
 
-// DeleteWorkspace deletes a workspace
-// It returns an error if the workspace does not exist
-// It returns an error if the workspace is inactive
 func (ws *workspaceService) DeleteWorkspace(ctx context.Context, workspaceID uuid.UUID) (models.WorkspaceStatus, error) {
-	return models.WorkspaceStatusActive, nil
+	err := ws.tm.RunInTx(context.Background(), nil, func(ctx context.Context) error {
+		// Step 1: Remove all competitors from the workspace
+		err := ws.competitorService.RemoveCompetitorForWorkspace(ctx, workspaceID, nil)
+		if err != nil {
+			return err
+		}
+
+		// Step 2: Remove all users from the workspace
+		err = ws.workspaceRepo.DeleteWorkspace(ctx, workspaceID)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return models.WorkspaceActive, err
+	}
+
+	// Step 3: Delete the workspace
+	return models.WorkspaceInactive, nil
 }
 
-// ListWorkspaceMembers gets the members of a workspace
-// It returns the members of the workspace
-// It returns an error if the workspace does not exist
-// If includeMembers is true, it includes members in the response
-// If includeAdmins is true, it includes admins in the response
-// If both includeMembers and includeAdmins are false, it returns an empty list
-func (ws *workspaceService) ListWorkspaceMembers(ctx context.Context, workspaceID uuid.UUID, params api.WorkspaceMembersListingParams) ([]models.WorkspaceUser, error) {
-	return nil, nil
+func (ws *workspaceService) ListWorkspaceMembers(ctx context.Context, workspaceID uuid.UUID, limit, offset *int, roleFilter *models.WorkspaceRole) ([]models.WorkspaceUser, error) {
+	// TODO: add filtering and pagination support
+	members, err := ws.workspaceRepo.GetWorkspaceMembers(ctx, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+
+	membersIDs := make([]uuid.UUID, 0)
+	for _, member := range members {
+		membersIDs = append(membersIDs, member.ID)
+	}
+
+	users, err := ws.userService.ListUsersByUserIDs(ctx, membersIDs)
+	if err != nil {
+		return nil, err
+	}
+	userIDToUserMap := make(map[uuid.UUID]models.User)
+	for _, user := range users {
+		userIDToUserMap[user.ID] = user
+	}
+
+	workspaceUsers := make([]models.WorkspaceUser, 0)
+	for _, member := range members {
+		user, ok := userIDToUserMap[member.ID]
+		if !ok {
+			continue
+		}
+		workspaceUser := models.WorkspaceUser{
+			ID:               member.ID,
+			WorkspaceID:      workspaceID,
+			Role:             member.Role,
+			Name:             *user.Name,
+			Email:            *user.Email,
+			MembershipStatus: member.MembershipStatus,
+		}
+		workspaceUsers = append(workspaceUsers, workspaceUser)
+	}
+
+	return workspaceUsers, nil
 }
 
-// InviteUserToWorkspace adds a user to a workspace
-// If the user does not exist, it creates a new user and adds it to the workspace
-// If the user exists, it adds it to the workspace
-func (ws *workspaceService) InviteUsersToWorkspace(ctx context.Context, workspaceMember *clerk.User, workspaceID uuid.UUID, invitedUsers []api.InviteUserToWorkspaceRequest) ([]api.CreateWorkspaceUserResponse, error) {
-	return nil, nil
+func (ws *workspaceService) AddUsersToWorkspace(ctx context.Context, workspaceMember *clerk.User, workspaceID uuid.UUID, emails []string) ([]models.WorkspaceUser, error) {
+	// Step 1: Normalize the emails
+	normalizedEmails := make([]string, 0)
+	for _, email := range emails {
+		normalizedEmails = append(normalizedEmails, utils.NormalizeEmail(email))
+	}
+
+	// Step 2: Get or create users
+	users, err := ws.userService.BatchGetOrCreateUsers(ctx, normalizedEmails)
+	if err != nil {
+		return nil, err
+	}
+
+	// Step 3: Add users to the workspace
+	userIDs := make([]uuid.UUID, 0)
+	userIDsToUserMap := make(map[uuid.UUID]models.User)
+	for _, user := range users {
+		userIDs = append(userIDs, user.ID)
+		userIDsToUserMap[user.ID] = user
+	}
+
+	partialWorkspaceUsers, err := ws.workspaceRepo.BatchAddUsersToWorkspace(ctx, userIDs, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+
+	workspaceUsers := make([]models.WorkspaceUser, 0)
+	for _, member := range partialWorkspaceUsers {
+		user, ok := userIDsToUserMap[member.ID]
+		if !ok {
+			continue
+		}
+		workspaceUser := models.WorkspaceUser{
+			ID:               member.ID,
+			WorkspaceID:      workspaceID,
+			Role:             member.Role,
+			Name:             *user.Name,
+			Email:            *user.Email,
+			MembershipStatus: member.MembershipStatus,
+		}
+		workspaceUsers = append(workspaceUsers, workspaceUser)
+	}
+
+	return workspaceUsers, nil
 }
 
-// LeaveWorkspace exits clerk user from a workspace
-// It returns an error if the user does not exist in the workspace
-// It returns an error if the user is the last admin in the workspace
 func (ws *workspaceService) LeaveWorkspace(ctx context.Context, workspaceMember *clerk.User, workspaceID uuid.UUID) error {
+	// Get the workspace member
+	workspaceUser, err := ws.userService.GetUserByClerkCredentials(ctx, workspaceMember)
+	if err != nil {
+		return nil
+	}
+
+	// Get workspace member count
+	workspaceCount, err := ws.workspaceRepo.GetWorkspaceUserCountByRole(ctx, workspaceID)
+	if err != nil {
+		return nil
+	}
+
+	// Check if the user is the last admin in the workspace
+	adminRoleCount := workspaceCount[models.RoleAdmin]
+	userRoleCount := workspaceCount[models.RoleUser]
+
+	if userRoleCount != 0 && adminRoleCount == 1 {
+		return errors.New("cannot leave workspace as the last admin")
+	}
+
+	// Remove the user from the workspace
+	err = ws.workspaceRepo.RemoveUserFromWorkspace(ctx, workspaceID, workspaceUser.ID)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
-// UpdateWorkspaceMemberRole updates member role in a workspace
-// It returns an error if the user does not exist in the workspace
-func (ws *workspaceService) UpdateWorkspaceMemberRole(ctx context.Context, workspaceID uuid.UUID, workspaceMemberID uuid.UUID, role models.UserWorkspaceRole) error {
+func (ws *workspaceService) UpdateWorkspaceMemberRole(ctx context.Context, workspaceID uuid.UUID, workspaceMemberID uuid.UUID, role models.WorkspaceRole) error {
+	err := ws.workspaceRepo.UpdateUserRoleForWorkspace(ctx, workspaceID, workspaceMemberID, role)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
-// RemoveUserFromWorkspace removes a user from a workspace
-// It returns an error if the user does not exist in the workspace
 func (ws *workspaceService) RemoveUserFromWorkspace(ctx context.Context, workspaceID uuid.UUID, workspaceMemberID uuid.UUID) error {
+	err := ws.workspaceRepo.RemoveUserFromWorkspace(ctx, workspaceID, workspaceMemberID)
+
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
-// JoinWorkspace when a user accepts an invite to join a workspace
-// It returns an error if the user does not exist in the workspace
-// It returns an error if the user is not invited to the workspace
 func (ws *workspaceService) JoinWorkspace(ctx context.Context, invitedMember *clerk.User, workspaceID uuid.UUID) error {
+	user, err := ws.userService.GetUserByClerkCredentials(ctx, invitedMember)
+	if err != nil {
+		return err
+	}
+
+	err = ws.workspaceRepo.UpdateUserMembershipStatusForWorkspace(ctx, workspaceID, user.ID, models.ActiveMember)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
-// <--------- Workspace x Middleware --------->
-
-// WorkspaceExists checks if a workspace exists and is active
-// It returns true if the workspace exists and is active
-// It returns false if the workspace does not exist or is not active
 func (ws *workspaceService) WorkspaceExists(ctx context.Context, workspaceID uuid.UUID) (bool, error) {
-	return false, nil
+	return ws.workspaceRepo.WorkspaceExists(ctx, workspaceID)
 }
 
-// ClerkUserIsWorkspaceAdmin checks if a user is an admin in a workspace
-// It returns true if the user is an admin
-// It returns false if the user is not an admin
 func (ws *workspaceService) ClerkUserIsWorkspaceAdmin(ctx context.Context, workspaceID uuid.UUID, clerkUser *clerk.User) (bool, error) {
-	return false, nil
+	user, err := ws.userService.GetUserByClerkCredentials(ctx, clerkUser)
+	if err != nil {
+		return false, err
+	}
+
+	workspaceUser, err := ws.workspaceRepo.GetWorkspaceMemberByUserID(ctx, workspaceID, user.ID)
+	if err != nil {
+		return false, err
+	}
+
+	return workspaceUser.Role == models.RoleAdmin, nil
 }
 
-// ClerkUserIsMember checks if a user is a member in a workspace
-// It returns true if the user is a member
-// It returns false if the user is not a member
 func (ws *workspaceService) ClerkUserIsWorkspaceMember(ctx context.Context, workspaceID uuid.UUID, clerkUser *clerk.User) (bool, error) {
-	return false, nil
+	user, err := ws.userService.GetUserByClerkCredentials(ctx, clerkUser)
+	if err != nil {
+		return false, err
+	}
+
+	workspaceUser, err := ws.workspaceRepo.GetWorkspaceMemberByUserID(ctx, workspaceID, user.ID)
+	if err != nil {
+		return false, err
+	}
+
+	return workspaceUser.Role == models.RoleAdmin || workspaceUser.Role == models.RoleUser, nil
 }
 
-// WorkspaceCompetitorExists checks if a competitor exists and is active
-// It returns true if the competitor exists and is active
-// It returns false if the competitor does not exist or is not active
 func (ws *workspaceService) WorkspaceCompetitorExists(ctx context.Context, workspaceID, competitorID uuid.UUID) (bool, error) {
-	return false, nil
+	exists, err := ws.competitorService.CompetitorExists(ctx, workspaceID, competitorID)
+	if err != nil {
+		return false, err
+	}
+
+	return exists, nil
 }
 
-// PageExists checks if a page exists and is active
-// It returns true if the page exists and is active
-// It returns false if the page does not exist or is not active
 func (ws *workspaceService) WorkspaceCompetitorPageExists(ctx context.Context, workspaceID, competitorID, pageID uuid.UUID) (bool, error) {
-	return false, nil
+	competitorExists, err := ws.competitorService.CompetitorExists(ctx, workspaceID, competitorID)
+	if err != nil {
+		return false, err
+	}
+
+	if !competitorExists {
+		return false, nil
+	}
+
+	pageExists, err := ws.competitorService.PageExists(ctx, competitorID, pageID)
+	if err != nil {
+		return false, err
+	}
+
+	if !pageExists {
+		return false, nil
+	}
+
+	return true, nil
 }
 
-// <--------- Workspace Competitor Management --------->
-// CRUD operations for competitors
-// CRUD operations for pages
-// Read operations for page history
+func (ws *workspaceService) AddCompetitorToWorkspace(ctx context.Context, workspaceID uuid.UUID, pages []models.PageProps) (*models.Competitor, error) {
+	competitors, err := ws.competitorService.AddCompetitorsToWorkspace(ctx, workspaceID, pages)
+	if err != nil {
+		return nil, err
+	}
 
-// CreateWorkspaceCompetitor adds a new competitor to a workspace
-// It returns an error if the workspace does not exist
-// It returns an error if the user is not an member of the workspace
-func (ws *workspaceService) CreateWorkspaceCompetitor(ctx context.Context, clerkUser *clerk.User, workspaceID uuid.UUID, page api.CreatePageRequest) error {
-	return nil
+	if len(competitors) == 0 {
+		return nil, errors.New("failed to create competitor")
+	}
+
+	return &competitors[0], nil
 }
 
-// AddPageToCompetitor adds a new page to an existing competitor
-// It returns an error if the workspace does not exist
-// It returns an error if the user is not an member of the workspace
-func (ws *workspaceService) AddPageToCompetitor(ctx context.Context, clerkUser *clerk.User, competitorID string, pages []api.CreatePageRequest) ([]models.Page, error) {
-	return nil, nil
+func (ws *workspaceService) AddPageToCompetitor(ctx context.Context, competitorID uuid.UUID, pages []models.PageProps) ([]models.Page, error) {
+	createdPages, err := ws.competitorService.AddPagesToCompetitor(ctx, competitorID, pages)
+	if err != nil {
+		return nil, err
+	}
+	if len(pages) != len(createdPages) {
+		if len(createdPages) == 0 {
+			return nil, errors.New("failed to create pages")
+		}
+		return createdPages, errors.New("failed to create some pages")
+	}
+
+	return createdPages, nil
 }
 
-// ListPages lists the competitors of a workspace with tracked pages for each competitor
-// It returns an error if the workspace does not exist
-// It returns an error if the user is not an member of the workspace
-// pagination params applies to competitors (not pages)
-func (ws *workspaceService) ListWorkspaceCompetitors(ctx context.Context, clerkUser *clerk.User, workspaceID uuid.UUID, params api.PaginationParams) ([]api.GetWorkspaceCompetitorResponse, error) {
-	return nil, nil
+func (ws *workspaceService) ListCompetitorsForWorkspace(ctx context.Context, workspaceID uuid.UUID, limit, offset *int) ([]models.Competitor, error) {
+	competitors, err := ws.competitorService.ListCompetitorsForWorkspace(ctx, workspaceID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	return competitors, nil
 }
 
-// ListWorkspacePageHistory lists the history of a page
-// It returns an error if the workspace does not exist
-// It returns an error if the user is not an member of the workspace
-// It returns an error if the page does not exist in the competitor of the workspace
-// pagination params applies to page history
-func (ws *workspaceService) ListWorkspacePageHistory(ctx context.Context, clerkUser *clerk.User, workspaceID, competitorID, pageID uuid.UUID, param api.PaginationParams) ([]models.PageHistory, error) {
-	return nil, nil
+// ListPagesForCompetitor lists the pages for a competitor
+func (ws *workspaceService) ListPagesForCompetitor(ctx context.Context, workspaceID, competitorID uuid.UUID, limit, offset *int) ([]models.Page, error) {
+	pages, err := ws.competitorService.ListCompetitorPages(ctx, competitorID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	return pages, nil
 }
 
-// RemovePage removes a page from a competitor
-// It returns an error if the workspace does not exist
-// It returns an error if the user is not an member of the workspace
-func (ws *workspaceService) RemovePageFromWorkspace(ctx context.Context, clerkUser *clerk.User, competitorID, pageID uuid.UUID) error {
-	return nil
+// ListHistoryForPage lists the history of a page
+func (ws *workspaceService) ListHistoryForPage(ctx context.Context, pageID uuid.UUID, limit, offset *int) ([]models.PageHistory, error) {
+	pageHistory, err := ws.competitorService.ListPageHistory(ctx, pageID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	return pageHistory, nil
 }
 
-// RemoveCompetitor removes a competitor from a workspace, including all its pages
-// It returns an error if the workspace does not exist
-// It returns an error if the user is not an member of the workspace
-func (ws *workspaceService) RemoveCompetitorFromWorkspace(ctx context.Context, clerkUser *clerk.User, workspaceID, competitorID uuid.UUID) error {
-	return nil
+func (ws *workspaceService) RemovePageFromWorkspace(ctx context.Context, competitorID, pageID uuid.UUID) error {
+	return ws.competitorService.RemovePagesFromCompetitor(ctx, competitorID, []uuid.UUID{pageID})
 }
 
-// UpdatePage updates a page
-// It returns an error if the workspace does not exist or page is not active
-// It returns an error if the user is not an member of the workspace
-// It returns an error if the page does not exist in the competitor of the workspace
-func (ws *workspaceService) UpdateCompetitorPage(ctx context.Context, competitorID, pageID uuid.UUID, req api.UpdatePageRequest) error {
-	return nil
+func (ws *workspaceService) RemoveCompetitorFromWorkspace(ctx context.Context, workspaceID, competitorID uuid.UUID) error {
+	return ws.competitorService.RemoveCompetitorForWorkspace(ctx, workspaceID, []uuid.UUID{competitorID})
+}
+
+func (ws *workspaceService) UpdateCompetitorPage(ctx context.Context, competitorID, pageID uuid.UUID, page models.PageProps) (*models.Page, error) {
+	return ws.competitorService.UpdatePage(ctx, competitorID, pageID, page)
 }

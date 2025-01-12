@@ -192,7 +192,7 @@ func (f *CompanyNameFinder) fetchPage(url string) PageInfo {
 	}
 }
 
-func (f *CompanyNameFinder) ProcessURLs(urls []string) string {
+func (f *CompanyNameFinder) FindCompanyName(urls []string) string {
 	var wg sync.WaitGroup
 	pageInfoChan := make(chan PageInfo, len(urls))
 
