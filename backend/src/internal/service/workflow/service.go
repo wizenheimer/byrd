@@ -28,6 +28,7 @@ func NewWorkflowService(logger *logger.Logger, repository workflow.WorkflowRepos
 	ws := workflowService{
 		logger:     logger.WithFields(map[string]interface{}{"module": "workflow_service"}),
 		repository: repository,
+		executors:  make(map[models.WorkflowType]executor.WorkflowExecutor),
 	}
 
 	// Register executors

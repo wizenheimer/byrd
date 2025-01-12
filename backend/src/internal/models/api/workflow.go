@@ -11,7 +11,7 @@ import (
 // WorkflowRequest is a request to start a workflow
 type WorkflowRequest struct {
 	// Type is the type of the workflow
-	Type *models.WorkflowType `json:"workflow_type"`
+	Type *models.WorkflowType `json:"workflow_type" default:"screenshot"`
 	// Year is the year of the workflow
 	Year *int `json:"year"`
 	// WeekNumber is the week number of the workflow

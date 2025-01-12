@@ -9,6 +9,7 @@ import (
 	"github.com/wizenheimer/byrd/src/internal/service/ai"
 	"github.com/wizenheimer/byrd/src/internal/service/screenshot"
 	"github.com/wizenheimer/byrd/src/internal/service/user"
+	"github.com/wizenheimer/byrd/src/internal/service/workflow"
 	"github.com/wizenheimer/byrd/src/internal/service/workspace"
 	"github.com/wizenheimer/byrd/src/internal/transaction"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
@@ -27,6 +28,7 @@ func NewHandlerContainer(
 	aiService ai.AIService,
 	userService user.UserService,
 	workspaceService workspace.WorkspaceService,
+	workflowService workflow.WorkflowService,
 	tx *transaction.TxManager,
 	logger *logger.Logger,
 ) *HandlerContainer {
@@ -44,7 +46,7 @@ func NewHandlerContainer(
 			logger,
 		),
 		// Handlers for workflow management
-		WorkflowHandler: handlers.NewWorkflowHandler(nil, logger),
+		WorkflowHandler: handlers.NewWorkflowHandler(workflowService, logger),
 	}
 }
 

@@ -8,6 +8,7 @@ import (
 	models "github.com/wizenheimer/byrd/src/internal/models/api"
 	"github.com/wizenheimer/byrd/src/internal/service/workflow"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
+	"go.uber.org/zap"
 )
 
 type WorkflowHandler struct {
@@ -28,6 +29,7 @@ func (wh *WorkflowHandler) StartWorkflow(c *fiber.Ctx) error {
 	if err := c.BodyParser(&workflowRequest); err != nil {
 		return sendErrorResponse(c, wh.logger, fiber.StatusBadRequest, "failed to parse request body", err)
 	}
+	wh.logger.Info("Starting workflow", zap.Any("workflow_request", workflowRequest))
 
 	workflow, err := wh.workflowService.StartWorkflow(context.Background(), workflowRequest)
 	if err != nil {

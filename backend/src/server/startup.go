@@ -7,9 +7,11 @@ import (
 
 	_ "github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/redis/go-redis/v9"
 	"github.com/wizenheimer/byrd/src/internal/api/routes"
 	"github.com/wizenheimer/byrd/src/internal/client"
 	"github.com/wizenheimer/byrd/src/internal/config"
+	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/internal/transaction"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"github.com/wizenheimer/byrd/src/pkg/utils"
@@ -23,16 +25,20 @@ import (
 	page_repo "github.com/wizenheimer/byrd/src/internal/repository/page"
 	screenshot_repo "github.com/wizenheimer/byrd/src/internal/repository/screenshot"
 	user_repo "github.com/wizenheimer/byrd/src/internal/repository/user"
+	workflow_repo "github.com/wizenheimer/byrd/src/internal/repository/workflow"
 	workspace_repo "github.com/wizenheimer/byrd/src/internal/repository/workspace"
 
 	// ----- service imports -----
 	ai_svc "github.com/wizenheimer/byrd/src/internal/service/ai"
+	"github.com/wizenheimer/byrd/src/internal/service/alert"
 	competitor_svc "github.com/wizenheimer/byrd/src/internal/service/competitor"
 	diff_svc "github.com/wizenheimer/byrd/src/internal/service/diff"
+	"github.com/wizenheimer/byrd/src/internal/service/executor"
 	history_svc "github.com/wizenheimer/byrd/src/internal/service/history"
 	page_svc "github.com/wizenheimer/byrd/src/internal/service/page"
 	screenshot_svc "github.com/wizenheimer/byrd/src/internal/service/screenshot"
 	user_svc "github.com/wizenheimer/byrd/src/internal/service/user"
+	workflow_svc "github.com/wizenheimer/byrd/src/internal/service/workflow"
 	workspace_svc "github.com/wizenheimer/byrd/src/internal/service/workspace"
 )
 
@@ -88,12 +94,69 @@ func initializer(cfg *config.Config, tm *transaction.TxManager, logger *logger.L
 	userService := user_svc.NewUserService(userRepo, logger)
 	workspaceService := workspace_svc.NewWorkspaceService(workspaceRepo, competitorService, userService, tm, logger)
 
+	if cfg.Workflow.RedisAddr == "" {
+		logger.Warn("Redis URL is empty")
+	}
+
+	redisClient := redis.NewClient(
+		&redis.Options{
+			Addr:     cfg.Workflow.RedisAddr,
+			Password: cfg.Workflow.RedisPassword,
+			DB:       cfg.Workflow.RedisDB,
+		},
+	)
+
+	logger.Debug("Setting up workflow service", zap.Any("redis_config", cfg.Workflow))
+
+	workflowRepo, err := workflow_repo.NewWorkflowRepository(redisClient, logger)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Create a new workflow alert client
+	clientConfig := models.DefaultSlackConfig()
+	clientConfig.Token = cfg.Workflow.SlackAlertToken
+	clientConfig.ChannelID = cfg.Workflow.SlackWorkflowChannelId
+
+	var alertClient alert.AlertClient
+	if cfg.Environment.EnvProfile == "development" {
+		logger.Debug("Using local workflow alert client")
+		alertClient = alert.NewLocalWorkflowClient(clientConfig, logger)
+	} else {
+		slackWorkflowClient, err := alert.NewSlackAlertClient(clientConfig, logger)
+		if err != nil {
+			return nil, nil, err
+		}
+		alertClient = slackWorkflowClient
+	}
+
+	workflowAlertClient, err := alert.NewWorkflowAlertClient(alertClient, logger)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	screenshotTaskExecutor, err := executor.NewScreenshotTaskExecutor(pageService, logger)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	screenshotWorkflowExecutor, err := executor.NewWorkflowExecutor(models.ScreenshotWorkflowType, workflowRepo, workflowAlertClient, screenshotTaskExecutor, logger)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	workflowService, err := workflow_svc.NewWorkflowService(logger, workflowRepo, screenshotWorkflowExecutor, screenshotWorkflowExecutor)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	// Initialize handlers
 	handlers := routes.NewHandlerContainer(
 		screenshotService,
 		aiService,
 		userService,
 		workspaceService,
+		workflowService,
 		tm,
 		logger,
 	)
