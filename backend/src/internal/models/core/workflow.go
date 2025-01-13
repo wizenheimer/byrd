@@ -6,15 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/google/uuid"
 	"github.com/wizenheimer/byrd/src/internal/constants"
 )
-
-// WorkflowCheckpoint captures the current checkpoint of the workflow
-type WorkflowCheckpoint struct {
-	// BatchID is the batch ID of the current checkpoint
-	BatchID *uuid.UUID `json:"batch_id"`
-}
 
 // WorkflowType is an enum for the type of workflow
 type WorkflowType string
@@ -36,27 +29,7 @@ func ParseWorkflowType(s string) (WorkflowType, error) {
 	}
 }
 
-// WorkflowStatus is an enum for the status of a workflow
-type WorkflowStatus string
 
-const (
-	WorkflowStatusRunning   WorkflowStatus = "running"
-	WorkflowStatusCompleted WorkflowStatus = "completed"
-	WorkflowStatusFailed    WorkflowStatus = "failed"
-	WorkflowStatusAborted   WorkflowStatus = "aborted"
-	WorkflowStatusUnknown   WorkflowStatus = "unknown"
-)
-
-// ParseWorkflowStatus converts a string to WorkflowStatus with validation
-func ParseWorkflowStatus(s string) (WorkflowStatus, error) {
-	switch WorkflowStatus(s) {
-	case WorkflowStatusRunning, WorkflowStatusCompleted,
-		WorkflowStatusFailed, WorkflowStatusAborted, WorkflowStatusUnknown:
-		return WorkflowStatus(s), nil
-	default:
-		return "", fmt.Errorf("invalid workflow status: %s", s)
-	}
-}
 
 // WorkflowIdentifier is a unique identifier for a workflow
 type WorkflowIdentifier struct {

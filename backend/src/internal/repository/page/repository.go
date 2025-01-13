@@ -5,6 +5,7 @@ import (
 
 	"github.com/google/uuid"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
+	"github.com/wizenheimer/byrd/src/internal/service/screenshot"
 	"github.com/wizenheimer/byrd/src/internal/transaction"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 )
@@ -78,7 +79,98 @@ func (r *pageRepo) BatchDeleteAllCompetitorPages(ctx context.Context, competitor
 }
 
 func (r *pageRepo) GetActivePages(ctx context.Context, batchSize int, lastPageID *uuid.UUID) (models.ActivePageBatch, error) {
-	return models.ActivePageBatch{}, nil
+	opts := screenshot.GetDefaultScreenshotRequestOptions()
+	opts.URL = "https://commonroom.io"
+	return models.ActivePageBatch{
+		Pages: []models.Page{
+			{
+				ID:             uuid.New(),
+				CompetitorID:   uuid.New(),
+				URL:            "https://commonroom.io",
+				CaptureProfile: opts,
+				DiffProfile:    []string{"product"},
+			},
+			{
+				ID:             uuid.New(),
+				CompetitorID:   uuid.New(),
+				URL:            "https://commonroom.io",
+				CaptureProfile: opts,
+				DiffProfile:    []string{"product"},
+			},
+			{
+				ID:             uuid.New(),
+				CompetitorID:   uuid.New(),
+				URL:            "https://commonroom.io",
+				CaptureProfile: opts,
+				DiffProfile:    []string{"product"},
+			},
+			{
+				ID:             uuid.New(),
+				CompetitorID:   uuid.New(),
+				URL:            "https://commonroom.io",
+				CaptureProfile: opts,
+				DiffProfile:    []string{"product"},
+			},
+			{
+				ID:             uuid.New(),
+				CompetitorID:   uuid.New(),
+				URL:            "https://commonroom.io",
+				CaptureProfile: opts,
+				DiffProfile:    []string{"product"},
+			},
+			{
+				ID:             uuid.New(),
+				CompetitorID:   uuid.New(),
+				URL:            "https://commonroom.io",
+				CaptureProfile: opts,
+				DiffProfile:    []string{"product"},
+			},
+			{
+				ID:             uuid.New(),
+				CompetitorID:   uuid.New(),
+				URL:            "https://commonroom.io",
+				CaptureProfile: opts,
+				DiffProfile:    []string{"product"},
+			},
+			{
+				ID:             uuid.New(),
+				CompetitorID:   uuid.New(),
+				URL:            "https://commonroom.io",
+				CaptureProfile: opts,
+				DiffProfile:    []string{"product"},
+			},
+			{
+				ID:             uuid.New(),
+				CompetitorID:   uuid.New(),
+				URL:            "https://commonroom.io",
+				CaptureProfile: opts,
+				DiffProfile:    []string{"product"},
+			},
+			{
+				ID:             uuid.New(),
+				CompetitorID:   uuid.New(),
+				URL:            "https://commonroom.io",
+				CaptureProfile: opts,
+				DiffProfile:    []string{"product"},
+			},
+			{
+				ID:             uuid.New(),
+				CompetitorID:   uuid.New(),
+				URL:            "https://commonroom.io",
+				CaptureProfile: opts,
+				DiffProfile:    []string{"product"},
+			},
+			{
+				ID:             uuid.New(),
+				CompetitorID:   uuid.New(),
+				URL:            "https://commonroom.io",
+				CaptureProfile: opts,
+				DiffProfile:    []string{"product"},
+			},
+		},
+		LastSeen: nil,
+		HasMore:  false,
+	}, nil
 }
 
 func (r *pageRepo) GetPageByPageID(ctx context.Context, pageID uuid.UUID) (*models.Page, error) {
