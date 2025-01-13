@@ -149,13 +149,13 @@ func setupPrivateRoutes(app *fiber.App, h *HandlerContainer, authMiddleware *mid
 	// Workflow routes
 	workflow := private.Group("/workflow")
 	// Start a new workflow
-	workflow.Post("/", h.WorkflowHandler.StartWorkflow)
+	workflow.Post("/:workflowType/job", h.WorkflowHandler.StartWorkflow)
 	// Stop a workflow
-	workflow.Delete("/", h.WorkflowHandler.StopWorkflow)
+	workflow.Delete("/:workflowType/job/:jobID", h.WorkflowHandler.StopWorkflow)
 	// List workflows
 	workflow.Get("/", h.WorkflowHandler.ListWorkflows)
 	// Get a workflow
-	workflow.Get("/:id", h.WorkflowHandler.GetWorkflow)
+	workflow.Get("/:workflowType/job/:jobID", h.WorkflowHandler.GetWorkflow)
 
 	// <------- Screenshot Management Routes ------->
 	// Screenshot routes

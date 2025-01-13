@@ -5,10 +5,10 @@ import (
 	"context"
 
 	"github.com/gofiber/fiber/v2"
-	models "github.com/wizenheimer/byrd/src/internal/models/api"
+	"github.com/google/uuid"
+	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/internal/service/workflow"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
-	"go.uber.org/zap"
 )
 
 type WorkflowHandler struct {
@@ -25,62 +25,92 @@ func NewWorkflowHandler(workflowService workflow.WorkflowService, logger *logger
 }
 
 func (wh *WorkflowHandler) StartWorkflow(c *fiber.Ctx) error {
-	var workflowRequest models.WorkflowRequest
-	if err := c.BodyParser(&workflowRequest); err != nil {
-		return sendErrorResponse(c, wh.logger, fiber.StatusBadRequest, "failed to parse request body", err)
-	}
-	wh.logger.Info("Starting workflow", zap.Any("workflow_request", workflowRequest))
-
-	workflow, err := wh.workflowService.StartWorkflow(context.Background(), workflowRequest)
-	if err != nil {
-		return sendErrorResponse(c, wh.logger, fiber.StatusInternalServerError, "failed to start workflow", err)
-	}
-	return sendDataResponse(c, fiber.StatusCreated, "workflow started successfully", workflow)
-}
-
-func (wh *WorkflowHandler) StopWorkflow(c *fiber.Ctx) error {
-	var workflowRequest models.WorkflowRequest
-	if err := c.BodyParser(&workflowRequest); err != nil {
-		return sendErrorResponse(c, wh.logger, fiber.StatusBadRequest, "failed to parse request body", err)
-	}
-
-	if err := wh.workflowService.StopWorkflow(context.Background(), workflowRequest); err != nil {
-		return sendErrorResponse(c, wh.logger, fiber.StatusInternalServerError, "failed to stop workflow", err)
-	}
-
-	return sendDataResponse(c, fiber.StatusOK, "workflow stopped successfully", workflowRequest)
-}
-
-func (wh *WorkflowHandler) GetWorkflow(c *fiber.Ctx) error {
-	var workflowRequest models.WorkflowRequest
-	if err := c.BodyParser(&workflowRequest); err != nil {
-		return sendErrorResponse(c, wh.logger, fiber.StatusBadRequest, "failed to parse request body", err)
-	}
-
-	workflow, err := wh.workflowService.GetWorkflow(context.Background(), workflowRequest)
-	if err != nil {
-		return sendErrorResponse(c, wh.logger, fiber.StatusInternalServerError, "failed to get workflow", err)
-	}
-
-	return sendDataResponse(c, fiber.StatusOK, "workflow retrieved successfully", workflow)
-}
-
-func (wh *WorkflowHandler) ListWorkflows(c *fiber.Ctx) error {
-	workflowStatusString := c.Query("workflow_status")
-	workflowStatus, err := models.ParseWorkflowStatus(workflowStatusString)
-	if err != nil {
-		return sendErrorResponse(c, wh.logger, fiber.StatusBadRequest, "failed to parse workflow status", err)
-	}
-
-	workflowTypeString := c.Query("workflow_type")
+	workflowTypeString := c.Params("workflowType")
 	workflowType, err := models.ParseWorkflowType(workflowTypeString)
 	if err != nil {
 		return sendErrorResponse(c, wh.logger, fiber.StatusBadRequest, "failed to parse workflow type", err)
 	}
 
-	workflows, err := wh.workflowService.ListWorkflows(context.Background(), workflowStatus, workflowType)
+	jobID, err := wh.workflowService.Submit(c.Context(), workflowType)
+	if err != nil {
+		return sendErrorResponse(c, wh.logger, fiber.StatusInternalServerError, "failed to start workflow", err)
+	}
+
+	return sendDataResponse(c, fiber.StatusCreated, "workflow started successfully", map[string]any{
+		"workflowType": workflowType,
+		"jobID":        jobID,
+	})
+}
+
+func (wh *WorkflowHandler) GetWorkflow(c *fiber.Ctx) error {
+	workflowTypeString := c.Params("workflowType")
+	workflowType, err := models.ParseWorkflowType(workflowTypeString)
+	if err != nil {
+		return sendErrorResponse(c, wh.logger, fiber.StatusBadRequest, "failed to parse workflow type", err)
+	}
+
+	jobIDString := c.Params("jobID")
+	jobID, err := uuid.Parse(jobIDString)
+	if err != nil {
+		return sendErrorResponse(c, wh.logger, fiber.StatusBadRequest, "failed to parse job ID", err)
+	}
+
+	job, err := wh.workflowService.State(c.Context(), workflowType, jobID)
+	if err != nil {
+		return sendErrorResponse(c, wh.logger, fiber.StatusInternalServerError, "failed to get workflow", err)
+	}
+
+	return sendDataResponse(c, fiber.StatusOK, "workflow retrieved successfully", map[string]any{
+		"workflowType": workflowType,
+		"jobID":        jobID,
+		"job":          job,
+	})
+}
+
+func (wh *WorkflowHandler) StopWorkflow(c *fiber.Ctx) error {
+	workflowTypeString := c.Params("workflowType")
+	workflowType, err := models.ParseWorkflowType(workflowTypeString)
+	if err != nil {
+		return sendErrorResponse(c, wh.logger, fiber.StatusBadRequest, "failed to parse workflow type", err)
+	}
+
+	jobIDString := c.Params("jobID")
+	jobID, err := uuid.Parse(jobIDString)
+	if err != nil {
+		return sendErrorResponse(c, wh.logger, fiber.StatusBadRequest, "failed to parse job ID", err)
+	}
+
+	if err := wh.workflowService.Stop(context.Background(), workflowType, jobID); err != nil {
+		return sendErrorResponse(c, wh.logger, fiber.StatusInternalServerError, "failed to stop workflow", err)
+	}
+
+	return sendDataResponse(c, fiber.StatusOK, "workflow stopped successfully", map[string]any{
+		"workflowType": workflowType,
+		"jobID":        jobID,
+	})
+}
+
+func (wh *WorkflowHandler) ListWorkflows(c *fiber.Ctx) error {
+	jobStatusString := c.Query("jobStatus")
+	workflowStatus, err := models.ParseJobStatus(jobStatusString)
+	if err != nil {
+		workflowStatus = models.JobStatusRunning
+	}
+
+	workflowTypeString := c.Query("workflowType")
+	workflowType, err := models.ParseWorkflowType(workflowTypeString)
+	if err != nil {
+		workflowType = models.ScreenshotWorkflowType
+	}
+
+	jobs, err := wh.workflowService.List(context.Background(), workflowType, workflowStatus)
 	if err != nil {
 		return sendErrorResponse(c, wh.logger, fiber.StatusInternalServerError, "failed to list workflows", err)
 	}
-	return c.JSON(workflows)
+
+	return sendDataResponse(c, fiber.StatusOK, "workflows listed successfully", map[string]any{
+		"workflowStatus": workflowStatus,
+		"workflowType":   workflowType,
+		"jobs":           jobs,
+	})
 }

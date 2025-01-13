@@ -164,7 +164,7 @@ func (s *screenshotService) getExistingHTMLContent(ctx context.Context, url stri
 func (s *screenshotService) prepareScreenshot(opts models.ScreenshotRequestOptions) (*http.Response, error) {
 	s.logger.Debug("preparing screenshot", zap.Any("opts", opts))
 	// Get default options
-	defaultOpt := getDefaultScreenshotRequestOptions()
+	defaultOpt := GetDefaultScreenshotRequestOptions()
 
 	// Merge the provided options with default options
 	mergedOpt := MergeScreenshotRequestOptions(defaultOpt, opts)
@@ -199,7 +199,7 @@ func (s *screenshotService) prepareScreenshotHTML(opts models.ScreenshotHTMLRequ
 }
 
 // getDefaultScreenshotRequestOptions returns the default options for the screenshot request
-func getDefaultScreenshotRequestOptions() models.ScreenshotRequestOptions {
+func GetDefaultScreenshotRequestOptions() models.ScreenshotRequestOptions {
 	// Get default options
 	defaultOpt := models.ScreenshotRequestOptions{
 		// Capture options
