@@ -22,7 +22,7 @@ type workflowExecutor struct {
 	repository workflow.WorkflowRepository
 
 	// alertClient represents the alert client for the workflow
-	alertClient alert.WorkflowAlertClient
+	alertClient alert.AlertClient
 
 	// eventClient represents the event client for the workflow
 	// eventClient    event.WorkflowEventClient
@@ -41,7 +41,7 @@ type workflowExecutor struct {
 func NewWorkflowExecutor(
 	workflowType models.WorkflowType,
 	repository workflow.WorkflowRepository,
-	alertClient alert.WorkflowAlertClient,
+	alertClient alert.AlertClient,
 	// eventClient    event.WorkflowEventClient,
 	jobExecutor JobExecutor,
 	logger *logger.Logger,

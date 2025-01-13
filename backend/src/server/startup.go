@@ -131,11 +131,6 @@ func initializer(cfg *config.Config, tm *transaction.TxManager, logger *logger.L
 		alertClient = slackWorkflowClient
 	}
 
-	workflowAlertClient, err := alert.NewWorkflowAlertClient(alertClient, logger)
-	if err != nil {
-		return nil, nil, err
-	}
-
 	runtimeConfig := models.JobExecutorConfig{
 		Parallelism: 10,
 		LowerBound:  10 * time.Second,
@@ -146,7 +141,7 @@ func initializer(cfg *config.Config, tm *transaction.TxManager, logger *logger.L
 		return nil, nil, err
 	}
 
-	screenshotWorkflowExecutor, err := executor.NewWorkflowExecutor(models.ScreenshotWorkflowType, workflowRepo, workflowAlertClient, screenshotTaskExecutor, logger)
+	screenshotWorkflowExecutor, err := executor.NewWorkflowExecutor(models.ScreenshotWorkflowType, workflowRepo, alertClient, screenshotTaskExecutor, logger)
 	if err != nil {
 		return nil, nil, err
 	}
