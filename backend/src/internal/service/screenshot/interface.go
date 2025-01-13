@@ -3,7 +3,6 @@ package screenshot
 
 import (
 	"context"
-	"errors"
 
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 )
@@ -41,44 +40,3 @@ type ScreenshotService interface {
 	// ListScreenshots lists the latest content (images or text) for a given URL
 	ListScreenshots(ctx context.Context, url string, contentType string, maxItems int) ([]models.ScreenshotListResponse, error)
 }
-
-var (
-	ErrFailedToRefreshScreenshot = errors.New("failed to refresh screenshot")
-
-	ErrFailedToRetrieveScreenshot = errors.New("failed to retrieve screenshot")
-
-	ErrFailedToPrepareScreenshot = errors.New("failed to prepare screenshot")
-
-	ErrStorageRepositoryRequired = errors.New("storage repository is required")
-	ErrHTTPClientRequired        = errors.New("HTTP client is required")
-	ErrScreenshotKeyRequired     = errors.New("screenshot key is required")
-	ErrScreenshotOriginRequired  = errors.New("screenshot origin is required")
-
-	ErrFailedToConvertCurrentDayToInt   = errors.New("failed to convert current day to int")
-	ErrFailedToGetCurrentScreenshotPath = errors.New("failed to get current screenshot path")
-	ErrFailedToGetCurrentContentPath    = errors.New("failed to get current content path")
-	ErrFailedToStoreScreenshotImage     = errors.New("failed to store screenshot image")
-
-	ErrFailedToGetPreviousScreenshotPath  = errors.New("failed to get previous screenshot path")
-	ErrFailedToGetPreviousScreenshotImage = errors.New("failed to get previous screenshot image")
-
-	ErrFailedToGetPreviousContentPath = errors.New("failed to get previous content path")
-	ErrFailedToGetPreviousContent     = errors.New("failed to get previous content")
-
-	ErrFailedToGetScreenshotPath  = errors.New("failed to get screenshot path")
-	ErrFailedToGetScreenshotImage = errors.New("failed to get screenshot image")
-
-	ErrFailedToGetContentPath = errors.New("failed to get content path")
-	ErrFailedToGetContent     = errors.New("failed to get content")
-
-	ErrFailedToGetListingPrefixFromContentType = errors.New("failed to get listing prefix from content type")
-)
-
-var (
-	ErrNoContentURLFoundInHeaders = errors.New("no content URL found in headers")
-	ErrNon200StatusCode           = errors.New("non-200 status code")
-	ErrReadingHTMLBody            = errors.New("error reading HTML body")
-	ErrUnexpectedContentType      = errors.New("received unexpected content type")
-	ErrCannotDecodeImage          = errors.New("cannot decode image")
-	ErrFailedToGetHTMLContent     = errors.New("failed to get HTML content")
-)
