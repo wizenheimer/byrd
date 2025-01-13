@@ -120,7 +120,7 @@ func initializer(cfg *config.Config, tm *transaction.TxManager, logger *logger.L
 
 	var alertClient alert.AlertClient
 	if cfg.Environment.EnvProfile == "development" {
-		logger.Debug("Using local workflow alert client")
+		logger.Debug("using local workflow alert client")
 		alertClient = alert.NewLocalWorkflowClient(clientConfig, logger)
 	} else {
 		slackWorkflowClient, err := alert.NewSlackAlertClient(clientConfig, logger)
@@ -135,7 +135,12 @@ func initializer(cfg *config.Config, tm *transaction.TxManager, logger *logger.L
 		return nil, nil, err
 	}
 
-	screenshotTaskExecutor, err := executor.NewScreenshotTaskExecutor(pageService, logger)
+	runtimeConfig := models.JobExecutorConfig{
+		Parallelism: 10,
+		LowerBound:  10,
+		UpperBound:  20,
+	}
+	screenshotTaskExecutor, err := executor.NewPageExecutor(pageService, runtimeConfig, logger)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -145,10 +150,12 @@ func initializer(cfg *config.Config, tm *transaction.TxManager, logger *logger.L
 		return nil, nil, err
 	}
 
-	workflowService, err := workflow_svc.NewWorkflowService(logger, workflowRepo, screenshotWorkflowExecutor, screenshotWorkflowExecutor)
+	workflowService, err := workflow_svc.NewWorkflowService(logger)
 	if err != nil {
 		return nil, nil, err
 	}
+	workflowService.AddExecutor(models.ScreenshotWorkflowType, screenshotWorkflowExecutor)
+	workflowService.Initialize(context.Background())
 
 	// Initialize handlers
 	handlers := routes.NewHandlerContainer(
