@@ -100,43 +100,25 @@ func (r *userRepo) BatchGetOrCreatePartialUsers(ctx context.Context, normalizedU
 		return []models.User{}, nil
 	}
 
-	// Create a temporary table for bulk insertion
-	_, err := r.getQuerier(ctx).Exec(ctx, `
-		CREATE TEMPORARY TABLE temp_users (
-			email VARCHAR(255) PRIMARY KEY
-		) ON COMMIT DROP`)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create temporary table: %w", err)
-	}
-
-	// Insert emails into temporary table
-	for _, email := range normalizedUserEmails {
-		_, err = r.getQuerier(ctx).Exec(ctx, `
-			INSERT INTO temp_users (email) VALUES ($1)
-			ON CONFLICT DO NOTHING`,
-			email,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to insert into temporary table: %w", err)
-		}
-	}
-
-	// Perform bulk insert/update and return results
+	// Convert emails array to a table using unnest
 	rows, err := r.getQuerier(ctx).Query(ctx, `
-		WITH inserted AS (
-			INSERT INTO users (email, status)
-			SELECT t.email, $1
-			FROM temp_users t
-			ON CONFLICT (email) DO UPDATE
-			SET status = CASE
-				WHEN users.status = $2 THEN $1
-				ELSE users.status
-			END
-			RETURNING id, clerk_id, email, name, status, created_at, updated_at
-		)
-		SELECT id, clerk_id, email, name, status, created_at, updated_at
-		FROM inserted`,
-		models.AccountStatusPending, models.AccountStatusInactive,
+        WITH input_emails AS (
+            SELECT UNNEST($1::text[]) AS email
+        ),
+        upserted AS (
+            INSERT INTO users (email, status)
+            SELECT email, $2
+            FROM input_emails
+            ON CONFLICT (email) DO UPDATE
+            SET status = CASE
+                WHEN users.status = $3 THEN $2
+                ELSE users.status
+            END
+            RETURNING id, clerk_id, email, name, status, created_at, updated_at
+        )
+        SELECT id, clerk_id, email, name, status, created_at, updated_at
+        FROM upserted`,
+		normalizedUserEmails, models.AccountStatusPending, models.AccountStatusInactive,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to batch get or create users: %w", err)
@@ -262,8 +244,8 @@ func (r *userRepo) SyncUser(ctx context.Context, clerkID, normalizedUserEmail st
 		UPDATE users
 		SET email = $1,
 			status = $2
-		WHERE email = $3 OR clerk_id != $4`,
-		normalizedUserEmail, models.AccountStatusActive, normalizedUserEmail, clerkID,
+		WHERE clerk_id = $3`,
+		normalizedUserEmail, models.AccountStatusActive, clerkID,
 	)
 
 	if err != nil {

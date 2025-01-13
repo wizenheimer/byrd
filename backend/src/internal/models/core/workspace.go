@@ -33,7 +33,7 @@ type Workspace struct {
 	BillingEmail string `json:"billing_email"`
 
 	// Status is the status of the workspace
-	WorkspaceStatus WorkspaceStatus `json:"workspace_status" validate:"required,oneof=pending active inactive" default:"pending" omitempty:"true"`
+	WorkspaceStatus WorkspaceStatus `json:"workspace_status" validate:"required,oneof=active inactive" default:"pending" omitempty:"true"`
 
 	// CreatedAt is the timestamp when the workspace was created
 	CreatedAt time.Time `json:"created_at"`

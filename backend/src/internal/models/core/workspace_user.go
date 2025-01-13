@@ -40,7 +40,7 @@ type WorkspaceUser struct {
 	Email string `json:"email" validate:"required,email"`
 
 	// Role is the role of the user in the workspace
-	Role WorkspaceRole `json:"workspace_role" validate:"required,oneof=admin user viewer" default:"user"`
+	Role WorkspaceRole `json:"workspace_role" validate:"required,oneof=admin user" default:"user"`
 
 	// MembershipStatus is the status of the user's membership in the workspace
 	MembershipStatus MembershipStatus `json:"membership_status" validate:"required,oneof=pending active inactive" default:"pending"`
@@ -51,7 +51,7 @@ type PartialWorkspaceUser struct {
 	ID uuid.UUID `json:"user_id" validate:"required"`
 
 	// Role is the role of the user in the workspace
-	Role WorkspaceRole `json:"workspace_role" validate:"required,oneof=admin user viewer" default:"user"`
+	Role WorkspaceRole `json:"workspace_role" validate:"required,oneof=admin user" default:"user"`
 
 	// MembershipStatus is the status of the user's membership in the workspace
 	MembershipStatus MembershipStatus `json:"membership_status" validate:"required,oneof=pending active inactive" default:"pending"`
@@ -65,5 +65,5 @@ type WorkspaceUserProps struct {
 
 	// Role is the role of the user in the workspace
 	// If not specified, defaults to "user"
-	Role WorkspaceRole `json:"workspace_role" validate:"required,oneof=admin user viewer" default:"user"`
+	Role WorkspaceRole `json:"workspace_role" validate:"required,oneof=admin user" default:"user"`
 }

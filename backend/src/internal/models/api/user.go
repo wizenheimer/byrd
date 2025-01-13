@@ -20,5 +20,5 @@ type CreateWorkspaceUserRequest = models.WorkspaceUserProps
 
 // UpdateWorkspaceUserRoleRequest is the request to update a user's role in a workspace
 type UpdateWorkspaceUserRoleRequest struct {
-	Role models.WorkspaceRole `json:"role" validate:"required,oneof=admin user viewer" default:"user"`
+	Role models.WorkspaceRole `json:"role" validate:"required,oneof=admin user" default:"user"`
 }
