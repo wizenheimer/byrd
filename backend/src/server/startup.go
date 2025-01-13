@@ -4,6 +4,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"time"
 
 	_ "github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -137,8 +138,8 @@ func initializer(cfg *config.Config, tm *transaction.TxManager, logger *logger.L
 
 	runtimeConfig := models.JobExecutorConfig{
 		Parallelism: 10,
-		LowerBound:  10,
-		UpperBound:  20,
+		LowerBound:  10 * time.Second,
+		UpperBound:  20 * time.Second,
 	}
 	screenshotTaskExecutor, err := executor.NewPageExecutor(pageService, runtimeConfig, logger)
 	if err != nil {

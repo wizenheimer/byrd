@@ -52,8 +52,8 @@ type Page struct {
 
 // ActivePageBatch is a batch of pages
 type ActivePageBatch struct {
-	// Pages is the list of pages
-	Pages []Page `json:"pages"`
+	// PageIDs is the list of pages
+	PageIDs []uuid.UUID `json:"pages"`
 
 	// HasMore is true if there are more pages
 	HasMore bool `json:"has_more"`

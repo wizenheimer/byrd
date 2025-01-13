@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"path"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -180,7 +181,7 @@ func GetCurrentTimeComponents(enableBucketing bool) (year, weekNumber int, runID
 			runID = constants.LastRunID
 		}
 	} else {
-		runID = currentWeekDay.String()
+		runID = strconv.Itoa(int(currentWeekDay))
 	}
 
 	return year, weekNumber, runID

@@ -79,100 +79,20 @@ func (r *pageRepo) BatchDeleteAllCompetitorPages(ctx context.Context, competitor
 }
 
 func (r *pageRepo) GetActivePages(ctx context.Context, batchSize int, lastPageID *uuid.UUID) (models.ActivePageBatch, error) {
-	opts := screenshot.GetDefaultScreenshotRequestOptions()
-	opts.URL = "https://commonroom.io"
 	return models.ActivePageBatch{
-		Pages: []models.Page{
-			{
-				ID:             uuid.New(),
-				CompetitorID:   uuid.New(),
-				URL:            "https://commonroom.io",
-				CaptureProfile: opts,
-				DiffProfile:    []string{"product"},
-			},
-			{
-				ID:             uuid.New(),
-				CompetitorID:   uuid.New(),
-				URL:            "https://commonroom.io",
-				CaptureProfile: opts,
-				DiffProfile:    []string{"product"},
-			},
-			{
-				ID:             uuid.New(),
-				CompetitorID:   uuid.New(),
-				URL:            "https://commonroom.io",
-				CaptureProfile: opts,
-				DiffProfile:    []string{"product"},
-			},
-			{
-				ID:             uuid.New(),
-				CompetitorID:   uuid.New(),
-				URL:            "https://commonroom.io",
-				CaptureProfile: opts,
-				DiffProfile:    []string{"product"},
-			},
-			{
-				ID:             uuid.New(),
-				CompetitorID:   uuid.New(),
-				URL:            "https://commonroom.io",
-				CaptureProfile: opts,
-				DiffProfile:    []string{"product"},
-			},
-			{
-				ID:             uuid.New(),
-				CompetitorID:   uuid.New(),
-				URL:            "https://commonroom.io",
-				CaptureProfile: opts,
-				DiffProfile:    []string{"product"},
-			},
-			{
-				ID:             uuid.New(),
-				CompetitorID:   uuid.New(),
-				URL:            "https://commonroom.io",
-				CaptureProfile: opts,
-				DiffProfile:    []string{"product"},
-			},
-			{
-				ID:             uuid.New(),
-				CompetitorID:   uuid.New(),
-				URL:            "https://commonroom.io",
-				CaptureProfile: opts,
-				DiffProfile:    []string{"product"},
-			},
-			{
-				ID:             uuid.New(),
-				CompetitorID:   uuid.New(),
-				URL:            "https://commonroom.io",
-				CaptureProfile: opts,
-				DiffProfile:    []string{"product"},
-			},
-			{
-				ID:             uuid.New(),
-				CompetitorID:   uuid.New(),
-				URL:            "https://commonroom.io",
-				CaptureProfile: opts,
-				DiffProfile:    []string{"product"},
-			},
-			{
-				ID:             uuid.New(),
-				CompetitorID:   uuid.New(),
-				URL:            "https://commonroom.io",
-				CaptureProfile: opts,
-				DiffProfile:    []string{"product"},
-			},
-			{
-				ID:             uuid.New(),
-				CompetitorID:   uuid.New(),
-				URL:            "https://commonroom.io",
-				CaptureProfile: opts,
-				DiffProfile:    []string{"product"},
-			},
-		},
-		LastSeen: nil,
-		HasMore:  false,
+		PageIDs: []uuid.UUID{uuid.New(), uuid.New(), uuid.New(), uuid.New()},
 	}, nil
 }
 
 func (r *pageRepo) GetPageByPageID(ctx context.Context, pageID uuid.UUID) (*models.Page, error) {
-	return nil, nil
+
+	opts := screenshot.GetDefaultScreenshotRequestOptions()
+	opts.URL = "https://commonroom.io"
+	return &models.Page{
+		ID:             uuid.New(),
+		CompetitorID:   uuid.New(),
+		URL:            "https://commonroom.io",
+		CaptureProfile: opts,
+		DiffProfile:    []string{"product", "pricing", "partnerships", "messaging"},
+	}, nil
 }
