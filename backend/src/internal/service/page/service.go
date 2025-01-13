@@ -117,9 +117,29 @@ func (ps *pageService) ListCompetitorPages(ctx context.Context, competitorID uui
 	return ps.pageRepo.GetCompetitorPages(ctx, competitorID, limit, offset)
 }
 
-func (ps *pageService) ListActivePages(ctx context.Context, batchSize int, lastPageID *uuid.UUID) (<-chan []models.Page, <-chan error) {
+func (ps *pageService) ListActivePages(ctx context.Context, batchSize int, lastPageID *uuid.UUID) (<-chan []uuid.UUID, <-chan error) {
 	ps.logger.Debug("listing active pages", zap.Any("batchSize", batchSize), zap.Any("lastPageID", lastPageID))
-	return nil, nil
+	pagesChan := make(chan []uuid.UUID)
+	errorsChan := make(chan error)
+
+	go func() {
+		defer close(pagesChan)
+		defer close(errorsChan)
+
+		hasMore := true
+		for hasMore {
+			activePages, err := ps.pageRepo.GetActivePages(ctx, batchSize, lastPageID)
+			if err != nil {
+				errorsChan <- err
+				return
+			}
+
+			hasMore = activePages.HasMore
+			pagesChan <- activePages.PageIDs
+		}
+	}()
+
+	return pagesChan, errorsChan
 }
 
 func (ps *pageService) RefreshPage(ctx context.Context, pageID uuid.UUID) error {

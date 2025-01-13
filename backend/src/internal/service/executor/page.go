@@ -44,27 +44,50 @@ func (pe *pageExecutor) Execute(executionContext context.Context, jobState model
 	updates := make(chan models.JobUpdate, 1)
 	errors := make(chan models.JobError, 1)
 
-	checkpoint := jobState.Checkpoint.BatchID
-	pageBatchChan, errBatchChan := pe.pageService.ListActivePages(executionContext, pe.runtimeConfig.Parallelism, checkpoint)
-
 	go func() {
 		defer close(updates)
 		defer close(errors)
+
+		checkpoint := jobState.Checkpoint.BatchID
+		pageBatchChan, errBatchChan := pe.pageService.ListActivePages(executionContext, pe.runtimeConfig.Parallelism, checkpoint)
 
 		batchStartTime := time.Now()
 
 		for {
 			select {
-			// Handle the page batch
 			case pageBatch, ok := <-pageBatchChan:
 				if !ok {
-					goto COMPLETION
+					return
 				}
 
-				// Process the batch
-				pe.processBatch(executionContext, pageBatch, updates, errors)
+				// Get the completion channel for this batch
+				completionChan := pe.processBatch(executionContext, pageBatch, errors)
 
-				// Calculate remaining time to wait
+				// Track max completion for this batch
+				maxIndex := -1
+				for index := range completionChan {
+					if index > maxIndex {
+						maxIndex = index
+					}
+				}
+
+				// Send update if we processed anything
+				if maxIndex >= 0 && maxIndex < len(pageBatch) {
+					select {
+					case updates <- models.JobUpdate{
+						Time:      time.Now(),
+						Completed: int64(maxIndex + 1),
+						Failed:    int64(len(pageBatch) - (maxIndex + 1)),
+						NewCheckpoint: models.JobCheckpoint{
+							BatchID: &pageBatch[maxIndex],
+						},
+					}:
+					case <-executionContext.Done():
+						return
+					}
+				}
+
+				// Handle rate limiting
 				elapsedTime := time.Since(batchStartTime)
 				if remainingTime := pe.runtimeConfig.LowerBound - elapsedTime; remainingTime > 0 {
 					select {
@@ -73,112 +96,99 @@ func (pe *pageExecutor) Execute(executionContext context.Context, jobState model
 						return
 					}
 				}
-
-				// Reset timer for next batch
 				batchStartTime = time.Now()
 
-				// Handle the errors, reserialize them and send them to the errors channel
 			case err, ok := <-errBatchChan:
 				if !ok {
 					return
 				}
-
-				// Serialize the batch error into job error
-				// and send it to the errors channel
-				errors <- models.JobError{
-					Error: err,
-					Time:  time.Now(),
+				select {
+				case errors <- models.JobError{Error: err, Time: time.Now()}:
+				case <-executionContext.Done():
+					return
 				}
 
-				// Handle the context cancellation
 			case <-executionContext.Done():
 				return
 			}
-
-		}
-
-	COMPLETION:
-		updates <- models.JobUpdate{
-			Time:      time.Now(),
-			Completed: 0,
-			Failed:    0,
-			NewCheckpoint: models.JobCheckpoint{
-				BatchID: nil,
-			},
 		}
 	}()
 
 	return updates, errors
 }
 
-func (pe *pageExecutor) processBatch(ctx context.Context, pageBatch []models.Page, updates chan models.JobUpdate, errors chan models.JobError) {
-	// TODO: add lower bound and upper bound for the batch
-	var wg sync.WaitGroup
+func (pe *pageExecutor) processBatch(ctx context.Context, pageBatch []uuid.UUID, errors chan models.JobError) <-chan int {
+	pe.logger.Debug("processing page batch",
+		zap.Any("batch", pageBatch),
+		zap.Duration("upperBound", pe.runtimeConfig.UpperBound))
+
+	completions := make(chan int, len(pageBatch))
+
+	// Validate timeout
+	if pe.runtimeConfig.UpperBound <= 0 {
+		pe.logger.Error("invalid upper bound timeout",
+			zap.Duration("upperBound", pe.runtimeConfig.UpperBound))
+		close(completions)
+		return completions
+	}
 
 	timeoutCtx, cancel := context.WithTimeout(ctx, pe.runtimeConfig.UpperBound)
-	defer cancel()
 
-	// Holds the index of the last page processed
-	processedIndexChan := make(chan int, len(pageBatch))
-	maxIndex := 0
-	var mu sync.Mutex // mutex to protect maxIndex
+	var wg sync.WaitGroup
 
-	// Iterate over the page batch, and spawn a worker for each page
-	for index, page := range pageBatch {
-		// Track the number of workers
+	for index, pageID := range pageBatch {
 		wg.Add(1)
-
-		// Spawn a worker to refresh the page
-		// Respecting the context timeout
 		go func(pageIndex int, pageID uuid.UUID) {
 			defer wg.Done()
-			err := pe.pageService.RefreshPage(timeoutCtx, page.ID)
+
+			start := time.Now()
+			err := pe.processPage(timeoutCtx, pageID)
+			duration := time.Since(start)
+
 			if err != nil {
-				errors <- models.JobError{
-					Error: err,
-					Time:  time.Now(),
+				pe.logger.Debug("page processing failed",
+					zap.Any("pageID", pageID),
+					zap.Duration("duration", duration),
+					zap.Error(err))
+
+				select {
+				case errors <- models.JobError{Error: err, Time: time.Now()}:
+				case <-timeoutCtx.Done():
 				}
-			} else {
-				processedIndexChan <- pageIndex
+				return
 			}
-		}(index, page.ID)
+
+			pe.logger.Debug("page processing succeeded",
+				zap.Any("pageID", pageID),
+				zap.Duration("duration", duration))
+
+			select {
+			case completions <- pageIndex:
+			case <-timeoutCtx.Done():
+				pe.logger.Debug("completion send timed out",
+					zap.Any("pageID", pageID))
+			}
+		}(index, pageID)
 	}
 
-	// Close processedIndexChan channel after all workers finish
+	// Close completion channel when all work is done
 	go func() {
 		wg.Wait()
-		close(processedIndexChan)
+		pe.logger.Debug("all workers completed")
+		close(completions)
+		cancel() // Clean up timeout context
 	}()
 
-	// Process results until timeout or completion
-	for {
-		select {
-		// Handle the timeout
-		case <-timeoutCtx.Done():
-			goto FINISH
-		// Pick the maximum index processed thus far
-		case index, ok := <-processedIndexChan:
-			if !ok {
-				goto FINISH
-			}
-			mu.Lock()
-			if index > maxIndex {
-				maxIndex = index
-			}
-			mu.Unlock()
-		}
+	return completions
+}
 
-	}
-
-	// Handle the completion of the batch
-FINISH:
-	updates <- models.JobUpdate{
-		Time:      time.Now(),
-		Completed: int64(maxIndex),
-		Failed:    int64(len(pageBatch) - maxIndex),
-		NewCheckpoint: models.JobCheckpoint{
-			BatchID: &pageBatch[maxIndex].ID,
-		},
+func (pe *pageExecutor) processPage(ctx context.Context, pageID uuid.UUID) error {
+	pe.logger.Debug("processing page", zap.Any("pageID", pageID))
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+		return pe.pageService.RefreshPage(ctx, pageID)
 	}
 }
 

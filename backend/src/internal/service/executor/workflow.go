@@ -102,7 +102,7 @@ func (e *workflowExecutor) Submit(ctx context.Context) (uuid.UUID, error) {
 	// Start the job execution
 	go e.executeJob(executionContext, jobContext)
 
-	return uuid.New(), nil
+	return job.JobID, nil
 }
 
 func (e *workflowExecutor) executeJob(executionContext context.Context, jobContext *models.JobContext) {

@@ -19,7 +19,7 @@ type PageService interface {
 
 	ListCompetitorPages(ctx context.Context, competitorID uuid.UUID, limit, offset *int) ([]models.Page, bool, error)
 
-	ListActivePages(ctx context.Context, batchSize int, lastPageID *uuid.UUID) (<-chan []models.Page, <-chan error)
+	ListActivePages(ctx context.Context, batchSize int, lastPageID *uuid.UUID) (<-chan []uuid.UUID, <-chan error)
 
 	RemovePage(ctx context.Context, competitorIDs []uuid.UUID, pageIDs []uuid.UUID) error
 
