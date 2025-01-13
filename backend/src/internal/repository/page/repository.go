@@ -379,28 +379,21 @@ func (r *pageRepo) UpdateCompetitorURL(ctx context.Context, competitorID, pageID
 		return nil, errors.New("invalid competitor ID, page ID, or URL")
 	}
 
-	// First, get the current page to access the capture profile
-	currentPage, err := r.GetPageByPageID(ctx, pageID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get current page: %w", err)
-	}
-
-	// Update the URL in the capture profile
-	captureProfile := currentPage.CaptureProfile
-	captureProfile.URL = url
-
-	// Update both the page URL and capture profile atomically
 	page := &models.Page{}
-	err = r.getQuerier(ctx).QueryRow(ctx, `
+	err := r.getQuerier(ctx).QueryRow(ctx, `
 		UPDATE pages
 		SET
 			url = $1,
-			capture_profile = $2,
+			capture_profile = jsonb_set(
+				COALESCE(capture_profile::jsonb, '{}'::jsonb),
+				'{url}',
+				$1::text::jsonb
+			),
 			updated_at = CURRENT_TIMESTAMP
 		WHERE
-			competitor_id = $3
-			AND id = $4
-			AND status != $5
+			competitor_id = $2
+			AND id = $3
+			AND status != $4
 		RETURNING
 			id,
 			competitor_id,
@@ -412,7 +405,6 @@ func (r *pageRepo) UpdateCompetitorURL(ctx context.Context, competitorID, pageID
 			created_at,
 			updated_at`,
 		url,
-		captureProfile,
 		competitorID,
 		pageID,
 		models.PageStatusInactive,
