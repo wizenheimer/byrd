@@ -29,8 +29,6 @@ func ParseWorkflowType(s string) (WorkflowType, error) {
 	}
 }
 
-
-
 // WorkflowIdentifier is a unique identifier for a workflow
 type WorkflowIdentifier struct {
 	Type       *WorkflowType `json:"workflow_type"`

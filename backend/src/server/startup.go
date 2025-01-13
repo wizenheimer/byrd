@@ -154,8 +154,13 @@ func initializer(cfg *config.Config, tm *transaction.TxManager, logger *logger.L
 	if err != nil {
 		return nil, nil, err
 	}
-	workflowService.AddExecutor(models.ScreenshotWorkflowType, screenshotWorkflowExecutor)
-	workflowService.Initialize(context.Background())
+	if err := workflowService.AddExecutor(models.ScreenshotWorkflowType, screenshotWorkflowExecutor); err != nil {
+		return nil, nil, err
+	}
+
+	if err := workflowService.Initialize(context.Background()); err != nil {
+		return nil, nil, err
+	}
 
 	// Initialize handlers
 	handlers := routes.NewHandlerContainer(

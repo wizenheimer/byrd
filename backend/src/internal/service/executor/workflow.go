@@ -105,7 +105,7 @@ func (e *workflowExecutor) Submit(ctx context.Context) (uuid.UUID, error) {
 	return uuid.New(), nil
 }
 
-func (e *workflowExecutor) executeJob(executionContext context.Context, jobContext *models.JobContext) error {
+func (e *workflowExecutor) executeJob(executionContext context.Context, jobContext *models.JobContext) {
 	e.logger.Debug("executing job", zap.Any("job_id", jobContext.JobID))
 
 	// Execute the job
@@ -116,17 +116,17 @@ func (e *workflowExecutor) executeJob(executionContext context.Context, jobConte
 		select {
 		case <-executionContext.Done():
 			e.handleJobCancellation(jobContext)
-			return nil
+			return
 		case jobUpdate, ok := <-jobUpdateCh:
 			if !ok {
 				e.handleJobCompletion(executionContext, jobContext)
-				return nil
+				return
 			}
 			e.handleJobUpdate(executionContext, jobContext, jobUpdate)
 		case jobError, ok := <-jobErrorCh:
 			if !ok {
 				e.handleJobCompletion(executionContext, jobContext)
-				return nil
+				return
 			}
 			e.handleJobError(jobContext, &jobError)
 		}
@@ -141,9 +141,13 @@ func (e *workflowExecutor) handleJobCancellation(jobContext *models.JobContext) 
 
 func (e *workflowExecutor) handleJobCompletion(ctx context.Context, jobContext *models.JobContext) {
 	e.logger.Debug("completing job", zap.Any("job_id", jobContext.JobID))
+
+	if err := e.repository.SetState(ctx, jobContext.JobID, e.workflowType, jobContext.JobState); err != nil {
+		e.logger.Error("failed to handle job completion", zap.Error(err))
+		return
+	}
 	jobContext.HandleCompletion()
 	e.activeJobs.Delete(jobContext.JobID)
-	e.repository.SetState(ctx, jobContext.JobID, e.workflowType, jobContext.JobState)
 	// TODO: inject alert client
 }
 
@@ -155,8 +159,13 @@ func (e *workflowExecutor) handleJobError(jobContext *models.JobContext, jobErro
 
 func (e *workflowExecutor) handleJobUpdate(ctx context.Context, jobContext *models.JobContext, jobUpdate models.JobUpdate) {
 	e.logger.Debug("handling job update", zap.Any("update", jobUpdate))
+
+	if err := e.repository.SetState(ctx, jobContext.JobID, e.workflowType, jobContext.JobState); err != nil {
+		e.logger.Error("failed to persist job state", zap.Error(err))
+		return
+	}
+
 	jobContext.HandleUpdate(&jobUpdate)
-	e.repository.SetState(ctx, jobContext.JobID, e.workflowType, jobContext.JobState)
 }
 
 func (e *workflowExecutor) Status(ctx context.Context, jobID uuid.UUID) (*models.JobStatus, error) {
