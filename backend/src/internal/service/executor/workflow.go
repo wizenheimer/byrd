@@ -3,11 +3,10 @@ package executor
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"sync"
 
 	"github.com/google/uuid"
-	api "github.com/wizenheimer/byrd/src/internal/models/api"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/internal/repository/workflow"
 	"github.com/wizenheimer/byrd/src/internal/service/alert"
@@ -16,302 +15,241 @@ import (
 )
 
 type workflowExecutor struct {
+	// workflowType represents the type of workflow
 	workflowType models.WorkflowType
-	config       models.ExecutorConfig
-	repository   workflow.WorkflowRepository
-	alertClient  alert.WorkflowAlertClient
-	taskExecutor TaskExecutor
-	logger       *logger.Logger
 
-	activeWorkflows sync.Map // map[string]*workflowContext
-}
+	// repository represents the repository for managing workflows
+	repository workflow.WorkflowRepository
 
-type workflowContext struct {
-	cancel context.CancelFunc
-	task   models.Task
-	state  api.WorkflowState
-	mutex  sync.RWMutex
+	// alertClient represents the alert client for the workflow
+	alertClient alert.WorkflowAlertClient
+
+	// eventClient represents the event client for the workflow
+	// eventClient    event.WorkflowEventClient
+
+	// jobExecutor represents the job executor for the workflow
+	// this would be used to execute the jobs in the workflow in a background
+	jobExecutor JobExecutor
+
+	// logger represents the logger for the workflow
+	logger *logger.Logger
+
+	// activeJobs represents the active jobs in the workflow
+	activeJobs sync.Map // map[uuid.UUID]*jobContext
 }
 
 func NewWorkflowExecutor(
-	wfType models.WorkflowType,
+	workflowType models.WorkflowType,
 	repository workflow.WorkflowRepository,
 	alertClient alert.WorkflowAlertClient,
-	taskExecutor TaskExecutor,
+	// eventClient    event.WorkflowEventClient,
+	jobExecutor JobExecutor,
 	logger *logger.Logger,
 ) (WorkflowExecutor, error) {
-	config, err := models.GetExecutorConfig(wfType)
-	if err != nil {
-		return nil, err
-	}
 
 	workflowExecutor := &workflowExecutor{
-		workflowType: wfType,
-		config:       config,
+		workflowType: workflowType,
 		repository:   repository,
 		alertClient:  alertClient,
-		taskExecutor: taskExecutor,
-		logger:       logger.WithFields(map[string]interface{}{"module": "workflow_executor"}),
+		jobExecutor:  jobExecutor,
+		logger: logger.WithFields(
+			map[string]interface{}{
+				"module": "workflow_executor",
+			}),
 	}
 
 	return workflowExecutor, nil
 }
 
-func (e *workflowExecutor) Initialize(ctx context.Context) error {
-	e.logger.Debug("initializing workflow executor")
-	// Iterate over all active workflows
-	workflowList, err := e.repository.List(ctx, models.WorkflowStatusRunning, e.workflowType)
+func (e *workflowExecutor) Recover(ctx context.Context) error {
+	e.logger.Debug("recovering workflows")
+
+	// List the workflows from the repository
+	jobs, err := e.repository.List(ctx, e.workflowType, models.JobStatusRunning)
 	if err != nil {
-		return fmt.Errorf("failed to list active workflows: %w", err)
+		e.logger.Error("failed to list workflows", zap.Error(err))
+		return err
 	}
 
-	errChan := make(chan error, len(workflowList))
-	defer close(errChan)
+	// Recover the workflows
+	for _, job := range jobs {
+		jobContext, executionContext := models.NewJobContextForJob(&job)
+		e.activeJobs.Store(job.JobID, jobContext)
+		go e.executeJob(executionContext, jobContext)
+	}
 
-	go func() {
-		for err := range errChan {
-			e.logger.Error("failed to restart workflow", zap.Error(err))
+	return nil
+}
+
+func (e *workflowExecutor) Submit(ctx context.Context) (uuid.UUID, error) {
+	e.logger.Debug("submitting workflow")
+
+	// Create a new job
+	job := models.NewJob()
+
+	// Create a new job context
+	jobContext, executionContext := models.NewJobContextForJob(job)
+
+	// Persist the job state in the repository
+	if err := e.repository.SetState(ctx, job.JobID, e.workflowType, jobContext.JobState); err != nil {
+		e.logger.Error("failed to persist job state", zap.Error(err))
+		return uuid.Nil, err
+	}
+
+	// Store the job context in the active jobs
+	e.activeJobs.Store(job.JobID, jobContext)
+
+	// Start the job execution
+	go e.executeJob(executionContext, jobContext)
+
+	return uuid.New(), nil
+}
+
+func (e *workflowExecutor) executeJob(executionContext context.Context, jobContext *models.JobContext) error {
+	e.logger.Debug("executing job", zap.Any("job_id", jobContext.JobID))
+
+	// Execute the job
+	jobUpdateCh, jobErrorCh := e.jobExecutor.Execute(executionContext, jobContext.JobState)
+
+	// Wait for the job to complete
+	for {
+		select {
+		case <-executionContext.Done():
+			e.handleJobCancellation(jobContext)
+			return nil
+		case jobUpdate, ok := <-jobUpdateCh:
+			if !ok {
+				e.handleJobCompletion(executionContext, jobContext)
+				return nil
+			}
+			e.handleJobUpdate(executionContext, jobContext, jobUpdate)
+		case jobError, ok := <-jobErrorCh:
+			if !ok {
+				e.handleJobCompletion(executionContext, jobContext)
+				return nil
+			}
+			e.handleJobError(jobContext, &jobError)
 		}
-	}()
+	}
+}
 
-	for _, workflow := range workflowList {
-		// Start workflow execution
-		go e.Restart(ctx, workflow.WorkflowID, errChan)
+func (e *workflowExecutor) handleJobCancellation(jobContext *models.JobContext) {
+	e.logger.Debug("cancelling job", zap.Any("job_id", jobContext.JobID))
+	jobContext.HandleCancellation()
+	e.activeJobs.Delete(jobContext.JobID)
+}
+
+func (e *workflowExecutor) handleJobCompletion(ctx context.Context, jobContext *models.JobContext) {
+	e.logger.Debug("completing job", zap.Any("job_id", jobContext.JobID))
+	jobContext.HandleCompletion()
+	e.activeJobs.Delete(jobContext.JobID)
+	e.repository.SetState(ctx, jobContext.JobID, e.workflowType, jobContext.JobState)
+	// TODO: inject alert client
+}
+
+func (e *workflowExecutor) handleJobError(jobContext *models.JobContext, jobError *models.JobError) {
+	e.logger.Debug("handling job error", zap.Error(jobError.Error))
+	jobContext.IncrementFailed(1)
+	// TODO: inject event client
+}
+
+func (e *workflowExecutor) handleJobUpdate(ctx context.Context, jobContext *models.JobContext, jobUpdate models.JobUpdate) {
+	e.logger.Debug("handling job update", zap.Any("update", jobUpdate))
+	jobContext.HandleUpdate(&jobUpdate)
+	e.repository.SetState(ctx, jobContext.JobID, e.workflowType, jobContext.JobState)
+}
+
+func (e *workflowExecutor) Status(ctx context.Context, jobID uuid.UUID) (*models.JobStatus, error) {
+	e.logger.Debug("getting workflow status", zap.Any("job_id", jobID))
+
+	// Get the job from the active jobs
+	jobContext, ok := e.activeJobs.Load(jobID)
+	if !ok {
+		return nil, errors.New("job not found")
 	}
 
+	// Get the job status
+	status := jobContext.(*models.JobContext).GetStatus()
+	return &status, nil
+}
+
+func (e *workflowExecutor) State(ctx context.Context, jobID uuid.UUID) (*models.JobState, error) {
+	e.logger.Debug("getting workflow state", zap.Any("job_id", jobID))
+
+	// Get the job from the active jobs
+	jobContext, ok := e.activeJobs.Load(jobID)
+	if !ok {
+		return nil, errors.New("job not found")
+	}
+
+	// Get the job state
+	status, checkpoint := jobContext.(*models.JobContext).GetState()
+	return &models.JobState{
+		Status:     status,
+		Checkpoint: checkpoint,
+	}, nil
+}
+
+func (e *workflowExecutor) Get(ctx context.Context, jobID uuid.UUID) (*models.Job, error) {
+	e.logger.Debug("getting workflow", zap.Any("job_id", jobID))
+
+	// Get the job from the active jobs
+	jobContext, ok := e.activeJobs.Load(jobID)
+	if !ok {
+		return nil, errors.New("job not found")
+	}
+
+	// Get the job
+	job := jobContext.(*models.JobContext).Job
+	return &job, nil
+}
+
+func (e *workflowExecutor) Cancel(ctx context.Context, jobID uuid.UUID) error {
+	e.logger.Debug("cancelling workflow", zap.Any("job_id", jobID))
+
+	// Get the job from the active jobs
+	jobContext, ok := e.activeJobs.Load(jobID)
+	if !ok {
+		return errors.New("job not found")
+	}
+
+	// Cancel the job
+	jobContext.(*models.JobContext).HandleCancellation()
+	e.activeJobs.Delete(jobID)
 	return nil
 }
 
-func (e *workflowExecutor) Restart(ctx context.Context, workflowID models.WorkflowIdentifier, errChan chan error) {
-	e.logger.Debug("restarting workflow", zap.Any("workflow_id", workflowID))
-	// Create task ID
-	taskID := uuid.New().String()
+func (e *workflowExecutor) List(ctx context.Context, status models.JobStatus) ([]models.Job, error) {
+	e.logger.Debug("listing workflows", zap.Any("status", status))
 
-	// Get the workflow state
-	state, err := e.repository.GetState(ctx, workflowID)
-	if err != nil {
-		errChan <- fmt.Errorf("failed to get workflow state: %w", err)
-		return
-	}
-
-	task := models.Task{
-		TaskID:     taskID,
-		WorkflowID: workflowID,
-		Checkpoint: state.Checkpoint,
-	}
-
-	// Create workflow context
-	workflowCtx, cancel := context.WithCancel(ctx)
-
-	wfCtx := &workflowContext{
-		cancel: cancel,
-		task:   task,
-		state: api.WorkflowState{
-			Status: models.WorkflowStatusRunning,
-		},
-	}
-
-	// Store in active workflows
-	e.activeWorkflows.Store(taskID, wfCtx)
-
-	// Send start alert
-	if err := e.alertClient.SendWorkflowStarted(ctx, workflowID, map[string]string{
-		"task_id": taskID,
-	}); err != nil {
-		e.logger.Error("failed to send start alert", zap.Error(err))
-	}
-
-	// Start execution
-	go e.executeWorkflow(workflowCtx, wfCtx)
-}
-
-func (e *workflowExecutor) Start(ctx context.Context, workflowID models.WorkflowIdentifier) error {
-	e.logger.Debug("starting workflow", zap.Any("workflow_id", workflowID))
-	// Create task ID
-	taskID := uuid.New().String()
-
-	// Create workflow context
-	workflowCtx, cancel := context.WithCancel(ctx)
-
-	task := models.Task{
-		TaskID:     taskID,
-		WorkflowID: workflowID,
-	}
-
-	wfCtx := &workflowContext{
-		cancel: cancel,
-		task:   task,
-		state: api.WorkflowState{
-			Status: models.WorkflowStatusRunning,
-		},
-	}
-
-	// Store in active workflows
-	e.activeWorkflows.Store(taskID, wfCtx)
-
-	// Initialize state in repository
-	if err := e.repository.SetState(ctx, workflowID, wfCtx.state); err != nil {
-		return fmt.Errorf("failed to set initial state: %w", err)
-	}
-
-	// Send start alert
-	if err := e.alertClient.SendWorkflowStarted(ctx, workflowID, map[string]string{
-		"task_id": taskID,
-	}); err != nil {
-		e.logger.Error("failed to send start alert", zap.Error(err))
-	}
-
-	// Start execution
-	go e.executeWorkflow(workflowCtx, wfCtx)
-
-	return nil
-}
-
-func (e *workflowExecutor) Stop(ctx context.Context, workflowID models.WorkflowIdentifier) error {
-	e.logger.Debug("stopping workflow", zap.Any("workflow_id", workflowID))
-	var foundCtx *workflowContext
-
-	// Find the workflow context
-	e.activeWorkflows.Range(func(key, value interface{}) bool {
-		wfCtx := value.(*workflowContext)
-		if wfCtx.task.WorkflowID == workflowID {
-			foundCtx = wfCtx
-			return false
+	// List the jobs from the active jobs
+	var jobs []models.Job
+	e.activeJobs.Range(func(key, value interface{}) bool {
+		job := value.(*models.JobContext).Job
+		if job.Status == status {
+			jobs = append(jobs, job)
 		}
 		return true
 	})
 
-	if foundCtx == nil {
-		return fmt.Errorf("workflow not found: %v", workflowID)
-	}
+	return jobs, nil
+}
 
-	// Cancel the context
-	foundCtx.cancel()
+func (e *workflowExecutor) Shutdown(ctx context.Context) error {
+	e.logger.Debug("shutting down workflow")
 
-	// Update state
-	foundCtx.mutex.Lock()
-	foundCtx.state.Status = models.WorkflowStatusAborted
-	foundCtx.mutex.Unlock()
+	// Iterate over the active jobs and cancel them
+	e.activeJobs.Range(func(key, value interface{}) bool {
+		jobContext := value.(*models.JobContext)
+		jobContext.HandleCancellation()
+		return true
+	})
 
-	// Update repository
-	if err := e.repository.SetState(ctx, workflowID, foundCtx.state); err != nil {
-		return fmt.Errorf("failed to update state: %w", err)
-	}
-
-	// Send cancel alert
-	if err := e.alertClient.SendWorkflowCancelled(ctx, workflowID, map[string]string{
-		"task_id": foundCtx.task.TaskID,
-	}); err != nil {
-		e.logger.Error("failed to send cancel alert", zap.Error(err))
+	// Shutdown the job executor
+	if err := e.jobExecutor.Terminate(ctx); err != nil {
+		e.logger.Error("failed to shutdown job executor", zap.Error(err))
+		return err
 	}
 
 	return nil
-}
-
-func (e *workflowExecutor) List(ctx context.Context, status models.WorkflowStatus, wfType models.WorkflowType) ([]api.WorkflowState, error) {
-	e.logger.Debug("listing workflows", zap.Any("status", status), zap.Any("type", wfType))
-	workflowList, err := e.repository.List(ctx, status, wfType)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list workflows: %w", err)
-	}
-	workflowStateList := make([]api.WorkflowState, 0, len(workflowList))
-	for _, workflow := range workflowList {
-		workflowStateList = append(workflowStateList, workflow.WorkflowState)
-	}
-	return workflowStateList, nil
-}
-
-func (e *workflowExecutor) Get(ctx context.Context, workflowID models.WorkflowIdentifier) (api.WorkflowState, error) {
-	e.logger.Debug("getting workflow", zap.Any("workflow_id", workflowID))
-	return e.repository.GetState(ctx, workflowID)
-}
-
-func (e *workflowExecutor) executeWorkflow(ctx context.Context, wfCtx *workflowContext) {
-	e.logger.Debug("executing workflow", zap.Any("workflow_id", wfCtx.task.WorkflowID))
-	updates, errors := e.taskExecutor.Execute(ctx, wfCtx.task)
-
-	for {
-		select {
-		case <-ctx.Done():
-			e.handleWorkflowCancellation(ctx, wfCtx)
-			return
-
-		case err, ok := <-errors:
-			if !ok {
-				continue
-			}
-			e.handleTaskError(ctx, wfCtx, err)
-
-		case update, ok := <-updates:
-			if !ok {
-				e.handleWorkflowCompletion(ctx, wfCtx)
-				return
-			}
-			e.handleTaskUpdate(ctx, wfCtx, update)
-		}
-	}
-}
-
-func (e *workflowExecutor) handleTaskUpdate(ctx context.Context, wfCtx *workflowContext, update models.TaskUpdate) {
-	e.logger.Debug("handling task update", zap.Any("workflow_id", wfCtx.task.WorkflowID), zap.Any("update", update))
-	wfCtx.mutex.Lock()
-	wfCtx.state.Checkpoint = update.NewCheckpoint
-	wfCtx.mutex.Unlock()
-
-	if err := e.repository.SetCheckpoint(ctx, wfCtx.task.WorkflowID, wfCtx.state.Status, update.NewCheckpoint); err != nil {
-		e.logger.Error("failed to update checkpoint", zap.Error(err))
-	}
-}
-
-func (e *workflowExecutor) handleTaskError(ctx context.Context, wfCtx *workflowContext, taskErr models.TaskError) {
-	e.logger.Debug("handling task error", zap.Any("workflow_id", wfCtx.task.WorkflowID), zap.Any("error", taskErr))
-	wfCtx.mutex.Lock()
-	wfCtx.state.Status = models.WorkflowStatusFailed
-	wfCtx.mutex.Unlock()
-
-	if err := e.repository.SetState(ctx, wfCtx.task.WorkflowID, wfCtx.state); err != nil {
-		e.logger.Error("failed to update state", zap.Error(err))
-	}
-
-	if err := e.alertClient.SendWorkflowFailed(ctx, wfCtx.task.WorkflowID, map[string]string{
-		"task_id": wfCtx.task.TaskID,
-		"error":   taskErr.Error.Error(),
-	}); err != nil {
-		e.logger.Error("failed to send error alert", zap.Error(err))
-	}
-
-}
-
-func (e *workflowExecutor) handleWorkflowCompletion(ctx context.Context, wfCtx *workflowContext) {
-	e.logger.Debug("handling workflow completion", zap.Any("workflow_id", wfCtx.task.WorkflowID))
-	wfCtx.mutex.Lock()
-	wfCtx.state.Status = models.WorkflowStatusCompleted
-	wfCtx.mutex.Unlock()
-
-	if err := e.repository.SetState(ctx, wfCtx.task.WorkflowID, wfCtx.state); err != nil {
-		e.logger.Error("failed to update state", zap.Error(err))
-	}
-
-	if err := e.alertClient.SendWorkflowCompleted(ctx, wfCtx.task.WorkflowID, map[string]string{
-		"task_id": wfCtx.task.TaskID,
-	}); err != nil {
-		e.logger.Error("failed to send completion alert", zap.Error(err))
-	}
-}
-
-func (e *workflowExecutor) handleWorkflowCancellation(ctx context.Context, wfCtx *workflowContext) {
-	e.logger.Debug("handling workflow cancellation", zap.Any("workflow_id", wfCtx.task.WorkflowID))
-	wfCtx.mutex.Lock()
-	wfCtx.state.Status = models.WorkflowStatusAborted
-	wfCtx.mutex.Unlock()
-
-	if err := e.repository.SetState(ctx, wfCtx.task.WorkflowID, wfCtx.state); err != nil {
-		e.logger.Error("failed to update state", zap.Error(err))
-	}
-
-	if err := e.alertClient.SendWorkflowCancelled(ctx, wfCtx.task.WorkflowID, map[string]string{
-		"task_id": wfCtx.task.TaskID,
-	}); err != nil {
-		e.logger.Error("failed to send cancel alert", zap.Error(err))
-	}
 }
