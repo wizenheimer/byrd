@@ -34,8 +34,9 @@ func (r *historyRepo) getQuerier(ctx context.Context) interface {
 }
 
 func (r *historyRepo) CreateHistoryForPage(ctx context.Context, pageID uuid.UUID, diffContent any) error {
-	if pageID == uuid.Nil {
-		return fmt.Errorf("page ID is required")
+	// Validate diffContent as well
+	if pageID == uuid.Nil || diffContent == nil {
+		return fmt.Errorf("page ID and diff content are required")
 	}
 
 	// Convert diffContent to JSONB

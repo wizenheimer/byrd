@@ -39,6 +39,10 @@ func NewPageService(pageRepo page.PageRepository, pageHistoryService history.Pag
 
 func (ps *pageService) CreatePage(ctx context.Context, competitorID uuid.UUID, pages []models.PageProps) ([]models.Page, error) {
 	ps.logger.Debug("creating pages", zap.Any("competitorID", competitorID), zap.Any("pages", pages))
+	if len(pages) > maxPageBatchSize {
+		return nil, errors.New("non-fatal: batch size exceeds the maximum limit")
+	}
+
 	if len(pages) == 0 {
 		return nil, errors.New("non-fatal: pages unspecified for creating competitors")
 	}
@@ -172,6 +176,9 @@ func (ps *pageService) RefreshPage(ctx context.Context, pageID uuid.UUID) error 
 
 func (ps *pageService) RemovePage(ctx context.Context, competitorIDs []uuid.UUID, pageIDs []uuid.UUID) error {
 	ps.logger.Debug("removing page", zap.Any("competitorIDs", competitorIDs), zap.Any("pageIDs", pageIDs))
+	if len(pageIDs) > maxPageBatchSize {
+		return errors.New("non-fatal: page batch size exceeds the maximum limit")
+	}
 	if competitorIDs == nil {
 		return errors.New("non-fatal: competitorIDs unspecified for removing pages")
 	}

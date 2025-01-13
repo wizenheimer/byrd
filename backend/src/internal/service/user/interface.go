@@ -9,6 +9,10 @@ import (
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 )
 
+var (
+    maxUserBatchSize int = 25
+)
+
 // UserService is a service that manages users
 // It holds the business logic for user management
 // It embeds UserRespository to interact with the database

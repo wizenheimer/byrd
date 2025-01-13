@@ -95,6 +95,11 @@ func (cs *competitorService) AddCompetitorsToWorkspace(ctx context.Context, work
 }
 
 func (cs *competitorService) GetCompetitorForWorkspace(ctx context.Context, workspaceID uuid.UUID, competitorIDs []uuid.UUID) ([]models.Competitor, error) {
+	if len(competitorIDs) == 0 {
+		return nil, errors.New("non-fatal: no competitorIDs provided")
+	} else if len(competitorIDs) > maxCompetitorBatchSize {
+		return nil, errors.New("non-fatal: too many competitorIDs provided")
+	}
 	return cs.competitorRepository.BatchGetCompetitorsForWorkspace(
 		ctx,
 		workspaceID,
@@ -121,6 +126,9 @@ func (cs *competitorService) UpdateCompetitorForWorkspace(ctx context.Context, w
 }
 
 func (cs *competitorService) RemoveCompetitorForWorkspace(ctx context.Context, workspaceID uuid.UUID, competitorIDs []uuid.UUID) error {
+	if len(competitorIDs) > maxCompetitorBatchSize {
+		return errors.New("non-fatal: too many competitorIDs provided")
+	}
 	// Utility function to remove competitors
 	removeCompetitor := func(ctx context.Context, workspaceID uuid.UUID, competitorIDs []uuid.UUID) error {
 		if competitorIDs == nil {

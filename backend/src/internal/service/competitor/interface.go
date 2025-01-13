@@ -8,6 +8,10 @@ import (
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 )
 
+var (
+    maxCompetitorBatchSize int = 25
+)
+
 // CompetitorService embeds competitor repository and page service
 // It holds the business logic for competitor management
 // PageService is embedded to manage pages within the context of a competitor

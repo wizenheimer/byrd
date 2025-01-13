@@ -8,6 +8,10 @@ import (
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 )
 
+var (
+	maxPageBatchSize int = 25
+)
+
 type PageService interface {
 	CreatePage(ctx context.Context, competitorID uuid.UUID, pages []models.PageProps) ([]models.Page, error)
 

@@ -49,6 +49,10 @@ func (us *userService) GetOrCreateUser(ctx context.Context, clerk *clerk.User) (
 // It returns an error if the users could not be created.
 func (us *userService) BatchGetOrCreateUsers(ctx context.Context, emails []string) ([]models.User, error) {
 	us.logger.Debug("batch getting or creating users", zap.Any("emails", emails))
+	if len(emails) > maxUserBatchSize {
+		return nil, errors.New("non-fatal: user batch size exceeds the maximum limit")
+	}
+
 	for i, email := range emails {
 		emails[i] = utils.NormalizeEmail(email)
 	}
