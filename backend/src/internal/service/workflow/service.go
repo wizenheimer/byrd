@@ -4,131 +4,186 @@ package workflow
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sync"
+	"sync/atomic"
 
-	api "github.com/wizenheimer/byrd/src/internal/models/api"
+	"github.com/google/uuid"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
-	"github.com/wizenheimer/byrd/src/internal/repository/workflow"
 	"github.com/wizenheimer/byrd/src/internal/service/executor"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"go.uber.org/zap"
 )
 
 type workflowService struct {
-	executors  sync.Map //map[models.WorkflowType]executor.WorkflowExecutor
-	logger     *logger.Logger
-	repository workflow.WorkflowRepository
+	executors sync.Map //map[models.WorkflowType]executor.WorkflowExecutor
+	logger    *logger.Logger
+	live      atomic.Bool
 }
 
-func NewWorkflowService(logger *logger.Logger, repository workflow.WorkflowRepository, screenshotWorkflowExecutor, reportWorkflowExecutor executor.WorkflowExecutor) (WorkflowService, error) {
+func NewWorkflowService(logger *logger.Logger) (WorkflowService, error) {
 	if logger == nil {
 		return nil, errors.New("logger is required")
 	}
 
 	ws := workflowService{
-		logger:     logger.WithFields(map[string]interface{}{"module": "workflow_service"}),
-		repository: repository,
-	}
-
-	// Register executors
-	ws.registerExecutor(models.ScreenshotWorkflowType, screenshotWorkflowExecutor)
-	ws.registerExecutor(models.ReportWorkflowType, reportWorkflowExecutor)
-
-	// Initialize the workflow service
-	if errors := ws.Initialize(context.Background()); len(errors) > 0 {
-		return nil, fmt.Errorf("failed to initialize workflow service: %v", errors)
-	} else {
-		ws.logger.Info("workflow service initialized and ready")
+		logger: logger.WithFields(map[string]interface{}{"module": "workflow_service"}),
 	}
 
 	return &ws, nil
 }
 
-func (s *workflowService) Initialize(ctx context.Context) []error {
-	s.logger.Debug("initializing workflow service")
-	var errors []error
-	// Initialize each executor
-	s.executors.Range(func(key, value interface{}) bool {
-		executor := value.(executor.WorkflowExecutor)
-		if err := executor.Initialize(ctx); err != nil {
-			errors = append(errors, fmt.Errorf("failed to initialize %s executor: %w", key, err))
+// Initialize initializes the workflow service
+// This would start the service and start accepting new jobs
+// Additionally, it would recover any pre-empted jobs
+func (ws *workflowService) Initialize(ctx context.Context) error {
+	ws.logger.Debug("initializing workflow service")
+
+	// Warn if there are no executors
+	count := 0
+	ws.executors.Range(func(_, _ interface{}) bool {
+		count++
+		return true
+	})
+	if count == 0 {
+		ws.logger.Warn("no executors found, make sure to add executors before dispatching jobs")
+	}
+
+	// Recover any pre-empted workflows
+	err := ws.Recover(ctx)
+	if err != nil {
+		return err
+	}
+
+	// Start accepting new jobs
+	ws.live.Store(true)
+	ws.logger.Debug("workflow service is live and accepting new jobs")
+	return nil
+}
+
+// Shutdown stops all running jobs and shuts down the workflow service
+// This would disable the service from accepting new jobs
+func (ws *workflowService) Shutdown(ctx context.Context) error {
+	ws.logger.Debug("shutting down workflow service, stopping all running jobs")
+	// Stop accepting new jobs
+	ws.live.Store(false)
+
+	// Stop all running jobs
+	var errs []error
+	ws.executors.Range(func(key, value interface{}) bool {
+		ws.logger.Debug("shutting down executor", zap.Any("workflow_type", key))
+		exc := value.(executor.WorkflowExecutor)
+		if err := exc.Shutdown(ctx); err != nil {
+			ws.logger.Error("failed to shutdown executor", zap.Error(err))
+			errs = append(errs, err)
 		}
 		return true
 	})
 
-	return errors
+	if len(errs) > 0 {
+		return errors.New("failed to shutdown all executors")
+	}
+	return nil
 }
 
-func (s *workflowService) StartWorkflow(ctx context.Context, req api.WorkflowRequest) (api.WorkflowResponse, error) {
-	s.logger.Debug("starting workflow", zap.Any("request", req))
-	if err := s.validateRequest(&req); err != nil {
-		return api.WorkflowResponse{}, err
+// Recover recovers all pre-empted jobs
+// This would be called during the initialization of the service
+func (ws *workflowService) Recover(ctx context.Context) error {
+	// Stop all running jobs
+	var errs []error
+	ws.executors.Range(func(key, value interface{}) bool {
+		ws.logger.Debug("recovering workflows", zap.Any("workflow_type", key))
+		exc := value.(executor.WorkflowExecutor)
+		if err := exc.Recover(ctx); err != nil {
+			ws.logger.Error("failed to recover executor", zap.Error(err))
+			errs = append(errs, err)
+		}
+		return true
+	})
+
+	if len(errs) > 0 {
+		return errors.New("failed to recover all executors")
 	}
-
-	executor, err := s.getExecutor(*req.Type)
-	if err != nil {
-		return api.WorkflowResponse{}, err
-	}
-
-	workflowID := models.WorkflowIdentifier(req)
-
-	if err := executor.Start(ctx, workflowID); err != nil {
-		return api.WorkflowResponse{}, err
-	}
-
-	state, err := executor.Get(ctx, workflowID)
-	if err != nil {
-		return api.WorkflowResponse{}, err
-	}
-
-	return api.WorkflowResponse{
-		WorkflowID:    workflowID,
-		WorkflowState: state,
-	}, nil
+	return nil
 }
 
-func (s *workflowService) StopWorkflow(ctx context.Context, req api.WorkflowRequest) error {
-	s.logger.Debug("stopping workflow", zap.Any("request", req))
-	if err := s.validateRequest(&req); err != nil {
-		return err
+// AddExecutor registers a new executor to the workflow service
+// This would be called during the initialization of the service
+// Raises an error if the executor already exists
+func (ws *workflowService) AddExecutor(workflowType models.WorkflowType, executor executor.WorkflowExecutor) error {
+	ws.logger.Debug("adding executor", zap.Any("workflow_type", workflowType))
+
+	if _, ok := ws.executors.LoadOrStore(workflowType, executor); ok {
+		return errors.New("executor already exists")
 	}
-
-	executor, err := s.getExecutor(*req.Type)
-	if err != nil {
-		return err
-	}
-
-	workflowID := models.WorkflowIdentifier(req)
-
-	return executor.Stop(ctx, workflowID)
+	return nil
 }
 
-func (s *workflowService) GetWorkflow(ctx context.Context, req api.WorkflowRequest) (api.WorkflowResponse, error) {
-	s.logger.Debug("getting workflow", zap.Any("request", req))
-	if err := s.validateRequest(&req); err != nil {
-		return api.WorkflowResponse{}, err
+// Submits a new job to the workflow
+// This would be called by the client to submit a new job
+func (ws *workflowService) Submit(ctx context.Context, workflowType models.WorkflowType) (uuid.UUID, error) {
+	ws.logger.Debug("submitting workflow", zap.Any("workflow_type", workflowType))
+
+	if !ws.live.Load() {
+		return uuid.Nil, errors.New("service is not live")
 	}
 
-	executor, err := s.getExecutor(*req.Type)
-	if err != nil {
-		return api.WorkflowResponse{}, err
+	exc, ok := ws.executors.Load(workflowType)
+	if !ok {
+		return uuid.Nil, errors.New("executor not found")
 	}
 
-	workflowID := models.WorkflowIdentifier(req)
-
-	state, err := executor.Get(ctx, workflowID)
-	if err != nil {
-		return api.WorkflowResponse{}, err
-	}
-
-	return api.WorkflowResponse{
-		WorkflowID:    workflowID,
-		WorkflowState: state,
-	}, nil
+	return exc.(executor.WorkflowExecutor).Submit(ctx)
 }
 
-func (s *workflowService) ListWorkflows(ctx context.Context, status models.WorkflowStatus, wfType models.WorkflowType) ([]api.WorkflowResponse, error) {
-	s.logger.Debug("listing workflows", zap.Any("status", status), zap.Any("type", wfType))
-	return s.repository.List(ctx, status, wfType)
+// Stops a running job in the workflow
+// This would be called by the client to stop a running job
+func (ws *workflowService) Stop(ctx context.Context, workflowType models.WorkflowType, jobID uuid.UUID) error {
+	ws.logger.Debug("stopping workflow", zap.Any("workflow_type", workflowType), zap.Any("job_id", jobID))
+
+	if !ws.live.Load() {
+		return errors.New("service is not live")
+	}
+
+	exc, ok := ws.executors.Load(workflowType)
+	if !ok {
+		return errors.New("executor not found")
+	}
+
+	return exc.(executor.WorkflowExecutor).Cancel(ctx, jobID)
+}
+
+// Gets a running job in the workflow
+// This would be called by the client to get the status of a running job
+func (ws *workflowService) State(ctx context.Context, workflowType models.WorkflowType, jobID uuid.UUID) (*models.Job, error) {
+	ws.logger.Debug("getting workflow state", zap.Any("workflow_type", workflowType), zap.Any("job_id", jobID))
+
+	exc, ok := ws.executors.Load(workflowType)
+	if !ok {
+		return nil, errors.New("executor not found")
+	}
+
+	job, err := exc.(executor.WorkflowExecutor).Get(ctx, jobID)
+	if err != nil {
+		return nil, err
+	}
+
+	return job, nil
+}
+
+// List returns the list of workflows
+// This would be called by the client to get the list of running jobs
+func (ws *workflowService) List(ctx context.Context, workflowType models.WorkflowType, jobStatus models.JobStatus) ([]models.Job, error) {
+	ws.logger.Debug("listing workflows", zap.Any("workflow_type", workflowType), zap.Any("job_status", jobStatus))
+
+	exc, ok := ws.executors.Load(workflowType)
+	if !ok {
+		return nil, errors.New("executor not found")
+	}
+
+	jobs, err := exc.(executor.WorkflowExecutor).List(ctx, jobStatus)
+	if err != nil {
+		return nil, err
+	}
+
+	return jobs, nil
 }
