@@ -2,8 +2,13 @@ package workspace
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
+	"github.com/gosimple/slug"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/internal/transaction"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
@@ -16,83 +21,539 @@ type workspaceRepo struct {
 
 func NewWorkspaceRepository(tm *transaction.TxManager, logger *logger.Logger) WorkspaceRepository {
 	return &workspaceRepo{
-		tm:     tm,
-		logger: logger.WithFields(map[string]interface{}{"module": "workspace_repository"}),
+		tm: tm,
+		logger: logger.WithFields(map[string]interface{}{
+			"module": "workspace_repository",
+		}),
 	}
 }
 
 func (r *workspaceRepo) CreateWorkspace(ctx context.Context, workspaceName, billingEmail string, workspaceCreatorUserID uuid.UUID) (*models.Workspace, error) {
-	return nil, nil
+	slug := generateSlug(workspaceName)
+	workspace := &models.Workspace{}
+
+	// Create workspace
+	err := r.getQuerier(ctx).QueryRow(ctx, `
+		INSERT INTO workspaces (name, slug, billing_email, workspace_status)
+		VALUES ($1, $2, $3, $4)
+		RETURNING id, name, slug, billing_email, workspace_status, created_at, updated_at`,
+		workspaceName, slug, billingEmail, models.WorkspaceActive,
+	).Scan(
+		&workspace.ID,
+		&workspace.Name,
+		&workspace.Slug,
+		&workspace.BillingEmail,
+		&workspace.WorkspaceStatus,
+		&workspace.CreatedAt,
+		&workspace.UpdatedAt,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create workspace: %w", err)
+	}
+
+	// Add creator as admin
+	_, err = r.getQuerier(ctx).Exec(ctx, `
+		INSERT INTO workspace_users (workspace_id, user_id, workspace_role, membership_status)
+		VALUES ($1, $2, $3, $4)`,
+		workspace.ID, workspaceCreatorUserID, models.RoleAdmin, models.ActiveMember,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to add creator to workspace: %w", err)
+	}
+
+	return workspace, nil
 }
 
 func (r *workspaceRepo) WorkspaceExists(ctx context.Context, workspaceID uuid.UUID) (bool, error) {
-	return false, nil
+	var exists bool
+	err := r.getQuerier(ctx).QueryRow(ctx, `
+		SELECT EXISTS(
+			SELECT 1 FROM workspaces
+			WHERE id = $1 AND workspace_status != $2
+		)`,
+		workspaceID, models.WorkspaceInactive,
+	).Scan(&exists)
+
+	if err != nil {
+		return false, fmt.Errorf("failed to check workspace existence: %w", err)
+	}
+
+	return exists, nil
 }
 
 func (r *workspaceRepo) GetWorkspaceByWorkspaceID(ctx context.Context, workspaceID uuid.UUID) (*models.Workspace, error) {
-	return nil, nil
+	workspace := &models.Workspace{}
+	err := r.getQuerier(ctx).QueryRow(ctx, `
+		SELECT id, name, slug, billing_email, workspace_status, created_at, updated_at
+		FROM workspaces
+		WHERE id = $1 AND workspace_status != $2`,
+		workspaceID, models.WorkspaceInactive,
+	).Scan(
+		&workspace.ID,
+		&workspace.Name,
+		&workspace.Slug,
+		&workspace.BillingEmail,
+		&workspace.WorkspaceStatus,
+		&workspace.CreatedAt,
+		&workspace.UpdatedAt,
+	)
+
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, fmt.Errorf("workspace not found")
+		}
+		return nil, fmt.Errorf("failed to get workspace: %w", err)
+	}
+
+	return workspace, nil
 }
 
 func (r *workspaceRepo) BatchGetWorkspacesByIDs(ctx context.Context, workspaceIDs []uuid.UUID) ([]models.Workspace, error) {
-	return nil, nil
+	if len(workspaceIDs) == 0 {
+		return []models.Workspace{}, nil
+	}
+
+	rows, err := r.getQuerier(ctx).Query(ctx, `
+		SELECT id, name, slug, billing_email, workspace_status, created_at, updated_at
+		FROM workspaces
+		WHERE id = ANY($1) AND workspace_status != $2`,
+		workspaceIDs, models.WorkspaceInactive,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to batch get workspaces: %w", err)
+	}
+	defer rows.Close()
+
+	var workspaces []models.Workspace
+	for rows.Next() {
+		var workspace models.Workspace
+		err := rows.Scan(
+			&workspace.ID,
+			&workspace.Name,
+			&workspace.Slug,
+			&workspace.BillingEmail,
+			&workspace.WorkspaceStatus,
+			&workspace.CreatedAt,
+			&workspace.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan workspace: %w", err)
+		}
+		workspaces = append(workspaces, workspace)
+	}
+
+	return workspaces, rows.Err()
 }
 
 func (r *workspaceRepo) ListWorkspaceMembers(ctx context.Context, workspaceID uuid.UUID, limit, offset *int, workspaceRole *models.WorkspaceRole) ([]models.PartialWorkspaceUser, bool, error) {
-	return nil, false, nil
+	args := []interface{}{workspaceID, models.InactiveMember}
+	argCount := 2
+
+	query := `
+		SELECT wu.user_id, wu.workspace_role, wu.membership_status
+		FROM workspace_users wu
+		WHERE wu.workspace_id = $1
+		AND wu.membership_status != $2`
+
+	if workspaceRole != nil {
+		argCount++
+		query += fmt.Sprintf(" AND wu.workspace_role = $%d", argCount)
+		args = append(args, *workspaceRole)
+	}
+
+	query += " ORDER BY wu.created_at DESC"
+
+	if limit != nil {
+		argCount++
+		query += fmt.Sprintf(" LIMIT $%d", argCount)
+		args = append(args, *limit)
+	}
+
+	if offset != nil {
+		argCount++
+		query += fmt.Sprintf(" OFFSET $%d", argCount)
+		args = append(args, *offset)
+	}
+
+	rows, err := r.getQuerier(ctx).Query(ctx, query, args...)
+	if err != nil {
+		return nil, false, fmt.Errorf("failed to list workspace members: %w", err)
+	}
+	defer rows.Close()
+
+	var members []models.PartialWorkspaceUser
+	for rows.Next() {
+		var member models.PartialWorkspaceUser
+		err := rows.Scan(
+			&member.ID,
+			&member.Role,
+			&member.MembershipStatus,
+		)
+		if err != nil {
+			return nil, false, fmt.Errorf("failed to scan workspace member: %w", err)
+		}
+		members = append(members, member)
+	}
+
+	hasMore := len(members) == *limit
+
+	return members, hasMore, rows.Err()
 }
 
 func (r *workspaceRepo) GetWorkspaceMemberByUserID(ctx context.Context, workspaceID, userID uuid.UUID) (*models.PartialWorkspaceUser, error) {
-	return nil, nil
+	member := &models.PartialWorkspaceUser{}
+	err := r.getQuerier(ctx).QueryRow(ctx, `
+		SELECT user_id, workspace_role, membership_status
+		FROM workspace_users
+		WHERE workspace_id = $1 AND user_id = $2 AND membership_status != $3`,
+		workspaceID, userID, models.InactiveMember,
+	).Scan(
+		&member.ID,
+		&member.Role,
+		&member.MembershipStatus,
+	)
+
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, fmt.Errorf("workspace member not found")
+		}
+		return nil, fmt.Errorf("failed to get workspace member: %w", err)
+	}
+
+	return member, nil
 }
 
 func (r *workspaceRepo) GetWorkspaceUserCountByRole(ctx context.Context, workspaceID uuid.UUID) (map[models.WorkspaceRole]int, error) {
-	return nil, nil
+	rows, err := r.getQuerier(ctx).Query(ctx, `
+		SELECT workspace_role, COUNT(*)
+		FROM workspace_users
+		WHERE workspace_id = $1 AND membership_status != $2
+		GROUP BY workspace_role`,
+		workspaceID, models.InactiveMember,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get workspace user count: %w", err)
+	}
+	defer rows.Close()
+
+	counts := make(map[models.WorkspaceRole]int)
+	for rows.Next() {
+		var role models.WorkspaceRole
+		var count int
+		if err := rows.Scan(&role, &count); err != nil {
+			return nil, fmt.Errorf("failed to scan role count: %w", err)
+		}
+		counts[role] = count
+	}
+
+	return counts, rows.Err()
 }
 
 func (r *workspaceRepo) GetWorkspacesForUserID(ctx context.Context, userID uuid.UUID) ([]models.Workspace, error) {
-	return nil, nil
+	rows, err := r.getQuerier(ctx).Query(ctx, `
+		SELECT w.id, w.name, w.slug, w.billing_email, w.workspace_status, w.created_at, w.updated_at
+		FROM workspaces w
+		INNER JOIN workspace_users wu ON w.id = wu.workspace_id
+		WHERE wu.user_id = $1
+		AND wu.membership_status != $2
+		AND w.workspace_status != $3`,
+		userID, models.InactiveMember, models.WorkspaceInactive,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get workspaces for user: %w", err)
+	}
+	defer rows.Close()
+
+	var workspaces []models.Workspace
+	for rows.Next() {
+		var workspace models.Workspace
+		err := rows.Scan(
+			&workspace.ID,
+			&workspace.Name,
+			&workspace.Slug,
+			&workspace.BillingEmail,
+			&workspace.WorkspaceStatus,
+			&workspace.CreatedAt,
+			&workspace.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan workspace: %w", err)
+		}
+		workspaces = append(workspaces, workspace)
+	}
+
+	return workspaces, rows.Err()
 }
 
 func (r *workspaceRepo) BatchAddUsersToWorkspace(ctx context.Context, userIDs []uuid.UUID, workspaceID uuid.UUID) ([]models.PartialWorkspaceUser, error) {
-	return nil, nil
+	if len(userIDs) == 0 {
+		return []models.PartialWorkspaceUser{}, nil
+	}
+
+	// Create values string for bulk insert
+	valueStrings := make([]string, 0, len(userIDs))
+	valueArgs := make([]interface{}, 0, len(userIDs)*4)
+	for i, userID := range userIDs {
+		valueStrings = append(valueStrings, fmt.Sprintf("($%d, $%d, $%d, $%d)",
+			i*4+1, i*4+2, i*4+3, i*4+4))
+		valueArgs = append(valueArgs, workspaceID, userID, models.RoleUser, models.PendingMember)
+	}
+
+	query := fmt.Sprintf(`
+		INSERT INTO workspace_users (workspace_id, user_id, workspace_role, membership_status)
+		VALUES %s
+		RETURNING user_id, workspace_role, membership_status`,
+		strings.Join(valueStrings, ","))
+
+	rows, err := r.getQuerier(ctx).Query(ctx, query, valueArgs...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to batch add users: %w", err)
+	}
+	defer rows.Close()
+
+	var members []models.PartialWorkspaceUser
+	for rows.Next() {
+		var member models.PartialWorkspaceUser
+		err := rows.Scan(
+			&member.ID,
+			&member.Role,
+			&member.MembershipStatus,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan workspace member: %w", err)
+		}
+		members = append(members, member)
+	}
+
+	return members, rows.Err()
 }
 
 func (r *workspaceRepo) AddUserToWorkspace(ctx context.Context, userID, workspaceID uuid.UUID) (*models.PartialWorkspaceUser, error) {
-	return nil, nil
+	member := &models.PartialWorkspaceUser{}
+	err := r.getQuerier(ctx).QueryRow(ctx, `
+		INSERT INTO workspace_users (workspace_id, user_id, workspace_role, membership_status)
+		VALUES ($1, $2, $3, $4)
+		RETURNING user_id, workspace_role, membership_status`,
+		workspaceID, userID, models.RoleUser, models.PendingMember,
+	).Scan(
+		&member.ID,
+		&member.Role,
+		&member.MembershipStatus,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to add user to workspace: %w", err)
+	}
+
+	return member, nil
 }
 
 func (r *workspaceRepo) BatchRemoveUsersFromWorkspace(ctx context.Context, userIDs []uuid.UUID, workspaceID uuid.UUID) error {
+	if len(userIDs) == 0 {
+		return nil
+	}
+
+	_, err := r.getQuerier(ctx).Exec(ctx, `
+		UPDATE workspace_users
+		SET membership_status = $1
+		WHERE workspace_id = $2 AND user_id = ANY($3)`,
+		models.InactiveMember, workspaceID, userIDs,
+	)
+
+	if err != nil {
+		return fmt.Errorf("failed to batch remove users: %w", err)
+	}
+
 	return nil
 }
 
 func (r *workspaceRepo) RemoveUserFromWorkspace(ctx context.Context, userID, workspaceID uuid.UUID) error {
+	result, err := r.getQuerier(ctx).Exec(ctx, `
+		UPDATE workspace_users
+		SET membership_status = $1
+		WHERE workspace_id = $2 AND user_id = $3`,
+		models.InactiveMember, workspaceID, userID,
+	)
+
+	if err != nil {
+		return fmt.Errorf("failed to remove user from workspace: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("user not found in workspace")
+	}
+
 	return nil
 }
 
 func (r *workspaceRepo) UpdateUserRoleForWorkspace(ctx context.Context, workspaceID, userID uuid.UUID, role models.WorkspaceRole) error {
+	result, err := r.getQuerier(ctx).Exec(ctx, `
+		UPDATE workspace_users
+		SET workspace_role = $1
+		WHERE workspace_id = $2 AND user_id = $3 AND membership_status != $4`,
+		role, workspaceID, userID, models.InactiveMember,
+	)
+
+	if err != nil {
+		return fmt.Errorf("failed to update user role: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("user not found in workspace")
+	}
+
 	return nil
 }
 
-func (r *workspaceRepo) UpdateUserMembershipStatusForWorkspace(ctx context.Context, workspaceID, userID uuid.UUID, membershipStatus models.MembershipStatus) error {
+func (r *workspaceRepo) UpdateUserMembershipStatusForWorkspace(ctx context.Context, workspaceID, userID uuid.UUID, status models.MembershipStatus) error {
+	result, err := r.getQuerier(ctx).Exec(ctx, `
+		UPDATE workspace_users
+		SET membership_status = $1
+		WHERE workspace_id = $2 AND user_id = $3 AND membership_status != $4`,
+		status, workspaceID, userID, models.InactiveMember,
+	)
+
+	if err != nil {
+		return fmt.Errorf("failed to update membership status: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("user not found in workspace")
+	}
+
 	return nil
 }
 
 func (r *workspaceRepo) UpdateWorkspaceBillingEmail(ctx context.Context, workspaceID uuid.UUID, billingEmail string) error {
+	result, err := r.getQuerier(ctx).Exec(ctx, `
+		UPDATE workspaces
+		SET billing_email = $1
+		WHERE id = $2 AND workspace_status != $3`,
+		billingEmail, workspaceID, models.WorkspaceInactive,
+	)
+
+	if err != nil {
+		return fmt.Errorf("failed to update workspace billing email: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("workspace not found")
+	}
+
 	return nil
 }
 
 func (r *workspaceRepo) UpdateWorkspaceName(ctx context.Context, workspaceID uuid.UUID, workspaceName string) error {
+	result, err := r.getQuerier(ctx).Exec(ctx, `
+		UPDATE workspaces
+		SET name = $1
+		WHERE id = $2 AND workspace_status != $3`,
+		workspaceName, workspaceID, models.WorkspaceInactive,
+	)
+
+	if err != nil {
+		return fmt.Errorf("failed to update workspace name: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("workspace not found")
+	}
+
 	return nil
 }
 
 func (r *workspaceRepo) UpdateWorkspaceDetails(ctx context.Context, workspaceID uuid.UUID, workspaceName, billingEmail string) error {
+	result, err := r.getQuerier(ctx).Exec(ctx, `
+		UPDATE workspaces
+		SET name = $1, billing_email = $2
+		WHERE id = $3 AND workspace_status != $4`,
+		workspaceName, billingEmail, workspaceID, models.WorkspaceInactive,
+	)
+
+	if err != nil {
+		return fmt.Errorf("failed to update workspace details: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("workspace not found")
+	}
+
 	return nil
 }
 
 func (r *workspaceRepo) DeleteWorkspace(ctx context.Context, workspaceID uuid.UUID) error {
+	// Start by soft deleting all workspace memberships
+	_, err := r.getQuerier(ctx).Exec(ctx, `
+		UPDATE workspace_users
+		SET membership_status = $1
+		WHERE workspace_id = $2 AND membership_status != $1`,
+		models.InactiveMember, workspaceID,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to delete workspace memberships: %w", err)
+	}
+
+	// Then soft delete the workspace itself
+	result, err := r.getQuerier(ctx).Exec(ctx, `
+		UPDATE workspaces
+		SET workspace_status = $1
+		WHERE id = $2 AND workspace_status != $1`,
+		models.WorkspaceInactive, workspaceID,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to delete workspace: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("workspace not found")
+	}
+
 	return nil
 }
 
 func (r *workspaceRepo) BatchDeleteWorkspaces(ctx context.Context, workspaceIDs []uuid.UUID) error {
+	if len(workspaceIDs) == 0 {
+		return nil
+	}
+
+	// Start by soft deleting all workspace memberships
+	_, err := r.getQuerier(ctx).Exec(ctx, `
+		UPDATE workspace_users
+		SET membership_status = $1
+		WHERE workspace_id = ANY($2) AND membership_status != $1`,
+		models.InactiveMember, workspaceIDs,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to batch delete workspace memberships: %w", err)
+	}
+
+	// Then soft delete the workspaces
+	result, err := r.getQuerier(ctx).Exec(ctx, `
+		UPDATE workspaces
+		SET workspace_status = $1
+		WHERE id = ANY($2) AND workspace_status != $1`,
+		models.WorkspaceInactive, workspaceIDs,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to batch delete workspaces: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("workspaces not found")
+	}
+
 	return nil
+}
+
+func generateSlug(workspaceName string) string {
+	baseSlug := slug.Make(workspaceName)
+	return baseSlug + "-" + uuid.New().String()
+}
+
+func (r *workspaceRepo) getQuerier(ctx context.Context) interface {
+	Exec(context.Context, string, ...interface{}) (pgconn.CommandTag, error)
+	Query(context.Context, string, ...interface{}) (pgx.Rows, error)
+	QueryRow(context.Context, string, ...interface{}) pgx.Row
+} {
+	return r.tm.GetQuerier(ctx)
 }
