@@ -15,7 +15,7 @@ import (
 )
 
 type workflowService struct {
-	executors sync.Map //map[models.WorkflowType]executor.WorkflowExecutor
+	executors sync.Map //map[models.WorkflowType]executor.WorkflowObserver
 	logger    *logger.Logger
 	live      atomic.Bool
 }
@@ -71,7 +71,7 @@ func (ws *workflowService) Shutdown(ctx context.Context) error {
 	var errs []error
 	ws.executors.Range(func(key, value interface{}) bool {
 		ws.logger.Debug("shutting down executor", zap.Any("workflow_type", key))
-		exc := value.(executor.WorkflowExecutor)
+		exc := value.(executor.WorkflowObserver)
 		if err := exc.Shutdown(ctx); err != nil {
 			ws.logger.Error("failed to shutdown executor", zap.Error(err))
 			errs = append(errs, err)
@@ -92,7 +92,7 @@ func (ws *workflowService) Recover(ctx context.Context) error {
 	var errs []error
 	ws.executors.Range(func(key, value interface{}) bool {
 		ws.logger.Debug("recovering workflows", zap.Any("workflow_type", key))
-		exc := value.(executor.WorkflowExecutor)
+		exc := value.(executor.WorkflowObserver)
 		if err := exc.Recover(ctx); err != nil {
 			ws.logger.Error("failed to recover executor", zap.Error(err))
 			errs = append(errs, err)
@@ -106,10 +106,10 @@ func (ws *workflowService) Recover(ctx context.Context) error {
 	return nil
 }
 
-// AddExecutor registers a new executor to the workflow service
+// Register registers a new executor to the workflow service
 // This would be called during the initialization of the service
 // Raises an error if the executor already exists
-func (ws *workflowService) AddExecutor(workflowType models.WorkflowType, executor executor.WorkflowExecutor) error {
+func (ws *workflowService) Register(workflowType models.WorkflowType, executor executor.WorkflowObserver) error {
 	ws.logger.Debug("adding executor", zap.Any("workflow_type", workflowType))
 
 	if _, ok := ws.executors.LoadOrStore(workflowType, executor); ok {
@@ -132,7 +132,7 @@ func (ws *workflowService) Submit(ctx context.Context, workflowType models.Workf
 		return uuid.Nil, errors.New("executor not found")
 	}
 
-	return exc.(executor.WorkflowExecutor).Submit(ctx)
+	return exc.(executor.WorkflowObserver).Submit(ctx)
 }
 
 // Stops a running job in the workflow
@@ -149,7 +149,7 @@ func (ws *workflowService) Stop(ctx context.Context, workflowType models.Workflo
 		return errors.New("executor not found")
 	}
 
-	return exc.(executor.WorkflowExecutor).Cancel(ctx, jobID)
+	return exc.(executor.WorkflowObserver).Cancel(ctx, jobID)
 }
 
 // Gets a running job in the workflow
@@ -162,7 +162,7 @@ func (ws *workflowService) State(ctx context.Context, workflowType models.Workfl
 		return nil, errors.New("executor not found")
 	}
 
-	job, err := exc.(executor.WorkflowExecutor).Get(ctx, jobID)
+	job, err := exc.(executor.WorkflowObserver).Get(ctx, jobID)
 	if err != nil {
 		return nil, err
 	}
@@ -180,7 +180,7 @@ func (ws *workflowService) List(ctx context.Context, workflowType models.Workflo
 		return nil, errors.New("executor not found")
 	}
 
-	jobs, err := exc.(executor.WorkflowExecutor).List(ctx, jobStatus)
+	jobs, err := exc.(executor.WorkflowObserver).List(ctx, jobStatus)
 	if err != nil {
 		return nil, err
 	}

@@ -8,8 +8,8 @@ import (
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 )
 
-// WorkflowExecutor represents the executor for managing workflows
-type WorkflowExecutor interface {
+// WorkflowObserver represents the executor for managing workflows
+type WorkflowObserver interface {
 	// Recover recovers any pre-empted workflow jobs
 	Recover(ctx context.Context) error
 

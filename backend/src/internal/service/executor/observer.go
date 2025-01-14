@@ -14,7 +14,7 @@ import (
 	"go.uber.org/zap"
 )
 
-type workflowExecutor struct {
+type workflowObserver struct {
 	// workflowType represents the type of workflow
 	workflowType models.WorkflowType
 
@@ -45,9 +45,9 @@ func NewWorkflowExecutor(
 	// eventClient    event.WorkflowEventClient,
 	jobExecutor JobExecutor,
 	logger *logger.Logger,
-) (WorkflowExecutor, error) {
+) (WorkflowObserver, error) {
 
-	workflowExecutor := &workflowExecutor{
+	workflowObserver := &workflowObserver{
 		workflowType: workflowType,
 		repository:   repository,
 		alertClient:  alertClient,
@@ -58,10 +58,10 @@ func NewWorkflowExecutor(
 			}),
 	}
 
-	return workflowExecutor, nil
+	return workflowObserver, nil
 }
 
-func (e *workflowExecutor) Recover(ctx context.Context) error {
+func (e *workflowObserver) Recover(ctx context.Context) error {
 	e.logger.Debug("recovering workflows")
 
 	// List the workflows from the repository
@@ -81,7 +81,7 @@ func (e *workflowExecutor) Recover(ctx context.Context) error {
 	return nil
 }
 
-func (e *workflowExecutor) Submit(ctx context.Context) (uuid.UUID, error) {
+func (e *workflowObserver) Submit(ctx context.Context) (uuid.UUID, error) {
 	e.logger.Debug("submitting workflow")
 
 	// Create a new job
@@ -105,7 +105,7 @@ func (e *workflowExecutor) Submit(ctx context.Context) (uuid.UUID, error) {
 	return job.JobID, nil
 }
 
-func (e *workflowExecutor) executeJob(executionContext context.Context, jobContext *models.JobContext) {
+func (e *workflowObserver) executeJob(executionContext context.Context, jobContext *models.JobContext) {
 	e.logger.Debug("executing job", zap.Any("job_id", jobContext.JobID))
 
 	// Execute the job
@@ -133,13 +133,13 @@ func (e *workflowExecutor) executeJob(executionContext context.Context, jobConte
 	}
 }
 
-func (e *workflowExecutor) handleJobCancellation(jobContext *models.JobContext) {
+func (e *workflowObserver) handleJobCancellation(jobContext *models.JobContext) {
 	e.logger.Debug("cancelling job", zap.Any("job_id", jobContext.JobID))
 	jobContext.HandleCancellation()
 	e.activeJobs.Delete(jobContext.JobID)
 }
 
-func (e *workflowExecutor) handleJobCompletion(ctx context.Context, jobContext *models.JobContext) {
+func (e *workflowObserver) handleJobCompletion(ctx context.Context, jobContext *models.JobContext) {
 	e.logger.Debug("completing job", zap.Any("job_id", jobContext.JobID))
 
 	if err := e.repository.SetState(ctx, jobContext.JobID, e.workflowType, jobContext.JobState); err != nil {
@@ -151,13 +151,13 @@ func (e *workflowExecutor) handleJobCompletion(ctx context.Context, jobContext *
 	// TODO: inject alert client
 }
 
-func (e *workflowExecutor) handleJobError(jobContext *models.JobContext, jobError *models.JobError) {
+func (e *workflowObserver) handleJobError(jobContext *models.JobContext, jobError *models.JobError) {
 	e.logger.Debug("handling job error", zap.Error(jobError.Error))
 	jobContext.IncrementFailed(1)
 	// TODO: inject event client
 }
 
-func (e *workflowExecutor) handleJobUpdate(ctx context.Context, jobContext *models.JobContext, jobUpdate models.JobUpdate) {
+func (e *workflowObserver) handleJobUpdate(ctx context.Context, jobContext *models.JobContext, jobUpdate models.JobUpdate) {
 	e.logger.Debug("handling job update", zap.Any("update", jobUpdate))
 
 	if err := e.repository.SetState(ctx, jobContext.JobID, e.workflowType, jobContext.JobState); err != nil {
@@ -168,7 +168,7 @@ func (e *workflowExecutor) handleJobUpdate(ctx context.Context, jobContext *mode
 	jobContext.HandleUpdate(&jobUpdate)
 }
 
-func (e *workflowExecutor) Status(ctx context.Context, jobID uuid.UUID) (*models.JobStatus, error) {
+func (e *workflowObserver) Status(ctx context.Context, jobID uuid.UUID) (*models.JobStatus, error) {
 	e.logger.Debug("getting workflow status", zap.Any("job_id", jobID))
 
 	// Get the job from the active jobs
@@ -182,7 +182,7 @@ func (e *workflowExecutor) Status(ctx context.Context, jobID uuid.UUID) (*models
 	return &status, nil
 }
 
-func (e *workflowExecutor) State(ctx context.Context, jobID uuid.UUID) (*models.JobState, error) {
+func (e *workflowObserver) State(ctx context.Context, jobID uuid.UUID) (*models.JobState, error) {
 	e.logger.Debug("getting workflow state", zap.Any("job_id", jobID))
 
 	// Get the job from the active jobs
@@ -199,7 +199,7 @@ func (e *workflowExecutor) State(ctx context.Context, jobID uuid.UUID) (*models.
 	}, nil
 }
 
-func (e *workflowExecutor) Get(ctx context.Context, jobID uuid.UUID) (*models.Job, error) {
+func (e *workflowObserver) Get(ctx context.Context, jobID uuid.UUID) (*models.Job, error) {
 	e.logger.Debug("getting workflow", zap.Any("job_id", jobID))
 
 	// Get the job from the active jobs
@@ -213,7 +213,7 @@ func (e *workflowExecutor) Get(ctx context.Context, jobID uuid.UUID) (*models.Jo
 	return &job, nil
 }
 
-func (e *workflowExecutor) Cancel(ctx context.Context, jobID uuid.UUID) error {
+func (e *workflowObserver) Cancel(ctx context.Context, jobID uuid.UUID) error {
 	e.logger.Debug("cancelling workflow", zap.Any("job_id", jobID))
 
 	// Get the job from the active jobs
@@ -228,7 +228,7 @@ func (e *workflowExecutor) Cancel(ctx context.Context, jobID uuid.UUID) error {
 	return nil
 }
 
-func (e *workflowExecutor) List(ctx context.Context, status models.JobStatus) ([]models.Job, error) {
+func (e *workflowObserver) List(ctx context.Context, status models.JobStatus) ([]models.Job, error) {
 	e.logger.Debug("listing workflows", zap.Any("status", status))
 
 	// List the jobs from the active jobs
@@ -244,7 +244,7 @@ func (e *workflowExecutor) List(ctx context.Context, status models.JobStatus) ([
 	return jobs, nil
 }
 
-func (e *workflowExecutor) Shutdown(ctx context.Context) error {
+func (e *workflowObserver) Shutdown(ctx context.Context) error {
 	e.logger.Debug("shutting down workflow")
 
 	// Iterate over the active jobs and cancel them

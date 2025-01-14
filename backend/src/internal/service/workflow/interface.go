@@ -23,10 +23,10 @@ type WorkflowService interface {
 	// This would be called during the initialization of the service
 	Recover(ctx context.Context) error
 
-	// AddExecutor registers a new executor to the workflow service
+	// Register registers a new executor to the workflow service
 	// This would be called during the initialization of the service
 	// Raises an error if the executor already exists
-	AddExecutor(workflowType models.WorkflowType, executor executor.WorkflowExecutor) error
+	Register(workflowType models.WorkflowType, observer executor.WorkflowObserver) error
 
 	// Submits a new job to the workflow
 	// This would be called by the client to submit a new job

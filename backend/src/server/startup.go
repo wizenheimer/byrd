@@ -150,7 +150,7 @@ func initializer(cfg *config.Config, tm *transaction.TxManager, logger *logger.L
 	if err != nil {
 		return nil, nil, err
 	}
-	if err := workflowService.AddExecutor(models.ScreenshotWorkflowType, screenshotWorkflowExecutor); err != nil {
+	if err := workflowService.Register(models.ScreenshotWorkflowType, screenshotWorkflowExecutor); err != nil {
 		return nil, nil, err
 	}
 
