@@ -10,7 +10,7 @@ import (
 )
 
 var (
-    maxUserBatchSize int = 25
+	maxUserBatchSize int = 25
 )
 
 // UserService is a service that manages users

@@ -32,10 +32,10 @@ func NewWorkflowRepository(client *redis.Client, logger *logger.Logger) (Workflo
 	workflowRepo := workflowRepository{
 		client: client,
 		logger: logger.WithFields(
-            map[string]interface{}{
-                "module": "workflow_repository",
-            },
-        ),
+			map[string]interface{}{
+				"module": "workflow_repository",
+			},
+		),
 	}
 	if err := validateClient(context.Background(), client); err != nil {
 		return nil, fmt.Errorf("invalid client: %w", err)

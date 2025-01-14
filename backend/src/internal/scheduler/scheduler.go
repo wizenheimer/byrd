@@ -339,17 +339,17 @@ func (s *scheduler) wrapCommand(id models.ScheduleID, cmd func()) func() {
 			sf := value.(*models.ScheduledFunc)
 
 			// Execute the command safely
-            s.logger.Info("executing scheduled function", zap.Any("id", id))
+			s.logger.Info("executing scheduled function", zap.Any("id", id))
 			s.safeExecute(cmd)
 
 			// Update LastRun and NextRun times
-            s.logger.Info("updating last run and next run times", zap.Any("id", id))
+			s.logger.Info("updating last run and next run times", zap.Any("id", id))
 			entry := s.cron.Entry(sf.EntryID)
 			sf.LastRun = entry.Prev
 			sf.NextRun = entry.Next
 
 			// Store the updated scheduled function
-            s.logger.Info("storing updated scheduled function", zap.Any("id", id))
+			s.logger.Info("storing updated scheduled function", zap.Any("id", id))
 			s.schedules.Store(id, sf)
 		}
 	}

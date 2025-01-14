@@ -14,6 +14,7 @@ require (
 	github.com/jackc/pgx/v5 v5.7.2
 	github.com/joho/godotenv v1.5.1
 	github.com/openai/openai-go v0.1.0-alpha.40
+	github.com/robfig/cron/v3 v3.0.0
 	github.com/slack-go/slack v0.15.0
 	go.uber.org/zap v1.27.0
 )

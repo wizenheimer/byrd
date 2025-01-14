@@ -9,7 +9,7 @@ import (
 )
 
 var (
-    maxCompetitorBatchSize int = 25
+	maxCompetitorBatchSize int = 25
 )
 
 // CompetitorService embeds competitor repository and page service
