@@ -1,5 +1,4 @@
-// ./src/server/shutdown.go
-package main
+package shutdown
 
 import (
 	"context"
@@ -34,9 +33,14 @@ type ShutdownHandler struct {
 }
 
 // NewShutdownHandler creates a new shutdown handler
-func NewShutdownHandler(app *fiber.App, pool *pgxpool.Pool, logger *logger.Logger, config ShutdownConfig) *ShutdownHandler {
+func NewShutdownHandler(app *fiber.App, pool *pgxpool.Pool, timeout time.Duration, maxAttempts int, logger *logger.Logger) *ShutdownHandler {
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, os.Interrupt, syscall.SIGTERM)
+
+	config := ShutdownConfig{
+		Timeout:     timeout,
+		MaxAttempts: maxAttempts,
+	}
 
 	return &ShutdownHandler{
 		app:      app,

@@ -1,4 +1,3 @@
-// ./src/server/main.go
 package main
 
 import (
@@ -13,6 +12,8 @@ import (
 	"github.com/wizenheimer/byrd/src/internal/config"
 	"github.com/wizenheimer/byrd/src/internal/transaction"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
+	"github.com/wizenheimer/byrd/src/server/shutdown"
+	"github.com/wizenheimer/byrd/src/server/startup"
 	"go.uber.org/zap"
 )
 
@@ -33,13 +34,12 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to initialize logger: %v", err)
 		return
-	} else {
-		defer func() {
-			if err := logger.Sync(); err != nil {
-				log.Fatalf("Failed to sync logger: %v", err)
-			}
-		}()
 	}
+	defer func() {
+		if err := logger.Sync(); err != nil {
+			log.Fatalf("Failed to sync logger: %v", err)
+		}
+	}()
 
 	// Recover from panics in main
 	defer func() {
@@ -53,20 +53,17 @@ func main() {
 	}()
 
 	// Initialize database
-	sqlDb, err := setupDB(cfg)
+	sqlDb, err := startup.SetupDB(cfg)
 	if err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 		return
 	}
 
-	// Intialize transaction manager
-	tm := transaction.NewTxManager(
-		sqlDb,
-		logger,
-	)
+	// Initialize transaction manager
+	tm := transaction.NewTxManager(sqlDb, logger)
 
-	// Initialize handlers
-	handlers, ws, err := initializer(cfg, tm, logger)
+	// Initialize handlers using the new modular initializer
+	handlers, workspaceService, err := startup.Initialize(cfg, tm, logger)
 	if err != nil {
 		logger.Fatal("Failed to initialize handlers", zap.Error(err))
 		return
@@ -80,9 +77,12 @@ func main() {
 
 	// Setup middleware
 	middleware.SetupMiddleware(app)
+	authMiddleware := middleware.NewAuthenticatedMiddleware(logger)
+	authorizationMiddleware := middleware.NewAuthorizationMiddleware(workspaceService, logger)
+	pathMiddleware := middleware.NewWorkspacePathValidationMiddleware(workspaceService, logger)
 
 	// Setup routes
-	routes.SetupRoutes(app, handlers, ws, logger)
+	routes.SetupRoutes(app, handlers, pathMiddleware, authorizationMiddleware, authMiddleware)
 
 	// Start server in a goroutine
 	serverError := make(chan error, 1)
@@ -104,9 +104,6 @@ func main() {
 	}()
 
 	// Setup shutdown handler
-	shutdownHandler := NewShutdownHandler(app, sqlDb, logger, ShutdownConfig{
-		Timeout:     cfg.Server.ShutdownTimeout,
-		MaxAttempts: cfg.Server.ShutdownMaxAttempts,
-	})
+	shutdownHandler := shutdown.NewShutdownHandler(app, sqlDb, cfg.Server.ShutdownTimeout, cfg.Server.ShutdownMaxAttempts, logger)
 	shutdownHandler.HandleGracefulShutdown()
 }

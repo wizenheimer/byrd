@@ -57,17 +57,19 @@ func NewHandlerContainer(
 
 // SetupRoutes sets up the routes for the application
 // This includes public and private routes
-func SetupRoutes(app *fiber.App, handlers *HandlerContainer, ws workspace.WorkspaceService, logger *logger.Logger) {
-	authMiddleware := middleware.NewAuthenticatedMiddleware(logger)
-	authorizationMiddleware := middleware.NewAuthorizationMiddleware(ws, logger)
-	pathMiddleware := middleware.NewWorkspacePathValidationMiddleware(ws, logger)
+func SetupRoutes(app *fiber.App, handlers *HandlerContainer,
+	pathMiddleware *middleware.WorkspacePathValidationMiddleware,
+	authorizationMiddleware *middleware.AuthorizationMiddleware,
+	authMiddleware *middleware.AuthenticatedMiddleware) {
+	// authMiddleware := middleware.NewAuthenticatedMiddleware(logger)
+	// authorizationMiddleware := middleware.NewAuthorizationMiddleware(ws, logger)
+	// pathMiddleware := middleware.NewWorkspacePathValidationMiddleware(ws, logger)
 
 	setupPublicRoutes(app, handlers, authMiddleware, authorizationMiddleware, pathMiddleware)
 
 	if config.IsDevelopment() {
 		setupPrivateRoutes(app, handlers, authMiddleware)
 	}
-
 }
 
 // setupPublicRoutes sets up public routes for the application
