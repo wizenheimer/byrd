@@ -2,6 +2,8 @@ package models
 
 import (
 	"context"
+	"database/sql"
+	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
@@ -225,11 +227,101 @@ type JobRecord struct {
 	// JobID is the unique identifier of the job
 	JobID uuid.UUID `json:"job_id"`
 	// StartTime is the time when the job started
-	StartTime time.Time `json:"start_time"`
+	StartTime sql.NullTime `json:"start_time,omitempty"`
 	// EndTime is the time when the job ended
-	EndTime time.Time `json:"end_time"`
+	EndTime sql.NullTime `json:"end_time,omitempty"`
 	// CancelTime is the time when the job was cancelled
-	CancelTime time.Time `json:"cancel_time"`
+	CancelTime sql.NullTime `json:"cancel_time,omitempty"`
 	// Preemptions is the number of times the job was pre-empted
 	Preemptions int `json:"preemptions"`
+}
+
+// jobRecordJSON is an internal type for JSON marshaling/unmarshaling
+type jobRecordJSON struct {
+	ID           string       `json:"id"`
+	WorkflowType WorkflowType `json:"workflow_type"`
+	JobID        string       `json:"job_id"`
+	StartTime    *time.Time   `json:"start_time,omitempty"`
+	EndTime      *time.Time   `json:"end_time,omitempty"`
+	CancelTime   *time.Time   `json:"cancel_time,omitempty"`
+	Preemptions  int          `json:"preemptions"`
+}
+
+// MarshalJSON implements custom JSON marshaling for JobRecord
+func (j JobRecord) MarshalJSON() ([]byte, error) {
+	record := jobRecordJSON{
+		ID:           j.ID.String(),
+		WorkflowType: j.WorkflowType,
+		JobID:        j.JobID.String(),
+		Preemptions:  j.Preemptions,
+	}
+
+	if j.StartTime.Valid {
+		record.StartTime = &j.StartTime.Time
+	}
+
+	if j.EndTime.Valid {
+		record.EndTime = &j.EndTime.Time
+	}
+
+	if j.CancelTime.Valid {
+		record.CancelTime = &j.CancelTime.Time
+	}
+
+	return json.Marshal(record)
+}
+
+// UnmarshalJSON implements custom JSON unmarshaling for JobRecord
+func (j *JobRecord) UnmarshalJSON(data []byte) error {
+	var record jobRecordJSON
+	if err := json.Unmarshal(data, &record); err != nil {
+		return fmt.Errorf("failed to unmarshal job record: %w", err)
+	}
+
+	// Parse ID UUID
+	id, err := uuid.Parse(record.ID)
+	if err != nil {
+		return fmt.Errorf("invalid record ID: %w", err)
+	}
+	j.ID = id
+
+	// Parse JobID UUID
+	jobID, err := uuid.Parse(record.JobID)
+	if err != nil {
+		return fmt.Errorf("invalid job ID: %w", err)
+	}
+	j.JobID = jobID
+
+	j.WorkflowType = record.WorkflowType
+	j.Preemptions = record.Preemptions
+
+	// Handle nullable times
+	if record.StartTime != nil {
+		j.StartTime = sql.NullTime{
+			Time:  *record.StartTime,
+			Valid: true,
+		}
+	} else {
+		j.StartTime = sql.NullTime{Valid: false}
+	}
+
+	if record.EndTime != nil {
+		j.EndTime = sql.NullTime{
+			Time:  *record.EndTime,
+			Valid: true,
+		}
+	} else {
+		j.EndTime = sql.NullTime{Valid: false}
+	}
+
+	if record.CancelTime != nil {
+		j.CancelTime = sql.NullTime{
+			Time:  *record.CancelTime,
+			Valid: true,
+		}
+	} else {
+		j.CancelTime = sql.NullTime{Valid: false}
+	}
+
+	return nil
 }

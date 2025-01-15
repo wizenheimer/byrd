@@ -2,8 +2,12 @@
 package models
 
 import (
+	"database/sql"
+	"encoding/json"
+	"fmt"
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 )
 
@@ -37,7 +41,7 @@ type Page struct {
 
 	// LastCheckedAt is the time the page was last checked
 	// this is updated after every check
-	LastCheckedAt *time.Time `json:"last_checked_at"`
+	LastCheckedAt sql.NullTime `json:"last_checked_at,omitempty"`
 
 	// Status is the page's status
 	Status PageStatus `json:"status"`
@@ -74,4 +78,99 @@ type PageProps struct {
 	// DiffProfile is the profile used to diff the page
 	// This is optional and defaults to an default diff profile
 	DiffProfile []string `json:"diff_profile" default:"[\"branding\", \"customers\", \"integration\", \"product\", \"pricing\", \"partnerships\", \"messaging\"]"`
+}
+
+// pageJSON is an internal type for JSON marshaling/unmarshaling
+type pageJSON struct {
+	ID             string                   `json:"id"`
+	CompetitorID   string                   `json:"competitor_id"`
+	URL            string                   `json:"url"`
+	CaptureProfile ScreenshotRequestOptions `json:"capture_profile"`
+	DiffProfile    []string                 `json:"diff_profile"`
+	LastCheckedAt  *time.Time               `json:"last_checked_at,omitempty"`
+	Status         PageStatus               `json:"status"`
+	CreatedAt      time.Time                `json:"created_at"`
+	UpdatedAt      time.Time                `json:"updated_at"`
+}
+
+// MarshalJSON implements custom JSON marshaling for Page
+func (p Page) MarshalJSON() ([]byte, error) {
+	page := pageJSON{
+		ID:             p.ID.String(),
+		CompetitorID:   p.CompetitorID.String(),
+		URL:            p.URL,
+		CaptureProfile: p.CaptureProfile,
+		DiffProfile:    p.DiffProfile,
+		Status:         p.Status,
+		CreatedAt:      p.CreatedAt,
+		UpdatedAt:      p.UpdatedAt,
+	}
+
+	if p.LastCheckedAt.Valid {
+		page.LastCheckedAt = &p.LastCheckedAt.Time
+	}
+
+	return json.Marshal(page)
+}
+
+// UnmarshalJSON implements custom JSON unmarshaling for Page
+func (p *Page) UnmarshalJSON(data []byte) error {
+	var page pageJSON
+	if err := json.Unmarshal(data, &page); err != nil {
+		return fmt.Errorf("failed to unmarshal page: %w", err)
+	}
+
+	// Parse ID UUID
+	id, err := uuid.Parse(page.ID)
+	if err != nil {
+		return fmt.Errorf("invalid page ID: %w", err)
+	}
+	p.ID = id
+
+	// Parse CompetitorID UUID
+	competitorID, err := uuid.Parse(page.CompetitorID)
+	if err != nil {
+		return fmt.Errorf("invalid competitor ID: %w", err)
+	}
+	p.CompetitorID = competitorID
+
+	p.URL = page.URL
+	p.CaptureProfile = page.CaptureProfile
+	p.DiffProfile = page.DiffProfile
+	p.Status = page.Status
+	p.CreatedAt = page.CreatedAt
+	p.UpdatedAt = page.UpdatedAt
+
+	// Handle nullable LastCheckedAt
+	if page.LastCheckedAt != nil {
+		p.LastCheckedAt = sql.NullTime{
+			Time:  *page.LastCheckedAt,
+			Valid: true,
+		}
+	} else {
+		p.LastCheckedAt = sql.NullTime{Valid: false}
+	}
+
+	// Validate required fields and URL format
+	validate := validator.New()
+	if err := validate.Struct(p); err != nil {
+		return fmt.Errorf("validation failed: %w", err)
+	}
+
+	return nil
+}
+
+// Set default values for DiffProfile if it's empty
+func (p *Page) SetDefaultDiffProfile() {
+	if len(p.DiffProfile) == 0 {
+		p.DiffProfile = []string{
+			"branding",
+			"customers",
+			"integration",
+			"product",
+			"pricing",
+			"partnerships",
+			"messaging",
+		}
+	}
 }

@@ -2,8 +2,12 @@
 package models
 
 import (
+	"database/sql"
+	"encoding/json"
 	"fmt"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // WorkflowType is an enum for the type of workflow
@@ -41,10 +45,12 @@ type WorkflowSchedule struct {
 	Spec string `json:"spec"`
 
 	// LastRun is the time when the workflow was last run
-	LastRun time.Time `json:"last_run"`
+	// Using sql.NullTime for NULL handling
+	LastRun sql.NullTime `json:"last_run,omitempty"`
 
 	// NextRun is the time when the workflow is scheduled to run next
-	NextRun time.Time `json:"next_run"`
+	// Using sql.NullTime for NULL handling
+	NextRun sql.NullTime `json:"next_run,omitempty"`
 
 	// CreatedAt is the time when the workflow was created
 	CreatedAt time.Time `json:"created_at"`
@@ -62,4 +68,80 @@ type WorkflowScheduleProps struct {
 
 	// Spec is the cron specification for the workflow
 	Spec string `json:"spec" required:"true" validate:"required"`
+}
+
+// WorkflowScheduleJSON is an internal type for JSON marshaling/unmarshaling
+type workflowScheduleJSON struct {
+	ID           string       `json:"id"`
+	WorkflowType WorkflowType `json:"workflow_type"`
+	About        string       `json:"about"`
+	Spec         string       `json:"spec"`
+	LastRun      *time.Time   `json:"last_run,omitempty"`
+	NextRun      *time.Time   `json:"next_run,omitempty"`
+	CreatedAt    time.Time    `json:"created_at"`
+	UpdatedAt    time.Time    `json:"updated_at"`
+}
+
+// MarshalJSON implements custom JSON marshaling for WorkflowSchedule
+func (w WorkflowSchedule) MarshalJSON() ([]byte, error) {
+	j := workflowScheduleJSON{
+		ID:           w.ID.String(),
+		WorkflowType: w.WorkflowType,
+		About:        w.About,
+		Spec:         w.Spec,
+		CreatedAt:    w.CreatedAt,
+		UpdatedAt:    w.UpdatedAt,
+	}
+
+	if w.LastRun.Valid {
+		j.LastRun = &w.LastRun.Time
+	}
+
+	if w.NextRun.Valid {
+		j.NextRun = &w.NextRun.Time
+	}
+
+	return json.Marshal(j)
+}
+
+// UnmarshalJSON implements custom JSON unmarshaling for WorkflowSchedule
+func (w *WorkflowSchedule) UnmarshalJSON(data []byte) error {
+	var j workflowScheduleJSON
+	if err := json.Unmarshal(data, &j); err != nil {
+		return err
+	}
+
+	// Parse UUID from string
+	id, err := uuid.Parse(j.ID)
+	if err != nil {
+		return fmt.Errorf("invalid schedule ID: %w", err)
+	}
+	w.ID = ScheduleID(id)
+
+	w.WorkflowType = j.WorkflowType
+	w.About = j.About
+	w.Spec = j.Spec
+	w.CreatedAt = j.CreatedAt
+	w.UpdatedAt = j.UpdatedAt
+
+	// Handle nullable times
+	if j.LastRun != nil {
+		w.LastRun = sql.NullTime{
+			Time:  *j.LastRun,
+			Valid: true,
+		}
+	} else {
+		w.LastRun = sql.NullTime{Valid: false}
+	}
+
+	if j.NextRun != nil {
+		w.NextRun = sql.NullTime{
+			Time:  *j.NextRun,
+			Valid: true,
+		}
+	} else {
+		w.NextRun = sql.NullTime{Valid: false}
+	}
+
+	return nil
 }
