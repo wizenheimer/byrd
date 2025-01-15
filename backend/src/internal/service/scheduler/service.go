@@ -94,33 +94,18 @@ func (s *schedulerService) syncWorkflow(ctx context.Context, remoteScheduleID mo
 // Schedule schedules a new workflow
 func (s *schedulerService) Schedule(ctx context.Context, workflowProp models.WorkflowScheduleProps) (models.ScheduleID, error) {
 	s.logger.Info("scheduling a new workflow")
-
 	remoteScheduleID := models.NewScheduleID()
 
-	// Schedule options
-	opts := scheduler.ScheduleOptions{
-		Hooks:        []func(){s.syncWorkflow(ctx, remoteScheduleID)},
-		ScheduleSpec: workflowProp.Spec,
+	op := &CreateScheduleOperation{
+		svc:          s,
+		remoteID:     remoteScheduleID,
+		workflowProp: workflowProp,
 	}
-	// Scheduled command
-	cmd := s.triggerWorkflow(ctx, workflowProp.WorkflowType)
 
-	// Trigger the scheduler to schedule the workflow
-	f, err := s.scheduler.Schedule(cmd, opts)
-	if err != nil {
+	if err := op.Execute(ctx); err != nil {
 		return models.NilScheduleID(), err
 	}
 
-	// Persist the workflow schedule
-	_, err = s.repository.CreateScheduleWithID(ctx, remoteScheduleID, workflowProp)
-	if err != nil {
-		// TODO: Implement rollback
-		return models.NilScheduleID(), err
-	}
-
-	// Associate the remote schedule ID with scheduled function
-	s.scheduledFuncs.Store(remoteScheduleID, f)
-	s.logger.Debug("scheduled function", zap.Any("scheduled_func", f))
 	return remoteScheduleID, nil
 }
 
@@ -128,65 +113,28 @@ func (s *schedulerService) Schedule(ctx context.Context, workflowProp models.Wor
 func (s *schedulerService) Unschedule(ctx context.Context, remoteScheduleID models.ScheduleID) error {
 	s.logger.Info("unscheduling a workflow")
 
-	// Delete the workflow schedule from the repository
-	if err := s.repository.DeleteSchedule(ctx, remoteScheduleID); err != nil {
-		return err
+	op := &DeleteScheduleOperation{
+		svc:      s,
+		remoteID: remoteScheduleID,
 	}
 
-	value, ok := s.scheduledFuncs.Load(remoteScheduleID)
-	if !ok {
-		// TODO: Implement rollback
-		return errors.New("scheduled function not found")
-	}
-
-	f := value.(*models.ScheduledFunc)
-
-	// Remove the scheduled function from the scheduler
-	if err := s.scheduler.Delete(f.ID); err != nil {
-		// TODO: Implement rollback
-		return err
-	}
-
-	// Remove the scheduled function from the local state
-	s.scheduledFuncs.Delete(remoteScheduleID)
-	return nil
+	return op.Execute(ctx)
 }
 
 // Reschedule reschedules a workflow
 func (s *schedulerService) Reschedule(ctx context.Context, remoteScheduleID models.ScheduleID, workflowProp models.WorkflowScheduleProps) (models.ScheduleID, error) {
 	s.logger.Info("rescheduling a workflow")
-	// Update the workflow schedule
-	if err := s.repository.UpdateSchedule(ctx, remoteScheduleID, workflowProp); err != nil {
+
+	op := &UpdateScheduleOperation{
+		svc:          s,
+		remoteID:     remoteScheduleID,
+		workflowProp: workflowProp,
+	}
+
+	if err := op.Execute(ctx); err != nil {
 		return models.NilScheduleID(), err
 	}
 
-	v, ok := s.scheduledFuncs.Load(remoteScheduleID)
-	if !ok {
-		// TODO: Implement rollback
-		return models.NilScheduleID(), errors.New("scheduled function not found")
-	}
-	f := v.(*models.ScheduledFunc)
-
-	// Remove the scheduled function from the local state
-	s.scheduledFuncs.Delete(remoteScheduleID)
-
-	// Schedule options
-	opts := scheduler.ScheduleOptions{
-		Hooks:        []func(){s.syncWorkflow(ctx, remoteScheduleID)},
-		ScheduleSpec: workflowProp.Spec,
-	}
-	// Scheduled command
-	cmd := s.triggerWorkflow(ctx, workflowProp.WorkflowType)
-
-	// Update the scheduled function
-	f, err := s.scheduler.Update(f.ID, cmd, opts)
-	if err != nil {
-		// TODO: Implement rollback
-		return models.NilScheduleID(), err
-	}
-
-	// Store the scheduled function
-	s.scheduledFuncs.Store(remoteScheduleID, f)
 	return remoteScheduleID, nil
 }
 

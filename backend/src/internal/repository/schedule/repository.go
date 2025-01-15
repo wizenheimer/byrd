@@ -3,6 +3,7 @@ package schedule
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -90,7 +91,7 @@ func (r *scheduleRepo) GetSchedule(ctx context.Context, scheduleID models.Schedu
 
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return models.WorkflowSchedule{}, fmt.Errorf("schedule not found: %w", err)
+			return models.WorkflowSchedule{}, errors.New("schedule not found")
 		}
 		return models.WorkflowSchedule{}, fmt.Errorf("failed to get schedule: %w", err)
 	}
