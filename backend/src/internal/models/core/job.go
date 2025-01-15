@@ -46,6 +46,15 @@ type JobState struct {
 	Failed int64 `json:"failed"`
 }
 
+func NewJobState() *JobState {
+	return &JobState{
+		Status: JobStatusRunning,
+		Checkpoint: JobCheckpoint{
+			BatchID: nil,
+		},
+	}
+}
+
 // JobCheckpoint captures the current checkpoint of the workflow
 type JobCheckpoint struct {
 	// BatchID is the batch ID of the current checkpoint
@@ -205,4 +214,22 @@ type JobExecutorConfig struct {
 	// Upper bound for the time to wait before executing the next batch
 	// This is used to prevent the executor from getting stuck with the same batch
 	UpperBound time.Duration `json:"upper_bound"`
+}
+
+// WorkflowRecord represents a historical record of a workflow
+type JobRecord struct {
+	// ID is the unique identifier for the job record
+	ID uuid.UUID `json:"id"`
+	// WorkflowType is the type of the workflow
+	WorkflowType WorkflowType `json:"workflow_type"`
+	// JobID is the unique identifier of the job
+	JobID uuid.UUID `json:"job_id"`
+	// StartTime is the time when the job started
+	StartTime time.Time `json:"start_time"`
+	// EndTime is the time when the job ended
+	EndTime time.Time `json:"end_time"`
+	// CancelTime is the time when the job was cancelled
+	CancelTime time.Time `json:"cancel_time"`
+	// Preemptions is the number of times the job was pre-empted
+	Preemptions int `json:"preemptions"`
 }

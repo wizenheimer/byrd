@@ -17,6 +17,23 @@ func (id ScheduleID) String() string {
 	return uuid.UUID(id).String()
 }
 
+func NilScheduleID() ScheduleID {
+    return ScheduleID(uuid.Nil)
+}
+
+type ScheduleFuncState string
+
+const (
+    // delayed - function is delayed, will be run at a later time
+    DelayedFuncState ScheduleFuncState = "delayed"
+
+    // active - function is active, will be run at the next scheduled time
+    ActiveFuncState ScheduleFuncState = "active"
+
+    // stale - function is stale, will not be run at the next scheduled time
+    StaleFuncState ScheduleFuncState = "stale"
+)
+
 // ScheduledFunc represents a scheduled function
 type ScheduledFunc struct {
 	// Unique identifier for the scheduled function
@@ -28,8 +45,8 @@ type ScheduledFunc struct {
 	// Cron entry ID - used to manage the scheduled function
 	EntryID cron.EntryID
 
-	// Command to run
-	// Command func()
+    // State of the scheduled function
+    State ScheduleFuncState
 
 	// Last run time - time in past
 	// This is time when the function was last run
@@ -38,9 +55,6 @@ type ScheduledFunc struct {
 	// Next run time - time in future
 	// This is the time when the function is scheduled to run next
 	NextRun time.Time
-
-	// Flag to indicate if the function is delayed
-	IsDelayed bool
 
 	// Time to delay the function
 	DelayUntil time.Time
