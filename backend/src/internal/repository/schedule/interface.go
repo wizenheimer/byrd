@@ -11,6 +11,9 @@ type ScheduleRepository interface {
 	// CreateSchedule schedules a new workflow in the repository
 	CreateSchedule(ctx context.Context, workflowProps models.WorkflowScheduleProps) (models.ScheduleID, error)
 
+	// CreateScheduleWithID schedules a new workflow in the repository with a specific ID
+	CreateScheduleWithID(ctx context.Context, scheduleID models.ScheduleID, workflowProps models.WorkflowScheduleProps) (models.ScheduleID, error)
+
 	// GetSchedule returns the schedule of a workflow
 	GetSchedule(ctx context.Context, scheduleID models.ScheduleID) (models.WorkflowSchedule, error)
 

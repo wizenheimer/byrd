@@ -34,9 +34,8 @@ func (r *scheduleRepo) getQuerier(ctx context.Context) interface {
 }
 
 // CreateSchedule schedules a new workflow in the repository
-func (r *scheduleRepo) CreateSchedule(ctx context.Context, workflowProps models.WorkflowScheduleProps) (models.ScheduleID, error) {
+func (r *scheduleRepo) CreateScheduleWithID(ctx context.Context, id models.ScheduleID, workflowProps models.WorkflowScheduleProps) (models.ScheduleID, error) {
 	q := r.getQuerier(ctx)
-	id := models.NewScheduleID()
 
 	sql := `
         INSERT INTO workflow_schedules (
@@ -58,6 +57,12 @@ func (r *scheduleRepo) CreateSchedule(ctx context.Context, workflowProps models.
 	}
 
 	return id, nil
+}
+
+// CreateSchedule schedules a new workflow in the repository
+func (r *scheduleRepo) CreateSchedule(ctx context.Context, workflowProps models.WorkflowScheduleProps) (models.ScheduleID, error) {
+	id := models.NewScheduleID()
+	return r.CreateScheduleWithID(ctx, id, workflowProps)
 }
 
 // GetSchedule returns the schedule of a workflow

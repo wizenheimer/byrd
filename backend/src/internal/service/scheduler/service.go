@@ -95,11 +95,7 @@ func (s *schedulerService) syncWorkflow(ctx context.Context, remoteScheduleID mo
 func (s *schedulerService) Schedule(ctx context.Context, workflowProp models.WorkflowScheduleProps) (models.ScheduleID, error) {
 	s.logger.Info("scheduling a new workflow")
 
-	// Persist the workflow schedule
-	remoteScheduleID, err := s.repository.CreateSchedule(ctx, workflowProp)
-	if err != nil {
-		return models.NilScheduleID(), err
-	}
+	remoteScheduleID := models.NewScheduleID()
 
 	// Schedule options
 	opts := scheduler.ScheduleOptions{
@@ -112,6 +108,13 @@ func (s *schedulerService) Schedule(ctx context.Context, workflowProp models.Wor
 	// Trigger the scheduler to schedule the workflow
 	f, err := s.scheduler.Schedule(cmd, opts)
 	if err != nil {
+		return models.NilScheduleID(), err
+	}
+
+	// Persist the workflow schedule
+	_, err = s.repository.CreateScheduleWithID(ctx, remoteScheduleID, workflowProp)
+	if err != nil {
+		// TODO: Implement rollback
 		return models.NilScheduleID(), err
 	}
 
@@ -132,6 +135,7 @@ func (s *schedulerService) Unschedule(ctx context.Context, remoteScheduleID mode
 
 	value, ok := s.scheduledFuncs.Load(remoteScheduleID)
 	if !ok {
+		// TODO: Implement rollback
 		return errors.New("scheduled function not found")
 	}
 
@@ -139,6 +143,7 @@ func (s *schedulerService) Unschedule(ctx context.Context, remoteScheduleID mode
 
 	// Remove the scheduled function from the scheduler
 	if err := s.scheduler.Delete(f.ID); err != nil {
+		// TODO: Implement rollback
 		return err
 	}
 
@@ -157,6 +162,7 @@ func (s *schedulerService) Reschedule(ctx context.Context, remoteScheduleID mode
 
 	v, ok := s.scheduledFuncs.Load(remoteScheduleID)
 	if !ok {
+		// TODO: Implement rollback
 		return models.NilScheduleID(), errors.New("scheduled function not found")
 	}
 	f := v.(*models.ScheduledFunc)
@@ -175,6 +181,7 @@ func (s *schedulerService) Reschedule(ctx context.Context, remoteScheduleID mode
 	// Update the scheduled function
 	f, err := s.scheduler.Update(f.ID, cmd, opts)
 	if err != nil {
+		// TODO: Implement rollback
 		return models.NilScheduleID(), err
 	}
 
