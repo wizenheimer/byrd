@@ -59,101 +59,86 @@ func (s *scheduler) Start() error {
 	return nil
 }
 
-// Schedule a function to run based on the schedule specification
-// This doesn't trigger the function immediately
-// It schedules the function to run based on the schedule specification
-func (s *scheduler) Schedule(scheduleSpec string, cmd func()) (*models.ScheduledFunc, error) {
-	s.logger.Info("scheduling a new function", zap.String("scheduleSpec", scheduleSpec))
-	// Add validation
+func (s *scheduler) Schedule(cmd func(), opts ScheduleOptions) (*models.ScheduledFunc, error) {
+	s.logger.Info("scheduling a new function", zap.String("scheduleSpec", opts.ScheduleSpec), zap.Duration("delay", opts.Delay), zap.Any("hooks", len(opts.Hooks)))
+
+	// Validate scheduleSpec and cmd
 	if cmd == nil {
 		return nil, fmt.Errorf("command function cannot be nil")
 	}
-
-	if _, err := s.parse(scheduleSpec); err != nil {
+	if _, err := s.parse(opts.ScheduleSpec); err != nil {
 		return nil, fmt.Errorf("failed to parse schedule: %w", err)
 	}
 
+	// Create a new ID for the scheduled function
 	id := models.NewScheduleID()
-	wrappedCmd := s.wrapCommand(id, cmd)
 
-	entryID, err := s.cron.AddFunc(scheduleSpec, wrappedCmd)
-	if err != nil {
-		return nil, fmt.Errorf("failed to schedule function: %w", err)
-	}
+	// Wrap the command with the ID and hooks
+	wrappedCmd := s.wrapCommand(id, cmd, opts.Hooks...)
 
-	entry := s.cron.Entry(entryID)
-	scheduledFunc := models.ScheduledFunc{
-		ID:      id,
-		Spec:    scheduleSpec,
-		EntryID: entryID,
-		LastRun: time.Time{}, // Initialize with zero time
-		NextRun: entry.Next,
-	}
+	var scheduledFunc models.ScheduledFunc
 
-	s.schedules.Store(id, &scheduledFunc)
-	return &scheduledFunc, nil
-}
-
-// Schedule a function to run based on the schedule specification with a delay
-// This schedules the function to run after the specified delay
-// It doesn't trigger the function immediately
-func (s *scheduler) ScheduleWithDelay(scheduleSpec string, delay time.Duration, cmd func()) (*models.ScheduledFunc, error) {
-	s.logger.Info("scheduling a new function with delay", zap.String("scheduleSpec", scheduleSpec), zap.Duration("delay", delay))
-	// Add validation
-	if cmd == nil {
-		return nil, fmt.Errorf("command function cannot be nil")
-	}
-	if scheduleSpec == "" {
-		return nil, fmt.Errorf("schedule specification cannot be empty")
-	}
-
-	// Validate scheduleSpec
-	_, err := s.parse(scheduleSpec)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse schedule: %w", err)
-	}
-
-	id := models.NewScheduleID()
-	delayUntil := time.Now().Add(delay)
-
-	scheduledFunc := models.ScheduledFunc{
-		ID:         id,
-		Spec:       scheduleSpec,
-		IsDelayed:  true,
-		DelayUntil: delayUntil,
-		LastRun:    time.Time{}, // Initialize with zero time
-	}
-	s.schedules.Store(id, &scheduledFunc)
-
-	go func() {
-		timer := time.NewTimer(delay)
-		defer timer.Stop()
-
-		<-timer.C
-
-		s.mu.Lock()
-		if !s.running {
-			s.mu.Unlock()
-			return
+	// Check if the function should be delayed
+	if opts.Delay > 0 {
+		// Schedule the function with a delay
+		scheduledFunc = models.ScheduledFunc{
+			ID:         id,
+			Spec:       opts.ScheduleSpec,
+			DelayUntil: time.Now().Add(opts.Delay),
+			LastRun:    time.Time{}, // Initialize with zero time
+			State:      models.DelayedFuncState,
 		}
-		s.mu.Unlock()
 
-		wrappedCmd := s.wrapCommand(id, cmd)
-		entryID, err := s.cron.AddFunc(scheduleSpec, wrappedCmd)
+		// Schedule the function after the delay
+		go func() {
+			// Delay the function
+			timer := time.NewTimer(opts.Delay)
+			defer timer.Stop()
+
+			<-timer.C
+
+			s.mu.Lock()
+			if !s.running {
+				s.mu.Unlock()
+				return
+			}
+
+			s.mu.Unlock()
+
+			// Schedule the function
+			wrappedCmd = s.wrapCommand(id, cmd, opts.Hooks...)
+			entryID, err := s.cron.AddFunc(opts.ScheduleSpec, wrappedCmd)
+			if err != nil {
+				return
+			}
+
+			entry := s.cron.Entry(entryID)
+			if existing, ok := s.schedules.Load(id); ok {
+				sf := existing.(*models.ScheduledFunc)
+				sf.EntryID = entryID
+				sf.NextRun = entry.Next
+				sf.State = models.ActiveFuncState
+				s.schedules.Store(id, sf)
+			}
+		}()
+	} else {
+		// Schedule the function immediately
+		entryID, err := s.cron.AddFunc(opts.ScheduleSpec, wrappedCmd)
 		if err != nil {
-			return
+			return nil, fmt.Errorf("failed to schedule function: %w", err)
 		}
 
 		entry := s.cron.Entry(entryID)
-		if existing, ok := s.schedules.Load(id); ok {
-			sf := existing.(*models.ScheduledFunc)
-			sf.EntryID = entryID
-			sf.NextRun = entry.Next
-			sf.IsDelayed = false
-			s.schedules.Store(id, sf)
+		scheduledFunc = models.ScheduledFunc{
+			ID:      id,
+			Spec:    opts.ScheduleSpec,
+			EntryID: entryID,
+			LastRun: time.Time{}, // Initialize with zero time
+			NextRun: entry.Next,
 		}
-	}()
+	}
 
+	s.schedules.Store(id, &scheduledFunc)
 	return &scheduledFunc, nil
 }
 
@@ -231,32 +216,21 @@ func (s *scheduler) Recover(scheduleSpec string, cmd func(), lastRun *time.Time,
 // Update a scheduled function with a new schedule specification and command
 // This doesn't stop a running function
 // It merely updates the schedule specification and command for the next run
-func (s *scheduler) Update(id models.ScheduleID, scheduleSpec string, cmd func()) error {
-	s.logger.Info("updating a scheduled function", zap.String("scheduleSpec", scheduleSpec), zap.Any("id", id))
+func (s *scheduler) Update(id models.ScheduleID, cmd func(), opts ScheduleOptions) (*models.ScheduledFunc, error) {
+	s.logger.Info("updating a scheduled function", zap.String("scheduleSpec", opts.ScheduleSpec), zap.Duration("delay", opts.Delay), zap.Any("hooks", len(opts.Hooks)))
 
+	// Get the existing scheduled function
 	sf, err := s.Get(id)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Remove existing function
 	s.cron.Remove(sf.EntryID)
+	sf.State = models.StaleFuncState
 
-	// Schedule new function with wrapped command
-	wrappedCmd := s.wrapCommand(id, cmd)
-	entryID, err := s.cron.AddFunc(scheduleSpec, wrappedCmd)
-	if err != nil {
-		return fmt.Errorf("failed to update function: %w", err)
-	}
-
-	entry := s.cron.Entry(entryID)
-	sf.Spec = scheduleSpec
-	sf.EntryID = entryID
-	// sf.Command = cmd
-	sf.NextRun = entry.Next
-
-	s.schedules.Store(id, sf)
-	return nil
+	// Schedule the new function
+	return s.Schedule(cmd, opts)
 }
 
 // Delete a scheduled function
@@ -264,14 +238,19 @@ func (s *scheduler) Update(id models.ScheduleID, scheduleSpec string, cmd func()
 func (s *scheduler) Delete(id models.ScheduleID) error {
 	s.logger.Info("deleting a scheduled function", zap.Any("id", id))
 
+	// Get the scheduled function
 	sf, err := s.Get(id)
 	if err != nil {
 		return err
 	}
 
-	if !sf.IsDelayed {
+	// If the function is delayed, we don't need to remove it from the cron because it hasn't been scheduled yet
+	if sf.State != models.DelayedFuncState {
 		s.cron.Remove(sf.EntryID)
+		sf.State = models.StaleFuncState
 	}
+
+	// Delete the scheduled function
 	s.schedules.Delete(id)
 	return nil
 }
@@ -283,7 +262,10 @@ func (s *scheduler) Get(id models.ScheduleID) (*models.ScheduledFunc, error) {
 
 	if value, ok := s.schedules.Load(id); ok {
 		sf := value.(*models.ScheduledFunc)
-		if !sf.IsDelayed && sf.EntryID > 0 {
+		// If the function is not delayed,
+		// and has been scheduled
+		// update the last run and next run times
+		if sf.State != models.DelayedFuncState && sf.EntryID > 0 {
 			entry := s.cron.Entry(sf.EntryID)
 			sf.LastRun = entry.Prev
 			sf.NextRun = entry.Next
@@ -301,7 +283,10 @@ func (s *scheduler) List() []*models.ScheduledFunc {
 	var funcs []*models.ScheduledFunc
 	s.schedules.Range(func(key, value interface{}) bool {
 		sf := value.(*models.ScheduledFunc)
-		if !sf.IsDelayed && sf.EntryID > 0 {
+		// If the function is not delayed,
+		// and has been scheduled
+		// update the last run and next run times
+		if sf.State != models.DelayedFuncState && sf.EntryID > 0 {
 			entry := s.cron.Entry(sf.EntryID)
 			sf.LastRun = entry.Prev
 			sf.NextRun = entry.Next
@@ -325,6 +310,11 @@ func (s *scheduler) Stop() error {
 		return nil
 	}
 
+	s.schedules.Range(func(key, value interface{}) bool {
+		s.Delete(key.(models.ScheduleID))
+		return true
+	})
+
 	s.cron.Stop()
 	s.running = false
 	s.logger.Info("scheduler stopped", zap.String("status", "stopped"))
@@ -333,7 +323,7 @@ func (s *scheduler) Stop() error {
 
 // This wrapper function is used to execute the command safely
 // It also updates the LastRun and NextRun times for the scheduled function once the command is executed in the future
-func (s *scheduler) wrapCommand(id models.ScheduleID, cmd func()) func() {
+func (s *scheduler) wrapCommand(id models.ScheduleID, cmd func(), hooks ...func()) func() {
 	return func() {
 		if value, ok := s.schedules.Load(id); ok {
 			sf := value.(*models.ScheduledFunc)
@@ -351,6 +341,11 @@ func (s *scheduler) wrapCommand(id models.ScheduleID, cmd func()) func() {
 			// Store the updated scheduled function
 			s.logger.Info("storing updated scheduled function", zap.Any("id", id))
 			s.schedules.Store(id, sf)
+
+			// Execute hooks
+			for _, hook := range hooks {
+				s.safeExecute(hook)
+			}
 		}
 	}
 }
