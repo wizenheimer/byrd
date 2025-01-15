@@ -8,8 +8,11 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/redis/go-redis/v9"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
+	"github.com/wizenheimer/byrd/src/internal/transaction"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"go.uber.org/zap"
 )
@@ -23,13 +26,26 @@ const (
 	defaultTTL = 72 * time.Hour
 )
 
-type workflowRepository struct {
+// WorkflowRepository represents the repository for managing workflows
+type workflowRepo struct {
+	// client is the Redis client
 	client *redis.Client
+	// logger is the logger
 	logger *logger.Logger
+	// tm is the transaction manager
+	tm *transaction.TxManager
+}
+
+func (r *workflowRepo) getQuerier(ctx context.Context) interface {
+	Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error)
+	Query(ctx context.Context, sql string, arguments ...interface{}) (pgx.Rows, error)
+	QueryRow(ctx context.Context, sql string, arguments ...interface{}) pgx.Row
+} {
+	return r.tm.GetQuerier(ctx)
 }
 
 func NewWorkflowRepository(client *redis.Client, logger *logger.Logger) (WorkflowRepository, error) {
-	workflowRepo := workflowRepository{
+	repo := workflowRepo{
 		client: client,
 		logger: logger.WithFields(
 			map[string]interface{}{
@@ -40,7 +56,7 @@ func NewWorkflowRepository(client *redis.Client, logger *logger.Logger) (Workflo
 	if err := validateClient(context.Background(), client); err != nil {
 		return nil, fmt.Errorf("invalid client: %w", err)
 	}
-	return &workflowRepo, nil
+	return &repo, nil
 }
 
 func validateClient(ctx context.Context, client *redis.Client) error {
@@ -53,11 +69,11 @@ func validateClient(ctx context.Context, client *redis.Client) error {
 	return nil
 }
 
-func (r *workflowRepository) getKey(jobID uuid.UUID, workflowType models.WorkflowType, status models.JobStatus) string {
+func (r *workflowRepo) getKey(jobID uuid.UUID, workflowType models.WorkflowType, status models.JobStatus) string {
 	return fmt.Sprintf(keyFormat, workflowType, status, jobID.String())
 }
 
-func (r *workflowRepository) GetState(ctx context.Context, jobID uuid.UUID, workflowType models.WorkflowType) (models.JobState, error) {
+func (r *workflowRepo) GetState(ctx context.Context, jobID uuid.UUID, workflowType models.WorkflowType) (models.JobState, error) {
 	r.logger.Debug("getting state for job", zap.Any("jobID", jobID), zap.Any("workflowType", workflowType))
 
 	// We need to check all possible statuses since we don't know the current status
@@ -88,7 +104,7 @@ func (r *workflowRepository) GetState(ctx context.Context, jobID uuid.UUID, work
 	return models.JobState{}, fmt.Errorf("job not found")
 }
 
-func (r *workflowRepository) SetState(ctx context.Context, jobID uuid.UUID, workflowType models.WorkflowType, jobState models.JobState) error {
+func (r *workflowRepo) SetState(ctx context.Context, jobID uuid.UUID, workflowType models.WorkflowType, jobState models.JobState) error {
 	r.logger.Debug("setting state for job",
 		zap.Any("jobID", jobID),
 		zap.Any("workflowType", workflowType),
@@ -117,28 +133,11 @@ func (r *workflowRepository) SetState(ctx context.Context, jobID uuid.UUID, work
 	return nil
 }
 
-func (r *workflowRepository) SetCheckpoint(ctx context.Context, jobID uuid.UUID, workflowType models.WorkflowType, jobCheckpoint models.JobCheckpoint) error {
-	r.logger.Debug("setting checkpoint for job",
-		zap.Any("jobID", jobID),
+func (r *workflowRepo) ListActiveJobs(ctx context.Context, workflowType models.WorkflowType) ([]models.Job, error) {
+	r.logger.Debug("listing active jobs",
 		zap.Any("workflowType", workflowType))
 
-	// Get current state
-	state, err := r.GetState(ctx, jobID, workflowType)
-	if err != nil {
-		return fmt.Errorf("failed to get job state: %w", err)
-	}
-
-	// Update checkpoint
-	state.Checkpoint = jobCheckpoint
-	return r.SetState(ctx, jobID, workflowType, state)
-}
-
-func (r *workflowRepository) List(ctx context.Context, workflowType models.WorkflowType, jobStatus models.JobStatus) ([]models.Job, error) {
-	r.logger.Debug("listing jobs",
-		zap.Any("workflowType", workflowType),
-		zap.Any("jobStatus", jobStatus))
-
-	pattern := fmt.Sprintf(keyPattern, workflowType, jobStatus)
+	pattern := fmt.Sprintf(keyPattern, workflowType, models.JobStatusRunning)
 	keys, err := r.client.Keys(ctx, pattern).Result()
 	if err != nil {
 		return nil, fmt.Errorf("failed to list keys: %w", err)
@@ -185,8 +184,199 @@ func (r *workflowRepository) List(ctx context.Context, workflowType models.Workf
 	return jobs, nil
 }
 
-func (r *workflowRepository) Initialize(ctx context.Context, jobProps models.Job, workflowType models.WorkflowType) error {
-	r.logger.Debug("initializing workflow", zap.Any("jobProps", jobProps), zap.Any("workflowType", workflowType))
-	// TODO: Persist the triggered state in db
+func (r *workflowRepo) StartJob(ctx context.Context, jobID uuid.UUID, workflowType models.WorkflowType) error {
+	r.logger.Debug("starting job",
+		zap.Any("jobID", jobID),
+		zap.Any("workflowType", workflowType))
+
+	// Set the state of the job to running in checkpoint repository
+	if err := r.SetState(ctx, jobID, workflowType, *models.NewJobState()); err != nil {
+		return fmt.Errorf("failed to set job state: %w", err)
+	}
+
+	// Start the job in the state repository
+	q := r.getQuerier(ctx)
+
+	sql := `
+        INSERT INTO job_records (
+            job_id, workflow_type, start_time, created_at, updated_at
+        ) VALUES (
+            $1, $2, NOW(), NOW(), NOW()
+        )`
+
+	_, err := q.Exec(ctx, sql, jobID, workflowType)
+	if err != nil {
+		return fmt.Errorf("failed to start job: %w", err)
+	}
+
 	return nil
+}
+
+func (r *workflowRepo) CompleteJob(ctx context.Context, jobID uuid.UUID, jobContext *models.JobState, workflowType models.WorkflowType) error {
+	r.logger.Debug("completing job",
+		zap.Any("jobID", jobID),
+		zap.Any("workflowType", workflowType))
+
+	// Set the state of the job to completed in checkpoint repository
+	if jobContext == nil {
+		jobContext = models.NewJobState()
+		jobContext.Status = models.JobStatusCompleted
+	}
+	if err := r.SetState(ctx, jobID, workflowType, *jobContext); err != nil {
+		return fmt.Errorf("failed to set job state: %w", err)
+	}
+
+    // Set the state of the job to completed in the state repository
+    q := r.getQuerier(ctx)
+
+    sql := `
+        UPDATE job_records
+        SET
+            end_time = NOW(),
+            updated_at = NOW()
+        WHERE job_id = $1
+        AND workflow_type = $2
+        AND deleted_at IS NULL
+        AND end_time IS NULL
+        AND cancel_time IS NULL`
+
+    result, err := q.Exec(ctx, sql, jobID, workflowType)
+    if err != nil {
+        return fmt.Errorf("failed to complete job: %w", err)
+    }
+
+    if result.RowsAffected() == 0 {
+        return fmt.Errorf("no active job found with id %s", jobID)
+    }
+
+	return nil
+}
+
+func (r *workflowRepo) CancelJob(ctx context.Context, jobID uuid.UUID, jobContext *models.JobState, workflowType models.WorkflowType) error {
+	r.logger.Debug("cancelling job",
+		zap.Any("jobID", jobID),
+		zap.Any("workflowType", workflowType))
+
+	// Set the state of the job to aborted in checkpoint repository
+	if jobContext == nil {
+		jobContext = models.NewJobState()
+		jobContext.Status = models.JobStatusAborted
+	}
+	if err := r.SetState(ctx, jobID, workflowType, *jobContext); err != nil {
+		return fmt.Errorf("failed to set job state: %w", err)
+	}
+
+	// Cancel the job in the state repository
+    q := r.getQuerier(ctx)
+
+    sql := `
+        UPDATE job_records
+        SET
+            cancel_time = NOW(),
+            updated_at = NOW()
+        WHERE job_id = $1
+        AND workflow_type = $2
+        AND deleted_at IS NULL
+        AND end_time IS NULL
+        AND cancel_time IS NULL`
+
+    result, err := q.Exec(ctx, sql, jobID, workflowType)
+    if err != nil {
+        return fmt.Errorf("failed to cancel job: %w", err)
+    }
+
+    if result.RowsAffected() == 0 {
+        return fmt.Errorf("no active job found with id %s", jobID)
+    }
+
+	return nil
+}
+
+func (r *workflowRepo) ListRecords(ctx context.Context, workflowType *models.WorkflowType, limit, offset *int) ([]models.JobRecord, error) {
+	q := r.getQuerier(ctx)
+    var args []interface{}
+    argPosition := 1
+
+    sql := `
+        SELECT
+            id, job_id, workflow_type,
+            start_time, end_time, cancel_time,
+            preemptions
+        FROM job_records
+        WHERE deleted_at IS NULL`
+
+    if workflowType != nil {
+        sql += fmt.Sprintf(" AND workflow_type = $%d", argPosition)
+        args = append(args, *workflowType)
+        argPosition++
+    }
+
+    sql += " ORDER BY start_time DESC"
+
+    if limit != nil {
+        sql += fmt.Sprintf(" LIMIT $%d", argPosition)
+        args = append(args, *limit)
+        argPosition++
+    }
+
+    if offset != nil {
+        sql += fmt.Sprintf(" OFFSET $%d", argPosition)
+        args = append(args, *offset)
+    }
+
+    rows, err := q.Query(ctx, sql, args...)
+    if err != nil {
+        return nil, fmt.Errorf("failed to list jobs: %w", err)
+    }
+    defer rows.Close()
+
+    var jobs []models.JobRecord
+    for rows.Next() {
+        var job models.JobRecord
+        err := rows.Scan(
+            &job.ID,
+            &job.JobID,
+            &job.WorkflowType,
+            &job.StartTime,
+            &job.EndTime,
+            &job.CancelTime,
+            &job.Preemptions,
+        )
+        if err != nil {
+            return nil, fmt.Errorf("failed to scan job: %w", err)
+        }
+        jobs = append(jobs, job)
+    }
+
+    if err = rows.Err(); err != nil {
+        return nil, fmt.Errorf("error iterating jobs: %w", err)
+    }
+
+    return jobs, nil
+}
+
+// IncrementPreemptions increments the preemption count for a job
+func (r *workflowRepo) IncrementPreemptions(ctx context.Context, jobID uuid.UUID) error {
+    q := r.getQuerier(ctx)
+
+    sql := `
+        UPDATE job_records
+        SET
+            preemptions = preemptions + 1,
+            updated_at = NOW()
+        WHERE job_id = $1
+        AND deleted_at IS NULL
+        AND end_time IS NULL
+        AND cancel_time IS NULL`
+
+    result, err := q.Exec(ctx, sql, jobID)
+    if err != nil {
+        return fmt.Errorf("failed to increment preemptions: %w", err)
+    }
+
+    if result.RowsAffected() == 0 {
+        return fmt.Errorf("no active job found with id %s", jobID)
+    }
+
+    return nil
 }
