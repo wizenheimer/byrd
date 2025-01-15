@@ -69,7 +69,7 @@ CREATE TABLE page_history (
     status history_status NOT NULL DEFAULT 'active',
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-CREATE TABLE scheduled_workflows (
+CREATE TABLE workflow_schedules (
     id UUID PRIMARY KEY,
     workflow_type workflow_type NOT NULL,
     about TEXT,
@@ -117,11 +117,14 @@ CREATE INDEX idx_pages_url ON pages(url);
 CREATE INDEX idx_page_history_page_id ON page_history(page_id);
 -- Index for listing schedules
 CREATE INDEX idx_workflow_schedules_deleted_at ON workflow_schedules(deleted_at NULLS FIRST);
-CREATE INDEX idx_workflow_schedules_workflow_type ON workflow_schedules(workflow_type) WHERE deleted_at IS NULL;
--- Indexes for job_records
-CREATE INDEX idx_job_records_job_id ON job_records(job_id) WHERE deleted_at IS NULL;
-CREATE INDEX idx_job_records_workflow_type ON job_records(workflow_type) WHERE deleted_at IS NULL;
-CREATE INDEX idx_job_records_start_time ON job_records(start_time) WHERE deleted_at IS NULL;
+CREATE INDEX idx_workflow_schedules_workflow_type ON workflow_schedules(workflow_type)
+WHERE deleted_at IS NULL;
+CREATE INDEX idx_job_records_job_id ON job_records(job_id)
+WHERE deleted_at IS NULL;
+CREATE INDEX idx_job_records_workflow_type ON job_records(workflow_type)
+WHERE deleted_at IS NULL;
+CREATE INDEX idx_job_records_start_time ON job_records(start_time)
+WHERE deleted_at IS NULL;
 -- Functions for updating timestamps
 CREATE OR REPLACE FUNCTION update_updated_at_column() RETURNS TRIGGER AS $$ BEGIN NEW.updated_at = CURRENT_TIMESTAMP;
 RETURN NEW;
