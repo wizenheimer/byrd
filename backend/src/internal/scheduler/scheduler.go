@@ -132,6 +132,7 @@ func (s *scheduler) Schedule(cmd func(), opts ScheduleOptions) (*models.Schedule
 		scheduledFunc = models.ScheduledFunc{
 			ID:      id,
 			Spec:    opts.ScheduleSpec,
+			State:   models.ActiveFuncState,
 			EntryID: entryID,
 			LastRun: time.Time{}, // Initialize with zero time
 			NextRun: entry.Next,

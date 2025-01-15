@@ -33,6 +33,9 @@ type WorkflowObserver interface {
 
 	// Shutdown stops the workflow executor
 	Shutdown(ctx context.Context) error
+
+	// History returns the history of job runs
+	History(ctx context.Context, limit, offset *int) ([]models.JobRecord, error)
 }
 
 // JobExecutor represents the executor for performing jobs

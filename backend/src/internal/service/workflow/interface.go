@@ -43,4 +43,8 @@ type WorkflowService interface {
 	// List returns the list of workflows
 	// This would be called by the client to get the list of running jobs
 	List(ctx context.Context, workflowType models.WorkflowType, jobStatus models.JobStatus) ([]models.Job, error)
+
+	// History returns the history of job runs
+	// This would be called by the client to get the history of job runs
+	History(ctx context.Context, limit, offset *int, workflowType *models.WorkflowType) ([]models.JobRecord, error)
 }

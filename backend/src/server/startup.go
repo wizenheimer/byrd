@@ -12,18 +12,22 @@ import (
 	"github.com/wizenheimer/byrd/src/internal/api/routes"
 	"github.com/wizenheimer/byrd/src/internal/client"
 	"github.com/wizenheimer/byrd/src/internal/config"
-	models "github.com/wizenheimer/byrd/src/internal/models/core"
-	"github.com/wizenheimer/byrd/src/internal/transaction"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"github.com/wizenheimer/byrd/src/pkg/utils"
 	"go.uber.org/zap"
 
-	// ----- clf imports -----
+	// ----- core imports -----
+	models "github.com/wizenheimer/byrd/src/internal/models/core"
+	"github.com/wizenheimer/byrd/src/internal/scheduler"
+	"github.com/wizenheimer/byrd/src/internal/service/alert"
+	"github.com/wizenheimer/byrd/src/internal/service/executor"
+	"github.com/wizenheimer/byrd/src/internal/transaction"
 
 	// ----- repo imports -----
 	competitor_repo "github.com/wizenheimer/byrd/src/internal/repository/competitor"
 	history_repo "github.com/wizenheimer/byrd/src/internal/repository/history"
 	page_repo "github.com/wizenheimer/byrd/src/internal/repository/page"
+	schedule_repo "github.com/wizenheimer/byrd/src/internal/repository/schedule"
 	screenshot_repo "github.com/wizenheimer/byrd/src/internal/repository/screenshot"
 	user_repo "github.com/wizenheimer/byrd/src/internal/repository/user"
 	workflow_repo "github.com/wizenheimer/byrd/src/internal/repository/workflow"
@@ -31,12 +35,11 @@ import (
 
 	// ----- service imports -----
 	ai_svc "github.com/wizenheimer/byrd/src/internal/service/ai"
-	"github.com/wizenheimer/byrd/src/internal/service/alert"
 	competitor_svc "github.com/wizenheimer/byrd/src/internal/service/competitor"
 	diff_svc "github.com/wizenheimer/byrd/src/internal/service/diff"
-	"github.com/wizenheimer/byrd/src/internal/service/executor"
 	history_svc "github.com/wizenheimer/byrd/src/internal/service/history"
 	page_svc "github.com/wizenheimer/byrd/src/internal/service/page"
+	scheduler_svc "github.com/wizenheimer/byrd/src/internal/service/scheduler"
 	screenshot_svc "github.com/wizenheimer/byrd/src/internal/service/screenshot"
 	user_svc "github.com/wizenheimer/byrd/src/internal/service/user"
 	workflow_svc "github.com/wizenheimer/byrd/src/internal/service/workflow"
@@ -86,6 +89,7 @@ func initializer(cfg *config.Config, tm *transaction.TxManager, logger *logger.L
 	userRepo := user_repo.NewUserRepository(tm, logger)
 	pageRepo := page_repo.NewPageRepository(tm, logger)
 	historyRepo := history_repo.NewPageHistoryRepository(tm, logger)
+	scheduleRepo := schedule_repo.NewScheduleRepo(tm, logger)
 
 	// Initialize services
 	// Services are responsible for setting transaction boundaries
@@ -109,7 +113,7 @@ func initializer(cfg *config.Config, tm *transaction.TxManager, logger *logger.L
 
 	logger.Debug("Setting up workflow service", zap.Any("redis_config", cfg.Workflow))
 
-	workflowRepo, err := workflow_repo.NewWorkflowRepository(redisClient, logger)
+	workflowRepo, err := workflow_repo.NewWorkflowRepository(redisClient, tm, logger)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -158,6 +162,20 @@ func initializer(cfg *config.Config, tm *transaction.TxManager, logger *logger.L
 		return nil, nil, err
 	}
 
+	scheduler := scheduler.NewScheduler(logger)
+
+	schedulerService := scheduler_svc.NewSchedulerService(
+		scheduleRepo,
+		scheduler,
+		workflowService,
+		logger,
+	)
+
+	// Start the scheduler service
+	if err := schedulerService.Start(context.Background(), true); err != nil {
+		return nil, nil, err
+	}
+
 	// Initialize handlers
 	handlers := routes.NewHandlerContainer(
 		screenshotService,
@@ -165,6 +183,7 @@ func initializer(cfg *config.Config, tm *transaction.TxManager, logger *logger.L
 		userService,
 		workspaceService,
 		workflowService,
+		schedulerService,
 		tm,
 		logger,
 	)

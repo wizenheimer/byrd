@@ -139,29 +139,29 @@ func (e *workflowObserver) handleJobCancellation(jobContext *models.JobContext) 
 	e.logger.Debug("cancelling job", zap.Any("job_id", jobContext.JobID))
 	jobContext.HandleCancellation()
 
-    // Refresh remote state
+	// Refresh remote state
 	if err := e.repository.CancelJob(context.Background(), jobContext.JobID, &jobContext.JobState, e.workflowType); err != nil {
 		e.logger.Error("failed to persist job cancellation", zap.Error(err))
 		return
 	}
 
-    // Refresh local state
+	// Refresh local state
 	e.activeJobs.Delete(jobContext.JobID)
 }
 
 func (e *workflowObserver) handleJobCompletion(ctx context.Context, jobContext *models.JobContext) {
 	e.logger.Debug("completing job", zap.Any("job_id", jobContext.JobID))
 
-    // Handle job completion
-    jobContext.HandleCompletion()
+	// Handle job completion
+	jobContext.HandleCompletion()
 
-    // Refresh remote state
+	// Refresh remote state
 	if err := e.repository.CompleteJob(ctx, jobContext.JobID, &jobContext.JobState, e.workflowType); err != nil {
 		e.logger.Error("failed to persist job completion", zap.Error(err))
 		return
 	}
 
-    // Refresh local state
+	// Refresh local state
 	e.activeJobs.Delete(jobContext.JobID)
 	// TODO: inject alert client
 }
@@ -276,4 +276,17 @@ func (e *workflowObserver) Shutdown(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (e *workflowObserver) History(ctx context.Context, limit, offset *int) ([]models.JobRecord, error) {
+	e.logger.Debug("getting workflow history", zap.Any("limit", limit), zap.Any("offset", offset))
+
+	// Get the history from the repository
+	jobRecords, err := e.repository.ListRecords(ctx, &e.workflowType, limit, offset)
+	if err != nil {
+		e.logger.Error("failed to get history", zap.Error(err))
+		return nil, err
+	}
+
+	return jobRecords, nil
 }

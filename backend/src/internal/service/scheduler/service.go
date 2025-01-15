@@ -18,7 +18,7 @@ type schedulerService struct {
 	repository schedule.ScheduleRepository
 
 	// logger is the logger for the scheduler service
-	logger logger.Logger
+	logger *logger.Logger
 
 	// scheduler is the scheduler for the scheduler service
 	scheduler scheduler.Scheduler
@@ -31,18 +31,28 @@ type schedulerService struct {
 }
 
 // NewSchedulerService creates a new scheduler service
-func NewSchedulerService(repository schedule.ScheduleRepository, logger logger.Logger, scheduler scheduler.Scheduler) SchedulerService {
+func NewSchedulerService(repository schedule.ScheduleRepository, scheduler scheduler.Scheduler, workflowService workflow.WorkflowService, logger *logger.Logger) SchedulerService {
 	return &schedulerService{
-		repository: repository,
-		logger:     logger,
-		scheduler:  scheduler,
+		repository:      repository,
+		logger:          logger.WithFields(map[string]interface{}{"module": "scheduler_service"}),
+		scheduler:       scheduler,
+		workflowService: workflowService,
 	}
 }
 
 // Start starts the scheduler service
-func (s *schedulerService) Start(ctx context.Context) error {
+func (s *schedulerService) Start(ctx context.Context, recovery bool) error {
 	s.logger.Info("starting the scheduler service")
-	return s.scheduler.Start()
+	err := s.scheduler.Start()
+	if err != nil {
+		return err
+	}
+
+	if recovery {
+		s.Recover(ctx)
+	}
+
+	return nil
 }
 
 // Gracefully stops the scheduler service gracefully
@@ -53,6 +63,7 @@ func (s *schedulerService) Stop(ctx context.Context) error {
 
 func (s *schedulerService) triggerWorkflow(ctx context.Context, workflowType models.WorkflowType) func() {
 	return func() {
+		s.logger.Debug("triggering workflow", zap.Any("workflow_type", workflowType), zap.Any("workflowService", s.workflowService))
 		// Execute the workflow
 		jobID, err := s.workflowService.Submit(ctx, workflowType)
 		if err != nil {
@@ -81,18 +92,18 @@ func (s *schedulerService) syncWorkflow(ctx context.Context, remoteScheduleID mo
 }
 
 // Schedule schedules a new workflow
-func (s *schedulerService) Schedule(ctx context.Context, workflowProp models.WorkflowScheduleProps) (*models.WorkflowSchedule, error) {
+func (s *schedulerService) Schedule(ctx context.Context, workflowProp models.WorkflowScheduleProps) (models.ScheduleID, error) {
 	s.logger.Info("scheduling a new workflow")
 
 	// Persist the workflow schedule
-	scheduleID, err := s.repository.CreateSchedule(ctx, workflowProp)
+	remoteScheduleID, err := s.repository.CreateSchedule(ctx, workflowProp)
 	if err != nil {
-		return nil, err
+		return models.NilScheduleID(), err
 	}
 
 	// Schedule options
 	opts := scheduler.ScheduleOptions{
-		Hooks:        []func(){s.syncWorkflow(ctx, scheduleID)},
+		Hooks:        []func(){s.syncWorkflow(ctx, remoteScheduleID)},
 		ScheduleSpec: workflowProp.Spec,
 	}
 	// Scheduled command
@@ -101,12 +112,13 @@ func (s *schedulerService) Schedule(ctx context.Context, workflowProp models.Wor
 	// Trigger the scheduler to schedule the workflow
 	f, err := s.scheduler.Schedule(cmd, opts)
 	if err != nil {
-		return nil, err
+		return models.NilScheduleID(), err
 	}
 
 	// Associate the remote schedule ID with scheduled function
-	s.scheduledFuncs.Store(scheduleID, f)
-	return nil, nil
+	s.scheduledFuncs.Store(remoteScheduleID, f)
+	s.logger.Debug("scheduled function", zap.Any("scheduled_func", f))
+	return remoteScheduleID, nil
 }
 
 // Unschedule unschedules a workflow
@@ -177,7 +189,7 @@ func (s *schedulerService) Get(ctx context.Context, remoteScheduleID models.Sche
 	// Get schedule of a workflow from local state
 	v, ok := s.scheduledFuncs.Load(remoteScheduleID)
 	if !ok {
-		return nil, nil
+		return nil, errors.New("scheduled function not found")
 	}
 	f := v.(*models.ScheduledFunc)
 
@@ -230,6 +242,7 @@ func (s *schedulerService) Recover(ctx context.Context) {
 		// Trigger the scheduler to schedule the workflow
 		f, err := s.scheduler.Schedule(cmd, opts)
 		if err != nil {
+			s.logger.Error("failed to schedule workflow", zap.Error(err))
 			continue
 		}
 

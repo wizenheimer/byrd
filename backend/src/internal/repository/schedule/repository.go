@@ -2,6 +2,7 @@ package schedule
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"time"
 
@@ -17,7 +18,7 @@ type scheduleRepo struct {
 	tm     *transaction.TxManager
 }
 
-func NewScheduleRepo(logger *logger.Logger, tm *transaction.TxManager) ScheduleRepository {
+func NewScheduleRepo(tm *transaction.TxManager, logger *logger.Logger) ScheduleRepository {
 	return &scheduleRepo{
 		logger: logger,
 		tm:     tm,
@@ -76,8 +77,8 @@ func (r *scheduleRepo) GetSchedule(ctx context.Context, scheduleID models.Schedu
 		&schedule.WorkflowType,
 		&schedule.About,
 		&schedule.Spec,
-		&schedule.LastRun,
-		&schedule.NextRun,
+		&schedule.LastRun, // sql.NullTime will handle NULL properly
+		&schedule.NextRun, // sql.NullTime will handle NULL properly
 		&schedule.CreatedAt,
 		&schedule.UpdatedAt,
 	)
@@ -190,8 +191,8 @@ func (r *scheduleRepo) ListScheduledWorkflows(ctx context.Context, limit, offset
 			&schedule.WorkflowType,
 			&schedule.About,
 			&schedule.Spec,
-			&schedule.LastRun,
-			&schedule.NextRun,
+			&schedule.LastRun, // sql.NullTime will handle NULL properly
+			&schedule.NextRun, // sql.NullTime will handle NULL properly
 			&schedule.CreatedAt,
 			&schedule.UpdatedAt,
 		)
@@ -205,6 +206,10 @@ func (r *scheduleRepo) ListScheduledWorkflows(ctx context.Context, limit, offset
 		return nil, fmt.Errorf("error iterating schedules: %w", err)
 	}
 
+	if len(schedules) == 0 {
+		schedules = make([]models.WorkflowSchedule, 0)
+	}
+
 	return schedules, nil
 }
 
@@ -212,7 +217,7 @@ func (r *scheduleRepo) ListScheduledWorkflows(ctx context.Context, limit, offset
 func (r *scheduleRepo) Sync(ctx context.Context, scheduleID models.ScheduleID, lastRun, nextRun time.Time) error {
 	q := r.getQuerier(ctx)
 
-	sql := `
+	query := `
         UPDATE workflow_schedules
         SET
             last_run = $1,
@@ -220,7 +225,11 @@ func (r *scheduleRepo) Sync(ctx context.Context, scheduleID models.ScheduleID, l
             updated_at = NOW()
         WHERE id = $3 AND deleted_at IS NULL`
 
-	result, err := q.Exec(ctx, sql, lastRun, nextRun, scheduleID)
+	// Convert time.Time to sql.NullTime
+	lastRunNull := sql.NullTime{Time: lastRun, Valid: !lastRun.IsZero()}
+	nextRunNull := sql.NullTime{Time: nextRun, Valid: !nextRun.IsZero()}
+
+	result, err := q.Exec(ctx, query, lastRunNull, nextRunNull, scheduleID)
 	if err != nil {
 		return fmt.Errorf("failed to sync schedule: %w", err)
 	}

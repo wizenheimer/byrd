@@ -7,6 +7,7 @@ import (
 	"github.com/wizenheimer/byrd/src/internal/api/middleware"
 	"github.com/wizenheimer/byrd/src/internal/config"
 	"github.com/wizenheimer/byrd/src/internal/service/ai"
+	"github.com/wizenheimer/byrd/src/internal/service/scheduler"
 	"github.com/wizenheimer/byrd/src/internal/service/screenshot"
 	"github.com/wizenheimer/byrd/src/internal/service/user"
 	"github.com/wizenheimer/byrd/src/internal/service/workflow"
@@ -21,6 +22,7 @@ type HandlerContainer struct {
 	UserHandler       *handlers.UserHandler
 	WorkspaceHandler  *handlers.WorkspaceHandler
 	WorkflowHandler   *handlers.WorkflowHandler
+	ScheduleHandler   *handlers.ScheduleHandler
 }
 
 func NewHandlerContainer(
@@ -29,6 +31,7 @@ func NewHandlerContainer(
 	userService user.UserService,
 	workspaceService workspace.WorkspaceService,
 	workflowService workflow.WorkflowService,
+	schedulerService scheduler.SchedulerService,
 	tx *transaction.TxManager,
 	logger *logger.Logger,
 ) *HandlerContainer {
@@ -47,6 +50,8 @@ func NewHandlerContainer(
 		),
 		// Handlers for workflow management
 		WorkflowHandler: handlers.NewWorkflowHandler(workflowService, logger),
+		// Handlers for schedule management
+		ScheduleHandler: handlers.NewScheduleHandler(schedulerService, logger),
 	}
 }
 
@@ -153,7 +158,8 @@ func setupPrivateRoutes(app *fiber.App, h *HandlerContainer, authMiddleware *mid
 	// Stop a workflow
 	workflow.Delete("/:workflowType/job/:jobID", h.WorkflowHandler.StopWorkflow)
 	// List workflows
-	workflow.Get("/", h.WorkflowHandler.ListWorkflows)
+	workflow.Get("/checkpoint", h.WorkflowHandler.ListCheckpoint)
+    workflow.Get("/history", h.WorkflowHandler.ListHistory)
 	// Get a workflow
 	workflow.Get("/:workflowType/job/:jobID", h.WorkflowHandler.GetWorkflow)
 
@@ -171,9 +177,24 @@ func setupPrivateRoutes(app *fiber.App, h *HandlerContainer, authMiddleware *mid
 
 	// AI routes
 	ai := private.Group("/ai")
+
 	// Analyze content differences
 	ai.Post("/content", h.AIHandler.AnalyzeContentDifferences)
 	// Analyze visual differences
 	ai.Post("/visual", h.AIHandler.AnalyzeVisualDifferences)
 
+	// -------- Schedule Management Routes --------
+	// schedule routes
+	schedule := private.Group("/schedule")
+
+	// Schedule a new workflow
+	schedule.Post("/", h.ScheduleHandler.CreateSchedule)
+	// List all scheduled workflows
+	schedule.Get("/", h.ScheduleHandler.ListSchedules)
+	// Get a scheduled workflow
+	schedule.Get("/:scheduleID", h.ScheduleHandler.GetSchedule)
+	// Delete a scheduled workflow
+	schedule.Delete("/:scheduleID", h.ScheduleHandler.DeleteSchedule)
+	// Update a scheduled workflow
+	schedule.Put("/:scheduleID", h.ScheduleHandler.UpdateSchedule)
 }

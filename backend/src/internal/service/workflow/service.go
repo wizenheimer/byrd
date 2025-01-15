@@ -90,12 +90,15 @@ func (ws *workflowService) Shutdown(ctx context.Context) error {
 func (ws *workflowService) Recover(ctx context.Context) error {
 	// Stop all running jobs
 	var errs []error
+	count := 0
 	ws.executors.Range(func(key, value interface{}) bool {
 		ws.logger.Debug("recovering workflows", zap.Any("workflow_type", key))
 		exc := value.(executor.WorkflowObserver)
 		if err := exc.Recover(ctx); err != nil {
 			ws.logger.Error("failed to recover executor", zap.Error(err))
 			errs = append(errs, err)
+		} else {
+			count++
 		}
 		return true
 	})
@@ -103,6 +106,8 @@ func (ws *workflowService) Recover(ctx context.Context) error {
 	if len(errs) > 0 {
 		return errors.New("failed to recover all executors")
 	}
+
+	ws.logger.Debug("recovered workflows", zap.Any("count", count))
 	return nil
 }
 
@@ -132,7 +137,13 @@ func (ws *workflowService) Submit(ctx context.Context, workflowType models.Workf
 		return uuid.Nil, errors.New("executor not found")
 	}
 
-	return exc.(executor.WorkflowObserver).Submit(ctx)
+	jobID, err := exc.(executor.WorkflowObserver).Submit(ctx)
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	ws.logger.Debug("workflow submitted successfully", zap.Any("workflow_type", workflowType), zap.Any("job_id", jobID))
+	return jobID, nil
 }
 
 // Stops a running job in the workflow
@@ -186,4 +197,42 @@ func (ws *workflowService) List(ctx context.Context, workflowType models.Workflo
 	}
 
 	return jobs, nil
+}
+
+func (ws *workflowService) History(ctx context.Context, limit, offset *int, workflowType *models.WorkflowType) ([]models.JobRecord, error) {
+	ws.logger.Debug("getting workflow history", zap.Any("workflow_type", workflowType), zap.Any("limit", limit), zap.Any("offset", offset))
+
+	observers := make([]executor.WorkflowObserver, 0)
+	if workflowType == nil {
+		// Get all executors history
+		ws.executors.Range(func(_, value interface{}) bool {
+			ws.logger.Debug("getting observer history", zap.Any("observer", workflowType))
+			observers = append(observers, value.(executor.WorkflowObserver))
+			return true
+		})
+	} else {
+		// Get specific executor history
+		exc, ok := ws.executors.Load(*workflowType)
+		if !ok {
+			return nil, errors.New("executor not found")
+		}
+
+		ws.logger.Debug("getting observer history", zap.Any("observer", workflowType))
+		observers = append(observers, exc.(executor.WorkflowObserver))
+	}
+
+	var observerHistory []models.JobRecord
+	for _, observer := range observers {
+		history, err := observer.History(ctx, limit, offset)
+		if err != nil {
+			return nil, err
+		}
+		observerHistory = append(observerHistory, history...)
+	}
+
+	if observerHistory == nil {
+		observerHistory = make([]models.JobRecord, 0)
+	}
+
+	return observerHistory, nil
 }

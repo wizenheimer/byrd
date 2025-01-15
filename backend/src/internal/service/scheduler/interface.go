@@ -9,13 +9,13 @@ import (
 
 type SchedulerService interface {
 	// Start starts the scheduler service
-	Start(ctx context.Context) error
+	Start(ctx context.Context, recovery bool) error
 
 	// Gracefully stops the scheduler service gracefully
 	Stop(ctx context.Context) error
 
 	// Schedule schedules a new workflow
-	Schedule(ctx context.Context, workflowProp models.WorkflowScheduleProps) (*models.WorkflowSchedule, error)
+	Schedule(ctx context.Context, workflowProp models.WorkflowScheduleProps) (models.ScheduleID, error)
 
 	// Unschedule unschedules a workflow
 	Unschedule(ctx context.Context, remoteScheduleID models.ScheduleID) error
