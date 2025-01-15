@@ -3,9 +3,11 @@ package handlers
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+	api "github.com/wizenheimer/byrd/src/internal/models/api"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/internal/service/workflow"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
@@ -90,7 +92,7 @@ func (wh *WorkflowHandler) StopWorkflow(c *fiber.Ctx) error {
 	})
 }
 
-func (wh *WorkflowHandler) ListWorkflows(c *fiber.Ctx) error {
+func (wh *WorkflowHandler) ListCheckpoint(c *fiber.Ctx) error {
 	jobStatusString := c.Query("jobStatus")
 	workflowStatus, err := models.ParseJobStatus(jobStatusString)
 	if err != nil {
@@ -113,4 +115,30 @@ func (wh *WorkflowHandler) ListWorkflows(c *fiber.Ctx) error {
 		"workflowType":   workflowType,
 		"jobs":           jobs,
 	})
+}
+
+func (wh *WorkflowHandler) ListHistory(c *fiber.Ctx) error {
+	pageNumber := c.QueryInt("pageNumber", 1)
+	pageSize := c.QueryInt("pageSize", 10)
+
+	pagination := api.PaginationParams{
+		Page:     pageNumber,
+		PageSize: pageSize,
+	}
+
+	limits := pagination.GetLimit()
+	offsets := pagination.GetOffset()
+
+	workflowTypeString := c.Query("workflowType", "screenshot")
+	wf, err := models.ParseWorkflowType(workflowTypeString)
+	if err != nil {
+		return sendErrorResponse(c, wh.logger, fiber.StatusBadRequest, "Invalid workflow type", err.Error())
+	}
+
+	schedules, err := wh.workflowService.History(c.Context(), &limits, &offsets, &wf)
+	if err != nil {
+		return sendErrorResponse(c, wh.logger, fiber.StatusInternalServerError, "Failed to list schedules", err.Error())
+	}
+
+	return sendDataResponse(c, http.StatusOK, "Successfully listed schedules", schedules)
 }
