@@ -14,11 +14,13 @@ import (
 	"go.uber.org/zap"
 )
 
+// WorkflowObserver represents the observer for the workflow
+// This is used to oversee lifecycle of the workflow
 type workflowObserver struct {
 	// workflowType represents the type of workflow
 	workflowType models.WorkflowType
 
-	// repository represents the repository for managing workflows
+	// repository represents the repository for checkpoint related operations
 	repository workflow.WorkflowRepository
 
 	// alertClient represents the alert client for the workflow
@@ -65,7 +67,7 @@ func (e *workflowObserver) Recover(ctx context.Context) error {
 	e.logger.Debug("recovering workflows")
 
 	// List the workflows from the repository
-	jobs, err := e.repository.List(ctx, e.workflowType, models.JobStatusRunning)
+	jobs, err := e.repository.ListActiveJobs(ctx, e.workflowType)
 	if err != nil {
 		e.logger.Error("failed to list workflows", zap.Error(err))
 		return err
@@ -90,9 +92,9 @@ func (e *workflowObserver) Submit(ctx context.Context) (uuid.UUID, error) {
 	// Create a new job context
 	jobContext, executionContext := models.NewJobContextForJob(job)
 
-	// Persist the job state in the repository
-	if err := e.repository.SetState(ctx, job.JobID, e.workflowType, jobContext.JobState); err != nil {
-		e.logger.Error("failed to persist job state", zap.Error(err))
+	// Start the job in the repository
+	if err := e.repository.StartJob(ctx, job.JobID, e.workflowType); err != nil {
+		e.logger.Error("failed to persist job status", zap.Error(err))
 		return uuid.Nil, err
 	}
 
@@ -136,17 +138,30 @@ func (e *workflowObserver) executeJob(executionContext context.Context, jobConte
 func (e *workflowObserver) handleJobCancellation(jobContext *models.JobContext) {
 	e.logger.Debug("cancelling job", zap.Any("job_id", jobContext.JobID))
 	jobContext.HandleCancellation()
+
+    // Refresh remote state
+	if err := e.repository.CancelJob(context.Background(), jobContext.JobID, &jobContext.JobState, e.workflowType); err != nil {
+		e.logger.Error("failed to persist job cancellation", zap.Error(err))
+		return
+	}
+
+    // Refresh local state
 	e.activeJobs.Delete(jobContext.JobID)
 }
 
 func (e *workflowObserver) handleJobCompletion(ctx context.Context, jobContext *models.JobContext) {
 	e.logger.Debug("completing job", zap.Any("job_id", jobContext.JobID))
 
-	if err := e.repository.SetState(ctx, jobContext.JobID, e.workflowType, jobContext.JobState); err != nil {
-		e.logger.Error("failed to handle job completion", zap.Error(err))
+    // Handle job completion
+    jobContext.HandleCompletion()
+
+    // Refresh remote state
+	if err := e.repository.CompleteJob(ctx, jobContext.JobID, &jobContext.JobState, e.workflowType); err != nil {
+		e.logger.Error("failed to persist job completion", zap.Error(err))
 		return
 	}
-	jobContext.HandleCompletion()
+
+    // Refresh local state
 	e.activeJobs.Delete(jobContext.JobID)
 	// TODO: inject alert client
 }
