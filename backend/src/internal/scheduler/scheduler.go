@@ -312,7 +312,9 @@ func (s *scheduler) Stop() error {
 	}
 
 	s.schedules.Range(func(key, value interface{}) bool {
-		s.Delete(key.(models.ScheduleID))
+		if err := s.Delete(key.(models.ScheduleID)); err != nil {
+			s.logger.Error("failed to delete scheduled function", zap.Any("id", key), zap.Error(err))
+		}
 		return true
 	})
 

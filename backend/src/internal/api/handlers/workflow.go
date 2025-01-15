@@ -118,8 +118,8 @@ func (wh *WorkflowHandler) ListCheckpoint(c *fiber.Ctx) error {
 }
 
 func (wh *WorkflowHandler) ListHistory(c *fiber.Ctx) error {
-	pageNumber := c.QueryInt("pageNumber", 1)
-	pageSize := c.QueryInt("pageSize", 10)
+	pageNumber := max(1, c.QueryInt("pageNumber", 1))
+	pageSize := max(10, c.QueryInt("pageSize", 10))
 
 	pagination := api.PaginationParams{
 		Page:     pageNumber,

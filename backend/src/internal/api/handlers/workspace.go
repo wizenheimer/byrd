@@ -188,8 +188,8 @@ func (wh *WorkspaceHandler) ListWorkspaceUsers(c *fiber.Ctx) error {
 		return sendErrorResponse(c, wh.logger, fiber.StatusBadRequest, "Invalid workspace ID format", err.Error())
 	}
 
-	pageNumber := c.QueryInt("pageNumber", 0)
-	pageSize := c.QueryInt("pageSize", 10)
+	pageNumber := max(1, c.QueryInt("pageNumber", 1))
+	pageSize := max(10, c.QueryInt("pageSize", 10))
 
 	pagination := api.PaginationParams{
 		Page:     pageNumber,
@@ -371,8 +371,8 @@ func (wh *WorkspaceHandler) ListWorkspaceCompetitors(c *fiber.Ctx) error {
 		return sendErrorResponse(c, wh.logger, fiber.StatusBadRequest, "Invalid workspace ID format", err.Error())
 	}
 
-	pageNumber := c.QueryInt("pageNumber", 0)
-	pageSize := c.QueryInt("pageSize", 10)
+	pageNumber := max(1, c.QueryInt("pageNumber", 1))
+	pageSize := max(10, c.QueryInt("pageSize", 10))
 
 	params := api.PaginationParams{
 		Page:     pageNumber,
@@ -411,8 +411,8 @@ func (wh *WorkspaceHandler) ListPageHistory(c *fiber.Ctx) error {
 		return sendErrorResponse(c, wh.logger, fiber.StatusBadRequest, "Invalid page ID format", err.Error())
 	}
 
-	pageNumber := c.QueryInt("pageNumber", 0)
-	pageSize := c.QueryInt("pageSize", 10)
+	pageNumber := max(1, c.QueryInt("pageNumber", 1))
+	pageSize := max(10, c.QueryInt("pageSize", 10))
 
 	params := api.PaginationParams{
 		Page:     pageNumber,

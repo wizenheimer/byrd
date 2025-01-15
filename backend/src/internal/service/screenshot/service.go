@@ -183,7 +183,7 @@ func (s *screenshotService) GetCurrentHTMLContent(ctx context.Context, save bool
 		}
 	}
 
-	return nil, nil
+	return htmlContentResp, nil
 }
 
 // GetPreviousImage retrieves previous screenshot image from the storage

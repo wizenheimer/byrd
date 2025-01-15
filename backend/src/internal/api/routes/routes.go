@@ -159,7 +159,7 @@ func setupPrivateRoutes(app *fiber.App, h *HandlerContainer, authMiddleware *mid
 	workflow.Delete("/:workflowType/job/:jobID", h.WorkflowHandler.StopWorkflow)
 	// List workflows
 	workflow.Get("/checkpoint", h.WorkflowHandler.ListCheckpoint)
-    workflow.Get("/history", h.WorkflowHandler.ListHistory)
+	workflow.Get("/history", h.WorkflowHandler.ListHistory)
 	// Get a workflow
 	workflow.Get("/:workflowType/job/:jobID", h.WorkflowHandler.GetWorkflow)
 

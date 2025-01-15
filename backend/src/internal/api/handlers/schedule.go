@@ -22,9 +22,9 @@ func NewScheduleHandler(schedulerService scheduler.SchedulerService, logger *log
 
 	return &ScheduleHandler{
 		schedulerService: schedulerService,
-		logger:           logger.WithFields(map[string]interface{}{
-            "module": "schedule_handler",
-        }),
+		logger: logger.WithFields(map[string]interface{}{
+			"module": "schedule_handler",
+		}),
 	}
 }
 
@@ -111,7 +111,7 @@ func (h *ScheduleHandler) DeleteSchedule(c *fiber.Ctx) error {
 func (h *ScheduleHandler) ListSchedules(c *fiber.Ctx) error {
 	h.logger.Debug("listing schedules")
 
-	pageNumber := c.QueryInt("pageNumber", 0)
+	pageNumber := c.QueryInt("pageNumber", 1)
 	pageSize := c.QueryInt("pageSize", 10)
 
 	pagination := api.PaginationParams{
