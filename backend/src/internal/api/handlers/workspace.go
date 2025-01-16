@@ -199,24 +199,23 @@ func (wh *WorkspaceHandler) ListWorkspaceUsers(c *fiber.Ctx) error {
 	limits := pagination.GetLimit()
 	offsets := pagination.GetOffset()
 
-	roleFilterString := strings.ToLower(c.Query("role", "user"))
+	roleFilterString := strings.ToLower(c.Query("role", ""))
 
-	var roleFilter models.WorkspaceRole
+	var roleFilter *models.WorkspaceRole
 	switch roleFilterString {
 	case "admin":
-		roleFilter = models.RoleAdmin
+		adminRole := models.RoleAdmin
+		roleFilter = &adminRole
 	case "user":
-		roleFilter = models.RoleUser
-	case "":
-		wh.logger.Debug("Empty role filter, defaulting to user")
-		roleFilter = models.RoleUser
+		userRole := models.RoleUser
+		roleFilter = &userRole
 	default:
 		wh.logger.Debug("Invalid role filter, defaulting to user")
-		roleFilter = models.RoleUser
+		roleFilter = nil
 	}
 
 	ctx := c.Context()
-	users, hasMore, err := wh.workspaceService.ListWorkspaceMembers(ctx, workspaceID, &limits, &offsets, &roleFilter)
+	users, hasMore, err := wh.workspaceService.ListWorkspaceMembers(ctx, workspaceID, &limits, &offsets, roleFilter)
 	if err != nil {
 		return sendErrorResponse(c, wh.logger, fiber.StatusInternalServerError, "Could not list workspace users", err.Error())
 	}
