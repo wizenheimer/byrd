@@ -204,7 +204,7 @@ func (s *screenshotService) prepareScreenshotHTML(opts models.ScreenshotHTMLRequ
 func GetDefaultScreenshotRequestOptions(url string) models.ScreenshotRequestOptions {
 	// Get default options
 	defaultOpt := models.ScreenshotRequestOptions{
-        URL: url,
+		URL: url,
 		// Capture options
 		Format:                utils.ToPtr("png"),
 		ImageQuality:          utils.ToPtr(80),

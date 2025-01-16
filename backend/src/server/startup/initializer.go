@@ -39,9 +39,9 @@ func Initialize(cfg *config.Config, tm *transaction.TxManager, logger *logger.Lo
 
 	// Set up Redis
 	redisClient, err := SetupRedis(cfg, logger)
-    if err != nil {
-        return nil, nil, err
-    }
+	if err != nil {
+		return nil, nil, err
+	}
 
 	// Set up repositories
 	repos, err := SetupRepositories(tm, redisClient, logger)
