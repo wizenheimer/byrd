@@ -97,6 +97,7 @@ func (us *userService) ListUsersByUserIDs(ctx context.Context, userIDs []uuid.UU
 		return nil, err
 	}
 
+	us.logger.Debug("users", zap.Any("users", users))
 	return users, nil
 }
 

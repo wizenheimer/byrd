@@ -20,7 +20,7 @@ import (
 // - BillingService
 
 type WorkspaceService interface {
-	CreateWorkspace(ctx context.Context, workspaceOwner *clerk.User, pages []models.PageProps, users []models.UserProps) (*models.Workspace, error)
+	CreateWorkspace(ctx context.Context, workspaceOwner *clerk.User, pages []models.PageProps, userEmails []string) (*models.Workspace, error)
 
 	ListUserWorkspaces(ctx context.Context, workspaceMember *clerk.User) ([]models.Workspace, error)
 

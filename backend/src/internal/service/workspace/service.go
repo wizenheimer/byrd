@@ -36,8 +36,8 @@ func NewWorkspaceService(workspaceRepo workspace.WorkspaceRepository, competitor
 	}
 }
 
-func (ws *workspaceService) CreateWorkspace(ctx context.Context, workspaceOwner *clerk.User, pages []models.PageProps, users []models.UserProps) (*models.Workspace, error) {
-	ws.logger.Debug("creating workspace", zap.Any("workspaceOwner", workspaceOwner), zap.Any("pages", pages), zap.Any("users", users))
+func (ws *workspaceService) CreateWorkspace(ctx context.Context, workspaceOwner *clerk.User, pages []models.PageProps, userEmails []string) (*models.Workspace, error) {
+	ws.logger.Debug("creating workspace", zap.Any("workspaceOwner", workspaceOwner), zap.Any("pages", pages), zap.Any("userEmails", userEmails))
 	// Step 0: Create workspace along with the owner
 	var workspace *models.Workspace
 	if err := ws.tm.RunInTx(context.Background(), nil, func(ctx context.Context) error {
@@ -71,52 +71,47 @@ func (ws *workspaceService) CreateWorkspace(ctx context.Context, workspaceOwner 
 	}
 
 	// Step 2: Validate and invite users to the workspace
-	err = utils.SetDefaultsAndValidateArray(&users)
+	ownerEmail, err := utils.GetClerkUserEmail(workspaceOwner)
 	if err != nil {
-		ws.logger.Debug("failed to validate users", zap.Error(err))
+		return nil, err
+	}
+	ownerEmail = utils.NormalizeEmail(ownerEmail)
+
+	emailMap := make(map[string]bool)
+	emailMap[ownerEmail] = true
+
+	memberEmails := make([]string, 0)
+	for _, memberEmail := range userEmails {
+		// Normalize email address
+		memberEmail = utils.NormalizeEmail(memberEmail)
+
+		// Check if the email is already in the map
+		if _, ok := emailMap[memberEmail]; ok {
+			continue
+		}
+		emailMap[memberEmail] = true
+
+		// Add the member to the list of invited users
+		memberEmails = append(memberEmails, memberEmail)
+	}
+
+	members, err := ws.userService.BatchGetOrCreateUsers(ctx, memberEmails)
+	if err != nil {
+		ws.logger.Debug("failed to get or create users", zap.Error(err))
+	}
+
+	if len(members) == 0 {
+		ws.logger.Debug("no users to invite")
 	} else {
-		ownerEmail, err := utils.GetClerkUserEmail(workspaceOwner)
+		// Add the users to the workspace
+		memberIDs := make([]uuid.UUID, 0)
+		for _, member := range members {
+			memberIDs = append(memberIDs, member.ID)
+		}
+
+		_, err := ws.workspaceRepo.BatchAddUsersToWorkspace(ctx, memberIDs, workspace.ID)
 		if err != nil {
 			return nil, err
-		}
-		ownerEmail = utils.NormalizeEmail(ownerEmail)
-
-		emailMap := make(map[string]bool)
-		emailMap[ownerEmail] = true
-
-		memberEmails := make([]string, 0)
-		for _, member := range users {
-			// Normalize email address
-			member.Email = utils.NormalizeEmail(member.Email)
-
-			// Check if the email is already in the map
-			if _, ok := emailMap[member.Email]; ok {
-				continue
-			}
-			emailMap[member.Email] = true
-
-			// Add the member to the list of invited users
-			memberEmails = append(memberEmails, member.Email)
-		}
-
-		members, err := ws.userService.BatchGetOrCreateUsers(ctx, memberEmails)
-		if err != nil {
-			ws.logger.Debug("failed to get or create users", zap.Error(err))
-		}
-
-		if len(members) == 0 {
-			ws.logger.Debug("no users to invite")
-		} else {
-			// Add the users to the workspace
-			memberIDs := make([]uuid.UUID, 0)
-			for _, member := range members {
-				memberIDs = append(memberIDs, member.ID)
-			}
-
-			_, err := ws.workspaceRepo.BatchAddUsersToWorkspace(ctx, memberIDs, workspace.ID)
-			if err != nil {
-				return nil, err
-			}
 		}
 	}
 
@@ -232,8 +227,8 @@ func (ws *workspaceService) ListWorkspaceMembers(ctx context.Context, workspaceI
 			ID:               member.ID,
 			WorkspaceID:      workspaceID,
 			Role:             member.Role,
-			Name:             *user.Name,
-			Email:            *user.Email,
+			Name:             utils.FromPtr(user.Name, ""),
+			Email:            utils.FromPtr(user.Email, ""),
 			MembershipStatus: member.MembershipStatus,
 		}
 		workspaceUsers = append(workspaceUsers, workspaceUser)
@@ -283,8 +278,8 @@ func (ws *workspaceService) AddUsersToWorkspace(ctx context.Context, workspaceMe
 			ID:               member.ID,
 			WorkspaceID:      workspaceID,
 			Role:             member.Role,
-			Name:             *user.Name,
-			Email:            *user.Email,
+			Name:             utils.FromPtr(user.Name, ""),
+			Email:            utils.FromPtr(user.Email, ""),
 			MembershipStatus: member.MembershipStatus,
 		}
 		workspaceUsers = append(workspaceUsers, workspaceUser)

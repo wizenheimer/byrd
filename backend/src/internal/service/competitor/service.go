@@ -9,8 +9,10 @@ import (
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/internal/repository/competitor"
 	"github.com/wizenheimer/byrd/src/internal/service/page"
+	"github.com/wizenheimer/byrd/src/internal/service/screenshot"
 	"github.com/wizenheimer/byrd/src/internal/transaction"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
+	"github.com/wizenheimer/byrd/src/pkg/utils"
 	"go.uber.org/zap"
 )
 
@@ -43,6 +45,9 @@ func (cs *competitorService) AddCompetitorsToWorkspace(ctx context.Context, work
 		competitorName := cs.nameFinder.FindCompanyName([]string{
 			page.URL,
 		})
+
+		cp := utils.FromPtr(page.CaptureProfile, screenshot.GetDefaultScreenshotRequestOptions(page.URL))
+		page.CaptureProfile = &cp
 
 		var competitor *models.Competitor
 		err := cs.tm.RunInTx(context.Background(), nil, func(ctx context.Context) error {
@@ -188,6 +193,10 @@ func (cs *competitorService) PageExists(ctx context.Context, competitorID, pageI
 }
 
 func (cs *competitorService) AddPagesToCompetitor(ctx context.Context, competitorID uuid.UUID, pages []models.PageProps) ([]models.Page, error) {
+	for index, page := range pages {
+		cp := utils.FromPtr(page.CaptureProfile, screenshot.GetDefaultScreenshotRequestOptions(page.URL))
+		pages[index].CaptureProfile = &cp
+	}
 	return cs.pageService.CreatePage(
 		ctx,
 		competitorID,
@@ -204,6 +213,9 @@ func (cs *competitorService) GetCompetitorPage(ctx context.Context, competitorID
 }
 
 func (cs *competitorService) UpdatePage(ctx context.Context, competitorID, pageID uuid.UUID, page models.PageProps) (*models.Page, error) {
+	cp := utils.FromPtr(page.CaptureProfile, screenshot.GetDefaultScreenshotRequestOptions(page.URL))
+	page.CaptureProfile = &cp
+
 	return cs.pageService.UpdatePage(
 		ctx,
 		competitorID,
