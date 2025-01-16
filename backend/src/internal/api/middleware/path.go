@@ -41,7 +41,7 @@ func (m *WorkspacePathValidationMiddleware) ValidateWorkspacePath(c *fiber.Ctx) 
 	exists, err := m.ws.WorkspaceExists(c.Context(), workspaceUUID)
 
 	if err != nil {
-		return sendErrorResponse(c, m.logger, fiber.StatusInternalServerError, "Could not verify workspace", err)
+		return sendErrorResponse(c, m.logger, fiber.StatusInternalServerError, "Could not verify workspace", err.Error())
 	}
 
 	if !exists {

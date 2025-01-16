@@ -92,7 +92,7 @@ func (h *AIHandler) AnalyzeContentDifferences(c *fiber.Ctx) error {
 		profileFields,
 	)
 	if err != nil {
-		return sendErrorResponse(c, h.logger, fiber.StatusInternalServerError, "Could not analyze content differences", err)
+		return sendErrorResponse(c, h.logger, fiber.StatusInternalServerError, "Could not analyze content differences", err.Error())
 	}
 
 	return sendDataResponse(c, fiber.StatusOK, "Content analysis successfully", result)
@@ -160,7 +160,7 @@ func (h *AIHandler) AnalyzeVisualDifferences(c *fiber.Ctx) error {
 
 	result, err := h.aiService.AnalyzeVisualDifferences(c.Context(), img1, img2, profileFields)
 	if err != nil {
-		return sendErrorResponse(c, h.logger, fiber.StatusInternalServerError, "Could not analyze visual differences", err)
+		return sendErrorResponse(c, h.logger, fiber.StatusInternalServerError, "Could not analyze visual differences", err.Error())
 	}
 
 	return sendDataResponse(c, fiber.StatusOK, "Analyzed visual difference successfully", result)

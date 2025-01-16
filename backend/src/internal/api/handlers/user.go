@@ -28,7 +28,7 @@ func (uh *UserHandler) GetAccount(c *fiber.Ctx) error {
 	ctx := c.Context()
 	user, err := uh.userService.GetUserByClerkCredentials(ctx, clerkUser)
 	if err != nil {
-		return sendErrorResponse(c, uh.logger, fiber.StatusInternalServerError, "Could not get user", err)
+		return sendErrorResponse(c, uh.logger, fiber.StatusInternalServerError, "Could not get user", err.Error())
 	}
 
 	return sendDataResponse(c, fiber.StatusOK, "User retrieved successfully", user)
@@ -41,7 +41,7 @@ func (uh *UserHandler) DeleteAccount(c *fiber.Ctx) error {
 	}
 
 	if err := uh.userService.DeleteUser(c.Context(), clerkUser); err != nil {
-		return sendErrorResponse(c, uh.logger, fiber.StatusInternalServerError, "Could not delete user", err)
+		return sendErrorResponse(c, uh.logger, fiber.StatusInternalServerError, "Could not delete user", err.Error())
 	}
 
 	return sendDataResponse(c, fiber.StatusOK, "User deleted successfully", nil)
@@ -71,7 +71,7 @@ func (uh *UserHandler) Sync(c *fiber.Ctx) error {
 	}
 
 	if err := uh.userService.SyncUser(c.Context(), clerkUser); err != nil {
-		return sendErrorResponse(c, uh.logger, fiber.StatusInternalServerError, "Could not sync user", err)
+		return sendErrorResponse(c, uh.logger, fiber.StatusInternalServerError, "Could not sync user", err.Error())
 	}
 
 	return sendDataResponse(c, fiber.StatusOK, "User is synchronized", nil)

@@ -42,7 +42,7 @@ func (h *ScreenshotHandler) CreateScreenshot(c *fiber.Ctx) error {
 
 	screenshotResult, err := h.screenshotService.GetCurrentImage(c.Context(), true, sOpts)
 	if err != nil {
-		return sendErrorResponse(c, h.logger, fiber.StatusInternalServerError, "Could not create screenshot", err)
+		return sendErrorResponse(c, h.logger, fiber.StatusInternalServerError, "Could not create screenshot", err.Error())
 	}
 
 	hOpts := models.ScreenshotHTMLRequestOptions{
@@ -52,7 +52,7 @@ func (h *ScreenshotHandler) CreateScreenshot(c *fiber.Ctx) error {
 
 	contentResult, err := h.screenshotService.GetCurrentHTMLContent(c.Context(), true, hOpts)
 	if err != nil {
-		return sendErrorResponse(c, h.logger, fiber.StatusInternalServerError, "Could not create screenshot content", err)
+		return sendErrorResponse(c, h.logger, fiber.StatusInternalServerError, "Could not create screenshot content", err.Error())
 	}
 
 	return sendDataResponse(c, fiber.StatusCreated, "Screenshot created successfully", map[string]interface{}{
@@ -77,7 +77,7 @@ func (h *ScreenshotHandler) GetScreenshotImage(c *fiber.Ctx) error {
 
 	result, err := h.screenshotService.GetImage(c.Context(), opts.URL, *opts.Year, *opts.WeekNumber, *opts.WeekDay)
 	if err != nil {
-		return sendErrorResponse(c, h.logger, fiber.StatusInternalServerError, "Could not get screenshot image", err)
+		return sendErrorResponse(c, h.logger, fiber.StatusInternalServerError, "Could not get screenshot image", err.Error())
 	}
 
 	return h.sendPNGResponse(c, result)
@@ -99,7 +99,7 @@ func (h *ScreenshotHandler) GetScreenshotContent(c *fiber.Ctx) error {
 
 	result, err := h.screenshotService.GetHTMLContent(c.Context(), opts.URL, *opts.Year, *opts.WeekNumber, *opts.WeekDay)
 	if err != nil {
-		return sendErrorResponse(c, h.logger, fiber.StatusInternalServerError, "Could not get screenshot content", err)
+		return sendErrorResponse(c, h.logger, fiber.StatusInternalServerError, "Could not get screenshot content", err.Error())
 	}
 
 	return sendDataResponse(c, fiber.StatusOK, "Fetched screenshot content successfully", result)
@@ -117,7 +117,7 @@ func (h *ScreenshotHandler) ListScreenshots(c *fiber.Ctx) error {
 
 	result, err := h.screenshotService.ListScreenshots(c.Context(), opts.URL, opts.ContentType, opts.MaxItems)
 	if err != nil {
-		return sendErrorResponse(c, h.logger, fiber.StatusInternalServerError, "Could not list screenshots", err)
+		return sendErrorResponse(c, h.logger, fiber.StatusInternalServerError, "Could not list screenshots", err.Error())
 	}
 
 	return sendDataResponse(c, fiber.StatusOK, "Listed screenshots successfully", result)

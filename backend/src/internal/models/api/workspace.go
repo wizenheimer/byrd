@@ -10,7 +10,7 @@ type WorkspaceCreationRequest struct {
 
 	// Users is the users to create the workspace for
 	// This excludes the user who is creating the workspace
-	Users []models.UserProps `json:"users" validate:"required,dive"`
+	Users []string `json:"users" validate:"required"`
 }
 
 // WorkspaceUpdateRequest is the request to update a workspace

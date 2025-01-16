@@ -41,7 +41,7 @@ func (h *ScreenshotHandler) sendPNGResponse(c *fiber.Ctx, result *models.Screens
 		result.Image,
 	)
 	if err != nil {
-		return sendErrorResponse(c, h.logger, fiber.StatusInternalServerError, "Could not write PNG response", err)
+		return sendErrorResponse(c, h.logger, fiber.StatusInternalServerError, "Could not write PNG response", err.Error())
 	}
 
 	// Set the Content-Type header to image/png

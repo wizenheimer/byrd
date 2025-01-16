@@ -5,7 +5,7 @@ import models "github.com/wizenheimer/byrd/src/internal/models/core"
 
 // AddUsersToWorkspaceRequest is the request to invite a user to a workspace
 type AddUsersToWorkspaceRequest struct {
-	Emails []string `json:"emails" validate:"required,dive,email"`
+	Emails []string `json:"emails" validate:"required"`
 }
 
 // UpdateUserRequest is the request to update a user
