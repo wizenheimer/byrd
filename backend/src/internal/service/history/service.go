@@ -30,9 +30,9 @@ func NewPageHistoryService(pageHistoryRepo history.PageHistoryRepository, logger
 // This is trigger during page creation by the page service and by workflow service.
 // It returns true if the new page history was created or it returns false if the page history already exists.
 // Error is returned if there was an issue creating the page history.
-func (ph *pageHistoryService) CreatePageHistory(ctx context.Context, pageID uuid.UUID, diff *models.DynamicChanges) error {
+func (ph *pageHistoryService) CreatePageHistory(ctx context.Context, pageID uuid.UUID, diff *models.DynamicChanges, prevURL, currURL string) error {
 	ph.logger.Debug("creating page history", zap.Any("pageID", pageID), zap.Any("diff", diff))
-	return ph.pageHistoryRepo.CreateHistoryForPage(ctx, pageID, diff)
+	return ph.pageHistoryRepo.CreateHistoryForPage(ctx, pageID, diff, prevURL, currURL)
 }
 
 // ListPageHistory lists the history of a page, paginated by pageHistoryPaginationParam

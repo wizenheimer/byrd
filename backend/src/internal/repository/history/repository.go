@@ -33,7 +33,7 @@ func (r *historyRepo) getQuerier(ctx context.Context) interface {
 	return r.tm.GetQuerier(ctx)
 }
 
-func (r *historyRepo) CreateHistoryForPage(ctx context.Context, pageID uuid.UUID, diffContent any) error {
+func (r *historyRepo) CreateHistoryForPage(ctx context.Context, pageID uuid.UUID, diffContent any, prev, curr string) error {
 	// Validate diffContent as well
 	if pageID == uuid.Nil || diffContent == nil {
 		return fmt.Errorf("page ID and diff content are required")
@@ -46,19 +46,23 @@ func (r *historyRepo) CreateHistoryForPage(ctx context.Context, pageID uuid.UUID
 	}
 
 	query := `
-		INSERT INTO page_history (
-			page_id,
-			diff_content,
-			status
-		)
-		VALUES ($1, $2, $3)
-		RETURNING id`
+        INSERT INTO page_history (
+            page_id,
+            diff_content,
+            status,
+            prev,
+            curr
+        )
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING id`
 
 	var id uuid.UUID
 	err = r.getQuerier(ctx).QueryRow(ctx, query,
 		pageID,
 		diffContentJSON,
 		models.HistoryStatusActive,
+		prev,
+		curr,
 	).Scan(&id)
 
 	if err != nil {
@@ -75,16 +79,18 @@ func (r *historyRepo) BatchGetPageHistory(ctx context.Context, pageID uuid.UUID,
 
 	// Build query with pagination
 	query := `
-		SELECT
-			id,
-			page_id,
-			diff_content,
-			created_at,
-			status
-		FROM page_history
-		WHERE page_id = $1
-		AND status = $2
-		ORDER BY created_at DESC`
+        SELECT
+            id,
+            page_id,
+            diff_content,
+            created_at,
+            status,
+            prev,
+            curr
+        FROM page_history
+        WHERE page_id = $1
+        AND status = $2
+        ORDER BY created_at DESC`
 
 	args := []interface{}{pageID, models.HistoryStatusActive}
 
@@ -117,6 +123,8 @@ func (r *historyRepo) BatchGetPageHistory(ctx context.Context, pageID uuid.UUID,
 			&diffContentJSON,
 			&history.CreatedAt,
 			&history.Status,
+			&history.Prev,
+			&history.Curr,
 		)
 		if err != nil {
 			return nil, false, fmt.Errorf("failed to scan page history: %w", err)

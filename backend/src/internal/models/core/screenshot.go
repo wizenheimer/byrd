@@ -221,6 +221,7 @@ type ListScreenshotsOptions struct {
 
 // ScreenshotHTMLContentResponse defines the response structure for screenshot content requests
 type ScreenshotHTMLContentResponse struct {
+	StoragePath string              `json:"path"`
 	Status      string              `json:"status"`
 	HTMLContent string              `json:"content"`
 	Metadata    *ScreenshotMetadata `json:"metadata,omitempty"`
@@ -228,6 +229,7 @@ type ScreenshotHTMLContentResponse struct {
 
 // ScreenshotImageResponse defines the response structure for screenshot image requests
 type ScreenshotImageResponse struct {
+	StoragePath string              `json:"path"`
 	Status      string              `json:"status"`
 	Image       image.Image         `json:"image"`
 	Metadata    *ScreenshotMetadata `json:"metadata,omitempty"`

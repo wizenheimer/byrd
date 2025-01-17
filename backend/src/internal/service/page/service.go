@@ -160,12 +160,12 @@ func (ps *pageService) RefreshPage(ctx context.Context, pageID uuid.UUID) error 
 		return err
 	}
 
-	_, currentHTMLContentResp, err := ps.screenshotService.Refresh(urlContext, page.URL, page.CaptureProfile)
+	currentImgResp, currentHTMLContentResp, err := ps.screenshotService.Refresh(urlContext, page.URL, page.CaptureProfile)
 	if err != nil {
 		return err
 	}
 
-	_, previousHtmlContentResp, err := ps.screenshotService.Retrieve(ctx, page.URL)
+	prevImgResp, previousHtmlContentResp, err := ps.screenshotService.Retrieve(ctx, page.URL)
 	if err != nil {
 		return err
 	}
@@ -175,7 +175,7 @@ func (ps *pageService) RefreshPage(ctx context.Context, pageID uuid.UUID) error 
 		return err
 	}
 
-	return ps.pageHistoryService.CreatePageHistory(ctx, pageID, diff)
+	return ps.pageHistoryService.CreatePageHistory(ctx, pageID, diff, prevImgResp.StoragePath, currentImgResp.StoragePath)
 }
 
 func (ps *pageService) RemovePage(ctx context.Context, competitorIDs []uuid.UUID, pageIDs []uuid.UUID) error {

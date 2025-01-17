@@ -20,7 +20,7 @@ type PageHistoryService interface {
 	// This is trigger during page creation by the page service and by workflow service.
 	// It returns true if the new page history was created or it returns false if the page history already exists.
 	// Error is returned if there was an issue creating the page history.
-	CreatePageHistory(ctx context.Context, pageID uuid.UUID, diff *models.DynamicChanges) error
+	CreatePageHistory(ctx context.Context, pageID uuid.UUID, diff *models.DynamicChanges, prevURL, currURL string) error
 
 	// ListPageHistory lists the history of a page, paginated by pageHistoryPaginationParam
 	// This is triggered when a user wants to list all page histories of a page

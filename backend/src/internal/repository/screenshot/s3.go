@@ -119,6 +119,7 @@ func (s *s3ScreenshotRepo) GetScreenshotHTMLContent(ctx context.Context, path st
 		Status:      "success",
 		HTMLContent: string(data),
 		Metadata:    &screenshotMetadata,
+    StoragePath: path,
 	}
 
 	return resp, nil
@@ -154,6 +155,7 @@ func (s *s3ScreenshotRepo) GetScreenshotImage(ctx context.Context, path string) 
 		Metadata:    &screenshotMetadata,
 		ImageHeight: utils.ToPtr(imgHeight),
 		ImageWidth:  utils.ToPtr(imgWidth),
+    StoragePath: path,
 	}
 
 	return resp, nil

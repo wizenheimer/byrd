@@ -24,4 +24,6 @@ type PageHistory struct {
 	DiffContent map[string]interface{} `json:"diff_content"`
 	CreatedAt   time.Time              `json:"created_at"`
 	Status      HistoryStatus          `json:"history_status" default:"active"`
+	Prev        string                 `json:"prev"`
+	Curr        string                 `json:"curr"`
 }
