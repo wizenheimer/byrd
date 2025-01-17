@@ -144,8 +144,7 @@ func (cs *competitorService) RemoveCompetitorForWorkspace(ctx context.Context, w
 			if err != nil {
 				return err
 			}
-		}
-		if len(competitorIDs) == 1 {
+		} else if len(competitorIDs) == 1 {
 			err := cs.competitorRepository.RemoveCompetitorForWorkspace(
 				ctx,
 				workspaceID,
@@ -154,15 +153,18 @@ func (cs *competitorService) RemoveCompetitorForWorkspace(ctx context.Context, w
 			if err != nil {
 				return err
 			}
+		} else {
+			err := cs.competitorRepository.BatchRemoveCompetitorForWorkspace(
+				ctx,
+				workspaceID,
+				competitorIDs,
+			)
+			if err != nil {
+				return err
+			}
+			return nil
 		}
-		err := cs.competitorRepository.BatchRemoveCompetitorForWorkspace(
-			ctx,
-			workspaceID,
-			competitorIDs,
-		)
-		if err != nil {
-			return err
-		}
+
 		return nil
 	}
 
