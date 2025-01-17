@@ -412,7 +412,6 @@ func (ws *workspaceService) ClerkUserIsPendingWorkspaceMember(ctx context.Contex
 	return workspaceUser.MembershipStatus == models.PendingMember, nil
 }
 
-
 func (ws *workspaceService) ClerkUserIsWorkspaceMember(ctx context.Context, workspaceID uuid.UUID, clerkUser *clerk.User) (bool, error) {
 	ws.logger.Debug("checking if user is workspace member", zap.Any("workspaceID", workspaceID), zap.Any("clerkUser", clerkUser))
 	user, err := ws.userService.GetUserByClerkCredentials(ctx, clerkUser)

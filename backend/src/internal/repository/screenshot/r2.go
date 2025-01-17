@@ -122,7 +122,7 @@ func (s *r2ScreenshotRepo) GetScreenshotHTMLContent(ctx context.Context, path st
 		Status:      "success",
 		HTMLContent: string(data),
 		Metadata:    &screenshotMetadata,
-    StoragePath: path,
+		StoragePath: path,
 	}
 
 	return resp, nil
@@ -153,7 +153,7 @@ func (s *r2ScreenshotRepo) GetScreenshotImage(ctx context.Context, path string) 
 	}
 
 	resp := models.ScreenshotImageResponse{
-    StoragePath: path,
+		StoragePath: path,
 		Status:      "success",
 		Image:       img,
 		Metadata:    &screenshotMetadata,
