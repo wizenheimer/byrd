@@ -48,20 +48,13 @@ func (uh *UserHandler) DeleteAccount(c *fiber.Ctx) error {
 }
 
 func (uh *UserHandler) ValidateClerkToken(c *fiber.Ctx) error {
-	clerkClaims, err := getClerkClaimsFromContext(c)
-	if err != nil {
-		return sendErrorResponse(c, uh.logger, fiber.StatusUnauthorized, "Couldn't get user claims from context", err.Error())
-	}
+	// Validation of the clerk token is done by the middleware
+	return sendDataResponse(c, fiber.StatusOK, "Clerk token is valid", nil)
+}
 
-	clerkUser, err := getClerkUserFromContext(c)
-	if err != nil {
-		return sendErrorResponse(c, uh.logger, fiber.StatusUnauthorized, "Couldn't get user from context", err.Error())
-	}
-
-	return sendDataResponse(c, fiber.StatusOK, "User is authenticated", map[string]interface{}{
-		"user":   clerkUser,
-		"claims": clerkClaims,
-	})
+func (uh *UserHandler) ValidateManagementToken(c *fiber.Ctx) error {
+	// Validation of the management token is done by the middleware
+	return sendDataResponse(c, fiber.StatusOK, "Token is valid", nil)
 }
 
 func (uh *UserHandler) Sync(c *fiber.Ctx) error {
