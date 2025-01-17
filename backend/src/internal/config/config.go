@@ -58,12 +58,14 @@ type StorageConfig struct {
 }
 
 type ServicesConfig struct {
-	ClerkAPIKey             string
-	ScreenshotServiceAPIKey string
-	ScreenshotServiceOrigin string
-	ScreenshotServiceQPS    float64
-	OpenAIKey               string
-	ResendAPIKey            string
+	ClerkAPIKey                  string
+	ScreenshotServiceAPIKey      string
+	ScreenshotServiceOrigin      string
+	ScreenshotServiceQPS         float64
+	OpenAIKey                    string
+	ResendAPIKey                 string
+	ManagementAPIKey             string
+	ManagementAPIRefreshInterval time.Duration
 }
 
 type WorkflowConfig struct {
@@ -200,6 +202,10 @@ func LoadServicesConfig() ServicesConfig {
 		OpenAIKey: GetEnv("OPENAI_API_KEY", "", utils.StrParser),
 		// ResendAPIKey is set to the value of the RESEND_API_KEY environment variable, or "" if the variable is not set.
 		ResendAPIKey: GetEnv("RESEND_API_KEY", "", utils.StrParser),
+    // ManagementAPIKey is set to the value of the MANAGEMENT_API_KEY environment variable, or "" if the variable is not set.
+    ManagementAPIKey: GetEnv("MANAGEMENT_API_KEY", "", utils.StrParser),
+    // ManagementAPIRefreshInterval is set to the value of the MANAGEMENT_API_REFRESH_INTERVAL environment variable, or 5 minutes if the variable is not set.
+    ManagementAPIRefreshInterval: time.Duration(GetEnv("MANAGEMENT_API_REFRESH_INTERVAL", 5, utils.IntParser)) * time.Minute,
 	}
 }
 

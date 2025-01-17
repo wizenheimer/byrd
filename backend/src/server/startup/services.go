@@ -22,16 +22,18 @@ import (
 	"github.com/wizenheimer/byrd/src/internal/service/workspace"
 	"github.com/wizenheimer/byrd/src/internal/transaction"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
+	"github.com/wizenheimer/byrd/src/pkg/utils"
 )
 
 type Services struct {
-	History    history.PageHistoryService
-	Page       page.PageService
-	Competitor competitor.CompetitorService
-	User       user.UserService
-	Workspace  workspace.WorkspaceService
-	Workflow   workflow.WorkflowService
-	Scheduler  scheduler_svc.SchedulerService
+	History      history.PageHistoryService
+	Page         page.PageService
+	Competitor   competitor.CompetitorService
+	User         user.UserService
+	Workspace    workspace.WorkspaceService
+	Workflow     workflow.WorkflowService
+	Scheduler    scheduler_svc.SchedulerService
+	TokenManager *utils.TokenManager
 }
 
 func SetupServices(
@@ -74,14 +76,17 @@ func SetupServices(
 		return nil, err
 	}
 
+	tokenManager := utils.NewTokenManager(cfg.Services.ManagementAPIKey, cfg.Services.ManagementAPIRefreshInterval)
+
 	return &Services{
-		History:    historyService,
-		Page:       pageService,
-		Competitor: competitorService,
-		User:       userService,
-		Workspace:  workspaceService,
-		Workflow:   workflowService,
-		Scheduler:  schedulerSvc,
+		History:      historyService,
+		Page:         pageService,
+		Competitor:   competitorService,
+		User:         userService,
+		Workspace:    workspaceService,
+		Workflow:     workflowService,
+		Scheduler:    schedulerSvc,
+		TokenManager: tokenManager,
 	}, nil
 }
 

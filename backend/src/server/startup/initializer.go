@@ -11,48 +11,48 @@ import (
 	"github.com/wizenheimer/byrd/src/server/startup/services"
 )
 
-func Initialize(cfg *config.Config, tm *transaction.TxManager, logger *logger.Logger) (*routes.HandlerContainer, workspace.WorkspaceService, error) {
+func Initialize(cfg *config.Config, tm *transaction.TxManager, logger *logger.Logger) (*routes.HandlerContainer, workspace.WorkspaceService, *utils.TokenManager, error) {
 	// Initialize utilities
 	utils.InitializeValidator()
 
 	// Set up HTTP client
 	screenshotClient, err := SetupScreenshotClient(cfg, logger)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	// Set up services
 	screenshotService, err := services.SetupScreenshotService(cfg, screenshotClient, logger)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	aiService, err := services.SetupAIService(cfg, logger)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	diffService, err := diff.NewDiffService(aiService, logger)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	// Set up Redis
 	redisClient, err := SetupRedis(cfg, logger)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	// Set up repositories
 	repos, err := SetupRepositories(tm, redisClient, logger)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	// Set up all services
 	services, err := SetupServices(cfg, repos, diffService, screenshotService, tm, logger)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	// Initialize handlers
@@ -67,5 +67,5 @@ func Initialize(cfg *config.Config, tm *transaction.TxManager, logger *logger.Lo
 		logger,
 	)
 
-	return handlers, services.Workspace, nil
+	return handlers, services.Workspace, services.TokenManager, nil
 }

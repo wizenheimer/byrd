@@ -63,7 +63,7 @@ func main() {
 	tm := transaction.NewTxManager(sqlDb, logger)
 
 	// Initialize handlers using the new modular initializer
-	handlers, workspaceService, err := startup.Initialize(cfg, tm, logger)
+	handlers, workspaceService, tokenManager, err := startup.Initialize(cfg, tm, logger)
 	if err != nil {
 		logger.Fatal("Failed to initialize handlers", zap.Error(err))
 		return
@@ -77,7 +77,7 @@ func main() {
 
 	// Setup middleware
 	middleware.SetupMiddleware(app)
-	authMiddleware := middleware.NewAuthenticatedMiddleware(logger)
+	authMiddleware := middleware.NewAuthenticatedMiddleware(tokenManager, logger)
 	authorizationMiddleware := middleware.NewAuthorizationMiddleware(workspaceService, logger)
 	pathMiddleware := middleware.NewWorkspacePathValidationMiddleware(workspaceService, logger)
 

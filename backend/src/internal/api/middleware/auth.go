@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/wizenheimer/byrd/src/internal/service/workspace"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
+	"github.com/wizenheimer/byrd/src/pkg/utils"
 	"go.uber.org/zap"
 )
 
@@ -127,13 +128,36 @@ func (m *AuthorizationMiddleware) RequirePendingWorkspaceMembership(c *fiber.Ctx
 }
 
 type AuthenticatedMiddleware struct {
-	logger *logger.Logger
+	logger       *logger.Logger
+	tokenManager *utils.TokenManager
 }
 
-func NewAuthenticatedMiddleware(logger *logger.Logger) *AuthenticatedMiddleware {
+func NewAuthenticatedMiddleware(tokenManager *utils.TokenManager, logger *logger.Logger) *AuthenticatedMiddleware {
 	return &AuthenticatedMiddleware{
-		logger: logger,
+		logger:       logger.WithFields(map[string]interface{}{"module": "authenticated_middleware"}),
+		tokenManager: tokenManager,
 	}
+}
+
+// PrivateRouteAuthenticationMiddleware to verify JWT Token for private routes
+// It uses time rotated tokens
+func (m *AuthenticatedMiddleware) PrivateRouteAuthenticationMiddleware(c *fiber.Ctx) error {
+	authHeader := c.Get("Authorization")
+	if authHeader == "" {
+		return sendErrorResponse(c, m.logger, fiber.StatusUnauthorized, "Missing authorization header", map[string]interface{}{"status": fiber.StatusUnauthorized})
+	}
+
+	// Extract token from "Bearer <token>"
+	if len(authHeader) < 7 || authHeader[:7] != "Bearer " {
+		return sendErrorResponse(c, m.logger, fiber.StatusUnauthorized, "Invalid authorization header format", map[string]interface{}{"status": fiber.StatusUnauthorized})
+	}
+	token := authHeader[7:]
+
+	if !m.tokenManager.ValidateToken(token) {
+		return sendErrorResponse(c, m.logger, fiber.StatusUnauthorized, "Invalid token", map[string]interface{}{"status": fiber.StatusUnauthorized})
+	}
+
+	return c.Next()
 }
 
 // ClerkAuthenticationMiddleware to verify Clerk JWT Token

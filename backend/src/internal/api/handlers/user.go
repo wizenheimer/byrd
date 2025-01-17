@@ -47,7 +47,7 @@ func (uh *UserHandler) DeleteAccount(c *fiber.Ctx) error {
 	return sendDataResponse(c, fiber.StatusOK, "User deleted successfully", nil)
 }
 
-func (uh *UserHandler) ValidateToken(c *fiber.Ctx) error {
+func (uh *UserHandler) ValidateClerkToken(c *fiber.Ctx) error {
 	clerkClaims, err := getClerkClaimsFromContext(c)
 	if err != nil {
 		return sendErrorResponse(c, uh.logger, fiber.StatusUnauthorized, "Couldn't get user claims from context", err.Error())

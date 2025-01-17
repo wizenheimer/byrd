@@ -153,14 +153,14 @@ func setupPublicRoutes(app *fiber.App, h *HandlerContainer, authMiddleware *midd
 // setupPrivateRoutes sets up the private routes for the application
 func setupPrivateRoutes(app *fiber.App, h *HandlerContainer, authMiddleware *middleware.AuthenticatedMiddleware) {
 	// Private routes for development
-	private := app.Group("/api/private/v1")
+	private := app.Group("/api/private/v1", authMiddleware.PrivateRouteAuthenticationMiddleware)
 
 	// <------- Auth validation routes ------->
 	// User routes
 	uh := h.UserHandler
-	user := private.Group("/auth", authMiddleware.AuthenticationMiddleware)
+	user := app.Group("/api/private/v1/auth", authMiddleware.AuthenticationMiddleware)
 	// Validate token
-	user.Get("/validate", uh.ValidateToken)
+	user.Get("/validate", uh.ValidateClerkToken)
 
 	// <------- Workflow Management Routes ------->
 	// Workflow routes
