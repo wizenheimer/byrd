@@ -48,8 +48,9 @@ func (ps *pageService) CreatePage(ctx context.Context, competitorID uuid.UUID, p
 	}
 	var createdPages []models.Page
 	var err error
+
 	if len(pages) == 1 {
-		createdPages = make([]models.Page, 1)
+		// If there is only one page, perform a single add
 		createdPage, err := ps.pageRepo.AddPageToCompetitor(
 			ctx,
 			competitorID,
@@ -58,17 +59,20 @@ func (ps *pageService) CreatePage(ctx context.Context, competitorID uuid.UUID, p
 		if err != nil {
 			return nil, err
 		}
-		createdPages[0] = *createdPage
-
-	}
-
-	createdPages, err = ps.pageRepo.BatchAddPageToCompetitor(
-		ctx,
-		competitorID,
-		pages,
-	)
-	if err != nil {
-		return nil, err
+		if createdPage == nil {
+			return nil, errors.New("failed to create page")
+		}
+		createdPages = append(createdPages, *createdPage)
+	} else {
+		// If there are multiple pages, perform a batch add
+		createdPages, err = ps.pageRepo.BatchAddPageToCompetitor(
+			ctx,
+			competitorID,
+			pages,
+		)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if len(createdPages) != len(pages) {

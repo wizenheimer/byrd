@@ -57,17 +57,24 @@ func (us *userService) BatchGetOrCreateUsers(ctx context.Context, emails []strin
 		emails[i] = utils.NormalizeEmail(email)
 	}
 
+	var users []models.User
+	var err error
 	if len(emails) == 1 {
+		// If there is only one email, get or create a single user
 		user, err := us.userRepository.GetOrCreatePartialUsers(ctx, emails[0])
 		if err != nil {
 			return nil, err
 		}
-		return []models.User{*user}, err
-	}
-
-	users, err := us.userRepository.BatchGetOrCreatePartialUsers(ctx, emails)
-	if err != nil {
-		return nil, err
+		if user == nil {
+			return nil, errors.New("user not found")
+		}
+		users = append(users, *user)
+	} else {
+		// If there are multiple emails, get or create a batch of users
+		users, err = us.userRepository.BatchGetOrCreatePartialUsers(ctx, emails)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return users, nil
@@ -81,20 +88,24 @@ func (us *userService) ListUsersByUserIDs(ctx context.Context, userIDs []uuid.UU
 		return nil, errors.New("non-fatal: no userIDs provided")
 	}
 
+	var users []models.User
+	var err error
 	if len(userIDs) == 1 {
+		// If there is only one user, get the user
 		user, err := us.userRepository.GetUserByUserID(ctx, userIDs[0])
 		if err != nil {
 			return nil, err
 		}
-
-		return []models.User{
-			*user,
-		}, nil
-	}
-
-	users, err := us.userRepository.BatchGetUsersByUserIDs(ctx, userIDs)
-	if err != nil {
-		return nil, err
+		if user == nil {
+			return nil, errors.New("user not found")
+		}
+		users = append(users, *user)
+	} else {
+		// If there are multiple users, get a batch of users
+		users, err = us.userRepository.BatchGetUsersByUserIDs(ctx, userIDs)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	us.logger.Debug("users", zap.Any("users", users))

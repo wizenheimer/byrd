@@ -376,6 +376,22 @@ func (ws *workspaceService) ClerkUserIsWorkspaceAdmin(ctx context.Context, works
 	return workspaceUser.Role == models.RoleAdmin, nil
 }
 
+func (ws *workspaceService) ClerkUserIsActiveWorkspaceMember(ctx context.Context, workspaceID uuid.UUID, clerkUser *clerk.User) (bool, error) {
+  ws.logger.Debug("checking if user is active workspace member", zap.Any("workspaceID", workspaceID), zap.Any("clerkUser", clerkUser))
+  user, err := ws.userService.GetUserByClerkCredentials(ctx, clerkUser)
+  if err != nil {
+    return false, err
+  }
+
+  workspaceUser, err := ws.workspaceRepo.GetWorkspaceMemberByUserID(ctx, workspaceID, user.ID)
+  if err != nil {
+    return false, err
+  }
+
+  ws.logger.Debug("got workspace user membership status", zap.Any("membershipStatus", workspaceUser.MembershipStatus))
+  return workspaceUser.MembershipStatus == models.ActiveMember, nil
+}
+
 func (ws *workspaceService) ClerkUserIsWorkspaceMember(ctx context.Context, workspaceID uuid.UUID, clerkUser *clerk.User) (bool, error) {
 	ws.logger.Debug("checking if user is workspace member", zap.Any("workspaceID", workspaceID), zap.Any("clerkUser", clerkUser))
 	user, err := ws.userService.GetUserByClerkCredentials(ctx, clerkUser)

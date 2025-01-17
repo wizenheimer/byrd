@@ -172,6 +172,14 @@ func (wh *WorkspaceHandler) JoinWorkspace(c *fiber.Ctx) error {
 	}
 
 	ctx := c.Context()
+	alreadyActive, err := wh.workspaceService.ClerkUserIsActiveWorkspaceMember(ctx, workspaceID, clerkUser)
+	if err != nil {
+		return sendErrorResponse(c, wh.logger, fiber.StatusInternalServerError, "Could not check if user is active workspace member", err.Error())
+	}
+	if alreadyActive {
+		return sendErrorResponse(c, wh.logger, fiber.StatusBadRequest, "User is already an active member of the workspace", nil)
+	}
+
 	if err := wh.workspaceService.JoinWorkspace(ctx, clerkUser, workspaceID); err != nil {
 		return sendErrorResponse(c, wh.logger, fiber.StatusInternalServerError, "Could not join workspace", err.Error())
 	}
@@ -361,6 +369,41 @@ func (wh *WorkspaceHandler) AddPageToCompetitor(c *fiber.Ctx) error {
 	}
 
 	return sendDataResponse(c, fiber.StatusCreated, "Added page to competitor successfully", createdPages)
+}
+
+// ListPagesForCompetitor lists pages for a competitor
+func (wh *WorkspaceHandler) ListPagesForCompetitor(c *fiber.Ctx) error {
+	workspaceID, err := uuid.Parse(c.Params("workspaceID"))
+	if err != nil {
+		return sendErrorResponse(c, wh.logger, fiber.StatusBadRequest, "Invalid workspace ID format", err.Error())
+	}
+
+	competitorID, err := uuid.Parse(c.Params("competitorID"))
+	if err != nil {
+		return sendErrorResponse(c, wh.logger, fiber.StatusBadRequest, "Invalid competitor ID format", err.Error())
+	}
+
+	pageNumber := max(1, c.QueryInt("pageNumber", 1))
+	pageSize := max(10, c.QueryInt("pageSize", 10))
+
+	pagination := api.PaginationParams{
+		Page:     pageNumber,
+		PageSize: pageSize,
+	}
+
+	limits := pagination.GetLimit()
+	offsets := pagination.GetOffset()
+
+	ctx := c.Context()
+	pages, hasMore, err := wh.workspaceService.ListPagesForCompetitor(ctx, workspaceID, competitorID, &limits, &offsets)
+	if err != nil {
+		return sendErrorResponse(c, wh.logger, fiber.StatusInternalServerError, "Could not add page to competitor", err.Error())
+	}
+
+	return sendDataResponse(c, fiber.StatusCreated, "Listed page for competitor successfully", map[string]any{
+		"pages":   pages,
+		"hasMore": hasMore,
+	})
 }
 
 // ListWorkspaceCompetitors lists competitors for a workspace

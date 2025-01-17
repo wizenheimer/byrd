@@ -121,6 +121,7 @@ func setupPublicRoutes(app *fiber.App, h *HandlerContainer, authMiddleware *midd
 		pathMiddleware.ValidateCompetitorPath)
 
 	competitorManagement.Post("/pages", wh.AddPageToCompetitor)
+  competitorManagement.Get("/pages", wh.ListPagesForCompetitor)
 	competitorManagement.Delete("/", wh.RemoveCompetitorFromWorkspace)
 
 	// -------------------------------------------------
