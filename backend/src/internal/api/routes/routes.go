@@ -77,6 +77,13 @@ func setupPublicRoutes(app *fiber.App, h *HandlerContainer, authMiddleware *midd
 	// Public routes for production and development
 	public := app.Group("/api/public/v1")
 
+	// -------------------------------------------------
+	// User routes
+	uh := h.UserHandler
+	user := public.Group("/user", authMiddleware.AuthenticationMiddleware)
+	user.Delete("/", uh.DeleteAccount)
+
+	// -------------------------------------------------
 	// Workspace routes
 	wh := h.WorkspaceHandler
 
@@ -85,7 +92,7 @@ func setupPublicRoutes(app *fiber.App, h *HandlerContainer, authMiddleware *midd
 	workspace := public.Group("/workspace", authMiddleware.AuthenticationMiddleware)
 
 	// Base workspace endpoints (no ID needed)
-	workspace.Post("/", wh.CreateWorkspace)
+	workspace.Post("/", uh.Sync, wh.CreateWorkspace)
 	workspace.Get("/", wh.ListWorkspaces)
 
 	// -------------------------------------------------
@@ -103,25 +110,33 @@ func setupPublicRoutes(app *fiber.App, h *HandlerContainer, authMiddleware *midd
 	workspaceAdmin.Put("/users/:userId", wh.UpdateUserRoleInWorkspace)
 
 	// -------------------------------------------------
+	// Pending workspace member routes
+	// This is the only route that requires pending workspace membership
+	pendingWorkspaceMember := workspaceBase.Group("", authorization.RequirePendingWorkspaceMembership)
+	pendingWorkspaceMember.Post("/join", uh.Sync, wh.JoinWorkspace)
+
 	// Workspace member routes
+	// This is the only route that requires workspace membership
 	workspaceMember := workspaceBase.Group("",
 		authorization.RequireWorkspaceMembership)
-
+	workspaceMember.Post("/exit", uh.Sync, wh.ExitWorkspace)
 	workspaceMember.Get("/", wh.GetWorkspace)
-	workspaceMember.Post("/exit", wh.ExitWorkspace)
-	workspaceMember.Post("/join", wh.JoinWorkspace)
-	workspaceMember.Get("/users", wh.ListWorkspaceUsers)
-	workspaceMember.Post("/users", wh.AddUserToWorkspace)
-	workspaceMember.Post("/competitors", wh.CreateCompetitorForWorkspace)
-	workspaceMember.Get("/competitors", wh.ListWorkspaceCompetitors)
+
+	// Active workspace member routes
+	// This is the only route that requires active workspace membership
+	activeWorkspaceMember := workspaceBase.Group("", authorization.RequireActiveWorkspaceMembership)
+	activeWorkspaceMember.Get("/users", wh.ListWorkspaceUsers)
+	activeWorkspaceMember.Post("/users", wh.AddUserToWorkspace)
+	activeWorkspaceMember.Post("/competitors", wh.CreateCompetitorForWorkspace)
+	activeWorkspaceMember.Get("/competitors", wh.ListWorkspaceCompetitors)
 
 	// -------------------------------------------------
 	// Competitor management routes
-	competitorManagement := workspaceMember.Group("/competitors/:competitorID",
+	competitorManagement := activeWorkspaceMember.Group("/competitors/:competitorID",
 		pathMiddleware.ValidateCompetitorPath)
 
 	competitorManagement.Post("/pages", wh.AddPageToCompetitor)
-  competitorManagement.Get("/pages", wh.ListPagesForCompetitor)
+	competitorManagement.Get("/pages", wh.ListPagesForCompetitor)
 	competitorManagement.Delete("/", wh.RemoveCompetitorFromWorkspace)
 
 	// -------------------------------------------------
@@ -133,12 +148,6 @@ func setupPublicRoutes(app *fiber.App, h *HandlerContainer, authMiddleware *midd
 	pageManagement.Delete("/", wh.RemovePageFromCompetitor)
 	pageManagement.Put("/", wh.UpdatePageInCompetitor)
 
-	// -------------------------------------------------
-	// User routes
-	uh := h.UserHandler
-	user := public.Group("/user", authMiddleware.AuthenticationMiddleware)
-	user.Delete("/", uh.DeleteAccount)
-	user.Get("/", uh.Sync)
 }
 
 // setupPrivateRoutes sets up the private routes for the application

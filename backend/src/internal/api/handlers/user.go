@@ -74,5 +74,6 @@ func (uh *UserHandler) Sync(c *fiber.Ctx) error {
 		return sendErrorResponse(c, uh.logger, fiber.StatusInternalServerError, "Could not sync user", err.Error())
 	}
 
-	return sendDataResponse(c, fiber.StatusOK, "User is synchronized", nil)
+	uh.logger.Debug("User synced successfully")
+	return c.Next()
 }

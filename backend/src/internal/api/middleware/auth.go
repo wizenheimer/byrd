@@ -80,6 +80,52 @@ func (m *AuthorizationMiddleware) RequireWorkspaceMembership(c *fiber.Ctx) error
 	return c.Next()
 }
 
+// RequireActiveWorkspaceMembership checks if the user is an active member or admin in the workspace
+func (m *AuthorizationMiddleware) RequireActiveWorkspaceMembership(c *fiber.Ctx) error {
+	workspaceID := c.Params(WorkspaceIDParamKey)
+	if workspaceID == "" {
+		return sendErrorResponse(c, m.logger, fiber.StatusUnprocessableEntity, "Invalid workspace ID", map[string]interface{}{"workspaceID": workspaceID})
+	}
+	workspaceUUID, err := uuid.Parse(workspaceID)
+	if err != nil {
+		return sendErrorResponse(c, m.logger, fiber.StatusUnprocessableEntity, "Invalid workspace ID", map[string]interface{}{"error": err.Error(), "workspaceID": workspaceID})
+	}
+
+	clerkUser, err := getClerkUserFromContext(c)
+	if clerkUser == nil || err != nil {
+		return sendErrorResponse(c, m.logger, fiber.StatusUnauthorized, "Couldn't validate user credentials", map[string]interface{}{"error": err.Error()})
+	}
+
+	if exists, err := m.workspaceService.ClerkUserIsActiveWorkspaceMember(c.Context(), workspaceUUID, clerkUser); !exists || err != nil {
+		return sendErrorResponse(c, m.logger, fiber.StatusUnauthorized, "Action requires active workspace membership", map[string]interface{}{"error": err.Error()})
+	}
+
+	return c.Next()
+}
+
+// RequirePendingWorkspaceMembership checks if the user is a pending member in the workspace
+func (m *AuthorizationMiddleware) RequirePendingWorkspaceMembership(c *fiber.Ctx) error {
+	workspaceID := c.Params(WorkspaceIDParamKey)
+	if workspaceID == "" {
+		return sendErrorResponse(c, m.logger, fiber.StatusUnprocessableEntity, "Invalid workspace ID", map[string]interface{}{"workspaceID": workspaceID})
+	}
+	workspaceUUID, err := uuid.Parse(workspaceID)
+	if err != nil {
+		return sendErrorResponse(c, m.logger, fiber.StatusUnprocessableEntity, "Invalid workspace ID", map[string]interface{}{"error": err.Error(), "workspaceID": workspaceID})
+	}
+
+	clerkUser, err := getClerkUserFromContext(c)
+	if clerkUser == nil || err != nil {
+		return sendErrorResponse(c, m.logger, fiber.StatusUnauthorized, "Couldn't validate user credentials", map[string]interface{}{"error": err.Error()})
+	}
+
+	if exists, err := m.workspaceService.ClerkUserIsPendingWorkspaceMember(c.Context(), workspaceUUID, clerkUser); !exists || err != nil {
+		return sendErrorResponse(c, m.logger, fiber.StatusUnauthorized, "Action requires pending workspace membership", map[string]interface{}{"error": err.Error()})
+	}
+
+	return c.Next()
+}
+
 type AuthenticatedMiddleware struct {
 	logger *logger.Logger
 }

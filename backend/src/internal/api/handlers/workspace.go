@@ -172,14 +172,6 @@ func (wh *WorkspaceHandler) JoinWorkspace(c *fiber.Ctx) error {
 	}
 
 	ctx := c.Context()
-	alreadyActive, err := wh.workspaceService.ClerkUserIsActiveWorkspaceMember(ctx, workspaceID, clerkUser)
-	if err != nil {
-		return sendErrorResponse(c, wh.logger, fiber.StatusInternalServerError, "Could not check if user is active workspace member", err.Error())
-	}
-	if alreadyActive {
-		return sendErrorResponse(c, wh.logger, fiber.StatusBadRequest, "User is already an active member of the workspace", nil)
-	}
-
 	if err := wh.workspaceService.JoinWorkspace(ctx, clerkUser, workspaceID); err != nil {
 		return sendErrorResponse(c, wh.logger, fiber.StatusInternalServerError, "Could not join workspace", err.Error())
 	}
