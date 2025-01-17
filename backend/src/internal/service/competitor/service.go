@@ -134,9 +134,28 @@ func (cs *competitorService) RemoveCompetitorForWorkspace(ctx context.Context, w
 	if len(competitorIDs) > maxCompetitorBatchSize {
 		return errors.New("non-fatal: too many competitorIDs provided")
 	}
+
+	if competitorIDs == nil {
+		// In case competitorIDs are unspecified, get the list of competitors
+		competitors, _, err := cs.competitorRepository.ListCompetitorsForWorkspace(
+			ctx,
+			workspaceID,
+			nil,
+			nil,
+		)
+		if err != nil {
+			return err
+		}
+		// Populate the competitorIDs from the competitors retrieved
+		for _, competitor := range competitors {
+			competitorIDs = append(competitorIDs, competitor.ID)
+		}
+	}
+
 	// Utility function to remove competitors
 	removeCompetitor := func(ctx context.Context, workspaceID uuid.UUID, competitorIDs []uuid.UUID) error {
 		if competitorIDs == nil {
+			// Remove all the competitors
 			err := cs.competitorRepository.RemoveAllCompetitorsForWorkspace(
 				ctx,
 				workspaceID,
@@ -170,10 +189,12 @@ func (cs *competitorService) RemoveCompetitorForWorkspace(ctx context.Context, w
 
 	// Run the transaction
 	return cs.tm.RunInTx(context.Background(), nil, func(ctx context.Context) error {
+		// removeCompetitor is a helper for handling competitor removal
 		err := removeCompetitor(ctx, workspaceID, competitorIDs)
 		if err != nil {
 			return err
 		}
+		cs.logger.Debug("competitorIDs for removal", zap.Any("competitorIDs", competitorIDs))
 		return cs.pageService.RemovePage(ctx, competitorIDs, nil)
 	})
 }

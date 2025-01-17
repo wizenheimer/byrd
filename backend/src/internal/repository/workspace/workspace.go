@@ -2,6 +2,7 @@ package workspace
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -223,30 +224,78 @@ func (r *workspaceRepo) GetWorkspaceMemberByUserID(ctx context.Context, workspac
 	return member, nil
 }
 
-func (r *workspaceRepo) GetWorkspaceUserCountByRole(ctx context.Context, workspaceID uuid.UUID) (map[models.WorkspaceRole]int, error) {
+func (r *workspaceRepo) GetWorkspaceUserCountsByRoleAndStatus(ctx context.Context, workspaceID uuid.UUID) (activeUsers, pendingUsers, activeAdmins, pendingAdmins int, err error) {
 	rows, err := r.getQuerier(ctx).Query(ctx, `
-		SELECT workspace_role, COUNT(*)
-		FROM workspace_users
-		WHERE workspace_id = $1 AND membership_status != $2
-		GROUP BY workspace_role`,
-		workspaceID, models.InactiveMember,
+        SELECT
+            workspace_role,
+            membership_status,
+            COUNT(*)
+        FROM workspace_users
+        WHERE workspace_id = $1
+            AND membership_status IN ($2, $3)
+        GROUP BY workspace_role, membership_status`,
+		workspaceID, models.ActiveMember, models.PendingMember,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get workspace user count: %w", err)
+		return 0, 0, 0, 0, fmt.Errorf("failed to get workspace user count: %w", err)
 	}
 	defer rows.Close()
 
-	counts := make(map[models.WorkspaceRole]int)
 	for rows.Next() {
 		var role models.WorkspaceRole
+		var status models.MembershipStatus
 		var count int
-		if err := rows.Scan(&role, &count); err != nil {
-			return nil, fmt.Errorf("failed to scan role count: %w", err)
+
+		if err := rows.Scan(&role, &status, &count); err != nil {
+			return 0, 0, 0, 0, fmt.Errorf("failed to scan role count: %w", err)
 		}
-		counts[role] = count
+
+		switch {
+		case role == models.RoleUser && status == models.ActiveMember:
+			activeUsers = count
+		case role == models.RoleUser && status == models.PendingMember:
+			pendingUsers = count
+		case role == models.RoleAdmin && status == models.ActiveMember:
+			activeAdmins = count
+		case role == models.RoleAdmin && status == models.PendingMember:
+			pendingAdmins = count
+		}
 	}
 
-	return counts, rows.Err()
+	if err = rows.Err(); err != nil {
+		return 0, 0, 0, 0, err
+	}
+
+	return activeUsers, pendingUsers, activeAdmins, pendingAdmins, nil
+}
+
+func (r *workspaceRepo) PromoteRandomUserToAdmin(ctx context.Context, workspaceID uuid.UUID) error {
+	result, err := r.getQuerier(ctx).Exec(ctx, `
+        UPDATE workspace_users
+        SET workspace_role = $1
+        WHERE id = (
+            SELECT id
+            FROM workspace_users
+            WHERE workspace_id = $2
+                AND workspace_role = $3
+                AND membership_status = $4
+            ORDER BY RANDOM()
+            LIMIT 1
+        )`,
+		models.RoleAdmin,    // $1: new role
+		workspaceID,         // $2: workspace ID
+		models.RoleUser,     // $3: current role
+		models.ActiveMember, // $4: membership status
+	)
+	if err != nil {
+		return fmt.Errorf("failed to promote random user: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return errors.New("no eligible users found to promote")
+	}
+
+	return nil
 }
 
 func (r *workspaceRepo) GetWorkspacesForUserID(ctx context.Context, userID uuid.UUID) ([]models.Workspace, error) {

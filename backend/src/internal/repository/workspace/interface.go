@@ -23,7 +23,9 @@ type WorkspaceRepository interface {
 
 	GetWorkspaceMemberByUserID(ctx context.Context, workspaceID, userID uuid.UUID) (*models.PartialWorkspaceUser, error)
 
-	GetWorkspaceUserCountByRole(ctx context.Context, workspaceID uuid.UUID) (map[models.WorkspaceRole]int, error)
+	GetWorkspaceUserCountsByRoleAndStatus(ctx context.Context, workspaceID uuid.UUID) (int, int, int, int, error)
+
+	PromoteRandomUserToAdmin(ctx context.Context, workspaceID uuid.UUID) error
 
 	GetWorkspacesForUserID(ctx context.Context, userID uuid.UUID) ([]models.Workspace, error)
 

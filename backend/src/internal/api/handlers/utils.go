@@ -60,7 +60,7 @@ func getClerkUserFromContext(c *fiber.Ctx) (*clerk.User, error) {
 	userID, err := getClerkUserIDFromContext(c)
 	if err != nil {
 		return nil, c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Unauthorized",
+			"error": "Action unauthorized",
 		})
 	}
 

@@ -293,22 +293,26 @@ func (ws *workspaceService) LeaveWorkspace(ctx context.Context, workspaceMember 
 	// Get the workspace member
 	workspaceUser, err := ws.userService.GetUserByClerkCredentials(ctx, workspaceMember)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	// Get workspace member count
-	workspaceCount, err := ws.workspaceRepo.GetWorkspaceUserCountByRole(ctx, workspaceID)
+	activeUsers, pendingUsers, activeAdmins, pendingAdmins, err := ws.workspaceRepo.GetWorkspaceUserCountsByRoleAndStatus(ctx, workspaceID)
 	if err != nil {
-		return nil
+		return errors.New("couldn't get workspace user count")
 	}
 
-	// Check if the user is the last admin in the workspace
-	adminRoleCount := workspaceCount[models.RoleAdmin]
-	userRoleCount := workspaceCount[models.RoleUser]
-
-	if userRoleCount != 0 && adminRoleCount == 1 {
-		ws.logger.Debug("cannot leave workspace as the last admin", zap.Int("adminRoleCount", adminRoleCount), zap.Int("userRoleCount", userRoleCount))
-		return errors.New("cannot leave workspace as the last admin")
+	// If the user is the last admin in the workspace
+	if activeAdmins == 1 {
+		if activeUsers != 0 {
+			// If there are active users, promote one to admin
+			ws.logger.Debug("promoting a random active user to admin", zap.Any("activeUsers", activeUsers), zap.Any("pendingUsers", pendingUsers), zap.Any("activeAdmins", activeAdmins), zap.Any("pendingAdmins", pendingAdmins))
+			return ws.workspaceRepo.PromoteRandomUserToAdmin(ctx, workspaceID)
+		}
+		// If there are no active users or admins, delete the workspace
+		ws.logger.Debug("attempting to delete the workspace", zap.Any("activeUsers", activeUsers), zap.Any("pendingUsers", pendingUsers), zap.Any("activeAdmins", activeAdmins), zap.Any("pendingAdmins", pendingAdmins))
+		_, err := ws.DeleteWorkspace(ctx, workspaceID)
+		return err
 	}
 
 	// Remove the user from the workspace
@@ -377,19 +381,19 @@ func (ws *workspaceService) ClerkUserIsWorkspaceAdmin(ctx context.Context, works
 }
 
 func (ws *workspaceService) ClerkUserIsActiveWorkspaceMember(ctx context.Context, workspaceID uuid.UUID, clerkUser *clerk.User) (bool, error) {
-  ws.logger.Debug("checking if user is active workspace member", zap.Any("workspaceID", workspaceID), zap.Any("clerkUser", clerkUser))
-  user, err := ws.userService.GetUserByClerkCredentials(ctx, clerkUser)
-  if err != nil {
-    return false, err
-  }
+	ws.logger.Debug("checking if user is active workspace member", zap.Any("workspaceID", workspaceID), zap.Any("clerkUser", clerkUser))
+	user, err := ws.userService.GetUserByClerkCredentials(ctx, clerkUser)
+	if err != nil {
+		return false, err
+	}
 
-  workspaceUser, err := ws.workspaceRepo.GetWorkspaceMemberByUserID(ctx, workspaceID, user.ID)
-  if err != nil {
-    return false, err
-  }
+	workspaceUser, err := ws.workspaceRepo.GetWorkspaceMemberByUserID(ctx, workspaceID, user.ID)
+	if err != nil {
+		return false, err
+	}
 
-  ws.logger.Debug("got workspace user membership status", zap.Any("membershipStatus", workspaceUser.MembershipStatus))
-  return workspaceUser.MembershipStatus == models.ActiveMember, nil
+	ws.logger.Debug("got workspace user membership status", zap.Any("membershipStatus", workspaceUser.MembershipStatus))
+	return workspaceUser.MembershipStatus == models.ActiveMember, nil
 }
 
 func (ws *workspaceService) ClerkUserIsWorkspaceMember(ctx context.Context, workspaceID uuid.UUID, clerkUser *clerk.User) (bool, error) {
