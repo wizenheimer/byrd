@@ -285,7 +285,7 @@ func (r *workspaceRepo) GetWorkspacesForUserID(ctx context.Context, userID uuid.
 	return workspaces, rows.Err()
 }
 
-func (r *workspaceRepo) BatchAddUsersToWorkspace(ctx context.Context, userIDs []uuid.UUID, workspaceID uuid.UUID) ([]models.PartialWorkspaceUser, error) {
+func (r *workspaceRepo) BatchAddUsersToWorkspace(ctx context.Context, workspaceID uuid.UUID, userIDs []uuid.UUID) ([]models.PartialWorkspaceUser, error) {
 	if len(userIDs) == 0 {
 		return []models.PartialWorkspaceUser{}, nil
 	}
@@ -328,7 +328,7 @@ func (r *workspaceRepo) BatchAddUsersToWorkspace(ctx context.Context, userIDs []
 	return members, rows.Err()
 }
 
-func (r *workspaceRepo) AddUserToWorkspace(ctx context.Context, userID, workspaceID uuid.UUID) (*models.PartialWorkspaceUser, error) {
+func (r *workspaceRepo) AddUserToWorkspace(ctx context.Context, workspaceID, userID uuid.UUID) (*models.PartialWorkspaceUser, error) {
 	member := &models.PartialWorkspaceUser{}
 	err := r.getQuerier(ctx).QueryRow(ctx, `
 		INSERT INTO workspace_users (workspace_id, user_id, workspace_role, membership_status)
@@ -348,7 +348,7 @@ func (r *workspaceRepo) AddUserToWorkspace(ctx context.Context, userID, workspac
 	return member, nil
 }
 
-func (r *workspaceRepo) BatchRemoveUsersFromWorkspace(ctx context.Context, userIDs []uuid.UUID, workspaceID uuid.UUID) error {
+func (r *workspaceRepo) BatchRemoveUsersFromWorkspace(ctx context.Context, workspaceID uuid.UUID, userIDs []uuid.UUID) error {
 	if len(userIDs) == 0 {
 		return nil
 	}
@@ -367,7 +367,7 @@ func (r *workspaceRepo) BatchRemoveUsersFromWorkspace(ctx context.Context, userI
 	return nil
 }
 
-func (r *workspaceRepo) RemoveUserFromWorkspace(ctx context.Context, userID, workspaceID uuid.UUID) error {
+func (r *workspaceRepo) RemoveUserFromWorkspace(ctx context.Context, workspaceID, userID uuid.UUID) error {
 	result, err := r.getQuerier(ctx).Exec(ctx, `
 		UPDATE workspace_users
 		SET membership_status = $1

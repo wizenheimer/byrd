@@ -109,7 +109,7 @@ func (ws *workspaceService) CreateWorkspace(ctx context.Context, workspaceOwner 
 			memberIDs = append(memberIDs, member.ID)
 		}
 
-		_, err := ws.workspaceRepo.BatchAddUsersToWorkspace(ctx, memberIDs, workspace.ID)
+		_, err := ws.workspaceRepo.BatchAddUsersToWorkspace(ctx, workspace.ID, memberIDs)
 		if err != nil {
 			return nil, err
 		}
@@ -260,7 +260,7 @@ func (ws *workspaceService) AddUsersToWorkspace(ctx context.Context, workspaceMe
 		userIDsToUserMap[user.ID] = user
 	}
 
-	partialWorkspaceUsers, err := ws.workspaceRepo.BatchAddUsersToWorkspace(ctx, userIDs, workspaceID)
+	partialWorkspaceUsers, err := ws.workspaceRepo.BatchAddUsersToWorkspace(ctx, workspaceID, userIDs)
 	if err != nil {
 		return nil, err
 	}

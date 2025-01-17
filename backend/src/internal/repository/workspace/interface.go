@@ -27,13 +27,13 @@ type WorkspaceRepository interface {
 
 	GetWorkspacesForUserID(ctx context.Context, userID uuid.UUID) ([]models.Workspace, error)
 
-	BatchAddUsersToWorkspace(ctx context.Context, userIDs []uuid.UUID, workspaceID uuid.UUID) ([]models.PartialWorkspaceUser, error)
+	BatchAddUsersToWorkspace(ctx context.Context, workspaceID uuid.UUID, userIDs []uuid.UUID) ([]models.PartialWorkspaceUser, error)
 
-	AddUserToWorkspace(ctx context.Context, userID, workspaceID uuid.UUID) (*models.PartialWorkspaceUser, error)
+	AddUserToWorkspace(ctx context.Context, workspaceID, userID uuid.UUID) (*models.PartialWorkspaceUser, error)
 
-	BatchRemoveUsersFromWorkspace(ctx context.Context, userIDs []uuid.UUID, workspaceID uuid.UUID) error
+	BatchRemoveUsersFromWorkspace(ctx context.Context, workspaceID uuid.UUID, userIDs []uuid.UUID) error
 
-	RemoveUserFromWorkspace(ctx context.Context, userID, workspaceID uuid.UUID) error
+	RemoveUserFromWorkspace(ctx context.Context, workspaceID, userID uuid.UUID) error
 
 	UpdateUserRoleForWorkspace(ctx context.Context, workspaceID, userID uuid.UUID, role models.WorkspaceRole) error
 
