@@ -56,7 +56,7 @@ func NewSlackAlertClient(config models.SlackConfig, logger *logger.Logger) (Aler
 	return client, nil
 }
 
-func (s *slackAlertClient) Send(ctx context.Context, alert models.Alert) error {
+func (s *slackAlertClient) SendAlert(ctx context.Context, alert models.Alert) error {
 	// Rate limiting
 	if err := s.limiter.Wait(ctx); err != nil {
 		return ErrEncounteredSlackRateLimit
@@ -128,14 +128,14 @@ func (s *slackAlertClient) createAttachment(alert models.Alert) slack.Attachment
 		Text:       alert.Description,
 		Fields:     fields,
 		Ts:         json.Number(fmt.Sprintf("%d", alert.Timestamp.Unix())),
-		Footer:     "Byrd Alerts",
-		FooterIcon: "https://platform.slack-edge.com/img/default_application_icon.png",
+		Footer:     "Byrd",
+		FooterIcon: "https://raw.githubusercontent.com/egonelbre/gophers/master/.thumb/vector/computer/music.png",
 	}
 }
 
-func (s *slackAlertClient) SendBatch(ctx context.Context, alerts []models.Alert) error {
+func (s *slackAlertClient) SendBatchAlert(ctx context.Context, alerts []models.Alert) error {
 	for _, alert := range alerts {
-		if err := s.Send(ctx, alert); err != nil {
+		if err := s.SendAlert(ctx, alert); err != nil {
 			return ErrFailedToSendBatchAlert
 		}
 	}

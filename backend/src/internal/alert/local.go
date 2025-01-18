@@ -27,15 +27,15 @@ func NewLocalWorkflowClient(_ models.SlackConfig, logger *logger.Logger) AlertCl
 }
 
 // Send implements AlertClient interface
-func (c *localWorkflowClient) Send(ctx context.Context, alert models.Alert) error {
+func (c *localWorkflowClient) SendAlert(ctx context.Context, alert models.Alert) error {
 	c.logger.Warn("Sending alert", zap.Any("alert", alert))
 	return nil
 }
 
 // SendBatch implements AlertClient interface
-func (c *localWorkflowClient) SendBatch(ctx context.Context, alerts []models.Alert) error {
+func (c *localWorkflowClient) SendBatchAlert(ctx context.Context, alerts []models.Alert) error {
 	for _, alert := range alerts {
-		if err := c.Send(ctx, alert); err != nil {
+		if err := c.SendAlert(ctx, alert); err != nil {
 			return ErrFailedToSendBatchAlert
 		}
 	}

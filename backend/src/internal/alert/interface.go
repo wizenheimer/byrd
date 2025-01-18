@@ -9,8 +9,8 @@ import (
 // AlertClient defines alerting capabilities
 type AlertClient interface {
 	// Send sends an alert
-	Send(ctx context.Context, alert models.Alert) error
+	SendAlert(ctx context.Context, alert models.Alert) error
 
 	// SendBatch sends a batch of alerts
-	SendBatch(ctx context.Context, alerts []models.Alert) error
+	SendBatchAlert(ctx context.Context, alerts []models.Alert) error
 }
