@@ -4,12 +4,12 @@ import (
 	"context"
 	"time"
 
+	"github.com/wizenheimer/byrd/src/internal/alert"
 	"github.com/wizenheimer/byrd/src/internal/config"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/internal/repository/schedule"
 	workflow_repo "github.com/wizenheimer/byrd/src/internal/repository/workflow"
 	scheduler "github.com/wizenheimer/byrd/src/internal/scheduler"
-	"github.com/wizenheimer/byrd/src/internal/service/alert"
 	"github.com/wizenheimer/byrd/src/internal/service/competitor"
 	"github.com/wizenheimer/byrd/src/internal/service/diff"
 	"github.com/wizenheimer/byrd/src/internal/service/executor"

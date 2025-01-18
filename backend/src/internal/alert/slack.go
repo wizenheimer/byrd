@@ -5,13 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/slack-go/slack"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
-	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 )
 
@@ -32,9 +30,6 @@ type slackAlertClient struct {
 	logger *logger.Logger
 	// Rate limiter for Slack API
 	limiter *rate.Limiter
-	// For deduplication
-	mu     sync.RWMutex
-	recent map[string]time.Time
 }
 
 func NewSlackAlertClient(config models.SlackConfig, logger *logger.Logger) (AlertClient, error) {
@@ -56,10 +51,8 @@ func NewSlackAlertClient(config models.SlackConfig, logger *logger.Logger) (Aler
 		config:  config,
 		logger:  logger.WithFields(map[string]interface{}{"module": "slack_alert_client"}),
 		limiter: rate.NewLimiter(1, 30), // 1 message per second, burst of 30
-		recent:  make(map[string]time.Time),
 	}
 
-	go client.cleanupLoop()
 	return client, nil
 }
 
@@ -69,21 +62,12 @@ func (s *slackAlertClient) Send(ctx context.Context, alert models.Alert) error {
 		return ErrEncounteredSlackRateLimit
 	}
 
-	// Check for duplicates
-	key := fmt.Sprintf("%s-%s-%s", alert.Title, alert.Description, alert.Severity)
-	if s.isDuplicate(key) {
-		s.logger.Debug("skipping duplicate alert", zap.Any("alert", alert))
-		return nil
-	}
-
 	// Send with retries
 	err := s.sendWithRetries(ctx, alert)
 	if err != nil {
 		return err
 	}
 
-	// Record successful message
-	s.recordMessage(key)
 	return nil
 }
 
@@ -124,39 +108,6 @@ func (s *slackAlertClient) sendWithRetries(ctx context.Context, alert models.Ale
 		}
 	}
 	return nil
-}
-
-func (s *slackAlertClient) isDuplicate(key string) bool {
-	s.mu.RLock()
-	lastSent, exists := s.recent[key]
-	s.mu.RUnlock()
-
-	if !exists {
-		return false
-	}
-	return time.Since(lastSent) < 10*time.Minute
-}
-
-func (s *slackAlertClient) recordMessage(key string) {
-	s.mu.Lock()
-	s.recent[key] = time.Now()
-	s.mu.Unlock()
-}
-
-func (s *slackAlertClient) cleanupLoop() {
-	ticker := time.NewTicker(1 * time.Minute)
-	defer ticker.Stop()
-
-	for range ticker.C {
-		s.mu.Lock()
-		now := time.Now()
-		for key, timestamp := range s.recent {
-			if now.Sub(timestamp) > 1*time.Minute {
-				delete(s.recent, key)
-			}
-		}
-		s.mu.Unlock()
-	}
 }
 
 func (s *slackAlertClient) createAttachment(alert models.Alert) slack.Attachment {

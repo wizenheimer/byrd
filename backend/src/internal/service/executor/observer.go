@@ -7,9 +7,9 @@ import (
 	"sync"
 
 	"github.com/google/uuid"
+	"github.com/wizenheimer/byrd/src/internal/alert"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/internal/repository/workflow"
-	"github.com/wizenheimer/byrd/src/internal/service/alert"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"go.uber.org/zap"
 )
