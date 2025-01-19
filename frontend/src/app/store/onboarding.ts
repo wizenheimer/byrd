@@ -1,4 +1,5 @@
 import { STORAGE_KEYS } from "@/constants/storage";
+import { createSelectors } from "@/lib/utils";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { devtools } from "zustand/middleware";
@@ -33,7 +34,7 @@ const initialState: OnboardingState = {
 
 export type OnboardingStore = OnboardingState & OnboardingActions;
 
-export const useOnboardingStore = create<OnboardingStore>()(
+const useOnboardingStoreBase = create<OnboardingStore>()(
 	devtools(
 		persist(
 			(set) => ({
@@ -73,24 +74,27 @@ export const useOnboardingStore = create<OnboardingStore>()(
 	),
 );
 
+export const useOnboardingStore = createSelectors(useOnboardingStoreBase);
+
+// Note: deprecated hooks with utility functions
 // Selector hooks for better performance
-export const useCurrentStep = () =>
-	useOnboardingStore((state) => state.currentStep);
-export const useCompetitors = () =>
-	useOnboardingStore((state) => state.competitors);
-export const useProfiles = () => useOnboardingStore((state) => state.profiles);
-export const useFeatures = () => useOnboardingStore((state) => state.features);
-export const useTeam = () => useOnboardingStore((state) => state.team);
+// export const useCurrentStep = () =>
+// useOnboardingStore((state) => state.currentStep);
+// export const useCompetitors = () =>
+// useOnboardingStore((state) => state.competitors);
+// export const useProfiles = () => useOnboardingStore((state) => state.profiles);
+// export const useFeatures = () => useOnboardingStore((state) => state.features);
+// export const useTeam = () => useOnboardingStore((state) => state.team);
 
 // Action selector hooks
-export const useOnboardingActions = () => {
-	const store = useOnboardingStore();
-	return {
-		setCurrentStep: store.setCurrentStep,
-		setCompetitors: store.setCompetitors,
-		setProfiles: store.setProfiles,
-		setFeatures: store.setFeatures,
-		setTeam: store.setTeam,
-		reset: store.reset,
-	};
-};
+// export const useOnboardingActions = () => {
+//   const store = useOnboardingStore();
+//   return {
+//     setCurrentStep: store.setCurrentStep,
+//     setCompetitors: store.setCompetitors,
+//     setProfiles: store.setProfiles,
+//     setFeatures: store.setFeatures,
+//     setTeam: store.setTeam,
+//     reset: store.reset,
+//   };
+// };

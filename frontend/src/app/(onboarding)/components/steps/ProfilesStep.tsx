@@ -1,7 +1,7 @@
 "use client";
 
 import { INITIAL_PROFILES } from "@/app/constants/onboarding";
-import { useOnboardingActions, useProfiles } from "@/app/store/onboarding";
+import { useOnboardingStore } from "@/app/store/onboarding";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
@@ -11,8 +11,8 @@ interface ProfilesStepProps {
 }
 
 export default function ProfileStep({ onNext }: ProfilesStepProps) {
-	const profiles = useProfiles();
-	const { setProfiles } = useOnboardingActions();
+	const profiles = useOnboardingStore.use.profiles();
+	const setProfiles = useOnboardingStore.use.setProfiles();
 
 	const toggleProfiles = (title: string) => {
 		const updatedProfiles = profiles.includes(title)

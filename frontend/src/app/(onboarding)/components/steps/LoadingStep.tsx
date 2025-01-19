@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 // Default message for initial render to avoid hydration mismatch
-const DEFAULT_MESSAGE = "Preparing your experience";
+const DEFAULT_MESSAGE = "Coming right up";
 
 interface LoadingStepProps {
 	message?: string;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useFeatures, useOnboardingStore } from "@/app/store/onboarding";
+import { useOnboardingStore } from "@/app/store/onboarding";
 import type { FeatureCard } from "@/app/types/onboarding";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -11,8 +11,8 @@ interface FeaturesStepProps {
 }
 
 export default function FeaturesStep({ cards, onNext }: FeaturesStepProps) {
-	const selectedFeatures = useFeatures();
-	const setFeatures = useOnboardingStore((state) => state.setFeatures);
+	const selectedFeatures = useOnboardingStore.use.features();
+	const setFeatures = useOnboardingStore.use.setFeatures();
 
 	const toggleFeature = (title: string) => {
 		const newFeatures = selectedFeatures.includes(title)

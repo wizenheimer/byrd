@@ -2,7 +2,7 @@
 
 import LoadingStep from "@/app/(onboarding)/components/steps/LoadingStep";
 import { FEATURE_CARD, STEPS, STEP_INFO } from "@/app/constants/onboarding";
-import { useCurrentStep, useOnboardingActions } from "@/app/store/onboarding";
+import { useOnboardingStore } from "@/app/store/onboarding";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@clerk/nextjs";
 import { AnimatePresence, motion } from "framer-motion";
@@ -16,8 +16,8 @@ import TeamStep from "../components/steps/TeamStep";
 
 const MultiStepOnboarding = () => {
 	const { isLoaded, isSignedIn } = useUser();
-	const currentStep = useCurrentStep();
-	const { setCurrentStep } = useOnboardingActions();
+	const currentStep = useOnboardingStore.use.currentStep(); //useCurrentStep();
+	const setCurrentStep = useOnboardingStore.use.setCurrentStep();
 	const router = useRouter();
 
 	// If still loading auth state or already signed in, show loading

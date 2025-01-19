@@ -1,6 +1,6 @@
 "use client";
 
-import { useOnboardingStore, useTeam } from "@/app/store/onboarding";
+import { useOnboardingStore } from "@/app/store/onboarding";
 import { type TeamFormData, teamFormSchema } from "@/app/types/onboarding";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,8 +23,8 @@ interface TeamStepProps {
 }
 
 export default function TeamStep({ onNext }: TeamStepProps) {
-	const team = useTeam();
-	const setTeam = useOnboardingStore((state) => state.setTeam);
+	const team = useOnboardingStore.use.team();
+	const setTeam = useOnboardingStore.use.setTeam();
 	const [duplicateError, setDuplicateError] = useState<{
 		[key: number]: boolean;
 	}>({});

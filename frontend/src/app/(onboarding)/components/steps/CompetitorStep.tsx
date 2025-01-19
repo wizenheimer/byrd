@@ -1,6 +1,6 @@
 "use client";
 
-import { useCompetitors, useOnboardingStore } from "@/app/store/onboarding";
+import { useOnboardingStore } from "@/app/store/onboarding";
 import {
 	type CompetitorFormData,
 	competitorFormSchema,
@@ -36,8 +36,8 @@ interface CompetitorStepProps {
 }
 
 export default function CompetitorStep({ onNext }: CompetitorStepProps) {
-	const competitors = useCompetitors();
-	const setCompetitors = useOnboardingStore((state) => state.setCompetitors);
+	const competitors = useOnboardingStore.use.competitors();
+	const setCompetitors = useOnboardingStore.use.setCompetitors();
 	const [urlErrors, setUrlErrors] = useState<{ [key: number]: boolean }>({});
 
 	const form = useForm<CompetitorFormData>({
