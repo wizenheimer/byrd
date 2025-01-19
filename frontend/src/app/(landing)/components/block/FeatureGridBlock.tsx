@@ -1,4 +1,3 @@
-// src/components/block/FeatureGridBlock.tsx
 import Link from "next/link";
 import React from "react";
 

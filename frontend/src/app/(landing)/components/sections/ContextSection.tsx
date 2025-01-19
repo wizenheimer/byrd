@@ -1,4 +1,3 @@
-// src/components/sections/ContextSection.tsx
 import ScreenshotBlock from "../block/ScreenshotBlock";
 import SectionHeader from "../block/SectionHeaderBlock";
 import SectionWithLead from "../block/SectionWithLead";

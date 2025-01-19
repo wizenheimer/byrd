@@ -1,4 +1,3 @@
-// src/components/sections/ClosingNoteSection.tsx
 import HeroSection from "../block/HeroBlock";
 
 const ClosingNoteSection = () => {
@@ -12,7 +11,7 @@ const ClosingNoteSection = () => {
 				description="Your competitors are everywhere. So are we."
 				primaryButton={{
 					label: "Get Started",
-					href: "/get-started",
+					href: "/create",
 				}}
 				secondaryButton={{
 					label: "Contact Sales",
