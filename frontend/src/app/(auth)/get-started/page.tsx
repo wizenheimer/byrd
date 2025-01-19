@@ -3,211 +3,45 @@
 
 import LoadingStep from "@/app/(auth)/components/steps/LoadingStep";
 import { Button } from "@/components/ui/button";
-import { STORAGE_KEYS } from "@/constants/storage";
 import { useUser } from "@clerk/nextjs";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronLeft, Inbox, Megaphone, Rss, Share2 } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { ChevronLeft } from "lucide-react";
 import AuthStep from "../components/steps/AuthStep";
 import ChannelsStep from "../components/steps/ChannelsStep";
 import CompetitorStep from "../components/steps/CompetitorStep";
 import FeaturesStep from "../components/steps/FeaturesStep";
 import TeamStep from "../components/steps/TeamStep";
-import type { ChannelCard, OnboardingFormData } from "../../_types/onboarding";
-
-interface Step {
-  title: string;
-  description: string;
-  image: string;
-}
-
-const initialFormStep = 1;
-const initialFormState: OnboardingFormData = {
-  competitors: [],
-  features: [
-    {
-      id: "1",
-      title: "Product",
-      description: "Catch product evolution in real-time",
-      enabled: true,
-    },
-    {
-      id: "2",
-      title: "Pricing",
-      description: "Never be the last to know about a price war",
-      enabled: false,
-    },
-    {
-      id: "3",
-      title: "Partnership",
-      description: "Track who's teaming up with whom",
-      enabled: false,
-    },
-    {
-      id: "4",
-      title: "Branding",
-      description: "Monitor messaging shifts, and identity changes",
-      enabled: false,
-    },
-    {
-      id: "5",
-      title: "Positioning",
-      description: "Track narratives before they go mainstream",
-      enabled: false,
-    },
-  ],
-  channels: ["inbox", "mentions"],
-  team: [],
-};
-
-const steps: Record<number, Step> = {
-  1: {
-    title: "Your Market, Your Rules",
-    description: "Pick your targets. Add up to 5 competitors.",
-    image: "/onboarding/first.png",
-  },
-  2: {
-    title: "Measure What Matters",
-    description: "Choose your signals. Cut through the noise.",
-    image: "/onboarding/second.png",
-  },
-  3: {
-    title: "Never Miss A Beat",
-    description: "Your competitors are everywhere. So are we.",
-    image: "/onboarding/third.png",
-  },
-  4: {
-    title: "Build Your War Room",
-    description: "Business is a team sport. Bring in your heavy hitters.",
-    image: "/onboarding/four.png",
-  },
-  5: {
-    title: "You're almost there",
-    description: "Quick auth, then let's get started.",
-    image: "/onboarding/five.png",
-  },
-};
-
-const channelCards: ChannelCard[] = [
-  {
-    id: "inbox",
-    icon: Inbox,
-    title: "Inbox",
-    description: "Monitor the direct line to their customers",
-  },
-  {
-    id: "social",
-    icon: Share2,
-    title: "Social",
-    description: "Follow their social playbook as it unfolds",
-  },
-  {
-    id: "mentions",
-    icon: Megaphone,
-    title: "Mentions",
-    description: "Beat them to their own announcement",
-  },
-  {
-    id: "content",
-    icon: Rss,
-    title: "Content",
-    description: "Watch their messaging evolve, post by post",
-  },
-];
+import { useCurrentStep, useOnboardingActions } from "@/app/_store/onboarding";
+import { CHANNEL_CARDS, STEP_INFO, STEPS } from "@/app/_constants/onboarding";
 
 const MultiStepOnboarding = () => {
-  const [currentStep, setCurrentStep] = useState(initialFormStep);
-  const [formData, setFormData] =
-    useState<OnboardingFormData>(initialFormState);
-  const [isClient, setIsClient] = useState(false);
   const { isLoaded, isSignedIn } = useUser();
-  const router = useRouter();
-
-  // Add authentication check
-  useEffect(() => {
-    if (isLoaded && isSignedIn) {
-      router.push("/waitlist");
-    }
-  }, [isLoaded, isSignedIn, router]);
-
-  useEffect(() => {
-    setIsClient(true);
-    try {
-      const savedStep = localStorage.getItem(STORAGE_KEYS.STEP);
-      const savedData = localStorage.getItem(STORAGE_KEYS.FORM_DATA);
-
-      if (savedStep) {
-        setCurrentStep(Number.parseInt(savedStep, 10));
-      }
-
-      if (savedData) {
-        setFormData(JSON.parse(savedData));
-      }
-    } catch (error) {
-      console.error("Error reading from localStorage:", error);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (isClient) {
-      try {
-        localStorage.setItem(STORAGE_KEYS.STEP, currentStep.toString());
-        localStorage.setItem(STORAGE_KEYS.FORM_DATA, JSON.stringify(formData));
-      } catch (error) {
-        console.error("Error saving to localStorage:", error);
-      }
-    }
-  }, [currentStep, formData, isClient]);
+  const currentStep = useCurrentStep();
+  const { setCurrentStep } = useOnboardingActions();
 
   const handleNext = () => {
-    if (currentStep < 5) {
-      setCurrentStep((prev) => prev + 1);
+    if (currentStep < STEPS.AUTH) {
+      setCurrentStep(currentStep + 1);
     }
   };
 
   const handleBack = () => {
-    if (currentStep > 1) {
-      setCurrentStep((prev) => prev - 1);
+    if (currentStep > STEPS.COMPETITOR) {
+      setCurrentStep(currentStep - 1);
     }
   };
 
   const renderStep = () => {
     switch (currentStep) {
-      case 1:
-        return (
-          <CompetitorStep
-            formData={formData}
-            setFormData={setFormData}
-            onNext={handleNext}
-          />
-        );
-      case 2:
-        return (
-          <FeaturesStep
-            formData={formData}
-            setFormData={setFormData}
-            onNext={handleNext}
-          />
-        );
-      case 3:
-        return (
-          <ChannelsStep
-            formData={formData}
-            setFormData={setFormData}
-            onNext={handleNext}
-            cards={channelCards}
-          />
-        );
-      case 4:
-        return (
-          <TeamStep
-            formData={formData}
-            setFormData={setFormData}
-            onNext={handleNext}
-          />
-        );
-      case 5:
+      case STEPS.COMPETITOR:
+        return <CompetitorStep onNext={handleNext} />;
+      case STEPS.FEATURES:
+        return <FeaturesStep onNext={handleNext} />;
+      case STEPS.CHANNELS:
+        return <ChannelsStep cards={CHANNEL_CARDS} onNext={handleNext} />;
+      case STEPS.TEAM:
+        return <TeamStep onNext={handleNext} />;
+      case STEPS.AUTH:
         return <AuthStep />;
       default:
         return null;
@@ -217,11 +51,6 @@ const MultiStepOnboarding = () => {
   // If still loading auth state or already signed in, show loading
   if (!isLoaded || isSignedIn) {
     return <LoadingStep />;
-  }
-
-  // Show nothing during server-side rendering
-  if (!isClient) {
-    return null; // todo: or a loading spinner
   }
 
   return (
@@ -250,7 +79,7 @@ const MultiStepOnboarding = () => {
             <span className="text-xl font-semibold">byrd</span>
           </div>
           <div className="text-sm text-muted-foreground">
-            Step {currentStep} of {5}
+            Step {currentStep} of {STEPS.AUTH}
           </div>
         </nav>
 
@@ -266,10 +95,10 @@ const MultiStepOnboarding = () => {
             >
               <div className="space-y-3">
                 <h1 className="text-2xl font-bold tracking-tight">
-                  {steps[currentStep].title}
+                  {STEP_INFO[currentStep as keyof typeof STEP_INFO].title}
                 </h1>
                 <p className="text-base text-muted-foreground">
-                  {steps[currentStep].description}
+                  {STEP_INFO[currentStep as keyof typeof STEP_INFO].description}
                 </p>
               </div>
               {renderStep()}
@@ -281,7 +110,7 @@ const MultiStepOnboarding = () => {
       <div className="hidden md:block md:w-1/3 lg:w-1/2 bg-white relative">
         <AnimatePresence mode="wait">
           <motion.div
-            key={steps[currentStep].image}
+            key={STEP_INFO[currentStep as keyof typeof STEP_INFO].image}
             className="absolute inset-0 bg-gray-50"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -289,8 +118,8 @@ const MultiStepOnboarding = () => {
             transition={{ duration: 0.2 }}
           />
           <motion.img
-            key={`img-${steps[currentStep].image}`}
-            src={steps[currentStep].image}
+            key={`img-${STEP_INFO[currentStep as keyof typeof STEP_INFO].image}`}
+            src={STEP_INFO[currentStep as keyof typeof STEP_INFO].image}
             alt="Dashboard Preview"
             className="absolute top-0 left-0 w-auto h-full object-cover object-left pl-8 pt-6 pb-6"
             style={{

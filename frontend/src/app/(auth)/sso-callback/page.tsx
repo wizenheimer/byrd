@@ -2,12 +2,16 @@
 "use client";
 
 import { AuthenticateWithRedirectCallback } from "@clerk/nextjs";
+import LoadingStep from "@/app/(auth)/components/steps/LoadingStep";
 
 export default function SSOCallback() {
   return (
-    <AuthenticateWithRedirectCallback
-      signInFallbackRedirectUrl="/onboarding-complete"
-      signUpFallbackRedirectUrl="/onboarding-complete"
-    />
+    <>
+      <LoadingStep message="Finishing up..." />
+      <AuthenticateWithRedirectCallback
+        signInFallbackRedirectUrl="/onboarding-complete"
+        signUpFallbackRedirectUrl="/onboarding-complete"
+      />
+    </>
   );
 }

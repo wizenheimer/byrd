@@ -1,50 +1,35 @@
 // src/components/steps/FeaturesStep.tsx
 "use client";
 
-import type { FeatureFormData } from "@/app/_types/onboarding";
+import { INITIAL_FEATURES } from "@/app/_constants/onboarding";
+import { useEnabledFeatures, useOnboardingActions } from "@/app/_store/onboarding";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 
 interface FeaturesStepProps {
-  formData: {
-    features: FeatureFormData[];
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    [key: string]: any;
-  };
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-  setFormData: (data: any) => void;
   onNext: () => void;
 }
 
-export default function FeaturesStep({
-  formData,
-  setFormData,
-  onNext,
-}: FeaturesStepProps) {
+export default function FeaturesStep({ onNext }: FeaturesStepProps) {
+  const enabledFeatures = useEnabledFeatures();
+  const { setEnabledFeatures } = useOnboardingActions();
+
   const toggleFeature = (id: string) => {
-    const updatedFeatures = formData.features.map((feature) =>
-      feature.id === id ? { ...feature, enabled: !feature.enabled } : feature,
-    );
+    const updatedFeatures = enabledFeatures.includes(id)
+      ? enabledFeatures.filter(featureId => featureId !== id)
+      : [...enabledFeatures, id];
 
-    setFormData({
-      ...formData,
-      features: updatedFeatures,
-    });
-  };
-
-  const handleContinue = () => {
-    // Validate if needed
-    onNext();
+    setEnabledFeatures(updatedFeatures);
   };
 
   return (
     <div className="space-y-6">
-      {formData.features.map((feature) => (
+      {INITIAL_FEATURES.map((feature) => (
         <div key={feature.id} className="flex items-center space-x-4">
           <Switch
             id={feature.id}
-            checked={feature.enabled}
+            checked={enabledFeatures.includes(feature.id)}
             onCheckedChange={() => toggleFeature(feature.id)}
             className="data-[state=checked]:bg-blue-600"
           />
@@ -71,7 +56,7 @@ export default function FeaturesStep({
             "disabled:opacity-50 disabled:cursor-not-allowed",
           )}
           size="lg"
-          onClick={handleContinue}
+          onClick={onNext}
         >
           Continue
         </Button>

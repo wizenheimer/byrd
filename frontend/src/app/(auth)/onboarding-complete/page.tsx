@@ -1,51 +1,21 @@
 // src/app/(onboarding)/onboarding-complete/page.tsx
 "use client";
 
-import {
-  type OnboardingData,
-  persistOnboardingData,
-} from "@/app/_actions/onboarding";
-import { onboardingFormSchema } from "@/app/_types/onboarding";
+import { OnboardingData, persistOnboardingData } from "@/app/_actions/onboarding";
 import LoadingStep from "@/app/(auth)/components/steps/LoadingStep";
-import { STORAGE_KEYS } from "@/constants/storage";
+import { OnboardingState, useOnboardingStore } from "@/app/_store/onboarding";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-function loadOnboardingDataFromStorage(
-  storageKey: string,
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-  userData: any,
+function transformOnboardingData(
+  stateData: OnboardingState
 ): OnboardingData {
-  // Get data from localStorage
-  const rawData = localStorage.getItem(storageKey);
-  const parsedData = rawData ? JSON.parse(rawData) : {};
-
-  // Parse and validate the form data
-  const formData = onboardingFormSchema.parse(parsedData);
-
-  // Transform to OnboardingData format
   return {
-    clerkId: userData.id,
-    email: userData.primaryEmailAddress?.emailAddress || "",
-    firstName: userData.firstName || "",
-    lastName: userData.lastName || "",
-    competitors: formData.competitors.map((competitor) => ({
-      url: competitor.url,
-    })),
-    features: formData.features
-      .filter((feature) => feature.enabled)
-      .map((feature) => ({
-        title: feature.title,
-      })),
-    channels: formData.channels.map((channel) => ({
-      title: channel,
-    })),
-    team: formData.team.flatMap((teamForm) =>
-      teamForm.members.map((member) => ({
-        email: member.email,
-      })),
-    ),
+    competitors: stateData.competitors,
+    features: stateData.enabledFeatures,
+    channels: stateData.channels,
+    team: stateData.team,
   };
 }
 
@@ -53,46 +23,49 @@ export default function OnboardingComplete() {
   const { isLoaded, isSignedIn, user } = useUser();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const onboardingState = useOnboardingStore();
 
   useEffect(() => {
     const persistData = async () => {
       if (isLoaded && isSignedIn && user) {
         setIsSubmitting(true);
         try {
-          const onboardingData = loadOnboardingDataFromStorage(
-            STORAGE_KEYS.FORM_DATA,
-            user,
-          );
+          // Pick only the state properties, excluding actions
+          const stateData: OnboardingState = {
+            currentStep: onboardingState.currentStep,
+            competitors: onboardingState.competitors,
+            enabledFeatures: onboardingState.enabledFeatures,
+            channels: onboardingState.channels,
+            team: onboardingState.team,
+          };
 
-          await persistOnboardingData(onboardingData);
+          const onboardingData = transformOnboardingData(stateData);
+          const result = await persistOnboardingData(onboardingData);
 
-          // Clear local storage
-          localStorage.removeItem(STORAGE_KEYS.STEP);
-          localStorage.removeItem(STORAGE_KEYS.FORM_DATA);
-
-          router.push("/waitlist");
+          if (result.success) {
+            // Clear onboarding state
+            onboardingState.reset();
+            router.push("/waitlist");
+          } else {
+            throw new Error("Failed to persist onboarding data");
+          }
         } catch (error) {
           console.error("Error persisting onboarding data:", error);
-          // Handle error (e.g., show error message to user)
+          // You might want to show an error message to the user here
         } finally {
           setIsSubmitting(false);
         }
       } else if (isLoaded && !isSignedIn) {
-        // Clear local storage
-        localStorage.removeItem(STORAGE_KEYS.STEP);
-        localStorage.removeItem(STORAGE_KEYS.FORM_DATA);
-
-        // Redirect to home page
+        // Clear state and redirect if not signed in
+        onboardingState.reset();
         router.push("/");
       }
     };
 
     persistData();
-  }, [isLoaded, isSignedIn, user, router]);
+  }, [isLoaded, isSignedIn, user, router, onboardingState]);
 
-  if (!isLoaded || !isSignedIn || isSubmitting) {
-    return <LoadingStep />;
-  }
-
-  return <LoadingStep />;
+  return (
+    <LoadingStep message={isSubmitting ? "Saving your preferences..." : "Almost there..."} />
+  );
 }

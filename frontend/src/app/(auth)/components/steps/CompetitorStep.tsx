@@ -1,6 +1,7 @@
 // src/components/steps/CompetitorStep.tsx
 "use client";
 
+import { useCompetitors, useOnboardingStore } from "@/app/_store/onboarding";
 import {
   type CompetitorFormData,
   competitorFormSchema,
@@ -23,7 +24,6 @@ import { type SubmitHandler, useFieldArray, useForm } from "react-hook-form";
 
 const normalizeUrl = (url: string): string => {
   if (!url) return "";
-
   try {
     const urlObj = new URL(url.startsWith("http") ? url : `https://${url}`);
     return urlObj.hostname.toLowerCase();
@@ -33,25 +33,20 @@ const normalizeUrl = (url: string): string => {
 };
 
 interface CompetitorStepProps {
-  formData: CompetitorFormData;
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-  setFormData: (data: any) => void;
   onNext: () => void;
 }
 
-export default function CompetitorStep({
-  formData,
-  setFormData,
-  onNext,
-}: CompetitorStepProps) {
+export default function CompetitorStep({ onNext }: CompetitorStepProps) {
+  const competitors = useCompetitors();
+  const setCompetitors = useOnboardingStore((state) => state.setCompetitors);
   const [urlErrors, setUrlErrors] = useState<{ [key: number]: boolean }>({});
 
   const form = useForm<CompetitorFormData>({
     resolver: zodResolver(competitorFormSchema),
     defaultValues: {
       competitors:
-        formData.competitors.length > 0
-          ? formData.competitors
+        competitors.length > 0
+          ? competitors.map(url => ({ url, favicon: "" }))
           : [{ url: "", favicon: "" }],
     },
     mode: "onBlur",
@@ -81,53 +76,37 @@ export default function CompetitorStep({
   }, [urlErrors, fields.length]);
 
   const isValidUrl = (urlString: string): boolean => {
-    // console.log("Validating URL:", urlString);
-    // Define allowed protocols
     const ALLOWED_PROTOCOLS = ["http:", "https:"];
-
-    // Regular expressions for validation
     const IP_REGEX = /^(\d{1,3}\.){3}\d{1,3}$/;
     const LOCALHOST_REGEX = /^localhost(:\d+)?$/;
     const DOMAIN_REGEX = /^([a-zA-Z0-9-]+\.)*[a-zA-Z0-9-]+\.[a-zA-Z]{2,}$/;
 
     try {
-      // Try parsing the URL
       const url = new URL(
         urlString.includes("://") ? urlString : `https://${urlString}`,
       );
 
-      // Check protocol
-      if (!ALLOWED_PROTOCOLS.includes(url.protocol)) {
-        return false;
-      }
+      if (!ALLOWED_PROTOCOLS.includes(url.protocol)) return false;
 
-      // Remove port number if present for hostname validation
       const hostname = url.hostname.includes(":")
         ? url.hostname.split(":")[0]
         : url.hostname;
 
-      // Handle special cases
-      if (hostname === "localhost" || LOCALHOST_REGEX.test(hostname)) {
-        return true;
-      }
+      if (hostname === "localhost" || LOCALHOST_REGEX.test(hostname)) return true;
+
       if (IP_REGEX.test(hostname)) {
-        // Validate IP address ranges
         const parts = hostname.split(".").map(Number);
         return parts.every((part) => part >= 0 && part <= 255);
       }
 
-      // Validate domain name
-      if (!DOMAIN_REGEX.test(hostname)) {
-        return false;
-      }
+      if (!DOMAIN_REGEX.test(hostname)) return false;
 
-      // Additional checks for suspicious patterns
       const suspiciousPatterns = [
-        /[^\x20-\x7E]/, // Non-printable ASCII characters
-        /\s/, // Whitespace
-        /[<>{}|\^~\[\]`]/, // Dangerous characters
-        /javascript:/i, // JavaScript protocol
-        /data:/i, // Data protocol
+        /[^\x20-\x7E]/,
+        /\s/,
+        /[<>{}|\^~\[\]`]/,
+        /javascript:/i,
+        /data:/i,
       ];
 
       if (suspiciousPatterns.some((pattern) => pattern.test(urlString))) {
@@ -184,7 +163,6 @@ export default function CompetitorStep({
   ) => {
     if (event.key === "Enter") {
       event.preventDefault();
-
       const currentValue = form.getValues(`competitors.${index}.url`);
 
       if (isDuplicateUrl(currentValue, index)) {
@@ -199,27 +177,20 @@ export default function CompetitorStep({
       if (isValidUrl(currentValue)) {
         await fetchFavicon(currentValue, index);
 
-        if (
-          index === fields.length - 1 &&
-          fields.length < 5 &&
-          !hasInvalidUrls
-        ) {
-          append({ url: "" });
+        if (index === fields.length - 1 && fields.length < 5 && !hasInvalidUrls) {
+          append({ url: "", favicon: "" });
         }
 
         const nextInput = document.querySelector(
           `input[name="competitors.${index + 1}.url"]`,
         ) as HTMLInputElement;
-        if (nextInput) {
-          nextInput.focus();
-        }
+        if (nextInput) nextInput.focus();
       }
     }
   };
 
   const handleRemove = (index: number) => {
     remove(index);
-    // Update URL State
     setUrlErrors((prev) => {
       const newState = { ...prev };
       delete newState[index];
@@ -236,11 +207,8 @@ export default function CompetitorStep({
 
   const onSubmit: SubmitHandler<CompetitorFormData> = async (data) => {
     try {
-      // console.log("Submitted data:", data);
-      setFormData({
-        ...formData,
-        competitors: data.competitors,
-      });
+      // Update Zustand store with just the URLs
+      setCompetitors(data.competitors.map(comp => comp.url));
       onNext();
     } catch (error) {
       console.error("Submission error:", error);

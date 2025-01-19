@@ -3,32 +3,11 @@
 
 import { randomUUID } from "crypto";
 
-interface Competitor {
-  url: string;
-}
-
-interface Feature {
-  title: string;
-}
-
-interface TeamMember {
-  email: string;
-}
-
-interface Channel {
-  title: string;
-}
-
 export interface OnboardingData {
-  clerkId: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-
-  competitors: Competitor[];
-  features: Feature[];
-  channels: Channel[];
-  team: TeamMember[];
+  competitors: string[]; // urls
+  features: string[]; // feature names
+  channels: string[]; // channel names
+  team: string[]; // emails
 }
 
 export async function persistOnboardingData(

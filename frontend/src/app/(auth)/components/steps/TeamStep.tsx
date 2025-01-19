@@ -1,6 +1,7 @@
 // src/components/steps/TeamStep.tsx
 "use client";
 
+import { useOnboardingStore, useTeam } from "@/app/_store/onboarding";
 import { type TeamFormData, teamFormSchema } from "@/app/_types/onboarding";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,21 +20,13 @@ import { useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 
 interface TeamStepProps {
-  formData: {
-    team: TeamFormData[];
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    [key: string]: any;
-  };
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-  setFormData: (data: any) => void;
   onNext: () => void;
 }
 
-export default function TeamStep({
-  formData,
-  setFormData,
-  onNext,
-}: TeamStepProps) {
+
+export default function TeamStep({ onNext }: TeamStepProps) {
+  const team = useTeam();
+  const setTeam = useOnboardingStore((state) => state.setTeam);
   const [duplicateError, setDuplicateError] = useState<{
     [key: number]: boolean;
   }>({});
@@ -41,10 +34,9 @@ export default function TeamStep({
   const form = useForm<TeamFormData>({
     resolver: zodResolver(teamFormSchema),
     defaultValues: {
-      members:
-        formData.team && formData.team.length > 0 && formData.team[0].members
-          ? formData.team[0].members
-          : [{ email: "" }],
+      members: team.length > 0
+        ? team.map(email => ({ email }))
+        : [{ email: "" }],
     },
   });
 
@@ -78,23 +70,18 @@ export default function TeamStep({
       event.preventDefault();
 
       const currentValue = form.getValues(`members.${index}.email`);
-
-      // Validate the current field first
       const isValid = await form.trigger(`members.${index}.email`);
       const isDuplicate = checkDuplicate(currentValue, index);
 
       if (isValid && !isDuplicate) {
-        // If we're at the last field and haven't hit the limit, add a new one
         if (index === fields.length - 1 && fields.length < 5) {
           append({ email: "" });
-          // Focus will be handled after render
           setTimeout(() => {
             const inputs = document.querySelectorAll('input[type="email"]');
             const nextInput = inputs[index + 1] as HTMLInputElement;
             if (nextInput) nextInput.focus();
           }, 0);
         } else {
-          // Focus the next input if available
           const inputs = document.querySelectorAll('input[type="email"]');
           const nextInput = inputs[index + 1] as HTMLInputElement;
           if (nextInput) nextInput.focus();
@@ -105,11 +92,8 @@ export default function TeamStep({
 
   const onSubmit = async (data: TeamFormData) => {
     try {
-      // console.log("Submitted data:", data);
-      setFormData({
-        ...formData,
-        team: [data],
-      });
+      // Update Zustand store with just the email addresses
+      setTeam(data.members.map(member => member.email));
       onNext();
     } catch (error) {
       console.error("Submission error:", error);

@@ -1,76 +1,44 @@
 // src/components/steps/LoadingStep.tsx
 "use client";
 
+import { LOADING_MESSAGES, MESSAGE_INTERVAL } from "@/app/_constants/loading";
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-const loadingMessages = [
-  "Preparing your experience",
-  "To load, or not to load, that is the question",
-  "Loading like nobody's watching",
-  "This loading screen is powered by AI",
-  "Leveraging blockchain for better loading times",
-  "Loading goes brrrrrrr",
-  "Making loading 10x better (YC W24)",
-  "This loading screen is our moat",
-  "Doing things that don't scale (like this loading bar)",
-  "PM said this loading screen increases user engagement by 300%",
-  "This loading increased our north star metric somehow",
-  "POV: You're watching a loading screen",
-  "Loading.exe has stopped loading.exe",
-  "Loading screen: 🗿",
-  "POV: You're watching paint.exe dry 🗿",
-  "Yo dawg, I heard you like loading screens",
-  "Loading screen got that dawg in it fr fr",
-  "POV: You're in a staring contest with loading animation",
-  "Making things perfect",
-  "Loading screen (YC W24) - 'Stripe for waiting'",
-  "Loading our 'Why YC rejected us' Medium post",
-  "Loading things that don't scale",
-  "Make Loading People Want",
-  "Almost there",
-  "Loading awesome content",
-  "Gathering the good stuff",
-  "Just adding final touches",
-  "This is worth the wait",
-  "Brewing something special",
-  "Making magic happen",
-  "Double-checking everything",
-  "To load, or not to load, that is the question",
-  "Loading like nobody's watching",
-  "This loading screen is powered by AI",
-  "Leveraging blockchain for better loading times",
-  "Loading goes brrrrrrr",
-  "Making loading 10x better (YC W24)",
-  "This loading screen is our moat",
-  "Doing things that don't scale (like this loading bar)",
-  "PM said this loading screen increases user engagement by 300%",
-  "This loading increased our north star metric somehow",
-  "POV: You're watching a loading screen",
-  "Loading.exe has stopped loading.exe",
-  "Loading screen: 🗿",
-  "POV: You're watching paint.exe dry 🗿",
-  "Yo dawg, I heard you like loading screens",
-  "Loading screen got that dawg in it fr fr",
-  "POV: You're in a staring contest with loading animation",
-];
+// Default message for initial render to avoid hydration mismatch
+const DEFAULT_MESSAGE = "Preparing your experience";
 
-const LoadingStep = () => {
-  const [currentMessage, setCurrentMessage] = useState(
-    loadingMessages[Math.floor(Math.random() * loadingMessages.length)],
-  );
+interface LoadingStepProps {
+  message?: string;
+}
 
-  // Change message every 3 seconds
+const LoadingStep = ({ message }: LoadingStepProps) => {
+  const [isMounted, setIsMounted] = useState(false);
+  const [currentMessage, setCurrentMessage] = useState(message ?? DEFAULT_MESSAGE);
+
+  // Mark component as mounted
   useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // Start message cycling only after mounting
+  useEffect(() => {
+    if (!isMounted || message) return;
+
+    const getRandomMessage = () => {
+      const messages = LOADING_MESSAGES.filter(msg => msg !== currentMessage);
+      return messages[Math.floor(Math.random() * messages.length)];
+    };
+
     const messageInterval = setInterval(() => {
-      setCurrentMessage(
-        loadingMessages[Math.floor(Math.random() * loadingMessages.length)],
-      );
-    }, 3000);
+      setCurrentMessage(getRandomMessage());
+    }, MESSAGE_INTERVAL);
 
     return () => clearInterval(messageInterval);
-  }, []);
+  }, [isMounted, message, currentMessage]);
+
+  const year = new Date().getFullYear();
 
   return (
     <motion.div
@@ -136,18 +104,12 @@ const LoadingStep = () => {
       >
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-between items-center text-sm text-gray-600">
-            <p>© 2024 byrd. All rights reserved.</p>
+            <p>© {year} byrd. All rights reserved.</p>
             <div className="flex space-x-4">
-              <Link
-                href="/terms"
-                className="hover:text-black transition-colors"
-              >
+              <Link href="/terms" className="hover:text-black transition-colors">
                 Terms
               </Link>
-              <Link
-                href="/privacy"
-                className="hover:text-black transition-colors"
-              >
+              <Link href="/privacy" className="hover:text-black transition-colors">
                 Privacy
               </Link>
             </div>

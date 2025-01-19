@@ -4,9 +4,10 @@
 import LoadingStep from "@/app/(auth)/components/steps/LoadingStep";
 import { UserButton, useUser } from "@clerk/nextjs";
 import { ArrowUpRight } from "lucide-react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { motion } from "framer-motion";
+import { BaseLayout } from "../components/layouts/BaseLayout";
 
 export default function WaitlistScreen() {
   const { isLoaded, isSignedIn } = useUser();
@@ -23,19 +24,19 @@ export default function WaitlistScreen() {
   }
 
   return (
-    <div className="min-h-screen bg-white text-black flex flex-col">
-      <nav>
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
-          <a href="/" className="text-xl font-bold">
-            byrd
-          </a>
-          <div className="flex items-center space-x-4">
-            <UserButton />
-          </div>
+    <BaseLayout
+      header={
+        <div className="flex items-center space-x-4">
+          <UserButton />
         </div>
-      </nav>
-
-      <main className="flex-grow flex flex-col justify-center items-center px-4 text-center">
+      }
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="space-y-4"
+      >
         <div className="flex items-center mb-4">
           <h1 className="text-6xl font-bold text-black">Stay tuned</h1>
           <ArrowUpRight className="w-12 h-12 ml-2 text-black" />
@@ -43,23 +44,7 @@ export default function WaitlistScreen() {
         <p className="text-md text-gray-600 max-w-md">
           {"You're on the list! We'll reach out soon."}
         </p>
-      </main>
-
-      <footer className="py-8 px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex justify-between items-center text-sm text-gray-600">
-            <p>© 2024 byrd. All rights reserved.</p>
-            <div className="flex space-x-4">
-              <Link href="/terms" className="hover:text-black">
-                Terms
-              </Link>
-              <Link href="/privacy" className="hover:text-black">
-                Privacy
-              </Link>
-            </div>
-          </div>
-        </div>
-      </footer>
-    </div>
+      </motion.div>
+    </BaseLayout>
   );
 }
