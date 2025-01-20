@@ -1,17 +1,17 @@
 package startup
 
 import (
+	"github.com/wizenheimer/byrd/src/internal/api/middleware"
 	"github.com/wizenheimer/byrd/src/internal/api/routes"
 	"github.com/wizenheimer/byrd/src/internal/config"
 	"github.com/wizenheimer/byrd/src/internal/service/diff"
-	"github.com/wizenheimer/byrd/src/internal/service/workspace"
 	"github.com/wizenheimer/byrd/src/internal/transaction"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"github.com/wizenheimer/byrd/src/pkg/utils"
 	"github.com/wizenheimer/byrd/src/server/startup/services"
 )
 
-func Initialize(cfg *config.Config, tm *transaction.TxManager, logger *logger.Logger) (*routes.HandlerContainer, workspace.WorkspaceService, *utils.TokenManager, error) {
+func Initialize(cfg *config.Config, tm *transaction.TxManager, logger *logger.Logger) (*routes.HandlerContainer, *middleware.ResourceMiddleware, *middleware.AccessMiddleware, error) {
 	// Initialize utilities
 	utils.InitializeValidator()
 
@@ -55,6 +55,9 @@ func Initialize(cfg *config.Config, tm *transaction.TxManager, logger *logger.Lo
 		return nil, nil, nil, err
 	}
 
+	resourceMiddleware := middleware.NewResourceMiddleware(services.Workspace, logger)
+	accessMiddleware := middleware.NewAccessMiddleware(services.Workspace, services.User, services.TokenManager, logger)
+
 	// Initialize handlers
 	handlers := SetupHandlerContainer(
 		screenshotService,
@@ -67,5 +70,5 @@ func Initialize(cfg *config.Config, tm *transaction.TxManager, logger *logger.Lo
 		logger,
 	)
 
-	return handlers, services.Workspace, services.TokenManager, nil
+	return handlers, resourceMiddleware, accessMiddleware, nil
 }

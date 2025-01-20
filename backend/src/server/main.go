@@ -63,7 +63,7 @@ func main() {
 	tm := transaction.NewTxManager(sqlDb, logger)
 
 	// Initialize handlers using the new modular initializer
-	handlers, workspaceService, tokenManager, err := startup.Initialize(cfg, tm, logger)
+	handlers, rm, am, err := startup.Initialize(cfg, tm, logger)
 	if err != nil {
 		logger.Fatal("Failed to initialize handlers", zap.Error(err))
 		return
@@ -77,12 +77,9 @@ func main() {
 
 	// Setup middleware
 	middleware.SetupMiddleware(app)
-	authMiddleware := middleware.NewAuthenticatedMiddleware(tokenManager, logger)
-	authorizationMiddleware := middleware.NewAuthorizationMiddleware(workspaceService, logger)
-	pathMiddleware := middleware.NewWorkspacePathValidationMiddleware(workspaceService, logger)
 
 	// Setup routes
-	routes.SetupRoutes(app, handlers, pathMiddleware, authorizationMiddleware, authMiddleware)
+	routes.SetupRoutes(app, handlers, am, rm)
 
 	// Start server in a goroutine
 	serverError := make(chan error, 1)

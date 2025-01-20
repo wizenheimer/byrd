@@ -81,7 +81,7 @@ func setupPublicRoutes(
 	// Base public API group
 	public := app.Group("/api/public/v1", m.RequiresClerkToken)
 
-  // Token validation
+	// Token validation
 	public.Get("/token", h.UserHandler.ValidateClerkToken)
 
 	// User management routes
@@ -259,7 +259,7 @@ func setupPageRoutes(
 func setupPrivateRoutes(app *fiber.App, h *HandlerContainer, m *middleware.AccessMiddleware) {
 	private := app.Group("/api/private/v1", m.RequiresPrivateToken)
 
-  // Token validation
+	// Token validation
 	private.Get("/token", h.UserHandler.ValidateManagementToken)
 
 	// Workflow management routes

@@ -38,19 +38,17 @@ type WorkspaceService interface {
 
 	UpdateWorkspaceMemberRole(ctx context.Context, workspaceID uuid.UUID, workspaceMemberID uuid.UUID, role models.WorkspaceRole) error
 
+	GetCompetitorForWorkspace(ctx context.Context, workspaceID, competitorID uuid.UUID) (*models.Competitor, error)
+
+	UpdateCompetitorForWorkspace(ctx context.Context, workspaceID, competitorID uuid.UUID, competitorName string) (*models.Competitor, error)
+
 	RemoveUserFromWorkspace(ctx context.Context, workspaceID uuid.UUID, workspaceMemberID uuid.UUID) error
 
 	JoinWorkspace(ctx context.Context, invitedMember *clerk.User, workspaceID uuid.UUID) error
 
 	WorkspaceExists(ctx context.Context, workspaceID uuid.UUID) (bool, error)
 
-	ClerkUserIsWorkspaceAdmin(ctx context.Context, workspaceID uuid.UUID, clerkUser *clerk.User) (bool, error)
-
-	ClerkUserIsWorkspaceMember(ctx context.Context, workspaceID uuid.UUID, clerkUser *clerk.User) (bool, error)
-
-	ClerkUserIsActiveWorkspaceMember(ctx context.Context, workspaceID uuid.UUID, clerkUser *clerk.User) (bool, error)
-
-	ClerkUserIsPendingWorkspaceMember(ctx context.Context, workspaceID uuid.UUID, clerkUser *clerk.User) (bool, error)
+	GetClerkWorkspaceUser(ctx context.Context, workspaceID uuid.UUID, clerkUser *clerk.User) (*models.PartialWorkspaceUser, error)
 
 	WorkspaceCompetitorExists(ctx context.Context, workspaceID, competitorID uuid.UUID) (bool, error)
 

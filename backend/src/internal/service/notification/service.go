@@ -206,7 +206,7 @@ func (s *notificationService) Close() error {
 	// Close fan-in channels
 	close(s.alertFanIn)
 	close(s.eventFanIn)
-  close(s.logChannel)
+	close(s.logChannel)
 
 	// Close all alert channels
 	for _, ch := range s.alertChannels {
@@ -237,7 +237,7 @@ func (s *notificationService) startAlertWorker() {
 			}
 			if err := s.alertClient.SendAlert(s.ctx, alert); err != nil {
 				s.logger.Error("Failed to send alert", zap.Error(err))
-        s.logChannel <- alert
+				s.logChannel <- alert
 			}
 		}
 	}
@@ -257,7 +257,7 @@ func (s *notificationService) startEventWorker() {
 			}
 			if err := s.eventClient.SendEvent(s.ctx, event); err != nil {
 				s.logger.Error("Failed to send event", zap.Error(err))
-        s.logChannel <- event
+				s.logChannel <- event
 			}
 		}
 	}

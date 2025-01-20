@@ -6,6 +6,11 @@ import (
 	"github.com/wizenheimer/byrd/src/internal/config"
 )
 
+const (
+	DefaultPageNumber = 1
+	DefaultPageSize   = 10
+)
+
 type ErrorResponse struct {
 	ErrorMessage string `json:"error"`
 	ErrorDetails any    `json:"details,omitempty"` // add omitempty to hide when empty

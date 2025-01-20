@@ -364,68 +364,35 @@ func (ws *workspaceService) WorkspaceExists(ctx context.Context, workspaceID uui
 	return ws.workspaceRepo.WorkspaceExists(ctx, workspaceID)
 }
 
-func (ws *workspaceService) ClerkUserIsWorkspaceAdmin(ctx context.Context, workspaceID uuid.UUID, clerkUser *clerk.User) (bool, error) {
-	ws.logger.Debug("checking if user is workspace admin", zap.Any("workspaceID", workspaceID), zap.Any("clerkUser", clerkUser))
+func (ws *workspaceService) GetClerkWorkspaceUser(ctx context.Context, workspaceID uuid.UUID, clerkUser *clerk.User) (*models.PartialWorkspaceUser, error) {
 	user, err := ws.userService.GetUserByClerkCredentials(ctx, clerkUser)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
 	workspaceUser, err := ws.workspaceRepo.GetWorkspaceMemberByUserID(ctx, workspaceID, user.ID)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
-	ws.logger.Debug("got workspace user role", zap.Any("role", workspaceUser.Role))
-	return workspaceUser.Role == models.RoleAdmin, nil
+	return workspaceUser, nil
 }
 
-func (ws *workspaceService) ClerkUserIsActiveWorkspaceMember(ctx context.Context, workspaceID uuid.UUID, clerkUser *clerk.User) (bool, error) {
-	ws.logger.Debug("checking if user is active workspace member", zap.Any("workspaceID", workspaceID), zap.Any("clerkUser", clerkUser))
-	user, err := ws.userService.GetUserByClerkCredentials(ctx, clerkUser)
+func (ws *workspaceService) GetCompetitorForWorkspace(ctx context.Context, workspaceID, competitorID uuid.UUID) (*models.Competitor, error) {
+	ws.logger.Debug("getting competitor for workspace", zap.Any("workspaceID", workspaceID), zap.Any("competitorID", competitorID))
+	competitors, err := ws.competitorService.GetCompetitorForWorkspace(ctx, workspaceID, []uuid.UUID{competitorID})
 	if err != nil {
-		return false, err
+		return nil, err
+	}
+	if len(competitors) == 0 {
+		return nil, errors.New("competitor not found")
 	}
 
-	workspaceUser, err := ws.workspaceRepo.GetWorkspaceMemberByUserID(ctx, workspaceID, user.ID)
-	if err != nil {
-		return false, err
-	}
-
-	ws.logger.Debug("got workspace user membership status", zap.Any("membershipStatus", workspaceUser.MembershipStatus), zap.Any("workspaceUser", workspaceUser))
-	return workspaceUser.MembershipStatus == models.ActiveMember, nil
+	return &competitors[0], nil
 }
 
-func (ws *workspaceService) ClerkUserIsPendingWorkspaceMember(ctx context.Context, workspaceID uuid.UUID, clerkUser *clerk.User) (bool, error) {
-	ws.logger.Debug("checking if user is pending workspace member", zap.Any("workspaceID", workspaceID), zap.Any("clerkUser", clerkUser))
-	user, err := ws.userService.GetUserByClerkCredentials(ctx, clerkUser)
-	if err != nil {
-		return false, err
-	}
-
-	workspaceUser, err := ws.workspaceRepo.GetWorkspaceMemberByUserID(ctx, workspaceID, user.ID)
-	if err != nil {
-		return false, err
-	}
-
-	ws.logger.Debug("got workspace user membership status", zap.Any("membershipStatus", workspaceUser.MembershipStatus))
-	return workspaceUser.MembershipStatus == models.PendingMember, nil
-}
-
-func (ws *workspaceService) ClerkUserIsWorkspaceMember(ctx context.Context, workspaceID uuid.UUID, clerkUser *clerk.User) (bool, error) {
-	ws.logger.Debug("checking if user is workspace member", zap.Any("workspaceID", workspaceID), zap.Any("clerkUser", clerkUser))
-	user, err := ws.userService.GetUserByClerkCredentials(ctx, clerkUser)
-	if err != nil {
-		return false, err
-	}
-
-	workspaceUser, err := ws.workspaceRepo.GetWorkspaceMemberByUserID(ctx, workspaceID, user.ID)
-	if err != nil {
-		return false, err
-	}
-
-	ws.logger.Debug("got workspace user role", zap.Any("role", workspaceUser.Role))
-	return workspaceUser.Role == models.RoleAdmin || workspaceUser.Role == models.RoleUser, nil
+func (ws *workspaceService) UpdateCompetitorForWorkspace(ctx context.Context, workspaceID, competitorID uuid.UUID, competitorName string) (*models.Competitor, error) {
+	return ws.competitorService.UpdateCompetitorForWorkspace(ctx, workspaceID, competitorID, competitorName)
 }
 
 func (ws *workspaceService) WorkspaceCompetitorExists(ctx context.Context, workspaceID, competitorID uuid.UUID) (bool, error) {
