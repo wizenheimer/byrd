@@ -2,16 +2,20 @@
 package handlers
 
 import (
+	"net/url"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	api "github.com/wizenheimer/byrd/src/internal/models/api"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
+	"github.com/wizenheimer/byrd/src/internal/service/ai"
+	"github.com/wizenheimer/byrd/src/internal/service/screenshot"
 	"github.com/wizenheimer/byrd/src/internal/service/workspace"
 	"github.com/wizenheimer/byrd/src/internal/transaction"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"github.com/wizenheimer/byrd/src/pkg/utils"
+	"go.uber.org/zap"
 )
 
 type WorkspaceHandler struct {
@@ -39,17 +43,53 @@ func (wh *WorkspaceHandler) CreateWorkspace(c *fiber.Ctx) error {
 		return sendErrorResponse(c, wh.logger, fiber.StatusBadRequest, "InvalidRequest", err.Error())
 	}
 
-	if err := utils.SetDefaultsAndValidate(&req); err != nil {
-		return sendErrorResponse(c, wh.logger, fiber.StatusBadRequest, "InvalidRequest", err.Error())
+	// Prepare the diff profiles
+	var diffProfiles []string
+	addedProfile := make(map[string]bool)
+
+	// Loop through the profiles
+	for _, profile := range req.Profiles {
+		// Check if the profile exists in the AI service
+		// Or if the profile has already been added
+		if _, err := ai.GetField(profile); addedProfile[profile] || err != nil {
+			wh.logger.Debug("skipping profile", zap.Any("profile", profile))
+			continue
+		}
+		// Add the profile to the list of diff profiles
+		addedProfile[profile] = true
+		// Append the profile to the list of diff profiles
+		diffProfiles = append(diffProfiles, profile)
+	}
+
+	// If there are no diff profiles, add the default field
+	if len(diffProfiles) == 0 {
+		diffProfiles = append(diffProfiles, ai.DefaultField)
+		wh.logger.Debug("No valid profiles found, defaulting to default profile")
+	}
+
+	var pages []models.PageProps
+	for _, competitorURL := range req.Competitors {
+		if _, err := url.Parse(competitorURL); err != nil {
+			continue
+		}
+		captureProfile := screenshot.GetDefaultScreenshotRequestOptions(competitorURL)
+		pages = append(pages, models.PageProps{
+			URL:            competitorURL,
+			CaptureProfile: &captureProfile,
+			DiffProfile:    diffProfiles,
+		})
+	}
+	if len(pages) == 0 {
+		pages = make([]models.PageProps, 0)
 	}
 
 	clerkUser, err := getClerkUserFromContext(c)
 	if err != nil {
-		return sendErrorResponse(c, wh.logger, fiber.StatusUnauthorized, "Unauthorized", err.Error())
+		return sendErrorResponse(c, wh.logger, fiber.StatusUnauthorized, "User not found in request context", err.Error())
 	}
 
 	ctx := c.Context()
-	workspace, err := wh.workspaceService.CreateWorkspace(ctx, clerkUser, req.Pages, req.Users)
+	workspace, err := wh.workspaceService.CreateWorkspace(ctx, clerkUser, pages, req.Team)
 	if err != nil {
 		return sendErrorResponse(c, wh.logger, fiber.StatusInternalServerError, "Could not create workspace", err.Error())
 	}
