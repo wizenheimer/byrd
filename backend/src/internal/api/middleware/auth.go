@@ -47,13 +47,17 @@ func (m *AuthorizationMiddleware) RequireWorkspaceAdmin(c *fiber.Ctx) error {
 	}
 
 	clerkUser, err := getClerkUserFromContext(c)
-	if clerkUser == nil || err != nil {
+	if err != nil {
 		return sendErrorResponse(c, m.logger, fiber.StatusUnauthorized, "Couldn't validate user credentials", map[string]interface{}{"error": err.Error()})
-	}
+	} else if clerkUser == nil {
+    return sendErrorResponse(c, m.logger, fiber.StatusUnauthorized, "Couldn't validate user credentials", map[string]interface{}{"error": "clerk user is nil"})
+  }
 
-	if exists, err := m.workspaceService.ClerkUserIsWorkspaceAdmin(c.Context(), workspaceUUID, clerkUser); !exists || err != nil {
+	if exists, err := m.workspaceService.ClerkUserIsWorkspaceAdmin(c.Context(), workspaceUUID, clerkUser); err != nil {
 		return sendErrorResponse(c, m.logger, fiber.StatusUnauthorized, "Action requires workspace admin privileges", map[string]interface{}{"error": err.Error()})
-	}
+	} else if !exists {
+    return sendErrorResponse(c, m.logger, fiber.StatusUnauthorized, "Action requires workspace admin privileges", map[string]interface{}{"error": "user is not an admin of the workspace"})
+  }
 
 	return c.Next()
 }
@@ -70,14 +74,20 @@ func (m *AuthorizationMiddleware) RequireWorkspaceMembership(c *fiber.Ctx) error
 	}
 
 	clerkUser, err := getClerkUserFromContext(c)
-	if clerkUser == nil || err != nil {
+	if err != nil {
 		return sendErrorResponse(c, m.logger, fiber.StatusUnauthorized, "Couldn't validate user credentials", map[string]interface{}{"error": err.Error()})
 	}
-
-	if exists, err := m.workspaceService.ClerkUserIsWorkspaceMember(c.Context(), workspaceUUID, clerkUser); !exists || err != nil {
-		return sendErrorResponse(c, m.logger, fiber.StatusUnauthorized, "Action requires workspace membership", map[string]interface{}{"error": err.Error()})
+	if clerkUser == nil {
+		return sendErrorResponse(c, m.logger, fiber.StatusUnauthorized, "Couldn't validate user credentials", map[string]interface{}{"error": "clerk user is nil"})
 	}
 
+	if exists, err := m.workspaceService.ClerkUserIsWorkspaceMember(c.Context(), workspaceUUID, clerkUser); err != nil {
+		return sendErrorResponse(c, m.logger, fiber.StatusUnauthorized, "Action requires workspace membership", map[string]interface{}{"error": err.Error()})
+	} else if !exists {
+		return sendErrorResponse(c, m.logger, fiber.StatusUnauthorized, "Action requires workspace membership", map[string]interface{}{"error": "user is not a member of the workspace"})
+	}
+
+	m.logger.Debug("User is a member of the workspace", zap.Any("workspaceID", workspaceID), zap.Any("clerkUser", clerkUser))
 	return c.Next()
 }
 
@@ -93,13 +103,17 @@ func (m *AuthorizationMiddleware) RequireActiveWorkspaceMembership(c *fiber.Ctx)
 	}
 
 	clerkUser, err := getClerkUserFromContext(c)
-	if clerkUser == nil || err != nil {
+	if err != nil {
 		return sendErrorResponse(c, m.logger, fiber.StatusUnauthorized, "Couldn't validate user credentials", map[string]interface{}{"error": err.Error()})
-	}
+	} else if clerkUser == nil {
+    return sendErrorResponse(c, m.logger, fiber.StatusUnauthorized, "Couldn't validate user credentials", map[string]interface{}{"error": "clerk user is nil"})
+  }
 
-	if exists, err := m.workspaceService.ClerkUserIsActiveWorkspaceMember(c.Context(), workspaceUUID, clerkUser); !exists || err != nil {
+	if exists, err := m.workspaceService.ClerkUserIsActiveWorkspaceMember(c.Context(), workspaceUUID, clerkUser); err != nil {
 		return sendErrorResponse(c, m.logger, fiber.StatusUnauthorized, "Action requires active workspace membership", map[string]interface{}{"error": err.Error()})
-	}
+	} else if !exists {
+    return sendErrorResponse(c, m.logger, fiber.StatusUnauthorized, "Action requires active workspace membership", map[string]interface{}{"error": "user is not an active member of the workspace"})
+  }
 
 	return c.Next()
 }
@@ -116,12 +130,16 @@ func (m *AuthorizationMiddleware) RequirePendingWorkspaceMembership(c *fiber.Ctx
 	}
 
 	clerkUser, err := getClerkUserFromContext(c)
-	if clerkUser == nil || err != nil {
+	if err != nil {
 		return sendErrorResponse(c, m.logger, fiber.StatusUnauthorized, "Couldn't validate user credentials", map[string]interface{}{"error": err.Error()})
+	} else if clerkUser == nil {
+		return sendErrorResponse(c, m.logger, fiber.StatusUnauthorized, "Couldn't validate user credentials", map[string]interface{}{"error": "clerk user is nil"})
 	}
 
-	if exists, err := m.workspaceService.ClerkUserIsPendingWorkspaceMember(c.Context(), workspaceUUID, clerkUser); !exists || err != nil {
+	if exists, err := m.workspaceService.ClerkUserIsPendingWorkspaceMember(c.Context(), workspaceUUID, clerkUser); err != nil {
 		return sendErrorResponse(c, m.logger, fiber.StatusUnauthorized, "Action requires pending workspace membership", map[string]interface{}{"error": err.Error()})
+	} else if !exists {
+		return sendErrorResponse(c, m.logger, fiber.StatusUnauthorized, "Action requires pending workspace membership", map[string]interface{}{"error": "user is not a pending member of the workspace"})
 	}
 
 	return c.Next()

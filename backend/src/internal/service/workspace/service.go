@@ -392,12 +392,12 @@ func (ws *workspaceService) ClerkUserIsActiveWorkspaceMember(ctx context.Context
 		return false, err
 	}
 
-	ws.logger.Debug("got workspace user membership status", zap.Any("membershipStatus", workspaceUser.MembershipStatus))
+	ws.logger.Debug("got workspace user membership status", zap.Any("membershipStatus", workspaceUser.MembershipStatus), zap.Any("workspaceUser", workspaceUser))
 	return workspaceUser.MembershipStatus == models.ActiveMember, nil
 }
 
 func (ws *workspaceService) ClerkUserIsPendingWorkspaceMember(ctx context.Context, workspaceID uuid.UUID, clerkUser *clerk.User) (bool, error) {
-	ws.logger.Debug("checking if user is active workspace member", zap.Any("workspaceID", workspaceID), zap.Any("clerkUser", clerkUser))
+	ws.logger.Debug("checking if user is pending workspace member", zap.Any("workspaceID", workspaceID), zap.Any("clerkUser", clerkUser))
 	user, err := ws.userService.GetUserByClerkCredentials(ctx, clerkUser)
 	if err != nil {
 		return false, err
