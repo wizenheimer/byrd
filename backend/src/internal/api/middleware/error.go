@@ -13,7 +13,7 @@ func CustomErrorHandler(c *fiber.Ctx, err error) error {
 	}
 
 	return c.Status(code).JSON(fiber.Map{
-		"status": "error",
-		"error":  err.Error(),
+		"error":   "Something went wrong",
+		"details": err.Error(),
 	})
 }
