@@ -57,15 +57,17 @@ func NewHandlerContainer(
 
 // SetupRoutes sets up the routes for the application
 // This includes public and private routes
-func SetupRoutes(app *fiber.App, handlers *HandlerContainer,
-	pathMiddleware *middleware.WorkspacePathValidationMiddleware,
-	authorizationMiddleware *middleware.AuthorizationMiddleware,
-	authMiddleware *middleware.AuthenticatedMiddleware) {
+func SetupRoutes(
+	app *fiber.App,
+	handlers *HandlerContainer,
+	m *middleware.AccessMiddleware,
+	r *middleware.ResourceMiddleware,
+) {
 
-	setupPublicRoutes(app, handlers, authMiddleware, authorizationMiddleware, pathMiddleware)
+	setupPublicRoutes(app, handlers, m, r)
 
 	if config.IsDevelopment() {
-		setupPrivateRoutes(app, handlers, authMiddleware)
+		setupPrivateRoutes(app, handlers, m)
 	}
 }
 
@@ -73,203 +75,242 @@ func SetupRoutes(app *fiber.App, handlers *HandlerContainer,
 func setupPublicRoutes(
 	app *fiber.App,
 	h *HandlerContainer,
-	authMiddleware *middleware.AuthenticatedMiddleware,
-	authorization *middleware.AuthorizationMiddleware,
-	pathMiddleware *middleware.WorkspacePathValidationMiddleware,
+	m *middleware.AccessMiddleware,
+	r *middleware.ResourceMiddleware,
 ) {
 	// Base public API group
-	public := app.Group("/api/public/v1")
+	public := app.Group("/api/public/v1", m.RequiresClerkToken)
 
-	// Authentication routes
-	setupAuthRoutes(public, h.UserHandler, authMiddleware)
+  // Token validation
+	public.Get("/token", h.UserHandler.ValidateClerkToken)
 
 	// User management routes
-	setupUserRoutes(public, h.UserHandler, authMiddleware)
+	setupUserRoutes(public, h.UserHandler)
 
 	// Workspace and related routes
-	setupWorkspaceRoutes(public, h.WorkspaceHandler, h.UserHandler,
-		authMiddleware, authorization, pathMiddleware)
-}
+	setupWorkspaceRoutes(public, h.WorkspaceHandler, m)
 
-// setupAuthRoutes configures authentication-related routes
-func setupAuthRoutes(
-	router fiber.Router,
-	handler *handlers.UserHandler,
-	authMiddleware *middleware.AuthenticatedMiddleware,
-) {
-	router.Get("/auth",
-		authMiddleware.AuthenticationMiddleware,
-		handler.ValidateClerkToken,
-	)
+	// Member management routes
+	setupMemberRoutes(public, h.WorkspaceHandler, m)
+
+	// Competitor management routes
+	setupCompetitorRoutes(public, h.WorkspaceHandler, m, r)
+
+	// Page management routes
+	setupPageRoutes(public, h.WorkspaceHandler, m, r)
 }
 
 // setupUserRoutes configures user management routes
 func setupUserRoutes(
 	router fiber.Router,
 	handler *handlers.UserHandler,
-	authMiddleware *middleware.AuthenticatedMiddleware,
 ) {
-	user := router.Group("/user",
-		authMiddleware.AuthenticationMiddleware,
-	)
-	user.Delete("/", handler.DeleteAccount)
+	// Delete the current user account
+	router.Delete("/users", handler.DeleteCurrentUser)
+	// Get the current user account
+	router.Get("/users", handler.GetCurrentUser)
 }
 
 // setupWorkspaceRoutes configures workspace and related resource management routes
 func setupWorkspaceRoutes(
 	router fiber.Router,
 	workspaceHandler *handlers.WorkspaceHandler,
-	userHandler *handlers.UserHandler,
-	authMiddleware *middleware.AuthenticatedMiddleware,
-	authorization *middleware.AuthorizationMiddleware,
-	pathMiddleware *middleware.WorkspacePathValidationMiddleware,
+	m *middleware.AccessMiddleware,
 ) {
-	// Base workspace group with authentication
-	workspace := router.Group("/workspace",
-		authMiddleware.AuthenticationMiddleware,
-	)
+	// Create a new workspace for a user
+	router.Post("/workspace",
+		workspaceHandler.CreateWorkspaceForUser)
 
-	// Basic workspace operations
-	workspace.Post("/", workspaceHandler.CreateWorkspace)
-	workspace.Get("/", workspaceHandler.ListWorkspaces)
+	// List all workspaces for a user
+	router.Get("/workspace",
+		workspaceHandler.ListWorkspacesForUser)
 
-	// Workspace-specific routes
-	workspaceBase := workspace.Group("/:workspaceID",
-		pathMiddleware.ValidateWorkspacePath,
-	)
+	// Get a workspace by ID
+	router.Get("/workspace/:workspaceID",
+		m.RequiresWorkspaceMember,
+		workspaceHandler.GetWorkspaceByID)
 
-	setupWorkspaceAdminRoutes(workspaceBase, workspaceHandler, authorization)
-	setupWorkspaceMemberRoutes(workspaceBase, workspaceHandler, userHandler, authorization)
-	setupCompetitorRoutes(workspaceBase, workspaceHandler, authorization, pathMiddleware)
+	// Update a workspace by ID
+	router.Put("/workspace/:workspaceID",
+		m.RequiresWorkspaceMember,
+		workspaceHandler.UpdateWorkspaceByID)
+
+	// Delete a workspace by ID
+	router.Delete("/workspace/:workspaceID",
+		m.RequiresWorkspaceAdmin,
+		workspaceHandler.DeleteWorkspaceByID)
+
+	// Join a workspace by ID
+	router.Post("/workspace/:workspaceID/join",
+		m.RequiresPendingWorkspaceMember,
+		workspaceHandler.JoinWorkspaceByID)
+
+	// Exit a workspace by ID
+	router.Post("/workspace/:workspaceID/exit",
+		m.RequiresWorkspaceMember,
+		workspaceHandler.ExitWorkspaceByID)
 }
 
-// setupWorkspaceAdminRoutes configures admin-only workspace management routes
-func setupWorkspaceAdminRoutes(
-	router fiber.Router,
-	handler *handlers.WorkspaceHandler,
-	authorization *middleware.AuthorizationMiddleware,
-) {
-	admin := router.Group("",
-		authorization.RequireWorkspaceAdmin,
-	)
-
-	admin.Put("/", handler.UpdateWorkspace)
-	admin.Delete("/", handler.DeleteWorkspace)
-	admin.Delete("/users/:userId", handler.RemoveUserFromWorkspace)
-	admin.Put("/users/:userId", handler.UpdateUserRoleInWorkspace)
-}
-
-// setupWorkspaceMemberRoutes configures member-specific workspace routes
-func setupWorkspaceMemberRoutes(
+func setupMemberRoutes(
 	router fiber.Router,
 	workspaceHandler *handlers.WorkspaceHandler,
-	userHandler *handlers.UserHandler,
-	authorization *middleware.AuthorizationMiddleware,
+	m *middleware.AccessMiddleware,
 ) {
-	// Pending member routes
-	router.Post("/join", authorization.RequirePendingWorkspaceMembership, userHandler.Sync, workspaceHandler.JoinWorkspace)
+	// List all users in a workspace
+	router.Get("/workspace/:workspaceID/users",
+		m.RequiresWorkspaceMember,
+		workspaceHandler.ListUsersForWorkspace)
 
-	// Active member routes
-	member := router.Group("",
-		authorization.RequireWorkspaceMembership,
-	)
-	member.Post("/exit", userHandler.Sync, workspaceHandler.ExitWorkspace)
-	member.Get("/", workspaceHandler.GetWorkspace)
+	// Invite a user to a workspace
+	router.Post("/workspace/:workspaceID/users",
+		m.RequiresWorkspaceMember,
+		workspaceHandler.InviteUsersToWorkspace)
 
-	// Extended member privileges
-	activeMember := router.Group("",
-		authorization.RequireActiveWorkspaceMembership,
-	)
-	activeMember.Get("/users", workspaceHandler.ListWorkspaceUsers)
-	activeMember.Post("/users", workspaceHandler.AddUserToWorkspace)
-	activeMember.Post("/competitors", workspaceHandler.CreateCompetitorForWorkspace)
-	activeMember.Get("/competitors", workspaceHandler.ListWorkspaceCompetitors)
+	// Update a user's role in a workspace
+	router.Put("/workspace/:workspaceID/users/:userID",
+		m.RequiresWorkspaceAdmin,
+		workspaceHandler.UpdateUserRoleInWorkspace)
+
+	// Remove a user from a workspace
+	router.Delete("/workspace/:workspaceID/users/:userID",
+		m.RequiresWorkspaceAdmin,
+		workspaceHandler.RemoveUserFromWorkspace)
 }
 
-// setupCompetitorRoutes configures competitor and page management routes
 func setupCompetitorRoutes(
 	router fiber.Router,
-	handler *handlers.WorkspaceHandler,
-	authorization *middleware.AuthorizationMiddleware,
-	pathMiddleware *middleware.WorkspacePathValidationMiddleware,
+	workspaceHandler *handlers.WorkspaceHandler,
+	m *middleware.AccessMiddleware,
+	r *middleware.ResourceMiddleware,
 ) {
-	competitor := router.Group("/competitors/:competitorID",
-		authorization.RequireActiveWorkspaceMembership,
-		pathMiddleware.ValidateCompetitorPath,
-	)
+	// List all competitors in a workspace
+	router.Get("/workspace/:workspaceID/competitors",
+		m.RequiresWorkspaceMember,
+		workspaceHandler.ListCompetitorsForWorkspace)
 
-	// Competitor management
-	competitor.Post("/pages", handler.AddPageToCompetitor)
-	competitor.Get("/pages", handler.ListPagesForCompetitor)
-	competitor.Delete("/", handler.RemoveCompetitorFromWorkspace)
+	// Add a competitor to a workspace
+	router.Post("/workspace/:workspaceID/competitors",
+		m.RequiresWorkspaceMember,
+		workspaceHandler.CreateCompetitorForWorkspace)
 
-	// Page management
-	page := competitor.Group("/pages/:pageID",
-		pathMiddleware.ValidatePagePath,
-	)
-	page.Get("/history", handler.ListPageHistory)
-	page.Delete("/", handler.RemovePageFromCompetitor)
-	page.Put("/", handler.UpdatePageInCompetitor)
+	// Get a competitor in a workspace
+	router.Get("/workspace/:workspaceID/competitors/:competitorID",
+		m.RequiresWorkspaceMember,
+		r.ValidateCompetitorResource,
+		workspaceHandler.GetCompetitorForWorkspace)
+
+	// Update a competitor in a workspace
+	router.Put("/workspace/:workspaceID/competitors/:competitorID",
+		m.RequiresWorkspaceMember,
+		r.ValidateCompetitorResource,
+		workspaceHandler.UpdateCompetitorForWorkspace)
+
+	// Delete a competitor from a workspace
+	router.Delete("/workspace/:workspaceID/competitors/:competitorID",
+		m.RequiresWorkspaceMember,
+		r.ValidateCompetitorResource,
+		workspaceHandler.RemoveCompetitorFromWorkspace)
+}
+
+func setupPageRoutes(
+	router fiber.Router,
+	workspaceHandler *handlers.WorkspaceHandler,
+	m *middleware.AccessMiddleware,
+	r *middleware.ResourceMiddleware,
+) {
+	// List all pages in a workspace
+	router.Get("/workspace/:workspaceID/competitors/:competitorID/pages",
+		m.RequiresWorkspaceMember,
+		r.ValidateCompetitorResource,
+		workspaceHandler.ListPagesForCompetitor)
+
+	// Add a page to a competitor
+	router.Post("/workspace/:workspaceID/competitors/:competitorID/pages",
+		m.RequiresWorkspaceMember,
+		r.ValidateCompetitorResource,
+		workspaceHandler.AddPagesToCompetitor)
+
+	// Get a page in a competitor
+	router.Get("/workspace/:workspaceID/competitors/:competitorID/pages/:pageID",
+		m.RequiresWorkspaceMember,
+		r.ValidatePageResource,
+		workspaceHandler.GetPageForCompetitor)
+
+	// Update a page in a competitor
+	router.Put("/workspace/:workspaceID/competitors/:competitorID/pages/:pageID",
+		m.RequiresWorkspaceMember,
+		r.ValidatePageResource,
+		workspaceHandler.UpdatePageForCompetitor)
+
+	// Delete a page from a competitor
+	router.Delete("/workspace/:workspaceID/competitors/:competitorID/pages/:pageID",
+		m.RequiresWorkspaceMember,
+		r.ValidatePageResource,
+		workspaceHandler.RemovePageFromCompetitor)
+
+	// List page history for a page
+	router.Get("/workspace/:workspaceID/competitors/:competitorID/pages/:pageID/history",
+		m.RequiresWorkspaceMember,
+		r.ValidatePageResource,
+		workspaceHandler.ListPageHistory)
 }
 
 // setupPrivateRoutes configures all private API endpoints
-func setupPrivateRoutes(app *fiber.App, h *HandlerContainer, authMiddleware *middleware.AuthenticatedMiddleware) {
-	private := app.Group("/api/private/v1",
-		authMiddleware.PrivateRouteAuthenticationMiddleware)
+func setupPrivateRoutes(app *fiber.App, h *HandlerContainer, m *middleware.AccessMiddleware) {
+	private := app.Group("/api/private/v1", m.RequiresPrivateToken)
 
-	// Management token validation
-	private.Get("/validate", h.UserHandler.ValidateManagementToken)
+  // Token validation
+	private.Get("/token", h.UserHandler.ValidateManagementToken)
 
+	// Workflow management routes
 	setupWorkflowRoutes(private, h.WorkflowHandler)
+
+	// Screenshot management routes
 	setupScreenshotRoutes(private, h.ScreenshotHandler)
+
+	// AI analysis routes
 	setupAIRoutes(private, h.AIHandler)
+
+	// Schedule management routes
 	setupScheduleRoutes(private, h.ScheduleHandler)
 }
 
 // setupWorkflowRoutes configures workflow management endpoints
 func setupWorkflowRoutes(router fiber.Router, handler *handlers.WorkflowHandler) {
-	workflow := router.Group("/workflow")
-
 	// Job management
-	workflow.Post("/:workflowType/job", handler.StartWorkflow)
-	workflow.Delete("/:workflowType/job/:jobID", handler.StopWorkflow)
-	workflow.Get("/:workflowType/job/:jobID", handler.GetWorkflow)
+	router.Post("/workflow/:workflowType/job", handler.StartWorkflow)
+	router.Delete("/workflow/:workflowType/job/:jobID", handler.StopWorkflow)
+	router.Get("/workflow/:workflowType/job/:jobID", handler.GetWorkflow)
 
 	// Workflow monitoring
-	workflow.Get("/checkpoint", handler.ListCheckpoint)
-	workflow.Get("/history", handler.ListHistory)
+	router.Get("/workflow/checkpoint", handler.ListCheckpoint)
+	router.Get("/workflow/history", handler.ListHistory)
 }
 
 // setupScreenshotRoutes configures screenshot management endpoints
 func setupScreenshotRoutes(router fiber.Router, handler *handlers.ScreenshotHandler) {
-	screenshot := router.Group("/screenshot")
-
 	// Screenshot operations
-	screenshot.Post("/", handler.CreateScreenshot)
-	screenshot.Get("/", handler.ListScreenshots)
+	router.Post("/screenshot/", handler.CreateScreenshot)
+	router.Get("/screenshot/", handler.ListScreenshots)
 
 	// Screenshot content retrieval
-	screenshot.Get("/image", handler.GetScreenshotImage)
-	screenshot.Get("/content", handler.GetScreenshotContent)
+	router.Get("/screenshot/image", handler.GetScreenshotImage)
+	router.Get("/screenshot/content", handler.GetScreenshotContent)
 }
 
 // setupAIRoutes configures AI analysis endpoints
 func setupAIRoutes(router fiber.Router, handler *handlers.AIHandler) {
-	ai := router.Group("/ai")
-
 	// Analysis endpoints
-	ai.Post("/content", handler.AnalyzeContentDifferences)
-	ai.Post("/visual", handler.AnalyzeVisualDifferences)
+	router.Post("/ai/content", handler.AnalyzeContentDifferences)
+	router.Post("/ai/visual", handler.AnalyzeVisualDifferences)
 }
 
 // setupScheduleRoutes configures schedule management endpoints
 func setupScheduleRoutes(router fiber.Router, handler *handlers.ScheduleHandler) {
-	schedule := router.Group("/schedule")
-
 	// CRUD operations for schedules
-	schedule.Post("/", handler.CreateSchedule)
-	schedule.Get("/", handler.ListSchedules)
-	schedule.Get("/:scheduleID", handler.GetSchedule)
-	schedule.Delete("/:scheduleID", handler.DeleteSchedule)
-	schedule.Put("/:scheduleID", handler.UpdateSchedule)
+	router.Post("/schedule", handler.CreateSchedule)
+	router.Get("/schedule", handler.ListSchedules)
+	router.Get("/schedule/:scheduleID", handler.GetSchedule)
+	router.Delete("/schedule/:scheduleID", handler.DeleteSchedule)
+	router.Put("/schedule/:scheduleID", handler.UpdateSchedule)
 }
