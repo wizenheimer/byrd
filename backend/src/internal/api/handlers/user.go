@@ -19,7 +19,8 @@ func NewUserHandler(userService user.UserService, logger *logger.Logger) *UserHa
 	}
 }
 
-func (uh *UserHandler) GetAccount(c *fiber.Ctx) error {
+// GetCurrentUser returns the current user
+func (uh *UserHandler) GetCurrentUser(c *fiber.Ctx) error {
 	clerkUser, err := getClerkUserFromContext(c)
 	if err != nil {
 		return sendErrorResponse(c, uh.logger, fiber.StatusUnauthorized, "Couldn't get user from context", err.Error())
@@ -34,7 +35,8 @@ func (uh *UserHandler) GetAccount(c *fiber.Ctx) error {
 	return sendDataResponse(c, fiber.StatusOK, "User retrieved successfully", user)
 }
 
-func (uh *UserHandler) DeleteAccount(c *fiber.Ctx) error {
+// DeleteCurrentUser deletes the current user
+func (uh *UserHandler) DeleteCurrentUser(c *fiber.Ctx) error {
 	clerkUser, err := getClerkUserFromContext(c)
 	if err != nil {
 		return sendErrorResponse(c, uh.logger, fiber.StatusUnauthorized, "Couldn't get user from context", err.Error())
@@ -45,28 +47,4 @@ func (uh *UserHandler) DeleteAccount(c *fiber.Ctx) error {
 	}
 
 	return sendDataResponse(c, fiber.StatusOK, "User deleted successfully", nil)
-}
-
-func (uh *UserHandler) ValidateClerkToken(c *fiber.Ctx) error {
-	// Validation of the clerk token is done by the middleware
-	return sendDataResponse(c, fiber.StatusOK, "Clerk token is valid", nil)
-}
-
-func (uh *UserHandler) ValidateManagementToken(c *fiber.Ctx) error {
-	// Validation of the management token is done by the middleware
-	return sendDataResponse(c, fiber.StatusOK, "Token is valid", nil)
-}
-
-func (uh *UserHandler) Sync(c *fiber.Ctx) error {
-	clerkUser, err := getClerkUserFromContext(c)
-	if err != nil {
-		return sendErrorResponse(c, uh.logger, fiber.StatusUnauthorized, "Couldn't get user from context", err.Error())
-	}
-
-	if err := uh.userService.SyncUser(c.Context(), clerkUser); err != nil {
-		return sendErrorResponse(c, uh.logger, fiber.StatusInternalServerError, "Could not sync user", err.Error())
-	}
-
-	uh.logger.Debug("User synced successfully")
-	return c.Next()
 }

@@ -5,6 +5,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+	"github.com/wizenheimer/byrd/src/internal/api/commons"
 	api "github.com/wizenheimer/byrd/src/internal/models/api"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/internal/service/scheduler"
@@ -111,8 +112,8 @@ func (h *ScheduleHandler) DeleteSchedule(c *fiber.Ctx) error {
 func (h *ScheduleHandler) ListSchedules(c *fiber.Ctx) error {
 	h.logger.Debug("listing schedules")
 
-	pageNumber := c.QueryInt("pageNumber", 1)
-	pageSize := c.QueryInt("pageSize", 10)
+	pageNumber := max(1, c.QueryInt("_page", commons.DefaultPageNumber))
+	pageSize := max(10, c.QueryInt("_limit", commons.DefaultPageSize))
 
 	pagination := api.PaginationParams{
 		Page:     pageNumber,
