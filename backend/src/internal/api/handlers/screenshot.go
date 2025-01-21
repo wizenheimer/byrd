@@ -123,6 +123,52 @@ func (h *ScreenshotHandler) ListScreenshots(c *fiber.Ctx) error {
 	return sendDataResponse(c, fiber.StatusOK, "Listed screenshots successfully", result)
 }
 
+func (h *ScreenshotHandler) RefreshScreenshot(c *fiber.Ctx) error {
+	var opts models.ScreenshotRequestOptions
+	if err := c.BodyParser(&opts); err != nil {
+		return sendErrorResponse(c, h.logger, fiber.StatusBadRequest, "Invalid request body", err.Error())
+	}
+
+	if err := utils.SetDefaultsAndValidate(&opts); err != nil {
+		return sendErrorResponse(c, h.logger, fiber.StatusBadRequest, "Invalid request body", err.Error())
+	}
+
+	screenshotResp, htmlResp, err := h.screenshotService.Refresh(c.Context(), opts.URL, opts)
+	if err != nil {
+		return sendErrorResponse(c, h.logger, fiber.StatusInternalServerError, "Could not refresh screenshot", err.Error())
+	}
+
+	return sendDataResponse(c, fiber.StatusOK, "Refreshed screenshot successfully", map[string]any{
+		"image":        screenshotResp.Metadata,
+		"image_path":   screenshotResp.StoragePath,
+		"content":      htmlResp.Metadata,
+		"content_path": htmlResp.StoragePath,
+	})
+}
+
+func (h *ScreenshotHandler) InitiateScreenshot(c *fiber.Ctx) error {
+	var opts models.ScreenshotRequestOptions
+	if err := c.BodyParser(&opts); err != nil {
+		return sendErrorResponse(c, h.logger, fiber.StatusBadRequest, "Invalid request body", err.Error())
+	}
+
+	if err := utils.SetDefaultsAndValidate(&opts); err != nil {
+		return sendErrorResponse(c, h.logger, fiber.StatusBadRequest, "Invalid request body", err.Error())
+	}
+
+	screenshotResp, htmlResp, err := h.screenshotService.Initiate(c.Context(), opts.URL, opts)
+	if err != nil {
+		return sendErrorResponse(c, h.logger, fiber.StatusInternalServerError, "Could not refresh screenshot", err.Error())
+	}
+
+	return sendDataResponse(c, fiber.StatusOK, "Refreshed screenshot successfully", map[string]any{
+		"image":        screenshotResp.Metadata,
+		"image_path":   screenshotResp.StoragePath,
+		"content":      htmlResp.Metadata,
+		"content_path": htmlResp.StoragePath,
+	})
+}
+
 // addScreenshotMetadataToHeaders adds the screenshot metadata to the response headers
 func (h *ScreenshotHandler) addScreenshotMetadataToHeaders(c *fiber.Ctx, screenshotResult *models.ScreenshotImageResponse) {
 	if screenshotResult == nil {

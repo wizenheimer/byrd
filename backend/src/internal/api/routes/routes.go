@@ -293,6 +293,10 @@ func setupScreenshotRoutes(router fiber.Router, handler *handlers.ScreenshotHand
 	router.Post("/screenshot/", handler.CreateScreenshot)
 	router.Get("/screenshot/", handler.ListScreenshots)
 
+	// Screenshot operations for a specific page
+	router.Post("/screenshot/refresh", handler.RefreshScreenshot)
+	router.Post("/screenshot/initiate", handler.InitiateScreenshot)
+
 	// Screenshot content retrieval
 	router.Get("/screenshot/image", handler.GetScreenshotImage)
 	router.Get("/screenshot/content", handler.GetScreenshotContent)

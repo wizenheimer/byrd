@@ -62,7 +62,9 @@ func NewR2ScreenshotRepo(accessKey, secretKey, bucket, accountID string, logger 
 // StoreScreenshot stores a screenshot in R2 storage
 func (s *r2ScreenshotRepo) StoreScreenshotImage(ctx context.Context, data models.ScreenshotImageResponse, path string) error {
 	s.logger.Debug("storing screenshot",
-		zap.String("path", path))
+		zap.String("path", path),
+		zap.Any("metadata", data.Metadata),
+	)
 
 	buf := new(bytes.Buffer)
 	if err := encodeImage(data.Image, buf); err != nil {
@@ -88,7 +90,9 @@ func (s *r2ScreenshotRepo) StoreScreenshotImage(ctx context.Context, data models
 
 // StoreContent stores text content in R2 storage
 func (s *r2ScreenshotRepo) StoreScreenshotHTMLContent(ctx context.Context, data models.ScreenshotHTMLContentResponse, path string) error {
-	s.logger.Debug("storing content", zap.String("path", path))
+	s.logger.Debug("storing content",
+		zap.String("path", path),
+		zap.Any("metadata", data.Metadata))
 
 	_, err := s.client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket:      aws.String(s.bucket),

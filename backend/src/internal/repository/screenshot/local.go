@@ -100,7 +100,9 @@ func (s *localScreenshotRepo) loadMetadata(path string) (models.ScreenshotMetada
 
 // StoreScreenshot stores a screenshot in the local storage
 func (s *localScreenshotRepo) StoreScreenshotImage(ctx context.Context, data models.ScreenshotImageResponse, path string) error {
-	s.logger.Debug("storing screenshot", zap.String("path", path))
+	s.logger.Debug("storing screenshot",
+		zap.String("path", path),
+		zap.Any("metadata", data.Metadata))
 
 	if err := s.ensurePath(path); err != nil {
 		return err
@@ -122,7 +124,9 @@ func (s *localScreenshotRepo) StoreScreenshotImage(ctx context.Context, data mod
 
 // StoreContent stores a text content in the local storage
 func (s *localScreenshotRepo) StoreScreenshotHTMLContent(ctx context.Context, data models.ScreenshotHTMLContentResponse, path string) error {
-	s.logger.Debug("storing content", zap.String("path", path))
+	s.logger.Debug("storing content",
+		zap.String("path", path),
+		zap.Any("metadata", data.Metadata))
 
 	if err := s.ensurePath(path); err != nil {
 		return err

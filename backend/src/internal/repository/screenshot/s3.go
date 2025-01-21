@@ -59,7 +59,8 @@ func NewS3ScreenshotRepo(baseEndpoint, accessKey, secretKey, bucket, region stri
 // StoreScreenshot stores a screenshot in S3 storage
 func (s *s3ScreenshotRepo) StoreScreenshotImage(ctx context.Context, data models.ScreenshotImageResponse, path string) error {
 	s.logger.Debug("storing screenshot",
-		zap.String("path", path))
+		zap.String("path", path),
+		zap.Any("metadata", data.Metadata))
 
 	buf := new(bytes.Buffer)
 	if err := encodeImage(data.Image, buf); err != nil {
@@ -85,7 +86,9 @@ func (s *s3ScreenshotRepo) StoreScreenshotImage(ctx context.Context, data models
 
 // StoreContent stores text content in S3 storage
 func (s *s3ScreenshotRepo) StoreScreenshotHTMLContent(ctx context.Context, data models.ScreenshotHTMLContentResponse, path string) error {
-	s.logger.Debug("storing content", zap.String("path", path))
+	s.logger.Debug("storing content",
+		zap.String("path", path),
+		zap.Any("metadata", data.Metadata))
 
 	_, err := s.client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket:      aws.String(s.bucket),

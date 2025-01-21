@@ -17,7 +17,7 @@ import (
 )
 
 // prepareImageResponse prepares the image response from the HTTP response
-func (s *screenshotService) prepareScreenshotImageResponse(resp *http.Response, url string, year int, weekNumber int, weekDay int) (*models.ScreenshotImageResponse, error) {
+func (s *screenshotService) prepareScreenshotImageResponse(resp *http.Response, url string, year int, weekNumber int, weekDay int, path string) (*models.ScreenshotImageResponse, error) {
 	s.logger.Debug("preparing screenshot image response", zap.Any("url", url), zap.Any("year", year), zap.Any("week_number", weekNumber), zap.Any("week_day", weekDay))
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("received non-200 status code, status: %s", resp.Status)
@@ -45,13 +45,14 @@ func (s *screenshotService) prepareScreenshotImageResponse(resp *http.Response, 
 		},
 		ImageHeight: utils.ToPtr(height),
 		ImageWidth:  utils.ToPtr(width),
+    StoragePath: path,
 	}
 
 	return &screenshotResponse, nil
 }
 
 // prepareHTMLContentResponse prepares the HTML content response from the HTTP response
-func (s *screenshotService) prepareScreenshotHTMLContentResponse(resp *http.Response, sourceURL, renderedURL string, year int, weekNumber int, weekDay int) (*models.ScreenshotHTMLContentResponse, error) {
+func (s *screenshotService) prepareScreenshotHTMLContentResponse(resp *http.Response, sourceURL, renderedURL string, year int, weekNumber int, weekDay int, path string) (*models.ScreenshotHTMLContentResponse, error) {
 	s.logger.Debug("preparing screenshot HTML content response", zap.Any("source_url", sourceURL), zap.Any("rendered_url", renderedURL), zap.Any("year", year), zap.Any("week_number", weekNumber), zap.Any("week_day", weekDay))
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("received non-200 status code, status: %s", resp.Status)
@@ -75,6 +76,7 @@ func (s *screenshotService) prepareScreenshotHTMLContentResponse(resp *http.Resp
 			WeekNumber:  weekNumber,
 			WeekDay:     weekDay,
 		},
+		StoragePath: path,
 	}
 
 	return &htmlResponse, nil
