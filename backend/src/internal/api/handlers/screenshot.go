@@ -40,7 +40,7 @@ func (h *ScreenshotHandler) CreateScreenshot(c *fiber.Ctx) error {
 		return sendErrorResponse(c, h.logger, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 
-	screenshotResult, err := h.screenshotService.GetCurrentImage(c.Context(), true, sOpts)
+	screenshotResult, err := h.screenshotService.GetCurrentImage(c.Context(), true, false, sOpts)
 	if err != nil {
 		return sendErrorResponse(c, h.logger, fiber.StatusInternalServerError, "Could not create screenshot", err.Error())
 	}
@@ -50,7 +50,7 @@ func (h *ScreenshotHandler) CreateScreenshot(c *fiber.Ctx) error {
 		RenderedURL: screenshotResult.Metadata.RenderedURL,
 	}
 
-	contentResult, err := h.screenshotService.GetCurrentHTMLContent(c.Context(), true, hOpts)
+	contentResult, err := h.screenshotService.GetCurrentHTMLContent(c.Context(), true, false, hOpts)
 	if err != nil {
 		return sendErrorResponse(c, h.logger, fiber.StatusInternalServerError, "Could not create screenshot content", err.Error())
 	}

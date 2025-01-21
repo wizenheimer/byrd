@@ -101,7 +101,10 @@ func GeneratePath(hash string, year, weekNumber int, runID string) (string, erro
 }
 
 // GetCurrentScreenshotPath returns the path to the current screenshot for a given url
-func GetCurrentScreenshotPath(url string) (string, error) {
+func GetCurrentScreenshotPath(url string, backDate bool) (string, error) {
+	if backDate {
+		return GetPreviousScreenshotPath(url)
+	}
 	hash, err := GenerateURLHash(url)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate URL hash: %w", err)
@@ -117,7 +120,10 @@ func GetCurrentScreenshotPath(url string) (string, error) {
 }
 
 // GetCurrentContentPath returns the path to the current content for a given url
-func GetCurrentContentPath(url string) (string, error) {
+func GetCurrentContentPath(url string, backDate bool) (string, error) {
+	if backDate {
+		return GetPreviousContentPath(url)
+	}
 	hash, err := GenerateURLHash(url)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate URL hash: %w", err)

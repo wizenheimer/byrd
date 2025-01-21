@@ -79,7 +79,23 @@ func (ps *pageService) CreatePage(ctx context.Context, competitorID uuid.UUID, p
 		return createdPages, errors.New("non-fatal: failed to create all pages")
 	}
 
+	ps.refreshScreenshot(createdPages)
+
 	return createdPages, nil
+}
+
+func (ps *pageService) refreshScreenshot(pages []models.Page) {
+	for _, page := range pages {
+		go func(page models.Page) {
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+			if ir, hr, err := ps.screenshotService.Initiate(ctx, page.URL, page.CaptureProfile); err != nil {
+				ps.logger.Error("failed to refresh page", zap.Any("pageID", page.ID), zap.Error(err))
+			} else {
+				ps.logger.Debug("refreshed page", zap.Any("pageID", page.ID), zap.Any("imagePath", ir.StoragePath), zap.Any("contentPath", hr.StoragePath))
+			}
+		}(page)
+	}
 }
 
 func (ps *pageService) GetPage(ctx context.Context, competitorID uuid.UUID, pageID uuid.UUID) (*models.Page, error) {

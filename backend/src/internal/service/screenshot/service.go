@@ -69,7 +69,7 @@ func NewScreenshotService(logger *logger.Logger, opts ...ScreenshotServiceOption
 // Refresh retrieves the current screenshot and html content for a given URL
 func (s *screenshotService) Refresh(ctx context.Context, url string, opts models.ScreenshotRequestOptions) (*models.ScreenshotImageResponse, *models.ScreenshotHTMLContentResponse, error) {
 	s.logger.Debug("refreshing screenshot", zap.String("url", url), zap.Any("opts", opts))
-	imgResp, err := s.GetCurrentImage(ctx, true, opts)
+	imgResp, err := s.GetCurrentImage(ctx, true, false, opts)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -79,7 +79,28 @@ func (s *screenshotService) Refresh(ctx context.Context, url string, opts models
 		RenderedURL: imgResp.Metadata.RenderedURL,
 	}
 
-	htmlContentResp, err := s.GetCurrentHTMLContent(ctx, true, htmlOpts)
+	htmlContentResp, err := s.GetCurrentHTMLContent(ctx, true, false, htmlOpts)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return imgResp, htmlContentResp, nil
+}
+
+// Initiate initializes the screenshot repository with the latest screenshot and html content for a given URL by back dating the current capture
+func (s *screenshotService) Initiate(ctx context.Context, url string, opts models.ScreenshotRequestOptions) (*models.ScreenshotImageResponse, *models.ScreenshotHTMLContentResponse, error) {
+	s.logger.Debug("initiating screenshot", zap.String("url", url), zap.Any("opts", opts))
+	imgResp, err := s.GetCurrentImage(ctx, true, true, opts)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	htmlOpts := models.ScreenshotHTMLRequestOptions{
+		SourceURL:   opts.URL,
+		RenderedURL: imgResp.Metadata.RenderedURL,
+	}
+
+	htmlContentResp, err := s.GetCurrentHTMLContent(ctx, true, true, htmlOpts)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -103,22 +124,21 @@ func (s *screenshotService) Retrieve(ctx context.Context, url string) (*models.S
 	return imgResp, htmlContentResp, nil
 }
 
-// GetCurrentImage retrieves the current screenshot from the storage if present
-// Or it will take a new screenshot and store it as an image
-func (s *screenshotService) GetCurrentImage(ctx context.Context, save bool, opts models.ScreenshotRequestOptions) (*models.ScreenshotImageResponse, error) {
-	s.logger.Debug("getting current image", zap.Any("opts", opts))
-	// Get screenshot if it exists
-	if screenshotResponse, err := s.getExistingScreenshotImage(ctx, opts.URL); err == nil {
-		return screenshotResponse, nil
-	}
-
+func (s *screenshotService) createScreenshot(opts models.ScreenshotRequestOptions, backDate bool) (*models.ScreenshotImageResponse, error) {
 	// Prepare screenshot
 	resp, err := s.prepareScreenshot(opts)
 	if err != nil {
 		return nil, err
 	}
 
-	currentYear, currentWeek, currentDayString := utils.GetCurrentTimeComponents(true)
+	var currentDayString string
+	var currentWeek int
+	var currentYear int
+	if backDate {
+		currentYear, currentWeek, currentDayString = utils.GetPreviousTimeComponents(true)
+	} else {
+		currentYear, currentWeek, currentDayString = utils.GetCurrentTimeComponents(true)
+	}
 	currentDay, err := strconv.Atoi(currentDayString)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert current day to int, %s, date: %s", err.Error(), currentDayString)
@@ -129,30 +149,52 @@ func (s *screenshotService) GetCurrentImage(ctx context.Context, save bool, opts
 	if err != nil {
 		return nil, err
 	}
-
-	// Save the screenshot if required
-	if save {
-		currentPath, err := utils.GetCurrentScreenshotPath(opts.URL)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get current screenshot path, %s", err.Error())
-		}
-		if err := s.storage.StoreScreenshotImage(ctx, *imgResp, currentPath); err != nil {
-			return nil, fmt.Errorf("failed to store screenshot image, %s", err.Error())
-		}
+	if imgResp == nil {
+		return nil, errors.New("failed to prepare screenshot image response")
 	}
 
 	return imgResp, nil
 }
 
-// GetCurrentHTMLContent retrieves the current html content from the storage if present
-// Or it will take a new screenshot and store it as html
-func (s *screenshotService) GetCurrentHTMLContent(ctx context.Context, save bool, opts models.ScreenshotHTMLRequestOptions) (*models.ScreenshotHTMLContentResponse, error) {
-	s.logger.Debug("getting current html content", zap.Any("opts", opts))
+// GetCurrentImage retrieves the current screenshot from the storage if present
+// Or it will take a new screenshot and store it as an image
+func (s *screenshotService) GetCurrentImage(ctx context.Context, save bool, backDate bool, opts models.ScreenshotRequestOptions) (*models.ScreenshotImageResponse, error) {
+	s.logger.Debug("getting current image", zap.Any("opts", opts))
+
 	// Get screenshot if it exists
-	if htmlContentResp, err := s.getExistingHTMLContent(ctx, opts.RenderedURL); err == nil {
-		return htmlContentResp, nil
+	screenshotResponse, err := s.getExistingScreenshotImage(ctx, opts.URL, backDate)
+	if err == nil && !backDate {
+		return screenshotResponse, nil
 	}
 
+	// Incase the screenshot does not exist, create a new one
+	if screenshotResponse == nil || err != nil {
+		// Create a new screenshot
+		screenshotResponse, err = s.createScreenshot(opts, backDate)
+		if err != nil {
+			return nil, err
+		}
+		// Check if the screenshot was created
+		if screenshotResponse == nil {
+			return nil, errors.New("failed to create screenshot")
+		}
+	}
+
+	// Save the screenshot if required
+	if save {
+		path, err := utils.GetCurrentScreenshotPath(opts.URL, backDate)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get current content path, %s", err.Error())
+		}
+		if err := s.storage.StoreScreenshotImage(ctx, *screenshotResponse, path); err != nil {
+			return nil, err
+		}
+	}
+
+	return screenshotResponse, nil
+}
+
+func (s *screenshotService) createHTMLContent(opts models.ScreenshotHTMLRequestOptions, backDate bool) (*models.ScreenshotHTMLContentResponse, error) {
 	// Prepare screenshot
 	resp, err := s.prepareScreenshotHTML(opts)
 	if err != nil {
@@ -160,7 +202,14 @@ func (s *screenshotService) GetCurrentHTMLContent(ctx context.Context, save bool
 	}
 
 	// Get current time components
-	currentYear, currentWeek, currentDayString := utils.GetCurrentTimeComponents(true)
+	var currentDayString string
+	var currentWeek int
+	var currentYear int
+	if backDate {
+		currentYear, currentWeek, currentDayString = utils.GetPreviousTimeComponents(true)
+	} else {
+		currentYear, currentWeek, currentDayString = utils.GetCurrentTimeComponents(true)
+	}
 	currentDay, err := strconv.Atoi(currentDayString)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert current day to int, %s, date: %s", err.Error(), currentDayString)
@@ -171,14 +220,42 @@ func (s *screenshotService) GetCurrentHTMLContent(ctx context.Context, save bool
 	if err != nil {
 		return nil, err
 	}
+	if htmlContentResp == nil {
+		return nil, errors.New("failed to prepare screenshot html content response")
+	}
+
+	return htmlContentResp, nil
+}
+
+// GetCurrentHTMLContent retrieves the current html content from the storage if present
+// Or it will take a new screenshot and store it as html
+func (s *screenshotService) GetCurrentHTMLContent(ctx context.Context, save bool, backDate bool, opts models.ScreenshotHTMLRequestOptions) (*models.ScreenshotHTMLContentResponse, error) {
+	s.logger.Debug("getting current html content", zap.Any("opts", opts))
+	// Get screenshot if it exists
+	htmlContentResp, err := s.getExistingHTMLContent(ctx, opts.RenderedURL, backDate)
+	if err == nil && !backDate {
+		return htmlContentResp, nil
+	}
+	if htmlContentResp == nil || err != nil {
+		// Create a new screenshot
+		htmlContentResp, err = s.createHTMLContent(opts, backDate)
+		if err != nil {
+			return nil, err
+		}
+		// Check if the screenshot was created
+		if htmlContentResp == nil {
+			return nil, errors.New("failed to create screenshot")
+		}
+	}
 
 	// Save the screenshot if required
 	if save {
-		currentPath, err := utils.GetCurrentContentPath(opts.SourceURL)
+		var path string
+		path, err := utils.GetCurrentContentPath(opts.SourceURL, backDate)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get current content path, %s", err.Error())
 		}
-		if err := s.storage.StoreScreenshotHTMLContent(ctx, *htmlContentResp, currentPath); err != nil {
+		if err := s.storage.StoreScreenshotHTMLContent(ctx, *htmlContentResp, path); err != nil {
 			return nil, err
 		}
 	}

@@ -13,17 +13,22 @@ type ScreenshotService interface {
 	// opts are the options for the screenshot
 	Refresh(ctx context.Context, url string, opts models.ScreenshotRequestOptions) (*models.ScreenshotImageResponse, *models.ScreenshotHTMLContentResponse, error)
 
+  // Initiate initializes the screenshot repository with the latest screenshot and html content for a given URL by back dating the current capture
+  // url is the URL to take a screenshot of
+  // opts are the options for the screenshot
+  Initiate(ctx context.Context, url string, opts models.ScreenshotRequestOptions) (*models.ScreenshotImageResponse, *models.ScreenshotHTMLContentResponse, error)
+
 	// Retrieve retrieves previous screenshot and html content from the storage
 	// url is the URL to retrieve the screenshot from
 	Retrieve(ctx context.Context, url string) (*models.ScreenshotImageResponse, *models.ScreenshotHTMLContentResponse, error)
 
 	// GetCurrentImage retrieves the current screenshot from the storage if present
 	// Or it will take a new screenshot and store it as an image
-	GetCurrentImage(ctx context.Context, save bool, opts models.ScreenshotRequestOptions) (*models.ScreenshotImageResponse, error)
+	GetCurrentImage(ctx context.Context, save, backDate bool, opts models.ScreenshotRequestOptions) (*models.ScreenshotImageResponse, error)
 
 	// GetCurrentHTML retrieves the current html content from the storage if present
 	// Or it will take a new screenshot and store it as html
-	GetCurrentHTMLContent(ctx context.Context, save bool, opts models.ScreenshotHTMLRequestOptions) (*models.ScreenshotHTMLContentResponse, error)
+	GetCurrentHTMLContent(ctx context.Context, save, backDate bool, opts models.ScreenshotHTMLRequestOptions) (*models.ScreenshotHTMLContentResponse, error)
 
 	// GetPreviousImage retrieves the previous screenshot from the storage
 	GetPreviousImage(ctx context.Context, url string) (*models.ScreenshotImageResponse, error)

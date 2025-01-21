@@ -126,9 +126,9 @@ func parseImageFromResponse(resp *http.Response) (image.Image, int, int, error) 
 
 // getExistingScreenshotImage retrieves the existing screenshot image from the storage
 // and returns the image and metadata
-func (s *screenshotService) getExistingScreenshotImage(ctx context.Context, url string) (*models.ScreenshotImageResponse, error) {
+func (s *screenshotService) getExistingScreenshotImage(ctx context.Context, url string, backDate bool) (*models.ScreenshotImageResponse, error) {
 	s.logger.Debug("getting existing screenshot image", zap.String("url", url))
-	screenshotPath, err := utils.GetCurrentScreenshotPath(url)
+	screenshotPath, err := utils.GetCurrentScreenshotPath(url, backDate)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current screenshot path, %s", err.Error())
 	}
@@ -144,9 +144,9 @@ func (s *screenshotService) getExistingScreenshotImage(ctx context.Context, url 
 
 // getExistingHTMLContent retrieves the existing screenshot content from the storage
 // and returns the content and metadata
-func (s *screenshotService) getExistingHTMLContent(ctx context.Context, url string) (*models.ScreenshotHTMLContentResponse, error) {
+func (s *screenshotService) getExistingHTMLContent(ctx context.Context, url string, backDate bool) (*models.ScreenshotHTMLContentResponse, error) {
 	s.logger.Debug("getting existing HTML content", zap.String("url", url))
-	contentPath, err := utils.GetCurrentContentPath(url)
+	contentPath, err := utils.GetCurrentContentPath(url, backDate)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current content path, %s", err.Error())
 	}
