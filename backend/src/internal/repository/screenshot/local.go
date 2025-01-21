@@ -1,21 +1,13 @@
 package screenshot
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"image"
-	"io/fs"
 	"os"
 	"path/filepath"
-	"sort"
-	"strings"
 
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
-	"github.com/wizenheimer/byrd/src/pkg/utils"
-	"go.uber.org/zap"
 )
 
 // localScreenshotRepo is a storage repository that uses the local filesystem as the backend
@@ -37,16 +29,12 @@ func NewLocalScreenshotRepo(directory string, logger *logger.Logger) (Screenshot
 	parentDirector := "data"
 	directory = filepath.Join(parentDirector, directory)
 
-	// Create directory if it doesn't exist
-	if err := os.MkdirAll(directory, 0755); err != nil {
-		return nil, fmt.Errorf("failed to create directory: %w", err)
-	}
-
-	logger.Debug("creating new local storage", zap.String("directory", directory))
-	return &localScreenshotRepo{
+	s := localScreenshotRepo{
 		directory: directory,
 		logger:    logger.WithFields(map[string]interface{}{"module": "storage"}),
-	}, nil
+	}
+
+	return &s, s.ensurePath(directory)
 }
 
 // ensurePath ensures the directory structure exists for a given path
@@ -55,252 +43,22 @@ func (s *localScreenshotRepo) ensurePath(path string) error {
 	return os.MkdirAll(dir, 0755)
 }
 
-// getMetadataPath returns the path for the metadata file
-func (s *localScreenshotRepo) getMetadataPath(path string) string {
-	return filepath.Join(s.directory, path+".metadata.json")
-}
-
-// saveMetadata saves metadata to a separate file
-func (s *localScreenshotRepo) saveMetadata(path string, metadata *models.ScreenshotMetadata) error {
-	if metadata == nil {
-		metadata = &models.ScreenshotMetadata{}
-	}
-
-	data, err := json.Marshal(metadata)
-	if err != nil {
-		return fmt.Errorf("failed to marshal metadata: %w", err)
-	}
-
-	metadataPath := s.getMetadataPath(path)
-	if err := os.WriteFile(metadataPath, data, 0644); err != nil {
-		return fmt.Errorf("failed to write metadata: %w", err)
-	}
-
+// StoreScreenshotImage stores a screenshot in local storage
+func (s *localScreenshotRepo) StoreScreenshotImage(ctx context.Context, data *models.ScreenshotImage) error {
 	return nil
 }
 
-// loadMetadata loads metadata from the metadata file
-func (s *localScreenshotRepo) loadMetadata(path string) (models.ScreenshotMetadata, error) {
-	metadataPath := s.getMetadataPath(path)
-	data, err := os.ReadFile(metadataPath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return models.ScreenshotMetadata{}, nil
-		}
-		return models.ScreenshotMetadata{}, fmt.Errorf("failed to read metadata: %w", err)
-	}
-
-	var metadata models.ScreenshotMetadata
-	if err := json.Unmarshal(data, &metadata); err != nil {
-		return models.ScreenshotMetadata{}, fmt.Errorf("failed to unmarshal metadata: %w", err)
-	}
-
-	return metadata, nil
-}
-
-// StoreScreenshot stores a screenshot in the local storage
-func (s *localScreenshotRepo) StoreScreenshotImage(ctx context.Context, data models.ScreenshotImageResponse, path string) error {
-	s.logger.Debug("storing screenshot",
-		zap.String("path", path),
-		zap.Any("metadata", data.Metadata))
-
-	if err := s.ensurePath(path); err != nil {
-		return err
-	}
-
-	fullPath := filepath.Join(s.directory, path)
-	file, err := os.Create(fullPath)
-	if err != nil {
-		return fmt.Errorf("failed to create file: %w", err)
-	}
-	defer file.Close()
-
-	if err := encodeImage(data.Image, file); err != nil {
-		return fmt.Errorf("failed to encode image: %w", err)
-	}
-
-	return s.saveMetadata(path, data.Metadata)
-}
-
-// StoreContent stores a text content in the local storage
-func (s *localScreenshotRepo) StoreScreenshotHTMLContent(ctx context.Context, data models.ScreenshotHTMLContentResponse, path string) error {
-	s.logger.Debug("storing content",
-		zap.String("path", path),
-		zap.Any("metadata", data.Metadata))
-
-	if err := s.ensurePath(path); err != nil {
-		return err
-	}
-
-	fullPath := filepath.Join(s.directory, path)
-	if err := os.WriteFile(fullPath, []byte(data.HTMLContent), 0644); err != nil {
-		return fmt.Errorf("failed to write file: %w", err)
-	}
-
-	return s.saveMetadata(path, data.Metadata)
-}
-
-// GetContent retrieves a text content from the local storage
-func (s *localScreenshotRepo) GetScreenshotHTMLContent(ctx context.Context, path string) (models.ScreenshotHTMLContentResponse, []error) {
-	s.logger.Debug("getting content", zap.String("path", path))
-
-	data, metadata, err := s.Get(ctx, path)
-	if err != nil {
-		return models.ScreenshotHTMLContentResponse{}, []error{err}
-	}
-
-	screenshotMetadata, errs := models.ScreenshotMetadataFromMap(metadata)
-	if errs != nil {
-		return models.ScreenshotHTMLContentResponse{}, errs
-	}
-
-	screenshotResp := models.ScreenshotHTMLContentResponse{
-		Status:      "success",
-		HTMLContent: string(data),
-		Metadata:    &screenshotMetadata,
-		StoragePath: path,
-	}
-
-	return screenshotResp, nil
-}
-
-// GetScreenshot retrieves a screenshot from the local storage
-func (s *localScreenshotRepo) GetScreenshotImage(ctx context.Context, path string) (models.ScreenshotImageResponse, []error) {
-	s.logger.Debug("getting screenshot", zap.String("path", path))
-
-	data, metadata, err := s.Get(ctx, path)
-	if err != nil {
-		return models.ScreenshotImageResponse{}, []error{err}
-	}
-
-	img, _, err := image.Decode(bytes.NewReader(data))
-	if err != nil {
-		return models.ScreenshotImageResponse{}, []error{fmt.Errorf("failed to decode image: %w", err)}
-	}
-
-	screenshotMetadata, errs := models.ScreenshotMetadataFromMap(metadata)
-	if errs != nil {
-		return models.ScreenshotImageResponse{}, errs
-	}
-
-	imw, imh, err := getImageDimensions(img)
-	if err != nil {
-		return models.ScreenshotImageResponse{}, []error{err}
-	}
-
-	screenshotResp := models.ScreenshotImageResponse{
-		Status:      "success",
-		Image:       img,
-		Metadata:    &screenshotMetadata,
-		ImageWidth:  utils.ToPtr(imw),
-		ImageHeight: utils.ToPtr(imh),
-		StoragePath: path,
-	}
-
-	return screenshotResp, nil
-}
-
-// Get retrieves a binary from the local storage
-func (s *localScreenshotRepo) Get(ctx context.Context, path string) ([]byte, map[string]string, error) {
-	s.logger.Debug("getting binary", zap.String("path", path))
-
-	fullPath := filepath.Join(s.directory, path)
-	data, err := os.ReadFile(fullPath)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to read file: %w", err)
-	}
-
-	metadata, err := s.loadMetadata(path)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return data, metadata.ToMap(), nil
-}
-
-// Delete deletes a file from the local storage
-func (s *localScreenshotRepo) Delete(ctx context.Context, path string) error {
-	s.logger.Debug("deleting file", zap.String("path", path))
-
-	fullPath := filepath.Join(s.directory, path)
-	if err := os.Remove(fullPath); err != nil {
-		return fmt.Errorf("failed to delete file: %w", err)
-	}
-
-	// Try to delete metadata file if it exists
-	metadataPath := s.getMetadataPath(path)
-	_ = os.Remove(metadataPath) // Ignore error as metadata file might not exist
-
+// GetScreenshotImage retrieves a screenshot from local storage
+func (s *localScreenshotRepo) StoreScreenshotContent(ctx context.Context, data *models.ScreenshotContent) error {
 	return nil
 }
 
-func (s *localScreenshotRepo) List(ctx context.Context, prefix string, maxItems int) ([]models.ScreenshotListResponse, error) {
-	s.logger.Debug("listing files",
-		zap.String("prefix", prefix),
-		zap.Int("maxItems", maxItems))
+// RetrieveScreenshotImage retrieves screenshot image from the storage
+func (s *localScreenshotRepo) RetrieveScreenshotImage(ctx context.Context, path string) (*models.ScreenshotImage, error) {
+	return nil, nil
+}
 
-	fullPrefix := filepath.Join(s.directory, prefix)
-	var results []models.ScreenshotListResponse
-
-	// Walk through the directory
-	err := filepath.WalkDir(fullPrefix, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-
-		// Skip directories
-		if d.IsDir() {
-			return nil
-		}
-
-		// Skip metadata files
-		if strings.HasSuffix(path, ".metadata.json") {
-			return nil
-		}
-
-		// Get relative path
-		relPath, err := filepath.Rel(s.directory, path)
-		if err != nil {
-			return fmt.Errorf("failed to get relative path: %w", err)
-		}
-
-		// Check if path matches prefix
-		if !strings.HasPrefix(relPath, prefix) {
-			return nil
-		}
-
-		// Get file info for last modified time
-		info, err := d.Info()
-		if err != nil {
-			return fmt.Errorf("failed to get file info: %w", err)
-		}
-
-		results = append(results, models.ScreenshotListResponse{
-			Key:          relPath,
-			LastModified: info.ModTime(),
-		})
-
-		// Check if we've reached maxItems
-		if len(results) >= maxItems {
-			return filepath.SkipAll
-		}
-
-		return nil
-	})
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to walk directory: %w", err)
-	}
-
-	// Sort by LastModified in descending order
-	sort.Slice(results, func(i, j int) bool {
-		return results[i].LastModified.After(results[j].LastModified)
-	})
-
-	// Trim to maxItems if needed
-	if len(results) > maxItems {
-		results = results[:maxItems]
-	}
-
-	return results, nil
+// RetrieveScreenshotContent retrieves screenshot content from the storage
+func (s *localScreenshotRepo) RetrieveScreenshotContent(ctx context.Context, path string) (*models.ScreenshotContent, error) {
+	return nil, nil
 }

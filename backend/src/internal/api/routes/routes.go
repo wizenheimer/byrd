@@ -289,17 +289,9 @@ func setupWorkflowRoutes(router fiber.Router, handler *handlers.WorkflowHandler)
 
 // setupScreenshotRoutes configures screenshot management endpoints
 func setupScreenshotRoutes(router fiber.Router, handler *handlers.ScreenshotHandler) {
-	// Screenshot operations
-	router.Post("/screenshot/", handler.CreateScreenshot)
-	router.Get("/screenshot/", handler.ListScreenshots)
-
-	// Screenshot operations for a specific page
-	router.Post("/screenshot/refresh", handler.RefreshScreenshot)
-	router.Post("/screenshot/initiate", handler.InitiateScreenshot)
-
-	// Screenshot content retrieval
-	router.Get("/screenshot/image", handler.GetScreenshotImage)
-	router.Get("/screenshot/content", handler.GetScreenshotContent)
+	// Screenshot operations endpoints
+	router.Post("/screenshot/refresh", handler.Refresh)
+	router.Post("/screenshot/retrieve", handler.Retrieve)
 }
 
 // setupAIRoutes configures AI analysis endpoints

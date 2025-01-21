@@ -31,14 +31,14 @@ func NewDiffService(aiService ai.AIService, logger *logger.Logger) (DiffService,
 	}, nil
 }
 
-func (d *diffService) Compare(ctx context.Context, content1, content2 *models.ScreenshotHTMLContentResponse, profileFields []string) (*models.DynamicChanges, error) {
+func (d *diffService) Compare(ctx context.Context, content1, content2 *models.ScreenshotContent, profileFields []string) (*models.DynamicChanges, error) {
 	d.logger.Debug("comparing content", zap.Any("profile_fields", profileFields))
-	markdownContent1, err := d.processor.Process(content1.HTMLContent)
+	markdownContent1, err := d.processor.Process(content1.Content)
 	if err != nil {
 		return nil, fmt.Errorf("failed to process markdown content 1: %w", err)
 	}
 
-	markdownContent2, err := d.processor.Process(content2.HTMLContent)
+	markdownContent2, err := d.processor.Process(content2.Content)
 	if err != nil {
 		return nil, fmt.Errorf("failed to process markdown content 2: %w", err)
 	}
