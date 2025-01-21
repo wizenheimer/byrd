@@ -51,7 +51,7 @@ func (r *historyRepo) CreateHistoryForPage(ctx context.Context, pageID uuid.UUID
             diff_content,
             status,
             prev,
-            curr
+            current
         )
         VALUES ($1, $2, $3, $4, $5)
         RETURNING id`
@@ -86,7 +86,7 @@ func (r *historyRepo) BatchGetPageHistory(ctx context.Context, pageID uuid.UUID,
             created_at,
             status,
             prev,
-            curr
+            current
         FROM page_history
         WHERE page_id = $1
         AND status = $2
@@ -112,7 +112,7 @@ func (r *historyRepo) BatchGetPageHistory(ctx context.Context, pageID uuid.UUID,
 	}
 	defer rows.Close()
 
-	var histories []models.PageHistory
+	histories := make([]models.PageHistory, 0)
 	for rows.Next() {
 		var history models.PageHistory
 		var diffContentJSON []byte

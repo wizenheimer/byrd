@@ -11,86 +11,88 @@ CREATE TYPE history_status AS ENUM ('active', 'inactive');
 CREATE TYPE workflow_type AS ENUM ('screenshot', 'reporting');
 -- Create workspaces table
 CREATE TABLE workspaces (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name VARCHAR(255) NOT NULL,
-    slug VARCHAR(255) NOT NULL UNIQUE,
-    billing_email VARCHAR(255) NOT NULL,
-    workspace_status workspace_status NOT NULL DEFAULT 'active',
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name VARCHAR(255) NOT NULL,
+  slug VARCHAR(255) NOT NULL UNIQUE,
+  billing_email VARCHAR(255) NOT NULL,
+  workspace_status workspace_status NOT NULL DEFAULT 'active',
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 -- Create users table
 CREATE TABLE users (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    clerk_id VARCHAR(255) UNIQUE,
-    email VARCHAR(255),
-    name VARCHAR(255),
-    status account_status NOT NULL DEFAULT 'pending',
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (email)
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  clerk_id VARCHAR(255) UNIQUE,
+  email VARCHAR(255),
+  name VARCHAR(255),
+  status account_status NOT NULL DEFAULT 'pending',
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE (email)
 );
 -- Create workspace_users table (junction table)
 CREATE TABLE workspace_users (
-    workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    workspace_role workspace_role NOT NULL DEFAULT 'user',
-    membership_status membership_status NOT NULL DEFAULT 'pending',
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (workspace_id, user_id)
+  workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  workspace_role workspace_role NOT NULL DEFAULT 'user',
+  membership_status membership_status NOT NULL DEFAULT 'pending',
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (workspace_id, user_id)
 );
 -- Create competitors table
 CREATE TABLE competitors (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
-    name VARCHAR(255) NOT NULL,
-    status competitor_status NOT NULL DEFAULT 'active',
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+  name VARCHAR(255) NOT NULL,
+  status competitor_status NOT NULL DEFAULT 'active',
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 -- Create pages table
 CREATE TABLE pages (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    competitor_id UUID NOT NULL REFERENCES competitors(id) ON DELETE CASCADE,
-    url TEXT NOT NULL,
-    capture_profile JSONB,
-    diff_profile TEXT [] DEFAULT ARRAY ['branding', 'customers', 'integration', 'product', 'pricing', 'partnerships', 'messaging'],
-    last_checked_at TIMESTAMP WITH TIME ZONE,
-    status page_status NOT NULL DEFAULT 'active',
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  competitor_id UUID NOT NULL REFERENCES competitors(id) ON DELETE CASCADE,
+  url TEXT NOT NULL,
+  capture_profile JSONB,
+  diff_profile TEXT [] DEFAULT ARRAY ['branding', 'customers', 'integration', 'product', 'pricing', 'partnerships', 'messaging'],
+  last_checked_at TIMESTAMP WITH TIME ZONE,
+  status page_status NOT NULL DEFAULT 'active',
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 -- Create page_history table
 CREATE TABLE page_history (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    page_id UUID NOT NULL REFERENCES pages(id) ON DELETE CASCADE,
-    diff_content JSONB,
-    status history_status NOT NULL DEFAULT 'active',
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  page_id UUID NOT NULL REFERENCES pages(id) ON DELETE CASCADE,
+  diff_content JSONB,
+  prev TEXT,
+  current TEXT,
+  status history_status NOT NULL DEFAULT 'active',
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE TABLE workflow_schedules (
-    id UUID PRIMARY KEY,
-    workflow_type workflow_type NOT NULL,
-    about TEXT,
-    spec TEXT NOT NULL,
-    last_run TIMESTAMP WITH TIME ZONE,
-    next_run TIMESTAMP WITH TIME ZONE,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    deleted_at TIMESTAMP WITH TIME ZONE
+  id UUID PRIMARY KEY,
+  workflow_type workflow_type NOT NULL,
+  about TEXT,
+  spec TEXT NOT NULL,
+  last_run TIMESTAMP WITH TIME ZONE,
+  next_run TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  deleted_at TIMESTAMP WITH TIME ZONE
 );
 CREATE TABLE job_records (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    job_id UUID NOT NULL,
-    workflow_type TEXT NOT NULL CHECK (workflow_type IN ('screenshot', 'report')),
-    start_time TIMESTAMP WITH TIME ZONE,
-    end_time TIMESTAMP WITH TIME ZONE,
-    cancel_time TIMESTAMP WITH TIME ZONE,
-    preemptions INTEGER NOT NULL DEFAULT 0,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    deleted_at TIMESTAMP WITH TIME ZONE
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  job_id UUID NOT NULL,
+  workflow_type TEXT NOT NULL CHECK (workflow_type IN ('screenshot', 'report')),
+  start_time TIMESTAMP WITH TIME ZONE,
+  end_time TIMESTAMP WITH TIME ZONE,
+  cancel_time TIMESTAMP WITH TIME ZONE,
+  preemptions INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  deleted_at TIMESTAMP WITH TIME ZONE
 );
 -- Create indexes for better query performance
 -- Indexes for workspaces
