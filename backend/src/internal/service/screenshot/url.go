@@ -232,7 +232,7 @@ func preProcessURL(rawURL string) (string, error) {
 	return normalized, nil
 }
 
-func GetPath(url string, contentType ContentType, backDate bool) (string, error) {
+func DeterminePath(url string, contentType ContentType, backDate bool) (string, error) {
 	switch contentType {
 	case ContentTypeImage:
 		// Get the current screenshot path
