@@ -6,6 +6,8 @@ import (
 	"context"
 	"fmt"
 	"image"
+	_ "image/jpeg" // Register JPEG format
+	_ "image/png"  // Register PNG format
 	"io"
 	"strings"
 
@@ -130,7 +132,7 @@ func (r *r2ScreenshotRepo) RetrieveScreenshotImage(ctx context.Context, path str
 
 	img, _, err := image.Decode(bytes.NewReader(data))
 	if err != nil {
-		return nil, fmt.Errorf("failed to decode image: %w", err)
+		return nil, fmt.Errorf("failed to decode image: %w, %v", err, data[:min(len(data), 8)])
 	}
 
 	screenshotMetadata, err := models.ScreenshotMetadataFromMap(metadata)

@@ -2,9 +2,10 @@ package screenshot
 
 import (
 	"image"
+	"io"
+
 	"image/jpeg"
 	"image/png"
-	"io"
 )
 
 // encodeImage encodes an image.Image to the specified writer

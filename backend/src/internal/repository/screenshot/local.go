@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"image"
+	_ "image/jpeg" // Register JPEG format
+	_ "image/png"  // Register PNG format
 	"os"
 	"path/filepath"
 
