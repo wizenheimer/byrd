@@ -1,0 +1,2599 @@
+{
+	"info": {
+		"_postman_id": "326ecf9a-9375-444f-9164-c4a34d4526ea",
+		"name": "Byrd",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+		"_exporter_id": "38905328"
+	},
+	"item": [
+		{
+			"name": "Public",
+			"item": [
+				{
+					"name": "Workspace Routes",
+					"item": [
+						{
+							"name": "Create a new workspace",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"competitors\": [\n        \"https://www.commonroom.io/\"\n    ],\n    \"team\": [\n        \"xnayankumar@gmail.com\",\n        \"x4rc3us@gmail.com\"\n    ],\n    \"profiles\": [\n        \"product\"\n    ],\n    \"features\": [\n        \"page\"\n    ]\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": "{{origin}}/api/public/v1/workspace"
+							},
+							"response": [
+								{
+									"name": "Create a new workspace",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"competitors\": [\n        \"https://www.commonroom.io/\",\n        \"https://www.commonroom.io/product/signals/\",\n        \"https://www.commonroom.io/product/person-360/\",\n        \"https://www.commonroom.io/product/automation/\",\n        \"https://www.commonroom.io/product/ai/\"\n    ],\n    \"team\": [\n        \"xnayankumar@gmail.com\",\n        \"x4rc3us@gmail.com\"\n    ],\n    \"profiles\": [\n        \"product\"\n    ],\n    \"features\": [\n        \"page\"\n    ]\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": "{{origin}}/api/public/v1/workspace"
+									},
+									"status": "Created",
+									"code": 201,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Mon, 20 Jan 2025 07:12:42 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "340"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"Created workspace successfully\",\n    \"data\": {\n        \"id\": \"537f01e9-9336-4e77-990f-3b8e839cce0c\",\n        \"name\": \"Nayan's Workspace\",\n        \"slug\": \"nayans-workspace-24f2bba1-5f88-4de6-aaed-a4621a083d82\",\n        \"billing_email\": \"byrdhq.dev@gmail.com\",\n        \"workspace_status\": \"active\",\n        \"created_at\": \"2025-01-20T07:12:40.325315Z\",\n        \"updated_at\": \"2025-01-20T07:12:40.325315Z\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "List workspaces for a user",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": "{{origin}}/api/public/v1/workspace"
+							},
+							"response": [
+								{
+									"name": "List workspaces for a user",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": "{{origin}}/api/public/v1/workspace"
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Mon, 20 Jan 2025 22:04:04 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "342"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"Listed workspaces successfully\",\n    \"data\": [\n        {\n            \"id\": \"90c355cb-4755-4853-8b75-758016dabc9e\",\n            \"name\": \"Nayan's Workspace\",\n            \"slug\": \"nayans-workspace-a514ecdc-140c-4e83-9381-c78a6bfabc37\",\n            \"billing_email\": \"byrdhq.dev@gmail.com\",\n            \"workspace_status\": \"active\",\n            \"created_at\": \"2025-01-20T22:03:44.712976Z\",\n            \"updated_at\": \"2025-01-20T22:03:44.712976Z\"\n        }\n    ]\n}"
+								},
+								{
+									"name": "List workspaces for a user",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": "{{origin}}/api/public/v1/workspace"
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Wed, 22 Jan 2025 17:22:36 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "342"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"Listed workspaces successfully\",\n    \"data\": [\n        {\n            \"id\": \"0f6c1bde-6b0d-4095-b813-4df733cdbbd4\",\n            \"name\": \"Nayan's Workspace\",\n            \"slug\": \"nayans-workspace-45f0102a-c3a2-4c46-b95a-544e85f40c1e\",\n            \"billing_email\": \"byrdhq.dev@gmail.com\",\n            \"workspace_status\": \"active\",\n            \"created_at\": \"2025-01-22T17:15:10.976361Z\",\n            \"updated_at\": \"2025-01-22T17:15:10.976361Z\"\n        }\n    ]\n}"
+								}
+							]
+						},
+						{
+							"name": "Get a workspace by ID",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": "{{origin}}/api/public/v1/workspace/{{workspaceID}}"
+							},
+							"response": [
+								{
+									"name": "Get a workspace by ID",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": "{{origin}}/api/public/v1/workspace/{{workspaceID}}"
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Mon, 20 Jan 2025 22:04:27 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "340"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"Fetched workspace successfully\",\n    \"data\": {\n        \"id\": \"90c355cb-4755-4853-8b75-758016dabc9e\",\n        \"name\": \"Nayan's Workspace\",\n        \"slug\": \"nayans-workspace-a514ecdc-140c-4e83-9381-c78a6bfabc37\",\n        \"billing_email\": \"byrdhq.dev@gmail.com\",\n        \"workspace_status\": \"active\",\n        \"created_at\": \"2025-01-20T22:03:44.712976Z\",\n        \"updated_at\": \"2025-01-20T22:03:44.712976Z\"\n    }\n}"
+								},
+								{
+									"name": "Get a workspace by ID",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": "{{origin}}/api/public/v1/workspace/{{workspaceID}}"
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Wed, 22 Jan 2025 17:24:18 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "340"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"Fetched workspace successfully\",\n    \"data\": {\n        \"id\": \"0f6c1bde-6b0d-4095-b813-4df733cdbbd4\",\n        \"name\": \"Nayan's Workspace\",\n        \"slug\": \"nayans-workspace-45f0102a-c3a2-4c46-b95a-544e85f40c1e\",\n        \"billing_email\": \"byrdhq.dev@gmail.com\",\n        \"workspace_status\": \"active\",\n        \"created_at\": \"2025-01-22T17:15:10.976361Z\",\n        \"updated_at\": \"2025-01-22T17:15:10.976361Z\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Update a workspace by ID",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"billing_email\": \"billing@byrdhq.com\",\n    \"name\": \"Byrd's Workspace\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": "{{origin}}/api/public/v1/workspace/{{workspaceID}}"
+							},
+							"response": [
+								{
+									"name": "Update a workspace by ID",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"billing_email\": \"billing@byrdhq.com\",\n    \"name\": \"Byrd's Workspace\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": "{{origin}}/api/public/v1/workspace/{{workspaceID}}"
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Mon, 20 Jan 2025 22:04:58 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "168"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"Updated workspace successfully\",\n    \"data\": {\n        \"billingEmail\": \"billing@byrdhq.com\",\n        \"name\": \"Byrd's Workspace\",\n        \"workspaceId\": \"90c355cb-4755-4853-8b75-758016dabc9e\"\n    }\n}"
+								},
+								{
+									"name": "Update a workspace by ID",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"billing_email\": \"billing@byrdhq.com\",\n    \"name\": \"Byrd's Workspace\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": "{{origin}}/api/public/v1/workspace/{{workspaceID}}"
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Wed, 22 Jan 2025 17:25:43 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "168"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"Updated workspace successfully\",\n    \"data\": {\n        \"billingEmail\": \"billing@byrdhq.com\",\n        \"name\": \"Byrd's Workspace\",\n        \"workspaceId\": \"0f6c1bde-6b0d-4095-b813-4df733cdbbd4\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Join a workspace by ID",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"url": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/join"
+							},
+							"response": [
+								{
+									"name": "Join a workspace by ID",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"url": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/join"
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Mon, 20 Jan 2025 22:07:50 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "105"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"Joined workspace successfully\",\n    \"data\": {\n        \"workspaceId\": \"90c355cb-4755-4853-8b75-758016dabc9e\"\n    }\n}"
+								},
+								{
+									"name": "Join a workspace by ID",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"url": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/join"
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Wed, 22 Jan 2025 17:30:28 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "105"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"Joined workspace successfully\",\n    \"data\": {\n        \"workspaceId\": \"0f6c1bde-6b0d-4095-b813-4df733cdbbd4\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Exit a workspace by ID",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/exit",
+									"host": [
+										"{{origin}}"
+									],
+									"path": [
+										"api",
+										"public",
+										"v1",
+										"workspace",
+										"{{workspaceID}}",
+										"exit"
+									],
+									"query": [
+										{
+											"key": null,
+											"value": "fcd8ef85-2317-41b2-aaad-6bfb779dad2b",
+											"disabled": true
+										}
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Exit a workspace by ID",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"url": {
+											"raw": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/exit",
+											"host": [
+												"{{origin}}"
+											],
+											"path": [
+												"api",
+												"public",
+												"v1",
+												"workspace",
+												"{{workspaceID}}",
+												"exit"
+											],
+											"query": [
+												{
+													"key": null,
+													"value": "fcd8ef85-2317-41b2-aaad-6bfb779dad2b",
+													"disabled": true
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Mon, 20 Jan 2025 22:08:09 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "105"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"Exited workspace successfully\",\n    \"data\": {\n        \"workspaceId\": \"90c355cb-4755-4853-8b75-758016dabc9e\"\n    }\n}"
+								},
+								{
+									"name": "Exit a workspace by ID",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"url": {
+											"raw": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/exit",
+											"host": [
+												"{{origin}}"
+											],
+											"path": [
+												"api",
+												"public",
+												"v1",
+												"workspace",
+												"{{workspaceID}}",
+												"exit"
+											],
+											"query": [
+												{
+													"key": null,
+													"value": "fcd8ef85-2317-41b2-aaad-6bfb779dad2b",
+													"disabled": true
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Wed, 22 Jan 2025 17:32:45 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "105"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"Exited workspace successfully\",\n    \"data\": {\n        \"workspaceId\": \"0f6c1bde-6b0d-4095-b813-4df733cdbbd4\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Delete a workspace by ID",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": "{{origin}}/api/public/v1/workspace/{{workspaceID}}"
+							},
+							"response": [
+								{
+									"name": "Delete a workspace by ID",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [],
+										"url": "{{origin}}/api/public/v1/workspace/{{workspaceID}}"
+									},
+									"status": "Forbidden",
+									"code": 403,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Mon, 20 Jan 2025 22:08:53 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "71"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"error\": \"User Access Denied\",\n    \"details\": [\n        \"workspace member not found\"\n    ]\n}"
+								},
+								{
+									"name": "Delete a workspace by ID",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [],
+										"url": "{{origin}}/api/public/v1/workspace/{{workspaceID}}"
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Wed, 22 Jan 2025 17:53:59 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "126"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"Deleted workspace successfully\",\n    \"data\": {\n        \"status\": \"inactive\",\n        \"workspaceId\": \"c9af24cc-faea-4763-ae61-69247b0780b1\"\n    }\n}"
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "Member Routes",
+					"item": [
+						{
+							"name": "List users for a workspace",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/users?_page=1&_limit=10",
+									"host": [
+										"{{origin}}"
+									],
+									"path": [
+										"api",
+										"public",
+										"v1",
+										"workspace",
+										"{{workspaceID}}",
+										"users"
+									],
+									"query": [
+										{
+											"key": "role",
+											"value": "admin",
+											"disabled": true
+										},
+										{
+											"key": "_page",
+											"value": "1"
+										},
+										{
+											"key": "_limit",
+											"value": "10"
+										}
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "List users for a workspace",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/users?_page=1&_limit=10",
+											"host": [
+												"{{origin}}"
+											],
+											"path": [
+												"api",
+												"public",
+												"v1",
+												"workspace",
+												"{{workspaceID}}",
+												"users"
+											],
+											"query": [
+												{
+													"key": "role",
+													"value": "admin",
+													"disabled": true
+												},
+												{
+													"key": "_page",
+													"value": "1"
+												},
+												{
+													"key": "_limit",
+													"value": "10"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Mon, 20 Jan 2025 22:10:22 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "692"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"Listed workspace users successfully\",\n    \"data\": {\n        \"hasMore\": false,\n        \"users\": [\n            {\n                \"user_id\": \"073afb3f-a8e3-4801-8131-27c88d320bc5\",\n                \"workspace_id\": \"c853255b-10d2-4896-b22e-1d7ae696adf8\",\n                \"name\": \"\",\n                \"email\": \"xnayankumar@gmail.com\",\n                \"workspace_role\": \"user\",\n                \"membership_status\": \"pending\"\n            },\n            {\n                \"user_id\": \"483fcb07-e575-4a78-9b42-8155893a628b\",\n                \"workspace_id\": \"c853255b-10d2-4896-b22e-1d7ae696adf8\",\n                \"name\": \"\",\n                \"email\": \"x4rc3us@gmail.com\",\n                \"workspace_role\": \"user\",\n                \"membership_status\": \"pending\"\n            },\n            {\n                \"user_id\": \"ebdbea32-05e4-49d3-a1a0-3db4f6f16e18\",\n                \"workspace_id\": \"c853255b-10d2-4896-b22e-1d7ae696adf8\",\n                \"name\": \"Byrdhq Dev\",\n                \"email\": \"byrdhq.dev@gmail.com\",\n                \"workspace_role\": \"admin\",\n                \"membership_status\": \"active\"\n            }\n        ]\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Add user to a workspace",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"emails\": [\n        \"test@test.com\"\n    ]\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/users"
+							},
+							"response": [
+								{
+									"name": "Add user to a workspace",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"emails\": [\n        \"notsuperuser@test.com\"\n    ]\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/users"
+									},
+									"status": "Created",
+									"code": 201,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Mon, 20 Jan 2025 22:11:06 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "263"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"Invited users to workspace successfully\",\n    \"data\": [\n        {\n            \"user_id\": \"008a1b36-f5d1-4db3-a4de-f32704c73fca\",\n            \"workspace_id\": \"c853255b-10d2-4896-b22e-1d7ae696adf8\",\n            \"name\": \"\",\n            \"email\": \"notsuperuser@test.com\",\n            \"workspace_role\": \"user\",\n            \"membership_status\": \"pending\"\n        }\n    ]\n}"
+								},
+								{
+									"name": "Add user to a workspace",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"emails\": [\n        \"test@test.com\"\n    ]\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/users"
+									},
+									"status": "Created",
+									"code": 201,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Wed, 22 Jan 2025 18:01:38 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "255"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"Invited users to workspace successfully\",\n    \"data\": [\n        {\n            \"user_id\": \"ec5868bc-f941-4352-b605-f58eaadd3920\",\n            \"workspace_id\": \"32474bdc-9367-4ddc-aff8-a6880f410f3e\",\n            \"name\": \"\",\n            \"email\": \"test@test.com\",\n            \"workspace_role\": \"user\",\n            \"membership_status\": \"pending\"\n        }\n    ]\n}"
+								}
+							]
+						},
+						{
+							"name": "Update user role in a workspace",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"role\": \"admin\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/users/{{userID}}"
+							},
+							"response": [
+								{
+									"name": "Update user role in a workspace",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"role\": \"admin\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/users/{{userID}}"
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Mon, 20 Jan 2025 22:12:54 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "81"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"Updated user role in workspace successfully\",\n    \"data\": {\n        \"role\": \"admin\"\n    }\n}"
+								},
+								{
+									"name": "Update user role in a workspace",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"role\": \"admin\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/users/{{userID}}"
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Wed, 22 Jan 2025 18:02:02 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "81"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"Updated user role in workspace successfully\",\n    \"data\": {\n        \"role\": \"admin\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Remove a user from a workspace",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/users/{{userID}}"
+							},
+							"response": [
+								{
+									"name": "Remove a user from a workspace",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [],
+										"url": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/users/{{userID}}"
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Mon, 20 Jan 2025 22:13:11 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "164"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"Removed user from workspace successfully\",\n    \"data\": {\n        \"userId\": \"073afb3f-a8e3-4801-8131-27c88d320bc5\",\n        \"workspaceId\": \"c853255b-10d2-4896-b22e-1d7ae696adf8\"\n    }\n}"
+								},
+								{
+									"name": "Remove a user from a workspace",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [],
+										"url": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/users/{{userID}}"
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Wed, 22 Jan 2025 18:02:07 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "164"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"Removed user from workspace successfully\",\n    \"data\": {\n        \"userId\": \"ec5868bc-f941-4352-b605-f58eaadd3920\",\n        \"workspaceId\": \"32474bdc-9367-4ddc-aff8-a6880f410f3e\"\n    }\n}"
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "Competitor Routes",
+					"item": [
+						{
+							"name": "List competitors for a workspace",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/competitors?_page=1&_limit=1&includePages=true",
+									"host": [
+										"{{origin}}"
+									],
+									"path": [
+										"api",
+										"public",
+										"v1",
+										"workspace",
+										"{{workspaceID}}",
+										"competitors"
+									],
+									"query": [
+										{
+											"key": "_page",
+											"value": "1"
+										},
+										{
+											"key": "_limit",
+											"value": "1"
+										},
+										{
+											"key": "includePages",
+											"value": "true"
+										}
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "List competitors for a workspace",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/competitors?pageNumber=1&pageSize=1",
+											"host": [
+												"{{origin}}"
+											],
+											"path": [
+												"api",
+												"public",
+												"v1",
+												"workspace",
+												"{{workspaceID}}",
+												"competitors"
+											],
+											"query": [
+												{
+													"key": "pageNumber",
+													"value": "1"
+												},
+												{
+													"key": "pageSize",
+													"value": "1"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Mon, 20 Jan 2025 22:25:22 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "1349"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"Listed workspace competitors successfully\",\n    \"data\": {\n        \"competitors\": [\n            {\n                \"competitor\": {\n                    \"id\": \"501a6753-dbbf-4a24-a399-7bee685da5d0\",\n                    \"workspace_id\": \"c853255b-10d2-4896-b22e-1d7ae696adf8\",\n                    \"name\": \"Common Room\",\n                    \"status\": \"active\",\n                    \"created_at\": \"2025-01-20T22:09:55.980131Z\",\n                    \"updated_at\": \"2025-01-20T22:09:55.980131Z\"\n                },\n                \"pages\": []\n            },\n            {\n                \"competitor\": {\n                    \"id\": \"3015064c-426f-475c-9f8f-5009f6b17c39\",\n                    \"workspace_id\": \"c853255b-10d2-4896-b22e-1d7ae696adf8\",\n                    \"name\": \"Common Room\",\n                    \"status\": \"active\",\n                    \"created_at\": \"2025-01-20T22:09:55.50939Z\",\n                    \"updated_at\": \"2025-01-20T22:09:55.50939Z\"\n                },\n                \"pages\": []\n            },\n            {\n                \"competitor\": {\n                    \"id\": \"bd730a92-ef14-4c5c-88d8-e8f8bdcf595c\",\n                    \"workspace_id\": \"c853255b-10d2-4896-b22e-1d7ae696adf8\",\n                    \"name\": \"Common Room\",\n                    \"status\": \"active\",\n                    \"created_at\": \"2025-01-20T22:09:54.634652Z\",\n                    \"updated_at\": \"2025-01-20T22:09:54.634652Z\"\n                },\n                \"pages\": []\n            },\n            {\n                \"competitor\": {\n                    \"id\": \"488586b0-279c-4e71-b774-8fdb6dbbfa22\",\n                    \"workspace_id\": \"c853255b-10d2-4896-b22e-1d7ae696adf8\",\n                    \"name\": \"Common Room\",\n                    \"status\": \"active\",\n                    \"created_at\": \"2025-01-20T22:09:54.325102Z\",\n                    \"updated_at\": \"2025-01-20T22:09:54.325102Z\"\n                },\n                \"pages\": []\n            },\n            {\n                \"competitor\": {\n                    \"id\": \"045922a3-0b8b-4db6-be8d-2944a5b15cf5\",\n                    \"workspace_id\": \"c853255b-10d2-4896-b22e-1d7ae696adf8\",\n                    \"name\": \"Common Room\",\n                    \"status\": \"active\",\n                    \"created_at\": \"2025-01-20T22:09:53.838271Z\",\n                    \"updated_at\": \"2025-01-20T22:09:53.838271Z\"\n                },\n                \"pages\": []\n            }\n        ],\n        \"hasMore\": false\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Create competitor for a workspace",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "[\n    {\n        \"url\": \"https://about.scarf.sh/\"\n    }\n]",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/competitors"
+							},
+							"response": [
+								{
+									"name": "Create competitor for a workspace",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "[\n    {\n        \"url\": \"https://about.scarf.sh/\"\n    }\n]",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/competitors"
+									},
+									"status": "Created",
+									"code": 201,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Mon, 20 Jan 2025 22:26:06 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "271"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"Created competitor successfully\",\n    \"data\": {\n        \"id\": \"72b47f02-1bc5-4714-95a5-491ba49cc160\",\n        \"workspace_id\": \"c853255b-10d2-4896-b22e-1d7ae696adf8\",\n        \"name\": \"SCARF\",\n        \"status\": \"active\",\n        \"created_at\": \"2025-01-20T22:26:06.170239Z\",\n        \"updated_at\": \"2025-01-20T22:26:06.170239Z\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Get Competitor by ID",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/competitors/{{competitorID}}?includePages=true",
+									"host": [
+										"{{origin}}"
+									],
+									"path": [
+										"api",
+										"public",
+										"v1",
+										"workspace",
+										"{{workspaceID}}",
+										"competitors",
+										"{{competitorID}}"
+									],
+									"query": [
+										{
+											"key": "includePages",
+											"value": "true"
+										}
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Get Competitor by ID",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/competitors/{{competitorID}}?includePages=true",
+											"host": [
+												"{{origin}}"
+											],
+											"path": [
+												"api",
+												"public",
+												"v1",
+												"workspace",
+												"{{workspaceID}}",
+												"competitors",
+												"{{competitorID}}"
+											],
+											"query": [
+												{
+													"key": "includePages",
+													"value": "true"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Mon, 20 Jan 2025 22:29:54 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "2038"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"Retrieved competitor successfully\",\n    \"data\": {\n        \"competitor\": {\n            \"id\": \"501a6753-dbbf-4a24-a399-7bee685da5d0\",\n            \"workspace_id\": \"c853255b-10d2-4896-b22e-1d7ae696adf8\",\n            \"name\": \"Common Room\",\n            \"status\": \"active\",\n            \"created_at\": \"2025-01-20T22:09:55.980131Z\",\n            \"updated_at\": \"2025-01-20T22:09:55.980131Z\"\n        },\n        \"pages\": [\n            {\n                \"id\": \"87748f1f-9681-4ba6-bf09-5f1316d724f6\",\n                \"competitor_id\": \"501a6753-dbbf-4a24-a399-7bee685da5d0\",\n                \"url\": \"https://www.commonroom.io/customers/\",\n                \"capture_profile\": {\n                    \"url\": \"https://www.commonroom.io/customers/\",\n                    \"capture_beyond_viewport\": true,\n                    \"full_page\": true,\n                    \"full_page_algorithm\": \"default\",\n                    \"format\": \"png\",\n                    \"image_quality\": 80,\n                    \"block_ads\": true,\n                    \"block_cookie_banners\": true,\n                    \"block_banners_by_heuristics\": true,\n                    \"block_trackers\": true,\n                    \"block_chats\": true,\n                    \"dark_mode\": false,\n                    \"reduced_motion\": true,\n                    \"delay\": 0,\n                    \"timeout\": 60,\n                    \"navigation_timeout\": 30,\n                    \"wait_until\": [\n                        \"networkidle2\",\n                        \"networkidle0\"\n                    ],\n                    \"metadata_image_size\": true,\n                    \"metadata_page_title\": true,\n                    \"metadata_content\": true,\n                    \"metadata_http_response_status_code\": true\n                },\n                \"diff_profile\": [\n                    \"branding\",\n                    \"customers\",\n                    \"integration\",\n                    \"product\",\n                    \"pricing\",\n                    \"partnerships\",\n                    \"messaging\"\n                ],\n                \"status\": \"active\",\n                \"created_at\": \"2025-01-20T22:25:44.767073Z\",\n                \"updated_at\": \"2025-01-20T22:25:44.767073Z\"\n            },\n            {\n                \"id\": \"fde077b4-92db-4a68-bd84-70da15a840c8\",\n                \"competitor_id\": \"501a6753-dbbf-4a24-a399-7bee685da5d0\",\n                \"url\": \"https://www.commonroom.io/product/ai/\",\n                \"capture_profile\": {\n                    \"url\": \"https://www.commonroom.io/product/ai/\",\n                    \"capture_beyond_viewport\": true,\n                    \"full_page\": true,\n                    \"full_page_algorithm\": \"default\",\n                    \"format\": \"png\",\n                    \"image_quality\": 80,\n                    \"block_ads\": true,\n                    \"block_cookie_banners\": true,\n                    \"block_banners_by_heuristics\": true,\n                    \"block_trackers\": true,\n                    \"block_chats\": true,\n                    \"dark_mode\": false,\n                    \"reduced_motion\": true,\n                    \"delay\": 0,\n                    \"timeout\": 60,\n                    \"navigation_timeout\": 30,\n                    \"wait_until\": [\n                        \"networkidle2\",\n                        \"networkidle0\"\n                    ],\n                    \"metadata_image_size\": true,\n                    \"metadata_page_title\": true,\n                    \"metadata_content\": true,\n                    \"metadata_http_response_status_code\": true\n                },\n                \"diff_profile\": [\n                    \"product\"\n                ],\n                \"status\": \"active\",\n                \"created_at\": \"2025-01-20T22:09:55.980131Z\",\n                \"updated_at\": \"2025-01-20T22:09:55.980131Z\"\n            }\n        ]\n    }\n}"
+								},
+								{
+									"name": "Get Competitor by ID",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/competitors/{{competitorID}}?includePages=true",
+											"host": [
+												"{{origin}}"
+											],
+											"path": [
+												"api",
+												"public",
+												"v1",
+												"workspace",
+												"{{workspaceID}}",
+												"competitors",
+												"{{competitorID}}"
+											],
+											"query": [
+												{
+													"key": "includePages",
+													"value": "true"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Wed, 22 Jan 2025 18:54:56 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "1175"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"Retrieved competitor successfully\",\n    \"data\": {\n        \"competitor\": {\n            \"id\": \"f14e7249-25cd-4453-9f0d-f2d61c5acb90\",\n            \"workspace_id\": \"32474bdc-9367-4ddc-aff8-a6880f410f3e\",\n            \"name\": \"SCARF\",\n            \"status\": \"active\",\n            \"created_at\": \"2025-01-22T18:52:15.263339Z\",\n            \"updated_at\": \"2025-01-22T18:52:15.263339Z\"\n        },\n        \"pages\": [\n            {\n                \"id\": \"f8539ae4-1a10-4eb6-b003-04b2ca188d0b\",\n                \"competitor_id\": \"f14e7249-25cd-4453-9f0d-f2d61c5acb90\",\n                \"url\": \"https://about.scarf.sh/\",\n                \"capture_profile\": {\n                    \"url\": \"https://about.scarf.sh/\",\n                    \"capture_beyond_viewport\": true,\n                    \"full_page\": true,\n                    \"full_page_algorithm\": \"default\",\n                    \"format\": \"png\",\n                    \"image_quality\": 80,\n                    \"block_ads\": true,\n                    \"block_cookie_banners\": true,\n                    \"block_banners_by_heuristics\": true,\n                    \"block_trackers\": true,\n                    \"block_chats\": true,\n                    \"dark_mode\": false,\n                    \"reduced_motion\": true,\n                    \"delay\": 0,\n                    \"timeout\": 60,\n                    \"navigation_timeout\": 30,\n                    \"wait_until\": [\n                        \"networkidle2\",\n                        \"networkidle0\"\n                    ],\n                    \"metadata_image_size\": true,\n                    \"metadata_page_title\": true,\n                    \"metadata_content\": true,\n                    \"metadata_http_response_status_code\": true\n                },\n                \"diff_profile\": [\n                    \"branding\",\n                    \"customers\",\n                    \"integration\",\n                    \"product\",\n                    \"pricing\",\n                    \"partnerships\",\n                    \"messaging\"\n                ],\n                \"status\": \"active\",\n                \"created_at\": \"2025-01-22T18:52:15.263339Z\",\n                \"updated_at\": \"2025-01-22T18:52:15.263339Z\"\n            }\n        ]\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Update Competitor by ID",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"beta\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/competitors/{{competitorID}}",
+									"host": [
+										"{{origin}}"
+									],
+									"path": [
+										"api",
+										"public",
+										"v1",
+										"workspace",
+										"{{workspaceID}}",
+										"competitors",
+										"{{competitorID}}"
+									],
+									"query": [
+										{
+											"key": "includePages",
+											"value": "true",
+											"disabled": true
+										}
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Get Competitor by ID Copy",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"name\": \"beta\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/competitors/{{competitorID}}",
+											"host": [
+												"{{origin}}"
+											],
+											"path": [
+												"api",
+												"public",
+												"v1",
+												"workspace",
+												"{{workspaceID}}",
+												"competitors",
+												"{{competitorID}}"
+											],
+											"query": [
+												{
+													"key": "includePages",
+													"value": "true",
+													"disabled": true
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Mon, 20 Jan 2025 22:30:49 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "270"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"Updated competitor successfully\",\n    \"data\": {\n        \"id\": \"501a6753-dbbf-4a24-a399-7bee685da5d0\",\n        \"workspace_id\": \"c853255b-10d2-4896-b22e-1d7ae696adf8\",\n        \"name\": \"beta\",\n        \"status\": \"active\",\n        \"created_at\": \"2025-01-20T22:09:55.980131Z\",\n        \"updated_at\": \"2025-01-20T22:30:49.831725Z\"\n    }\n}"
+								},
+								{
+									"name": "Update Competitor by ID",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"name\": \"beta\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/competitors/{{competitorID}}",
+											"host": [
+												"{{origin}}"
+											],
+											"path": [
+												"api",
+												"public",
+												"v1",
+												"workspace",
+												"{{workspaceID}}",
+												"competitors",
+												"{{competitorID}}"
+											],
+											"query": [
+												{
+													"key": "includePages",
+													"value": "true",
+													"disabled": true
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Wed, 22 Jan 2025 18:57:31 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "270"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"Updated competitor successfully\",\n    \"data\": {\n        \"id\": \"f14e7249-25cd-4453-9f0d-f2d61c5acb90\",\n        \"workspace_id\": \"32474bdc-9367-4ddc-aff8-a6880f410f3e\",\n        \"name\": \"beta\",\n        \"status\": \"active\",\n        \"created_at\": \"2025-01-22T18:52:15.263339Z\",\n        \"updated_at\": \"2025-01-22T18:57:32.002544Z\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Remove competitor from a workspace",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/competitors/{{competitorID}}"
+							},
+							"response": [
+								{
+									"name": "Remove competitor from a workspace",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [],
+										"url": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/competitors/{{competitorID}}"
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Mon, 20 Jan 2025 22:31:58 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "60"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"Removed competitor from workspace successfully\"\n}"
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "Page Routes",
+					"item": [
+						{
+							"name": "Add page to a competitor",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "[\n    {\n        \"url\": \"https://www.commonroom.io/customers/\"\n    }\n]",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/competitors/{{competitorID}}/pages"
+							},
+							"response": [
+								{
+									"name": "Add page to a competitor",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "[\n    {\n        \"url\": \"https://www.commonroom.io/customers/\"\n    }\n]",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/competitors/{{competitorID}}/pages"
+									},
+									"status": "Created",
+									"code": 201,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Mon, 20 Jan 2025 22:37:02 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "963"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"Added page to competitor successfully\",\n    \"data\": [\n        {\n            \"id\": \"1f48faa6-0f02-4519-a4e8-65cecac0969b\",\n            \"competitor_id\": \"7bf66a9e-abd9-4ddf-a0dd-8b22e97c145f\",\n            \"url\": \"https://www.commonroom.io/customers/\",\n            \"capture_profile\": {\n                \"url\": \"https://www.commonroom.io/customers/\",\n                \"capture_beyond_viewport\": true,\n                \"full_page\": true,\n                \"full_page_algorithm\": \"default\",\n                \"format\": \"png\",\n                \"image_quality\": 80,\n                \"block_ads\": true,\n                \"block_cookie_banners\": true,\n                \"block_banners_by_heuristics\": true,\n                \"block_trackers\": true,\n                \"block_chats\": true,\n                \"dark_mode\": false,\n                \"reduced_motion\": true,\n                \"delay\": 0,\n                \"timeout\": 60,\n                \"navigation_timeout\": 30,\n                \"wait_until\": [\n                    \"networkidle2\",\n                    \"networkidle0\"\n                ],\n                \"metadata_image_size\": true,\n                \"metadata_page_title\": true,\n                \"metadata_content\": true,\n                \"metadata_http_response_status_code\": true\n            },\n            \"diff_profile\": [\n                \"branding\",\n                \"customers\",\n                \"integration\",\n                \"product\",\n                \"pricing\",\n                \"partnerships\",\n                \"messaging\"\n            ],\n            \"status\": \"active\",\n            \"created_at\": \"2025-01-20T22:37:03.689298Z\",\n            \"updated_at\": \"2025-01-20T22:37:03.689298Z\"\n        }\n    ]\n}"
+								}
+							]
+						},
+						{
+							"name": "List pages for a competitor",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/competitors/{{competitorID}}/pages?_page=1&_limit=1",
+									"host": [
+										"{{origin}}"
+									],
+									"path": [
+										"api",
+										"public",
+										"v1",
+										"workspace",
+										"{{workspaceID}}",
+										"competitors",
+										"{{competitorID}}",
+										"pages"
+									],
+									"query": [
+										{
+											"key": "_page",
+											"value": "1"
+										},
+										{
+											"key": "_limit",
+											"value": "1"
+										}
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "List pages for a competitor",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "[\n    {\n        \"url\": \"https://www.commonroom.io/customers/\"\n    }\n]",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/competitors/{{competitorID}}/pages"
+									},
+									"status": "Created",
+									"code": 201,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Mon, 20 Jan 2025 22:33:38 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "965"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"Listed page for competitor successfully\",\n    \"data\": {\n        \"hasMore\": false,\n        \"pages\": [\n            {\n                \"id\": \"80885953-6bbf-4afa-9de6-2f62aad6a5fc\",\n                \"competitor_id\": \"7bf66a9e-abd9-4ddf-a0dd-8b22e97c145f\",\n                \"url\": \"https://about.scarf.sh/\",\n                \"capture_profile\": {\n                    \"url\": \"https://about.scarf.sh/\",\n                    \"capture_beyond_viewport\": true,\n                    \"full_page\": true,\n                    \"full_page_algorithm\": \"default\",\n                    \"format\": \"png\",\n                    \"image_quality\": 80,\n                    \"block_ads\": true,\n                    \"block_cookie_banners\": true,\n                    \"block_banners_by_heuristics\": true,\n                    \"block_trackers\": true,\n                    \"block_chats\": true,\n                    \"dark_mode\": false,\n                    \"reduced_motion\": true,\n                    \"delay\": 0,\n                    \"timeout\": 60,\n                    \"navigation_timeout\": 30,\n                    \"wait_until\": [\n                        \"networkidle2\",\n                        \"networkidle0\"\n                    ],\n                    \"metadata_image_size\": true,\n                    \"metadata_page_title\": true,\n                    \"metadata_content\": true,\n                    \"metadata_http_response_status_code\": true\n                },\n                \"diff_profile\": [\n                    \"branding\",\n                    \"customers\",\n                    \"integration\",\n                    \"product\",\n                    \"pricing\",\n                    \"partnerships\",\n                    \"messaging\"\n                ],\n                \"status\": \"active\",\n                \"created_at\": \"2025-01-20T22:33:20.995838Z\",\n                \"updated_at\": \"2025-01-20T22:33:20.995838Z\"\n            }\n        ]\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "List page history",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/competitors/{{competitorID}}/pages/{{pageID}}/history"
+							},
+							"response": [
+								{
+									"name": "List page history",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/competitors/{{competitorID}}/pages/{{pageID}}/history"
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Tue, 21 Jan 2025 05:20:07 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "84"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"Listed page history successfully\",\n    \"data\": {\n        \"hasMore\": false,\n        \"history\": []\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Update page in a competitor",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"url\": \"https://www.google.com\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/competitors/{{competitorID}}/pages/{{pageID}}"
+							},
+							"response": [
+								{
+									"name": "Update page in a competitor",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"url\": \"https://www.google.com\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/competitors/{{competitorID}}/pages/{{pageID}}"
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Mon, 20 Jan 2025 22:36:44 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "935"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"Updated page in competitor successfully\",\n    \"data\": {\n        \"id\": \"80885953-6bbf-4afa-9de6-2f62aad6a5fc\",\n        \"competitor_id\": \"7bf66a9e-abd9-4ddf-a0dd-8b22e97c145f\",\n        \"url\": \"https://www.google.com\",\n        \"capture_profile\": {\n            \"url\": \"https://www.google.com\",\n            \"capture_beyond_viewport\": true,\n            \"full_page\": true,\n            \"full_page_algorithm\": \"default\",\n            \"format\": \"png\",\n            \"image_quality\": 80,\n            \"block_ads\": true,\n            \"block_cookie_banners\": true,\n            \"block_banners_by_heuristics\": true,\n            \"block_trackers\": true,\n            \"block_chats\": true,\n            \"dark_mode\": false,\n            \"reduced_motion\": true,\n            \"delay\": 0,\n            \"timeout\": 60,\n            \"navigation_timeout\": 30,\n            \"wait_until\": [\n                \"networkidle2\",\n                \"networkidle0\"\n            ],\n            \"metadata_image_size\": true,\n            \"metadata_page_title\": true,\n            \"metadata_content\": true,\n            \"metadata_http_response_status_code\": true\n        },\n        \"diff_profile\": [\n            \"branding\",\n            \"customers\",\n            \"integration\",\n            \"product\",\n            \"pricing\",\n            \"partnerships\",\n            \"messaging\"\n        ],\n        \"status\": \"active\",\n        \"created_at\": \"2025-01-20T22:33:20.995838Z\",\n        \"updated_at\": \"2025-01-20T22:36:44.949732Z\"\n    }\n}"
+								},
+								{
+									"name": "Update page in a competitor",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"url\": \"https://www.google.com\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/competitors/{{competitorID}}/pages/{{pageID}}"
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Wed, 22 Jan 2025 19:08:45 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "935"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"Updated page in competitor successfully\",\n    \"data\": {\n        \"id\": \"f8539ae4-1a10-4eb6-b003-04b2ca188d0b\",\n        \"competitor_id\": \"f14e7249-25cd-4453-9f0d-f2d61c5acb90\",\n        \"url\": \"https://www.google.com\",\n        \"capture_profile\": {\n            \"url\": \"https://www.google.com\",\n            \"capture_beyond_viewport\": true,\n            \"full_page\": true,\n            \"full_page_algorithm\": \"default\",\n            \"format\": \"png\",\n            \"image_quality\": 80,\n            \"block_ads\": true,\n            \"block_cookie_banners\": true,\n            \"block_banners_by_heuristics\": true,\n            \"block_trackers\": true,\n            \"block_chats\": true,\n            \"dark_mode\": false,\n            \"reduced_motion\": true,\n            \"delay\": 0,\n            \"timeout\": 60,\n            \"navigation_timeout\": 30,\n            \"wait_until\": [\n                \"networkidle2\",\n                \"networkidle0\"\n            ],\n            \"metadata_image_size\": true,\n            \"metadata_page_title\": true,\n            \"metadata_content\": true,\n            \"metadata_http_response_status_code\": true\n        },\n        \"diff_profile\": [\n            \"branding\",\n            \"customers\",\n            \"integration\",\n            \"product\",\n            \"pricing\",\n            \"partnerships\",\n            \"messaging\"\n        ],\n        \"status\": \"active\",\n        \"created_at\": \"2025-01-22T18:52:15.263339Z\",\n        \"updated_at\": \"2025-01-22T19:08:46.020358Z\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Get Page by ID",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/competitors/{{competitorID}}/pages/{{pageID}}"
+							},
+							"response": [
+								{
+									"name": "Update page in a competitor",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"url\": \"https://www.google.com\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/competitors/{{competitorID}}/pages/{{pageID}}"
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Mon, 20 Jan 2025 22:36:44 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "935"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"Updated page in competitor successfully\",\n    \"data\": {\n        \"id\": \"80885953-6bbf-4afa-9de6-2f62aad6a5fc\",\n        \"competitor_id\": \"7bf66a9e-abd9-4ddf-a0dd-8b22e97c145f\",\n        \"url\": \"https://www.google.com\",\n        \"capture_profile\": {\n            \"url\": \"https://www.google.com\",\n            \"capture_beyond_viewport\": true,\n            \"full_page\": true,\n            \"full_page_algorithm\": \"default\",\n            \"format\": \"png\",\n            \"image_quality\": 80,\n            \"block_ads\": true,\n            \"block_cookie_banners\": true,\n            \"block_banners_by_heuristics\": true,\n            \"block_trackers\": true,\n            \"block_chats\": true,\n            \"dark_mode\": false,\n            \"reduced_motion\": true,\n            \"delay\": 0,\n            \"timeout\": 60,\n            \"navigation_timeout\": 30,\n            \"wait_until\": [\n                \"networkidle2\",\n                \"networkidle0\"\n            ],\n            \"metadata_image_size\": true,\n            \"metadata_page_title\": true,\n            \"metadata_content\": true,\n            \"metadata_http_response_status_code\": true\n        },\n        \"diff_profile\": [\n            \"branding\",\n            \"customers\",\n            \"integration\",\n            \"product\",\n            \"pricing\",\n            \"partnerships\",\n            \"messaging\"\n        ],\n        \"status\": \"active\",\n        \"created_at\": \"2025-01-20T22:33:20.995838Z\",\n        \"updated_at\": \"2025-01-20T22:36:44.949732Z\"\n    }\n}"
+								},
+								{
+									"name": "Update page in a competitor",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/competitors/{{competitorID}}/pages/{{pageID}}"
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Wed, 22 Jan 2025 19:05:13 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "938"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"Fetched page for competitor successfully\",\n    \"data\": {\n        \"id\": \"f8539ae4-1a10-4eb6-b003-04b2ca188d0b\",\n        \"competitor_id\": \"f14e7249-25cd-4453-9f0d-f2d61c5acb90\",\n        \"url\": \"https://about.scarf.sh/\",\n        \"capture_profile\": {\n            \"url\": \"https://about.scarf.sh/\",\n            \"capture_beyond_viewport\": true,\n            \"full_page\": true,\n            \"full_page_algorithm\": \"default\",\n            \"format\": \"png\",\n            \"image_quality\": 80,\n            \"block_ads\": true,\n            \"block_cookie_banners\": true,\n            \"block_banners_by_heuristics\": true,\n            \"block_trackers\": true,\n            \"block_chats\": true,\n            \"dark_mode\": false,\n            \"reduced_motion\": true,\n            \"delay\": 0,\n            \"timeout\": 60,\n            \"navigation_timeout\": 30,\n            \"wait_until\": [\n                \"networkidle2\",\n                \"networkidle0\"\n            ],\n            \"metadata_image_size\": true,\n            \"metadata_page_title\": true,\n            \"metadata_content\": true,\n            \"metadata_http_response_status_code\": true\n        },\n        \"diff_profile\": [\n            \"branding\",\n            \"customers\",\n            \"integration\",\n            \"product\",\n            \"pricing\",\n            \"partnerships\",\n            \"messaging\"\n        ],\n        \"status\": \"active\",\n        \"created_at\": \"2025-01-22T18:52:15.263339Z\",\n        \"updated_at\": \"2025-01-22T18:52:15.263339Z\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Remove page from a competitor",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/competitors/{{competitorID}}/pages/{{pageID}}"
+							},
+							"response": [
+								{
+									"name": "Remove page from a competitor",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [],
+										"url": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/competitors/{{competitorID}}/pages/{{pageID}}"
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Mon, 20 Jan 2025 22:37:18 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "55"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"Removed page from competitor successfully\"\n}"
+								},
+								{
+									"name": "Remove page from a competitor",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [],
+										"url": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/competitors/{{competitorID}}/pages/{{pageID}}"
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Wed, 22 Jan 2025 19:09:52 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "55"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"Removed page from competitor successfully\"\n}"
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "User Routes",
+					"item": [
+						{
+							"name": "Delete Account",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": "{{origin}}/api/public/v1/users"
+							},
+							"response": [
+								{
+									"name": "Delete Account",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [],
+										"url": "{{origin}}/api/public/v1/users"
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Mon, 20 Jan 2025 22:38:46 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "39"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"User deleted successfully\"\n}"
+								}
+							]
+						},
+						{
+							"name": "Get Account",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": "{{origin}}/api/public/v1/users"
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Tokens",
+					"item": [
+						{
+							"name": "Validate Clerk Token",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": "{{origin}}/api/public/v1/token"
+							},
+							"response": [
+								{
+									"name": "Validate Clerk Token",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": "{{origin}}/api/public/v1/token"
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Mon, 20 Jan 2025 22:39:57 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "34"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"Clerk token is valid\"\n}"
+								}
+							]
+						}
+					]
+				}
+			],
+			"auth": {
+				"type": "bearer",
+				"bearer": {
+					"token": "eyJhbGciOiJSUzI1NiIsImNhdCI6ImNsX0I3ZDRQRDExMUFBQSIsImtpZCI6Imluc18ycVlzRlQ2dXFDZVJyS0RuNDdFRnZ1OGhJQUQiLCJ0eXAiOiJKV1QifQ.eyJhenAiOiJodHRwOi8vbG9jYWxob3N0OjUxNzMiLCJleHAiOjE3Mzc1NzMxMTUsImZ2YSI6WzQ1MDYsLTFdLCJpYXQiOjE3Mzc1NzMwNTUsImlzcyI6Imh0dHBzOi8vYWNlLWR1Y2stNDguY2xlcmsuYWNjb3VudHMuZGV2IiwibmJmIjoxNzM3NTczMDQ1LCJzaWQiOiJzZXNzXzJycjIxaWdiTWkwTlVlSU05QjM1dHBvdzBVUCIsInN1YiI6InVzZXJfMnFZdFhPT1lZM1NRNTA1S3VlTWN6cnZSaURBIn0.WD3gUnudMl0YMzfuuHGZwkDPtfPH-PwcGFcRjyAOdz8Czo8Vz0hXAy7zyyQCWTXZ9Fxfg1IIzgxr5rOrpGn4ey_-IdMutzSFhmck1ZPnoutjObR4GNEmRRfh3ySp2hVWizgYKBagksnh0xhKxaRzCJeQ_38A9yWIJErNOhA3QntljVCEGiJIaGoJXtn05g81BkWV5uNKAcuUlkOuX46uswkvHQgyTezd4AxZiRzVcPlnWTl5xUdkXad2GdUJQbi48YMQLkUCVl8lwkTHWGeac-kfm8AYY8jnjxHwNM8XGOThRq0n3T2j-T63PP3PYayTbmR4JNuKy_fwhdjWQlSMgw"
+				}
+			},
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"packages": {},
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"packages": {},
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Private",
+			"item": [
+				{
+					"name": "Workflow Service",
+					"item": [
+						{
+							"name": "Submit a new Job",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"url": "{{origin}}/api/private/v1/workflow/{{workflowType}}/job"
+							},
+							"response": [
+								{
+									"name": "Submit a new Job",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"url": "{{origin}}/api/private/v1/workflow/{{workflowType}}/job"
+									},
+									"status": "Created",
+									"code": 201,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Mon, 20 Jan 2025 22:46:29 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "127"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"workflow started successfully\",\n    \"data\": {\n        \"jobID\": \"122f9ba7-17d2-4e40-a82d-b7b930629951\",\n        \"workflowType\": \"screenshot\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "List History",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": "{{origin}}/api/private/v1/workflow/history"
+							},
+							"response": [
+								{
+									"name": "List History",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": "{{origin}}/api/private/v1/workflow/history"
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Mon, 20 Jan 2025 22:46:34 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "457"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"Successfully listed schedules\",\n    \"data\": [\n        {\n            \"id\": \"cc199b8b-632e-4ec2-bfb9-adf10a118bca\",\n            \"workflow_type\": \"screenshot\",\n            \"job_id\": \"122f9ba7-17d2-4e40-a82d-b7b930629951\",\n            \"start_time\": \"2025-01-20T22:46:29.796781Z\",\n            \"preemptions\": 0\n        },\n        {\n            \"id\": \"2da0d405-7985-4bd1-987f-068ba9f1f9a2\",\n            \"workflow_type\": \"screenshot\",\n            \"job_id\": \"dc190fcb-743c-44cb-b7a2-4a03ba5e081d\",\n            \"start_time\": \"2025-01-20T22:46:00.017373Z\",\n            \"end_time\": \"2025-01-20T22:46:25.550642Z\",\n            \"preemptions\": 0\n        }\n    ]\n}"
+								}
+							]
+						},
+						{
+							"name": "Get Job Status",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": "{{origin}}/api/private/v1/workflow/{{workflowType}}/job/{{jobID}}"
+							},
+							"response": [
+								{
+									"name": "Get Job Status",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": "{{origin}}/api/private/v1/workflow/{{workflowType}}/job/{{jobID}}"
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Mon, 20 Jan 2025 22:54:29 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "260"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"workflow retrieved successfully\",\n    \"data\": {\n        \"job\": {\n            \"job_id\": \"039478ef-8794-4a26-8268-9af5063afc10\",\n            \"status\": \"running\",\n            \"checkpoint\": {\n                \"batch_id\": null\n            },\n            \"completed\": 0,\n            \"failed\": 6\n        },\n        \"jobID\": \"039478ef-8794-4a26-8268-9af5063afc10\",\n        \"workflowType\": \"screenshot\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Stop a running Job",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": "{{origin}}/api/private/v1/workflow/{{workflowType}}/job/{{jobID}}"
+							},
+							"response": []
+						},
+						{
+							"name": "List Checkpoint",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{origin}}/api/private/v1/workflow/checkpoint?jobStatus=running&workflowType=screenshot",
+									"host": [
+										"{{origin}}"
+									],
+									"path": [
+										"api",
+										"private",
+										"v1",
+										"workflow",
+										"checkpoint"
+									],
+									"query": [
+										{
+											"key": "jobStatus",
+											"value": "running"
+										},
+										{
+											"key": "workflowType",
+											"value": "screenshot"
+										}
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "List Checkpoint",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{origin}}/api/private/v1/workflow/checkpoint?jobStatus=running&workflowType=screenshot",
+											"host": [
+												"{{origin}}"
+											],
+											"path": [
+												"api",
+												"private",
+												"v1",
+												"workflow",
+												"checkpoint"
+											],
+											"query": [
+												{
+													"key": "jobStatus",
+													"value": "running"
+												},
+												{
+													"key": "workflowType",
+													"value": "screenshot"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Mon, 20 Jan 2025 22:47:54 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "119"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"workflows listed successfully\",\n    \"data\": {\n        \"jobs\": null,\n        \"workflowStatus\": \"running\",\n        \"workflowType\": \"screenshot\"\n    }\n}"
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "Screenshot Service",
+					"item": [
+						{
+							"name": "Refresh",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"options\": {\n        \"url\": \"https://www.trello.com/\"\n    },\n    \"backDate\": true\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": "{{origin}}/api/private/v1/screenshot/refresh"
+							},
+							"response": []
+						},
+						{
+							"name": "Retrieve",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"options\": {\n        \"url\": \"https://www.trello.com/\"\n    },\n    \"backDate\": true\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": "{{origin}}/api/private/v1/screenshot/retrieve"
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "AI Service",
+					"item": [
+						{
+							"name": "Analyze content differences",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"url": "{{origin}}/api/private/v1/ai/content"
+							},
+							"response": []
+						},
+						{
+							"name": "Analyze visual differences",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"url": "{{origin}}/api/private/v1/ai/visual"
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Schedule",
+					"item": [
+						{
+							"name": "List all Schedule",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{origin}}/api/private/v1/schedule/?pageNumber=1&pageSize=10",
+									"host": [
+										"{{origin}}"
+									],
+									"path": [
+										"api",
+										"private",
+										"v1",
+										"schedule",
+										""
+									],
+									"query": [
+										{
+											"key": "pageNumber",
+											"value": "1"
+										},
+										{
+											"key": "pageSize",
+											"value": "10"
+										}
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "List all Schedule",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{origin}}/api/private/v1/schedule/?pageNumber=1&pageSize=10",
+											"host": [
+												"{{origin}}"
+											],
+											"path": [
+												"api",
+												"private",
+												"v1",
+												"schedule",
+												""
+											],
+											"query": [
+												{
+													"key": "pageNumber",
+													"value": "1"
+												},
+												{
+													"key": "pageSize",
+													"value": "10"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Mon, 20 Jan 2025 22:45:27 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "53"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"Successfully listed schedules\",\n    \"data\": []\n}"
+								}
+							]
+						},
+						{
+							"name": "Create a new Schedule",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"workflow_type\": \"screenshot\",\n    \"about\": \"this runs every 1 yo\",\n    \"spec\": \"0 * * * * *\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": "{{origin}}/api/private/v1/schedule/"
+							},
+							"response": [
+								{
+									"name": "Create a new Schedule",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"workflow_type\": \"screenshot\",\n    \"about\": \"this runs every 1 yo\",\n    \"spec\": \"0 * * * * *\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": "{{origin}}/api/private/v1/schedule/"
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Mon, 20 Jan 2025 22:45:34 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "104"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"Successfully created schedule\",\n    \"data\": {\n        \"scheduleID\": \"40940c30-15cf-494c-8115-25358376d1c0\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Get a given Schedule",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"workflow_type\": \"screenshot\",\n    \"about\": \"this is awesome\",\n    \"spec\": \"0 0 16 * * 1\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": "{{origin}}/api/private/v1/schedule/{{scheduleID}}"
+							},
+							"response": [
+								{
+									"name": "Get a given Schedule",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"workflow_type\": \"screenshot\",\n    \"about\": \"this is awesome\",\n    \"spec\": \"0 0 16 * * 1\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": "{{origin}}/api/private/v1/schedule/{{scheduleID}}"
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Mon, 20 Jan 2025 22:46:00 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "333"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"Successfully retrieved schedule\",\n    \"data\": {\n        \"id\": \"40940c30-15cf-494c-8115-25358376d1c0\",\n        \"workflow_type\": \"screenshot\",\n        \"about\": \"this runs every 1 yo\",\n        \"spec\": \"0 * * * * *\",\n        \"last_run\": \"2025-01-20T22:46:00Z\",\n        \"next_run\": \"2025-01-20T22:47:00Z\",\n        \"created_at\": \"2025-01-20T22:45:34.972899Z\",\n        \"updated_at\": \"2025-01-20T22:46:00.008977Z\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Update a given Schedule",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"workflow_type\": \"screenshot\",\n    \"about\": \"this is not awesome\",\n    \"spec\": \"0 0 16 * * 1\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": "{{origin}}/api/private/v1/schedule/{{scheduleID}}"
+							},
+							"response": [
+								{
+									"name": "Update a given Schedule",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"workflow_type\": \"screenshot\",\n    \"about\": \"this is not awesome\",\n    \"spec\": \"0 0 16 * * 1\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": "{{origin}}/api/private/v1/schedule/{{scheduleID}}"
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Mon, 20 Jan 2025 22:46:12 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "104"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"Successfully updated schedule\",\n    \"data\": {\n        \"scheduleID\": \"40940c30-15cf-494c-8115-25358376d1c0\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Delete a given Schedule",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"workflow_type\": \"screenshot\",\n    \"about\": \"this is awesome\",\n    \"spec\": \"0 0 16 * * 1\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": "{{origin}}/api/private/v1/schedule/{{scheduleID}}"
+							},
+							"response": [
+								{
+									"name": "Delete a given Schedule",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"workflow_type\": \"screenshot\",\n    \"about\": \"this is awesome\",\n    \"spec\": \"0 0 16 * * 1\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": "{{origin}}/api/private/v1/schedule/{{scheduleID}}"
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Mon, 20 Jan 2025 22:46:18 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "43"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"Successfully deleted schedule\"\n}"
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "Tokens",
+					"item": [
+						{
+							"name": "Validate Private Token",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": {
+										"token": "6HN03ePfiClJqlNIip3Q857vW61Gz8dX8qgXmgQqerc="
+									}
+								},
+								"method": "GET",
+								"header": [],
+								"url": "{{origin}}/api/private/v1/token"
+							},
+							"response": [
+								{
+									"name": "Validate Token",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": "{{origin}}/api/private/v1/token"
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Mon, 20 Jan 2025 22:44:26 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "28"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"Token is valid\"\n}"
+								}
+							]
+						}
+					]
+				}
+			],
+			"auth": {
+				"type": "bearer",
+				"bearer": {
+					"token": "nhducjn6HPSW1I7m583due8IiYIkbj-Bw5FdyJRRHHE="
+				}
+			},
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"packages": {},
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"packages": {},
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": {
+			"token": "eyJhbGciOiJSUzI1NiIsImNhdCI6ImNsX0I3ZDRQRDExMUFBQSIsImtpZCI6Imluc18ycVlzRlQ2dXFDZVJyS0RuNDdFRnZ1OGhJQUQiLCJ0eXAiOiJKV1QifQ.eyJhenAiOiJodHRwOi8vbG9jYWxob3N0OjUxNzMiLCJleHAiOjE3Mzc1NjM5MjEsImZ2YSI6WzQzNTMsLTFdLCJpYXQiOjE3Mzc1NjM4NjEsImlzcyI6Imh0dHBzOi8vYWNlLWR1Y2stNDguY2xlcmsuYWNjb3VudHMuZGV2IiwibmJmIjoxNzM3NTYzODUxLCJzaWQiOiJzZXNzXzJycjIxaWdiTWkwTlVlSU05QjM1dHBvdzBVUCIsInN1YiI6InVzZXJfMnFZdFhPT1lZM1NRNTA1S3VlTWN6cnZSaURBIn0.anhcME806aZrl1ORgFnThoOoPUtJYGwu9gAw4631LxtjSK-bKucBcP3vwloWRhggMVSsAVn0mJaJ79nJxZQAJh6_zXfTA5_g4U1QE-rZBW0xIfOVhbrARD4yu7fM_h8Nt6mAcJnJ8_5ZcAeNfkKd6GfQ5qboWTXbLpCAWAGK1Xp76x_Ya0HUxVPr2Oye_QGB_NxWSQwA3436eflZNUBuiRSQThbJN8i6Gi_m7hxySPFWvdMZVTADmODVE99GiflKy90lNGdnPyxsqDLHybA2xvDV_jxMJ1IFvKP0tjbL5exQCSSfQMEkDkw2n-PaNtyO4EMb3Mfe2NQIzoQtITogSw"
+		}
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "workspaceID",
+			"value": "1"
+		},
+		{
+			"key": "userID",
+			"value": "2"
+		},
+		{
+			"key": "competitorID",
+			"value": "1"
+		},
+		{
+			"key": "pageID",
+			"value": "1"
+		},
+		{
+			"key": "origin",
+			"value": "http://localhost:8080"
+		},
+		{
+			"key": "workflowType",
+			"value": "workflowType",
+			"type": "default"
+		},
+		{
+			"key": "taskID",
+			"value": "taskID",
+			"type": "default"
+		},
+		{
+			"key": "jobID",
+			"value": "jobID",
+			"type": "default"
+		},
+		{
+			"key": "scheduleID",
+			"value": "f40b25e0-4caf-4b3d-972c-0b96a2076b57",
+			"type": "default"
+		}
+	]
+}
