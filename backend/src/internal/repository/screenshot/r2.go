@@ -2,8 +2,12 @@
 package screenshot
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"image"
+	"io"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -53,20 +57,135 @@ func NewR2ScreenshotRepo(accessKey, secretKey, bucket, accountID string, logger 
 
 // StoreScreenshotImage stores a screenshot in local storage
 func (r *r2ScreenshotRepo) StoreScreenshotImage(ctx context.Context, data *models.ScreenshotImage) error {
+	if data == nil {
+		return fmt.Errorf("screenshot image is required")
+	}
+
+	if data.StoragePath == "" {
+		return fmt.Errorf("screenshot image storage path is required")
+	}
+
+	buf := new(bytes.Buffer)
+	if err := encodeImage(data.Image, buf); err != nil {
+		return fmt.Errorf("failed to encode image: %w", err)
+	}
+
+	metadata, err := data.Metadata.ToMap()
+	if err != nil {
+		return err
+	}
+
+	// Convert to bytes.Reader for seekable reading
+	reader := bytes.NewReader(buf.Bytes())
+
+	_, err = r.client.PutObject(ctx, &s3.PutObjectInput{
+		Bucket:      aws.String(r.bucket),
+		Key:         aws.String(data.StoragePath),
+		Body:        reader,
+		ContentType: aws.String("image/png"),
+		Metadata:    metadata,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to upload image: %w", err)
+	}
+
 	return nil
 }
 
 // GetScreenshotImage retrieves a screenshot from local storage
 func (r *r2ScreenshotRepo) StoreScreenshotContent(ctx context.Context, data *models.ScreenshotContent) error {
+	if data == nil {
+		return fmt.Errorf("screenshot content is required")
+	}
+
+	if data.StoragePath == "" {
+		return fmt.Errorf("screenshot content storage path is required")
+	}
+
+	metadata, err := data.Metadata.ToMap()
+	if err != nil {
+		return err
+	}
+
+	_, err = r.client.PutObject(ctx, &s3.PutObjectInput{
+		Bucket:      aws.String(r.bucket),
+		Key:         aws.String(data.StoragePath),
+		Body:        strings.NewReader(data.Content),
+		ContentType: aws.String("text/plain"),
+		Metadata:    metadata,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to upload content: %w", err)
+	}
+
 	return nil
 }
 
 // RetrieveScreenshotImage retrieves screenshot image from the storage
 func (r *r2ScreenshotRepo) RetrieveScreenshotImage(ctx context.Context, path string) (*models.ScreenshotImage, error) {
-	return nil, nil
+	data, metadata, err := r.Get(ctx, path)
+	if err != nil {
+		return nil, err
+	}
+
+	img, _, err := image.Decode(bytes.NewReader(data))
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode image: %w", err)
+	}
+
+	screenshotMetadata, err := models.ScreenshotMetadataFromMap(metadata)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := models.ScreenshotImage{
+		StoragePath: path,
+		Image:       img,
+		Metadata:    screenshotMetadata,
+	}
+
+	return &resp, nil
 }
 
 // RetrieveScreenshotContent retrieves screenshot content from the storage
 func (r *r2ScreenshotRepo) RetrieveScreenshotContent(ctx context.Context, path string) (*models.ScreenshotContent, error) {
-	return nil, nil
+	if path == "" {
+		return nil, fmt.Errorf("screenshot image path is required")
+	}
+
+	data, metadata, err := r.Get(ctx, path)
+	if err != nil {
+		return nil, err
+	}
+
+	screenshotMetadata, err := models.ScreenshotMetadataFromMap(metadata)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := models.ScreenshotContent{
+		StoragePath: path,
+		Content:     string(data),
+		Metadata:    screenshotMetadata,
+	}
+
+	return &resp, nil
+}
+
+func (s *r2ScreenshotRepo) Get(ctx context.Context, path string) ([]byte, map[string]string, error) {
+	output, err := s.client.GetObject(ctx, &s3.GetObjectInput{
+		Bucket: aws.String(s.bucket),
+		Key:    aws.String(path),
+	})
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get object: %w", err)
+	}
+	defer output.Body.Close()
+
+	content, err := io.ReadAll(output.Body)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to read object body: %w", err)
+	}
+
+	return content, output.Metadata, nil
 }
