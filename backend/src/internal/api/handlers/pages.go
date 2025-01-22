@@ -69,7 +69,23 @@ func (wh *WorkspaceHandler) AddPagesToCompetitor(c *fiber.Ctx) error {
 }
 
 func (wh *WorkspaceHandler) GetPageForCompetitor(c *fiber.Ctx) error {
-	return nil
+	competitorID, err := uuid.Parse(c.Params("competitorID"))
+	if err != nil {
+		return sendErrorResponse(c, wh.logger, fiber.StatusBadRequest, "InvalidCompetitorID", err.Error())
+	}
+
+	pageID, err := uuid.Parse(c.Params("pageID"))
+	if err != nil {
+		return sendErrorResponse(c, wh.logger, fiber.StatusBadRequest, "InvalidPageID", err.Error())
+	}
+
+	ctx := c.Context()
+	page, err := wh.workspaceService.GetPageForCompetitor(ctx, competitorID, pageID)
+	if err != nil {
+		return sendErrorResponse(c, wh.logger, fiber.StatusInternalServerError, "Could not get page for competitor", err.Error())
+	}
+
+	return sendDataResponse(c, fiber.StatusOK, "Fetched page for competitor successfully", page)
 }
 
 func (wh *WorkspaceHandler) UpdatePageForCompetitor(c *fiber.Ctx) error {

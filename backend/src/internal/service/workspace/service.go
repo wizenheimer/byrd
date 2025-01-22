@@ -507,3 +507,8 @@ func (ws *workspaceService) UpdateCompetitorPage(ctx context.Context, competitor
 	ws.logger.Debug("updating competitor page", zap.Any("pageProps", pageProps), zap.Any("competitorID", competitorID), zap.Any("pageID", pageID))
 	return ws.competitorService.UpdatePage(ctx, competitorID, pageID, pageProps)
 }
+
+func (ws *workspaceService) GetPageForCompetitor(ctx context.Context, competitorID, pageID uuid.UUID) (*models.Page, error) {
+	ws.logger.Debug("getting page for competitor", zap.Any("competitorID", competitorID), zap.Any("pageID", pageID))
+	return ws.competitorService.GetCompetitorPage(ctx, competitorID, pageID)
+}

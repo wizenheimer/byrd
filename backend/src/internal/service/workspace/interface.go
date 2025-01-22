@@ -69,4 +69,6 @@ type WorkspaceService interface {
 	RemoveCompetitorFromWorkspace(ctx context.Context, workspaceID, competitorID uuid.UUID) error
 
 	UpdateCompetitorPage(ctx context.Context, competitorID, pageID uuid.UUID, page models.PageProps) (*models.Page, error)
+
+	GetPageForCompetitor(ctx context.Context, competitorID, pageID uuid.UUID) (*models.Page, error)
 }
