@@ -41,9 +41,15 @@ func (h *ScreenshotHandler) Retrieve(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	return sendDataResponse(c, fiber.StatusOK, "screenshot retrieved", map[string]interface{}{
-		"screenshot": screenshotImg,
-		"content":    screenshotContent,
+	return sendDataResponse(c, fiber.StatusOK, "screenshot retrieved", map[string]any{
+		"screenshot": map[string]any{
+			"metadata": screenshotImg.Metadata,
+			"path":     screenshotImg.StoragePath,
+		},
+		"content": map[string]any{
+			"metadata": screenshotContent.Metadata,
+			"path":     screenshotContent.StoragePath,
+		},
 	})
 }
 
@@ -65,8 +71,14 @@ func (h *ScreenshotHandler) Refresh(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	return sendDataResponse(c, fiber.StatusOK, "screenshot refreshed", map[string]interface{}{
-		"screenshot": screenshotImg,
-		"content":    screenshotContent,
+	return sendDataResponse(c, fiber.StatusOK, "screenshot refreshed", map[string]any{
+		"screenshot": map[string]any{
+			"metadata": screenshotImg.Metadata,
+			"path":     screenshotImg.StoragePath,
+		},
+		"content": map[string]any{
+			"metadata": screenshotContent.Metadata,
+			"path":     screenshotContent.StoragePath,
+		},
 	})
 }

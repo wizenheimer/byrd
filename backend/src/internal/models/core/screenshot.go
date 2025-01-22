@@ -23,42 +23,48 @@ type ScreenshotImage struct {
 
 // ScreenshotMetadata defines complete metadata for a screenshot
 type ScreenshotMetadata struct {
-	SourceURL   string `json:"source_url"`
-	RenderedURL string `json:"rendered_url"`
-	Year        int    `json:"year"`
-	WeekNumber  int    `json:"week_number"`
-	WeekDay     int    `json:"week_day"`
+	Year       int `json:"year"`
+	WeekNumber int `json:"week_number"`
+	WeekDay    int `json:"week_day"`
 }
 
-func (s ScreenshotMetadata) ToMap() map[string]string {
+// ToMap safely converts ScreenshotMetadata to map[string]string.
+// Raises validation errors if any required field is missing or invalid.
+func (s ScreenshotMetadata) ToMap() (map[string]string, error) {
 	result := make(map[string]string)
-
-	result["source_url"] = s.SourceURL
-	result["rendered_url"] = s.RenderedURL
-	result["year"] = strconv.Itoa(s.Year)
-	result["week_day"] = strconv.Itoa(s.WeekDay)
-	result["week_number"] = strconv.Itoa(s.WeekNumber)
-
-	return result
-}
-
-// FromMap safely converts map[string]string to ScreenshotMetadata
-func ScreenshotMetadataFromMap(m map[string]string) (ScreenshotMetadata, []error) {
-	var result ScreenshotMetadata
 	var errs []error
 
-	// Required string fields
-	if srcURL, exists := m["source_url"]; exists {
-		result.SourceURL = srcURL
-	} else {
-		errs = append(errs, errors.New("missing required field: source_url"))
+	// Validate Year (assuming valid years are between 2000 and 2100)
+	if s.Year < 2000 || s.Year > 2100 {
+		errs = append(errs, fmt.Errorf("year must be between 2000 and 2100, got: %d", s.Year))
+	}
+	result["year"] = strconv.Itoa(s.Year)
+
+	// Validate WeekDay (0-6, where 0 is Sunday)
+	if s.WeekDay < 0 || s.WeekDay > 6 {
+		errs = append(errs, fmt.Errorf("week_day must be between 0 and 6, got: %d", s.WeekDay))
+	}
+	result["week_day"] = strconv.Itoa(s.WeekDay)
+
+	// Validate WeekNumber (1-53)
+	if s.WeekNumber < 1 || s.WeekNumber > 53 {
+		errs = append(errs, fmt.Errorf("week_number must be between 1 and 53, got: %d", s.WeekNumber))
+	}
+	result["week_number"] = strconv.Itoa(s.WeekNumber)
+
+	// Return errors if any occurred
+	if len(errs) > 0 {
+		return nil, fmt.Errorf("validation errors: %v", errs)
 	}
 
-	if rendURL, exists := m["rendered_url"]; exists {
-		result.RenderedURL = rendURL
-	} else {
-		errs = append(errs, errors.New("missing required field: rendered_url"))
-	}
+	return result, nil
+}
+
+// FromMap safely converts map[string]string to ScreenshotMetadata.
+// Raises an error if any required field is missing or invalid.
+func ScreenshotMetadataFromMap(m map[string]string) (*ScreenshotMetadata, error) {
+	var result ScreenshotMetadata
+	var errs []error
 
 	// Required integer fields
 	if year, exists := m["year"]; exists {
@@ -91,10 +97,10 @@ func ScreenshotMetadataFromMap(m map[string]string) (ScreenshotMetadata, []error
 		errs = append(errs, errors.New("missing required field: week_number"))
 	}
 
-	// Return errs if any occurred
+	// Return errors if any occurred
 	if len(errs) > 0 {
-		return result, errs
+		return nil, fmt.Errorf("validation errors: %v", errs)
 	}
 
-	return result, nil
+	return &result, nil
 }
