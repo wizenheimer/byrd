@@ -32,16 +32,16 @@ func sendErrorResponse(c *fiber.Ctx, logger *logger.Logger, status int, message 
 func getClerkUserFromContext(c *fiber.Ctx) (*clerk.User, error) {
 	userID, err := getClerkUserIDFromContext(c)
 	if err != nil {
-		return nil, c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Action unauthorized",
-		})
+		return nil, err
 	}
 
 	clerkUser, err := user.Get(c.Context(), userID)
 	if err != nil {
-		return nil, c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to get user",
-		})
+		return nil, err
+	}
+
+	if clerkUser == nil {
+		return nil, fmt.Errorf("clerk user not found")
 	}
 
 	return clerkUser, nil

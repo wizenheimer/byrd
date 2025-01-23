@@ -76,7 +76,7 @@ func main() {
 	})
 
 	// Setup middleware
-	middleware.SetupMiddleware(app)
+	middleware.SetupMiddleware(cfg, app)
 
 	// Setup routes
 	routes.SetupRoutes(app, handlers, am, rm)

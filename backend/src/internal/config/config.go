@@ -18,6 +18,7 @@ type Config struct {
 
 type ServerConfig struct {
 	Port                string
+	CorsAllowedOrigins  string
 	IdleTimeout         time.Duration
 	ShutdownTimeout     time.Duration
 	ShutdownMaxAttempts int
@@ -138,6 +139,9 @@ func LoadServerConfig() ServerConfig {
 	return ServerConfig{
 		// Port is set to the value of the SERVER_PORT environment variable, or "8080" if the variable is not set.
 		Port: GetEnv("SERVER_PORT", "8080", utils.StrParser),
+
+		// CorsAllowedOrigins is set to the value of the CORS_ALLOWED_ORIGINS environment variable, or "http://localhost:5173" if the variable is not set.
+		CorsAllowedOrigins: GetEnv("CORS_ALLOWED_ORIGINS", "http://localhost:5173", utils.StrParser),
 
 		// IdleTimeout is set to the value of the IDLE_TIMEOUT environment variable, or 300 seconds if the variable is not set.
 		IdleTimeout: time.Duration(GetEnv("SERVER_IDLE_TIMEOUT", 300, utils.IntParser)) * time.Second,
