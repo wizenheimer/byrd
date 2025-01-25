@@ -30,6 +30,9 @@ type Page struct {
 	// CompetitorID is the competitor's unique identifier
 	CompetitorID uuid.UUID `json:"competitor_id" validate:"required"`
 
+	// Title is the page's title
+	Title string `json:"title"`
+
 	// URL is the page's URL
 	URL string `json:"url" validate:"required,url"`
 
@@ -68,6 +71,9 @@ type ActivePageBatch struct {
 
 // PageProps is struct for essential page properties
 type PageProps struct {
+	// Title is the page's title
+	Title string `json:"title"`
+
 	// URL is the page's URL
 	URL string `json:"url" validate:"required,url"`
 

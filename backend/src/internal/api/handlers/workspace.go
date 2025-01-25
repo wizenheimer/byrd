@@ -71,9 +71,14 @@ func (wh *WorkspaceHandler) CreateWorkspaceForUser(c *fiber.Ctx) error {
 		if _, err := url.Parse(competitorURL); err != nil {
 			continue
 		}
+		pageTitle, err := utils.GetPageTitle(competitorURL)
+		if err != nil {
+			continue
+		}
 		captureProfile := screenshot.GetDefaultScreenshotRequestOptions(competitorURL)
 		pages = append(pages, models.PageProps{
 			URL:            competitorURL,
+			Title:          pageTitle,
 			CaptureProfile: &captureProfile,
 			DiffProfile:    diffProfiles,
 		})

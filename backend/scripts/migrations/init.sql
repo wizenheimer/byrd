@@ -54,6 +54,7 @@ CREATE TABLE pages (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   competitor_id UUID NOT NULL REFERENCES competitors(id) ON DELETE CASCADE,
   url TEXT NOT NULL,
+  title TEXT,
   capture_profile JSONB,
   diff_profile TEXT [] DEFAULT ARRAY ['branding', 'customers', 'integration', 'product', 'pricing', 'partnerships', 'messaging'],
   last_checked_at TIMESTAMP WITH TIME ZONE,

@@ -38,14 +38,15 @@ func (r *pageRepo) AddPageToCompetitor(ctx context.Context, competitorID uuid.UU
 	result := &models.Page{}
 
 	err := r.getQuerier(ctx).QueryRow(ctx, `
-		INSERT INTO pages (competitor_id, url, capture_profile, diff_profile, status)
-		VALUES ($1, $2, $3, $4, $5)
-		RETURNING id, competitor_id, url, capture_profile, diff_profile, last_checked_at, status, created_at, updated_at`,
-		competitorID, page.URL, page.CaptureProfile, page.DiffProfile, models.PageStatusActive,
+      INSERT INTO pages (competitor_id, url, title, capture_profile, diff_profile, status)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING id, competitor_id, url, title, capture_profile, diff_profile, last_checked_at, status, created_at, updated_at`,
+		competitorID, page.URL, page.Title, page.CaptureProfile, page.DiffProfile, models.PageStatusActive,
 	).Scan(
 		&result.ID,
 		&result.CompetitorID,
 		&result.URL,
+		&result.Title,
 		&result.CaptureProfile,
 		&result.DiffProfile,
 		&result.LastCheckedAt,
@@ -68,13 +69,14 @@ func (r *pageRepo) BatchAddPageToCompetitor(ctx context.Context, competitorID uu
 
 	// Create values for bulk insert
 	valueStrings := make([]string, 0, len(pages))
-	valueArgs := make([]interface{}, 0, len(pages)*4)
+	valueArgs := make([]interface{}, 0, len(pages)*6)
 	for i, page := range pages {
-		valueStrings = append(valueStrings, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d)",
-			i*5+1, i*5+2, i*5+3, i*5+4, i*5+5))
+		valueStrings = append(valueStrings, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d)",
+			i*6+1, i*6+2, i*6+3, i*6+4, i*6+5, i*6+6))
 		valueArgs = append(valueArgs,
 			competitorID,
 			page.URL,
+			page.Title,
 			page.CaptureProfile,
 			page.DiffProfile,
 			models.PageStatusActive,
@@ -82,9 +84,9 @@ func (r *pageRepo) BatchAddPageToCompetitor(ctx context.Context, competitorID uu
 	}
 
 	query := fmt.Sprintf(`
-		INSERT INTO pages (competitor_id, url, capture_profile, diff_profile, status)
-		VALUES %s
-		RETURNING id, competitor_id, url, capture_profile, diff_profile, last_checked_at, status, created_at, updated_at`,
+        INSERT INTO pages (competitor_id, url, title, capture_profile, diff_profile, status)
+        VALUES %s
+        RETURNING id, competitor_id, url, title, capture_profile, diff_profile, last_checked_at, status, created_at, updated_at`,
 		strings.Join(valueStrings, ","))
 
 	rows, err := r.getQuerier(ctx).Query(ctx, query, valueArgs...)
@@ -100,6 +102,7 @@ func (r *pageRepo) BatchAddPageToCompetitor(ctx context.Context, competitorID uu
 			&page.ID,
 			&page.CompetitorID,
 			&page.URL,
+			&page.Title,
 			&page.CaptureProfile,
 			&page.DiffProfile,
 			&page.LastCheckedAt,
@@ -120,14 +123,15 @@ func (r *pageRepo) GetCompetitorPageByID(ctx context.Context, competitorID, page
 	page := &models.Page{}
 
 	err := r.getQuerier(ctx).QueryRow(ctx, `
-		SELECT id, competitor_id, url, capture_profile, diff_profile, last_checked_at, status, created_at, updated_at
-		FROM pages
-		WHERE competitor_id = $1 AND id = $2 AND status != $3`,
+        SELECT id, competitor_id, url, title, capture_profile, diff_profile, last_checked_at, status, created_at, updated_at
+        FROM pages
+        WHERE competitor_id = $1 AND id = $2 AND status != $3`,
 		competitorID, pageID, models.PageStatusInactive,
 	).Scan(
 		&page.ID,
 		&page.CompetitorID,
 		&page.URL,
+		&page.Title,
 		&page.CaptureProfile,
 		&page.DiffProfile,
 		&page.LastCheckedAt,
@@ -152,8 +156,8 @@ func (r *pageRepo) BatchGetCompetitorPagesByIDs(ctx context.Context, competitorI
 	}
 
 	query := `
-		SELECT id, competitor_id, url, capture_profile, diff_profile, last_checked_at, status, created_at, updated_at
-		FROM pages
+		SELECT id, competitor_id, url, title, capture_profile, diff_profile, last_checked_at, status, created_at, updated_at
+    FROM pages
 		WHERE competitor_id = $1 AND id = ANY($2) AND status != $3
 		ORDER BY created_at DESC`
 
@@ -182,6 +186,7 @@ func (r *pageRepo) BatchGetCompetitorPagesByIDs(ctx context.Context, competitorI
 			&page.ID,
 			&page.CompetitorID,
 			&page.URL,
+			&page.Title,
 			&page.CaptureProfile,
 			&page.DiffProfile,
 			&page.LastCheckedAt,
@@ -202,8 +207,8 @@ func (r *pageRepo) BatchGetCompetitorPagesByIDs(ctx context.Context, competitorI
 
 func (r *pageRepo) GetCompetitorPages(ctx context.Context, competitorID uuid.UUID, limit, offset *int) ([]models.Page, bool, error) {
 	query := `
-		SELECT id, competitor_id, url, capture_profile, diff_profile, last_checked_at, status, created_at, updated_at
-		FROM pages
+		SELECT id, competitor_id, url, title, capture_profile, diff_profile, last_checked_at, status, created_at, updated_at
+    FROM pages
 		WHERE competitor_id = $1 AND status != $2
 		ORDER BY created_at DESC`
 
@@ -232,6 +237,7 @@ func (r *pageRepo) GetCompetitorPages(ctx context.Context, competitorID uuid.UUI
 			&page.ID,
 			&page.CompetitorID,
 			&page.URL,
+			&page.Title,
 			&page.CaptureProfile,
 			&page.DiffProfile,
 			&page.LastCheckedAt,
@@ -254,15 +260,16 @@ func (r *pageRepo) UpdateCompetitorPage(ctx context.Context, competitorID, pageI
 	result := &models.Page{}
 
 	err := r.getQuerier(ctx).QueryRow(ctx, `
-		UPDATE pages
-		SET url = $1, capture_profile = $2, diff_profile = $3
-		WHERE competitor_id = $4 AND id = $5 AND status != $6
-		RETURNING id, competitor_id, url, capture_profile, diff_profile, last_checked_at, status, created_at, updated_at`,
-		page.URL, page.CaptureProfile, page.DiffProfile, competitorID, pageID, models.PageStatusInactive,
+      UPDATE pages
+      SET url = $1, title = $2, capture_profile = $3, diff_profile = $4
+      WHERE competitor_id = $5 AND id = $6 AND status != $7
+      RETURNING id, competitor_id, url, title, capture_profile, diff_profile, last_checked_at, status, created_at, updated_at`,
+		page.URL, page.Title, page.CaptureProfile, page.DiffProfile, competitorID, pageID, models.PageStatusInactive,
 	).Scan(
 		&result.ID,
 		&result.CompetitorID,
 		&result.URL,
+		&result.Title,
 		&result.CaptureProfile,
 		&result.DiffProfile,
 		&result.LastCheckedAt,
@@ -285,15 +292,16 @@ func (r *pageRepo) UpdateCompetitorPageURL(ctx context.Context, competitorID, pa
 	result := &models.Page{}
 
 	err := r.getQuerier(ctx).QueryRow(ctx, `
-		UPDATE pages
-		SET url = $1
-		WHERE competitor_id = $2 AND id = $3 AND status != $4
-		RETURNING id, competitor_id, url, capture_profile, diff_profile, last_checked_at, status, created_at, updated_at`,
+      UPDATE pages
+      SET url = $1
+      WHERE competitor_id = $2 AND id = $3 AND status != $4
+      RETURNING id, competitor_id, url, title, capture_profile, diff_profile, last_checked_at, status, created_at, updated_at`,
 		url, competitorID, pageID, models.PageStatusInactive,
 	).Scan(
 		&result.ID,
 		&result.CompetitorID,
 		&result.URL,
+		&result.Title,
 		&result.CaptureProfile,
 		&result.DiffProfile,
 		&result.LastCheckedAt,
@@ -316,15 +324,16 @@ func (r *pageRepo) UpdateCompetitorCaptureProfile(ctx context.Context, competito
 	result := &models.Page{}
 
 	err := r.getQuerier(ctx).QueryRow(ctx, `
-		UPDATE pages
-		SET capture_profile = $1, url = $2
-		WHERE competitor_id = $3 AND id = $4 AND status != $5
-		RETURNING id, competitor_id, url, capture_profile, diff_profile, last_checked_at, status, created_at, updated_at`,
+      UPDATE pages
+      SET capture_profile = $1, url = $2
+      WHERE competitor_id = $3 AND id = $4 AND status != $5
+      RETURNING id, competitor_id, url, title, capture_profile, diff_profile, last_checked_at, status, created_at, updated_at`,
 		captureProfile, url, competitorID, pageID, models.PageStatusInactive,
 	).Scan(
 		&result.ID,
 		&result.CompetitorID,
 		&result.URL,
+		&result.Title,
 		&result.CaptureProfile,
 		&result.DiffProfile,
 		&result.LastCheckedAt,
@@ -347,15 +356,16 @@ func (r *pageRepo) UpdateCompetitorDiffProfile(ctx context.Context, competitorID
 	result := &models.Page{}
 
 	err := r.getQuerier(ctx).QueryRow(ctx, `
-		UPDATE pages
-		SET diff_profile = $1
-		WHERE competitor_id = $2 AND id = $3 AND status != $4
-		RETURNING id, competitor_id, url, capture_profile, diff_profile, last_checked_at, status, created_at, updated_at`,
+      UPDATE pages
+      SET diff_profile = $1
+      WHERE competitor_id = $2 AND id = $3 AND status != $4
+      RETURNING id, competitor_id, url, title, capture_profile, diff_profile, last_checked_at, status, created_at, updated_at`,
 		diffProfile, competitorID, pageID, models.PageStatusInactive,
 	).Scan(
 		&result.ID,
 		&result.CompetitorID,
 		&result.URL,
+		&result.Title,
 		&result.CaptureProfile,
 		&result.DiffProfile,
 		&result.LastCheckedAt,
@@ -381,29 +391,30 @@ func (r *pageRepo) UpdateCompetitorURL(ctx context.Context, competitorID, pageID
 
 	page := &models.Page{}
 	err := r.getQuerier(ctx).QueryRow(ctx, `
-		UPDATE pages
-		SET
-			url = $1,
-			capture_profile = jsonb_set(
-				COALESCE(capture_profile::jsonb, '{}'::jsonb),
-				'{url}',
-				$1::text::jsonb
-			),
-			updated_at = CURRENT_TIMESTAMP
-		WHERE
-			competitor_id = $2
-			AND id = $3
-			AND status != $4
-		RETURNING
-			id,
-			competitor_id,
-			url,
-			capture_profile,
-			diff_profile,
-			last_checked_at,
-			status,
-			created_at,
-			updated_at`,
+      UPDATE pages
+      SET
+          url = $1,
+          capture_profile = jsonb_set(
+              COALESCE(capture_profile::jsonb, '{}'::jsonb),
+              '{url}',
+              $1::text::jsonb
+          ),
+          updated_at = CURRENT_TIMESTAMP
+      WHERE
+          competitor_id = $2
+          AND id = $3
+          AND status != $4
+      RETURNING
+          id,
+          competitor_id,
+          url,
+          title,
+          capture_profile,
+          diff_profile,
+          last_checked_at,
+          status,
+          created_at,
+          updated_at`,
 		url,
 		competitorID,
 		pageID,
@@ -412,6 +423,7 @@ func (r *pageRepo) UpdateCompetitorURL(ctx context.Context, competitorID, pageID
 		&page.ID,
 		&page.CompetitorID,
 		&page.URL,
+		&page.Title,
 		&page.CaptureProfile,
 		&page.DiffProfile,
 		&page.LastCheckedAt,
@@ -586,24 +598,26 @@ func (r *pageRepo) GetPageByPageID(ctx context.Context, pageID uuid.UUID) (*mode
 
 	page := &models.Page{}
 	err := r.getQuerier(ctx).QueryRow(ctx, `
-		SELECT
-			id,
-			competitor_id,
-			url,
-			capture_profile,
-			diff_profile,
-			last_checked_at,
-			status,
-			created_at,
-			updated_at
-		FROM pages
-		WHERE id = $1 AND status != $2`,
+    SELECT
+        id,
+        competitor_id,
+        url,
+        title,
+        capture_profile,
+        diff_profile,
+        last_checked_at,
+        status,
+        created_at,
+        updated_at
+    FROM pages
+    WHERE id = $1 AND status != $2`,
 		pageID,
 		models.PageStatusInactive,
 	).Scan(
 		&page.ID,
 		&page.CompetitorID,
 		&page.URL,
+		&page.Title,
 		&page.CaptureProfile,
 		&page.DiffProfile,
 		&page.LastCheckedAt,
