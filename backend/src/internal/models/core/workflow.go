@@ -1,3 +1,4 @@
+// ./src/internal/models/core/workflow.go
 package models
 
 import (

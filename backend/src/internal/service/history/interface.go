@@ -1,4 +1,4 @@
-// ./src/internal/interfaces/service/history.go
+// ./src/internal/service/history/interface.go
 package history
 
 import (

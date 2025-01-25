@@ -1,3 +1,4 @@
+// ./src/internal/api/handlers/pages.go
 package handlers
 
 import (

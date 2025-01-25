@@ -1,4 +1,4 @@
-// ./src/internal/models/core/screenshot.go
+// ./src/internal/models/core/screenshot_options.go
 package models
 
 // ClipOptions defines the coordinates and dimensions for screenshot clipping

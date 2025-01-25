@@ -1,4 +1,4 @@
-// ./src/internal/interfaces/service/competitor.go
+// ./src/internal/service/competitor/interface.go
 package competitor
 
 import (

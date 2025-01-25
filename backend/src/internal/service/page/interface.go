@@ -1,4 +1,4 @@
-// ./src/internal/interfaces/service/page.go
+// ./src/internal/service/page/interface.go
 package page
 
 import (

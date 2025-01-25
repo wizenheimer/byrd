@@ -1,3 +1,4 @@
+// ./src/internal/constants/globals.go
 package constants
 
 const (

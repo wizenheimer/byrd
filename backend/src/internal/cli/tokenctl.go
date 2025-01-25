@@ -1,3 +1,4 @@
+// ./src/internal/cli/tokenctl.go
 package main
 
 import (

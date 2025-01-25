@@ -1,3 +1,4 @@
+// ./src/internal/api/handlers/competitors.go
 package handlers
 
 import (

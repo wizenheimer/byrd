@@ -1,3 +1,4 @@
+// ./src/internal/repository/schedule/interface.go
 package schedule
 
 import (

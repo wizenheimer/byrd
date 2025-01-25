@@ -1,3 +1,4 @@
+// ./src/internal/event/interface.go
 package event
 
 import (

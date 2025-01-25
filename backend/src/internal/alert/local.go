@@ -1,4 +1,4 @@
-// ./src/internal/service/alert/local.go
+// ./src/internal/alert/local.go
 package alert
 
 import (

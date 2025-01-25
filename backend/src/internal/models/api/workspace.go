@@ -1,3 +1,4 @@
+// ./src/internal/models/api/workspace.go
 package models
 
 import models "github.com/wizenheimer/byrd/src/internal/models/core"

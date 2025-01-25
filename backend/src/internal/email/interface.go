@@ -1,3 +1,4 @@
+// ./src/internal/email/interface.go
 // ./src/internal/interfaces/client/email.go
 package interfaces
 

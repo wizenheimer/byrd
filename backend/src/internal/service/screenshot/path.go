@@ -1,3 +1,4 @@
+// ./src/internal/service/screenshot/path.go
 package screenshot
 
 import (

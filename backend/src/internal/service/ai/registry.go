@@ -1,3 +1,4 @@
+// ./src/internal/service/ai/registry.go
 package ai
 
 import (

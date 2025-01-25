@@ -1,3 +1,4 @@
+// ./src/pkg/utils/auth.go
 package utils
 
 import (

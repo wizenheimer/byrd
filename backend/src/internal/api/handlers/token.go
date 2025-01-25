@@ -1,3 +1,4 @@
+// ./src/internal/api/handlers/token.go
 package handlers
 
 import "github.com/gofiber/fiber/v2"

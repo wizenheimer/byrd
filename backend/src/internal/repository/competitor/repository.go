@@ -1,3 +1,4 @@
+// ./src/internal/repository/competitor/repository.go
 package competitor
 
 import (

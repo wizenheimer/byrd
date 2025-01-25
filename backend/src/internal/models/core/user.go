@@ -1,3 +1,4 @@
+// ./src/internal/models/core/user.go
 package models
 
 import (

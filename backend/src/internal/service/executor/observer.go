@@ -1,4 +1,4 @@
-// ./src/internal/service/executor/workflow.go
+// ./src/internal/service/executor/observer.go
 package executor
 
 import (

@@ -1,3 +1,4 @@
+// ./src/internal/api/handlers/schedule.go
 package handlers
 
 import (

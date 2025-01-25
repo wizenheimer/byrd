@@ -1,3 +1,4 @@
+// ./src/internal/api/middleware/resource.go
 package middleware
 
 import (

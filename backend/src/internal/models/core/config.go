@@ -1,3 +1,4 @@
+// ./src/internal/models/core/config.go
 package models
 
 // SlackConfig holds Slack-specific configuration

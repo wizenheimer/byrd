@@ -1,4 +1,4 @@
-// ./src/internal/repository/storage/r2.go
+// ./src/internal/repository/screenshot/r2.go
 package screenshot
 
 import (

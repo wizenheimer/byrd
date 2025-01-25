@@ -1,3 +1,4 @@
+// ./src/internal/repository/screenshot/interface.go
 package screenshot
 
 import (

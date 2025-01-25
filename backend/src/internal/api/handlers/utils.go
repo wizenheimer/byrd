@@ -1,4 +1,4 @@
-// ./src/internal/api/handlers/response.go
+// ./src/internal/api/handlers/utils.go
 package handlers
 
 import (

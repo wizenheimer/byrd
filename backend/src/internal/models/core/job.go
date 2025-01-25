@@ -1,3 +1,4 @@
+// ./src/internal/models/core/job.go
 package models
 
 import (

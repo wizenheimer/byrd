@@ -1,3 +1,4 @@
+// ./src/internal/alert/slack.go
 // ./src/internal/service/alert/slack.go
 package alert
 

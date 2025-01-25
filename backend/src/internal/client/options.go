@@ -1,3 +1,4 @@
+// ./src/internal/client/options.go
 package client
 
 import (
