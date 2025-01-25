@@ -1,4 +1,3 @@
-// ./src/internal/models/core/history.go
 package models
 
 import (

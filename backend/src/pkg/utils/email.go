@@ -1,4 +1,3 @@
-// ./src/pkg/utils/email.go
 package utils
 
 import (

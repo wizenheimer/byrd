@@ -1,4 +1,3 @@
-// ./src/internal/service/ai/openai.go
 package ai
 
 import (

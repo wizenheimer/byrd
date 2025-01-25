@@ -1,4 +1,3 @@
-// ./src/internal/client/auth.go
 package client
 
 import (

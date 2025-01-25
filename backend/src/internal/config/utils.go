@@ -1,4 +1,3 @@
-// ./src/internal/config/utils.go
 package config
 
 import "os"

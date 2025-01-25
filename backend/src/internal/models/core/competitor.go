@@ -1,4 +1,3 @@
-// ./src/internal/models/core/competitor.go
 package models
 
 import (

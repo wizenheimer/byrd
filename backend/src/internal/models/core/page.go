@@ -1,4 +1,3 @@
-// ./src/internal/models/core/page.go
 package models
 
 import (

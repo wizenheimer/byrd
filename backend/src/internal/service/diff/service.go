@@ -1,4 +1,3 @@
-// ./src/internal/service/diff/service.go
 package diff
 
 import (

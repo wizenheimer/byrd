@@ -1,4 +1,3 @@
-// ./src/internal/models/core/workspace_user.go
 package models
 
 import "github.com/google/uuid"

@@ -1,4 +1,3 @@
-// ./src/internal/models/core/workspace.go
 package models
 
 import (

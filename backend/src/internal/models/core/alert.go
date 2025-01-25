@@ -1,4 +1,3 @@
-// ./src/internal/models/core/alert.go
 package models
 
 import "time"

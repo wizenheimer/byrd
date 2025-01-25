@@ -1,4 +1,3 @@
-// ./src/pkg/logger/types.go
 package logger
 
 import "go.uber.org/zap"

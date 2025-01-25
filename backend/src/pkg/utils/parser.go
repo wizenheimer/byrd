@@ -1,4 +1,3 @@
-// ./src/pkg/utils/parser.go
 package utils
 
 import (

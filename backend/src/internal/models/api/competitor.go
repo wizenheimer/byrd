@@ -1,4 +1,3 @@
-// ./src/internal/models/api/competitor.go
 package models
 
 import models "github.com/wizenheimer/byrd/src/internal/models/core"

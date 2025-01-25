@@ -1,4 +1,3 @@
-// ./src/internal/api/middleware/error.go
 package middleware
 
 import (

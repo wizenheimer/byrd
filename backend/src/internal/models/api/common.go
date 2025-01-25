@@ -1,4 +1,3 @@
-// ./src/internal/models/api/common.go
 package models
 
 const (
