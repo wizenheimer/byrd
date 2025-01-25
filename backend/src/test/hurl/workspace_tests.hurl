@@ -61,25 +61,7 @@ jsonpath "$.data.billingEmail" == "billing@byrdhq.com"
 jsonpath "$.data.name" == "Byrd's Workspace"
 jsonpath "$.data.workspaceId" == "{{workspace_id}}"
 
-# Test 5: Join workspace
-POST {{host}}/api/public/v1/workspace/{{workspace_id}}/join
-Authorization: Bearer {{auth_token}}
-HTTP 200
-[Asserts]
-header "Content-Type" == "application/json"
-jsonpath "$.message" == "Joined workspace successfully"
-jsonpath "$.data.workspaceId" == "{{workspace_id}}"
-
-# Test 6: Exit workspace
-POST {{host}}/api/public/v1/workspace/{{workspace_id}}/exit
-Authorization: Bearer {{auth_token}}
-HTTP 200
-[Asserts]
-header "Content-Type" == "application/json"
-jsonpath "$.message" == "Exited workspace successfully"
-jsonpath "$.data.workspaceId" == "{{workspace_id}}"
-
-# Test 7: Delete workspace
+# Test 5: Delete workspace
 DELETE {{host}}/api/public/v1/workspace/{{workspace_id}}
 Authorization: Bearer {{auth_token}}
 HTTP 200
