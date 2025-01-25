@@ -28,6 +28,10 @@ func NewUserService(userRepository user.UserRepository, logger *logger.Logger) U
 
 // GetOrCreateWorkspaceOwner gets or creates a single user.
 func (us *userService) GetOrCreateUser(ctx context.Context, clerk *clerk.User) (*models.User, error) {
+	if clerk == nil {
+		return nil, errors.New("non-fatal: clerk user is nil")
+	}
+
 	us.logger.Debug("getting or creating user", zap.Any("clerk", clerk))
 	clerkEmail, err := utils.GetClerkUserEmail(clerk)
 	if err != nil {
@@ -116,6 +120,10 @@ func (us *userService) ListUsersByUserIDs(ctx context.Context, userIDs []uuid.UU
 // GetUserByClerk gets a clerk user by clerk credentials.
 // This is used to get the clerk user details.
 func (us *userService) GetUserByClerkCredentials(ctx context.Context, clerk *clerk.User) (*models.User, error) {
+	if clerk == nil {
+		return nil, errors.New("non-fatal: clerk user is nil")
+	}
+
 	us.logger.Debug("getting user by clerk credentials", zap.Any("clerk", clerk))
 	userEmail, err := utils.GetClerkUserEmail(clerk)
 	if err != nil {
@@ -136,6 +144,10 @@ func (us *userService) GetUserByClerkCredentials(ctx context.Context, clerk *cle
 // When sync is triggered, it marks the account status as active
 // And updates the user's email and name if they have changed
 func (us *userService) SyncUser(ctx context.Context, clerk *clerk.User) error {
+	if clerk == nil {
+		return errors.New("non-fatal: clerk user is nil")
+	}
+
 	us.logger.Debug("syncing user", zap.Any("clerk", clerk))
 	clerkEmail, err := utils.GetClerkUserEmail(clerk)
 	if err != nil {
@@ -156,6 +168,10 @@ func (us *userService) SyncUser(ctx context.Context, clerk *clerk.User) error {
 // It returns nil if the user was deleted successfully
 // This is the only user-facing and handler-owned method
 func (us *userService) DeleteUser(ctx context.Context, clerk *clerk.User) error {
+	if clerk == nil {
+		return errors.New("non-fatal: clerk user is nil")
+	}
+
 	us.logger.Debug("deleting user", zap.Any("clerk", clerk))
 	clerkEmail, err := utils.GetClerkUserEmail(clerk)
 	if err != nil {
@@ -181,6 +197,10 @@ func (us *userService) UserExistsByUserID(ctx context.Context, userID uuid.UUID)
 // UserExistsByClerkID checks if a user exists by ClerkID.
 // It returns true if the user exists, otherwise it returns false.
 func (us *userService) ClerkUserExists(ctx context.Context, clerk *clerk.User) (bool, error) {
+	if clerk == nil {
+		return false, errors.New("non-fatal: clerk user is nil")
+	}
+
 	us.logger.Debug("checking if clerk user exists", zap.Any("clerk", clerk))
 	email, err := utils.GetClerkUserEmail(clerk)
 	if err != nil {

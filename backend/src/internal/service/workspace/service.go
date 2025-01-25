@@ -156,13 +156,9 @@ func (ws *workspaceService) UpdateWorkspace(ctx context.Context, workspaceID uui
 
 	if updatedNameRequiresUpdate && billingEmailRequiresUpdate {
 		return ws.workspaceRepo.UpdateWorkspaceDetails(ctx, workspaceID, updateWorkspaceName, updatedBillingEmail)
-	}
-
-	if updatedNameRequiresUpdate {
+	} else if updatedNameRequiresUpdate {
 		return ws.workspaceRepo.UpdateWorkspaceName(ctx, workspaceID, updateWorkspaceName)
-	}
-
-	if billingEmailRequiresUpdate {
+	} else if billingEmailRequiresUpdate {
 		return ws.workspaceRepo.UpdateWorkspaceBillingEmail(ctx, workspaceID, updatedBillingEmail)
 	}
 

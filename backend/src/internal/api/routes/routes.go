@@ -109,6 +109,8 @@ func setupUserRoutes(
 	router.Delete("/users", handler.DeleteCurrentUser)
 	// Get the current user account
 	router.Get("/users", handler.GetCurrentUser)
+	// Create or update a user account
+	router.Post("/users", handler.CreateOrUpdateUser)
 }
 
 // setupWorkspaceRoutes configures workspace and related resource management routes

@@ -157,8 +157,6 @@ func (wh *WorkspaceHandler) UpdateWorkspaceByID(c *fiber.Ctx) error {
 	return sendDataResponse(c, fiber.StatusOK, "Updated workspace successfully",
 		map[string]any{
 			"workspaceId":  workspaceID,
-			"billingEmail": req.BillingEmail,
-			"name":         req.Name,
 		})
 }
 
