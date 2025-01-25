@@ -1,10 +1,13 @@
 package handlers
 
 import (
+	"net/url"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/wizenheimer/byrd/src/internal/api/commons"
 	api "github.com/wizenheimer/byrd/src/internal/models/api"
+	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/pkg/utils"
 )
 
@@ -50,13 +53,25 @@ func (wh *WorkspaceHandler) AddPagesToCompetitor(c *fiber.Ctx) error {
 		return sendErrorResponse(c, wh.logger, fiber.StatusBadRequest, "Invalid competitor ID format", err.Error())
 	}
 
-	var pages []api.CreatePageRequest
-	if err := c.BodyParser(&pages); err != nil {
+	var req []api.CreatePageRequest
+	if err := c.BodyParser(&req); err != nil {
 		return sendErrorResponse(c, wh.logger, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 
-	if err := utils.SetDefaultsAndValidateArray(&pages); err != nil {
+	if err := utils.SetDefaultsAndValidateArray(&req); err != nil {
 		return sendErrorResponse(c, wh.logger, fiber.StatusBadRequest, "Invalid request body", err.Error())
+	}
+
+	var pages []models.PageProps
+	for _, page := range req {
+		if _, err := url.Parse(page.URL); err != nil {
+			continue
+		}
+		page.Title, err = utils.GetPageTitle(page.URL)
+		if err != nil {
+			continue
+		}
+		pages = append(pages, page)
 	}
 
 	ctx := c.Context()
@@ -105,6 +120,11 @@ func (wh *WorkspaceHandler) UpdatePageForCompetitor(c *fiber.Ctx) error {
 	}
 
 	if err := utils.SetDefaultsAndValidate(&req); err != nil {
+		return sendErrorResponse(c, wh.logger, fiber.StatusBadRequest, "Invalid request body", err.Error())
+	}
+
+	req.Title, err = utils.GetPageTitle(req.URL)
+	if err != nil {
 		return sendErrorResponse(c, wh.logger, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 

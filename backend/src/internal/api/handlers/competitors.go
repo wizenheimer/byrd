@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"net/url"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/wizenheimer/byrd/src/internal/api/commons"
@@ -75,8 +77,19 @@ func (wh *WorkspaceHandler) CreateCompetitorForWorkspace(c *fiber.Ctx) error {
 		return sendErrorResponse(c, wh.logger, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 
+	var pages []models.PageProps
+	for _, page := range req {
+		if _, err := url.Parse(page.URL); err != nil {
+			continue
+		}
+		if page.Title, err = utils.GetPageTitle(page.URL); err != nil {
+			continue
+		}
+		pages = append(pages, page)
+	}
+
 	ctx := c.Context()
-	competitor, err := wh.workspaceService.AddCompetitorToWorkspace(ctx, workspaceID, req)
+	competitor, err := wh.workspaceService.AddCompetitorToWorkspace(ctx, workspaceID, pages)
 	if err != nil {
 		return sendErrorResponse(c, wh.logger, fiber.StatusInternalServerError, "Could not create competitor", err.Error())
 	}

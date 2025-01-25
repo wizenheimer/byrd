@@ -12,6 +12,7 @@ import (
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/internal/transaction"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
+	"go.uber.org/zap"
 )
 
 type pageRepo struct {
@@ -147,6 +148,7 @@ func (r *pageRepo) GetCompetitorPageByID(ctx context.Context, competitorID, page
 		return nil, fmt.Errorf("failed to get page: %w", err)
 	}
 
+	r.logger.Debug("page", zap.Any("page", page))
 	return page, nil
 }
 

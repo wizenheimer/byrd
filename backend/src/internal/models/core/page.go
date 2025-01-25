@@ -91,6 +91,7 @@ type pageJSON struct {
 	ID             string                   `json:"id"`
 	CompetitorID   string                   `json:"competitor_id"`
 	URL            string                   `json:"url"`
+	Title          string                   `json:"title"`
 	CaptureProfile ScreenshotRequestOptions `json:"capture_profile"`
 	DiffProfile    []string                 `json:"diff_profile"`
 	LastCheckedAt  *time.Time               `json:"last_checked_at,omitempty"`
@@ -105,6 +106,7 @@ func (p Page) MarshalJSON() ([]byte, error) {
 		ID:             p.ID.String(),
 		CompetitorID:   p.CompetitorID.String(),
 		URL:            p.URL,
+		Title:          p.Title,
 		CaptureProfile: p.CaptureProfile,
 		DiffProfile:    p.DiffProfile,
 		Status:         p.Status,
@@ -146,6 +148,7 @@ func (p *Page) UnmarshalJSON(data []byte) error {
 	p.Status = page.Status
 	p.CreatedAt = page.CreatedAt
 	p.UpdatedAt = page.UpdatedAt
+	p.Title = page.Title
 
 	// Handle nullable LastCheckedAt
 	if page.LastCheckedAt != nil {
