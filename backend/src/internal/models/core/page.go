@@ -92,6 +92,56 @@ type PageProps struct {
 	DiffProfile DiffProfile `json:"diff_profile" validate:"dive,oneof=branding customers integration product pricing partnerships messaging" default:"[\"branding\", \"customers\", \"integration\", \"product\", \"pricing\", \"partnerships\", \"messaging\"]"`
 }
 
+// Capture Profile defines the options for capturing a screenshot
+// This is a sub set of the ScreenshotRequestOptions that are exposed to the user
+type CaptureProfile struct {
+	// Selector Options
+	Selector              *string `json:"selector,omitempty"`
+	ScrollIntoView        *string `json:"scroll_into_view,omitempty"`
+	AdjustTop             *int    `json:"adjust_top,omitempty"`
+	CaptureBeyondViewport *bool   `json:"capture_beyond_viewport,omitempty" default:"true"`
+
+	// Capture Options
+	FullPage          *bool              `json:"full_page,omitempty" default:"true"`
+	FullPageScroll    *bool              `json:"full_page_scroll,omitempty"`
+	FullPageAlgorithm *FullPageAlgorithm `json:"full_page_algorithm,omitempty" default:"default"`
+	ScrollDelay       *int               `json:"scroll_delay,omitempty"`
+	ScrollBy          *int               `json:"scroll_by,omitempty"`
+	MaxHeight         *int               `json:"max_height,omitempty"`
+	OmitBackground    *bool              `json:"omit_background,omitempty"`
+
+	// Clip Options
+	Clip *ClipOptions `json:"clip,omitempty"`
+
+	// Resource Blocking Options
+	BlockAds                 *bool               `json:"block_ads,omitempty" default:"true"`
+	BlockCookieBanners       *bool               `json:"block_cookie_banners,omitempty" default:"true"`
+	BlockBannersByHeuristics *bool               `json:"block_banners_by_heuristics,omitempty" default:"true"`
+	BlockTrackers            *bool               `json:"block_trackers,omitempty" default:"true"`
+	BlockChats               *bool               `json:"block_chats,omitempty" default:"true"`
+	BlockRequests            []string            `json:"block_request,omitempty"`
+	BlockResources           []BlockResourceType `json:"block_resources,omitempty"`
+
+	// Media Options
+	DarkMode      *bool `json:"dark_mode,omitempty" default:"false"`
+	ReducedMotion *bool `json:"reduced_motion,omitempty" default:"true"`
+
+	// Request Options
+	UserAgent     *string           `json:"user_agent,omitempty"`
+	Authorization *string           `json:"authorization,omitempty"`
+	Headers       map[string]string `json:"headers,omitempty"`
+	Cookies       []string          `json:"cookies,omitempty"`
+	Timezone      *Timezone         `json:"timezone,omitempty"`
+	BypassCSP     *bool             `json:"bypass_csp,omitempty"`
+	IpCountryCode *IpCountry        `json:"ip_country_code,omitempty"`
+
+	// Wait and Delay Options
+	Delay                    *int                      `json:"delay,omitempty" default:"0"`
+	WaitForSelector          *string                   `json:"wait_for_selector,omitempty"`
+	WaitForSelectorAlgorithm *WaitForSelectorAlgorithm `json:"wait_for_selector_algorithm,omitempty"`
+	WaitUntil                []WaitUntilOption         `json:"wait_until,omitempty" default:"[\"networkidle2\",\"networkidle0\"]"`
+}
+
 func NewPageProps(pageURL string, diffProfile DiffProfile) (PageProps, error) {
 	if _, err := url.Parse(pageURL); err != nil {
 		return PageProps{}, fmt.Errorf("invalid URL: %w", err)
@@ -224,8 +274,6 @@ func (p *Page) SetDefaultCaptureProfile() {
 // This is used when creating a new page
 func GetDefaultCaptureProfile() CaptureProfile {
 	return CaptureProfile{
-		Format:                utils.ToPtr("png"),
-		ImageQuality:          utils.ToPtr(80),
 		CaptureBeyondViewport: utils.ToPtr(true),
 		FullPage:              utils.ToPtr(true),
 		FullPageAlgorithm:     utils.ToPtr(FullPageAlgorithmDefault),
@@ -239,8 +287,6 @@ func GetDefaultCaptureProfile() CaptureProfile {
 
 		// Wait and delay options
 		Delay:             utils.ToPtr(0),
-		Timeout:           utils.ToPtr(60),
-		NavigationTimeout: utils.ToPtr(30),
 		WaitUntil: []WaitUntilOption{
 			WaitUntilNetworkIdle2,
 			WaitUntilNetworkIdle0,
@@ -249,25 +295,7 @@ func GetDefaultCaptureProfile() CaptureProfile {
 		// Styling options
 		DarkMode:      utils.ToPtr(false),
 		ReducedMotion: utils.ToPtr(true),
-
-		// Response options
-		MetadataImageSize:      utils.ToPtr(true),
-		MetadataPageTitle:      utils.ToPtr(true),
-		MetadataContent:        utils.ToPtr(true),
-		MetadataHttpStatusCode: utils.ToPtr(true),
 	}
-}
-
-// getDefaultScreenshotRequestOptions returns the default options for the screenshot request
-func GetDefaultScreenshotRequestOptions(url string) ScreenshotRequestOptions {
-	// Get default options
-	defaultOpt := ScreenshotRequestOptions{
-		URL: url,
-		// Capture options
-		CaptureProfile: GetDefaultCaptureProfile(),
-	}
-
-	return defaultOpt
 }
 
 // MergeOptions merges the provided options with default options

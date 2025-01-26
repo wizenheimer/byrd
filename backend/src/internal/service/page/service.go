@@ -87,13 +87,11 @@ func (ps *pageService) CreatePage(ctx context.Context, competitorID uuid.UUID, p
 func (ps *pageService) backdateRefresh(pages []models.Page) {
 	for _, page := range pages {
 		go func(page models.Page) {
-			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 			defer cancel()
 
-			screenshotRequestOptions := models.ScreenshotRequestOptions{
-				URL:            page.URL,
-				CaptureProfile: page.CaptureProfile,
-			}
+			screenshotRequestOptions := models.GetScreenshotRequestOptions(page.URL, page.CaptureProfile)
+			ps.logger.Debug("requestOptions", zap.Any("screenshotRequestOptions", screenshotRequestOptions))
 			if ir, hr, err := ps.screenshotService.Refresh(ctx, screenshotRequestOptions, true); err != nil {
 				ps.logger.Error("failed to refresh page", zap.Any("pageID", page.ID), zap.Error(err))
 			} else {
@@ -132,7 +130,7 @@ func (ps *pageService) UpdatePage(ctx context.Context, competitorID uuid.UUID, p
 	}
 
 	// If only one field requires an update, update the page with that field one at a time
-  // This is done to avoid updating the page with a nil value
+	// This is done to avoid updating the page with a nil value
 	if captureProfileRequiresUpdate {
 		updatedPage, err = ps.pageRepo.UpdateCompetitorCaptureProfile(ctx, competitorID, pageID, page.CaptureProfile, page.URL)
 		if err != nil {
@@ -140,8 +138,8 @@ func (ps *pageService) UpdatePage(ctx context.Context, competitorID uuid.UUID, p
 		}
 	}
 
-  // If only one field requires an update, update the page with that field one at a time
-  // This is done to avoid updating the page with an empty value
+	// If only one field requires an update, update the page with that field one at a time
+	// This is done to avoid updating the page with an empty value
 	if diffProfileRequiresUpdate {
 		updatedPage, err = ps.pageRepo.UpdateCompetitorDiffProfile(ctx, competitorID, pageID, page.DiffProfile)
 		if err != nil {
@@ -149,8 +147,8 @@ func (ps *pageService) UpdatePage(ctx context.Context, competitorID uuid.UUID, p
 		}
 	}
 
-  // If only one field requires an update, update the page with that field one at a time
-  // This is done to avoid updating the page with an empty value
+	// If only one field requires an update, update the page with that field one at a time
+	// This is done to avoid updating the page with an empty value
 	if urlRequiresUpdate {
 		updatedPage, err = ps.pageRepo.UpdateCompetitorPageURL(ctx, competitorID, pageID, page.URL)
 		if err != nil {
@@ -158,7 +156,7 @@ func (ps *pageService) UpdatePage(ctx context.Context, competitorID uuid.UUID, p
 		}
 	}
 
-  // Return the updated page
+	// Return the updated page
 	return updatedPage, nil
 }
 
@@ -202,10 +200,7 @@ func (ps *pageService) RefreshPage(ctx context.Context, pageID uuid.UUID) error 
 		return err
 	}
 
-	screenshotOptions := models.ScreenshotRequestOptions{
-		URL:            page.URL,
-		CaptureProfile: page.CaptureProfile,
-	}
+	screenshotOptions := models.GetScreenshotRequestOptions(page.URL, page.CaptureProfile)
 	currentImgResp, currentHTMLContentResp, err := ps.screenshotService.Refresh(urlContext, screenshotOptions, false)
 	if err != nil {
 		return err

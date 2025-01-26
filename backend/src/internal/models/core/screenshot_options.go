@@ -1,6 +1,8 @@
 // ./src/internal/models/core/screenshot_options.go
 package models
 
+import "github.com/wizenheimer/byrd/src/pkg/utils"
+
 // ClipOptions defines the coordinates and dimensions for screenshot clipping
 type ClipOptions struct {
 	X      *int `json:"x,omitempty"`
@@ -117,8 +119,10 @@ const (
 	FullPageAlgorithmDefault    FullPageAlgorithm = "default"
 )
 
-// ScreenshotRequestOptions defines all possible options for taking a screenshot
-type CaptureProfile struct {
+
+
+type ScreenshotRequestOptions struct {
+	URL string `json:"url"`
 	// Selector Options
 	Selector              *string `json:"selector,omitempty"`
 	ScrollIntoView        *string `json:"scroll_into_view,omitempty"`
@@ -185,7 +189,145 @@ type CaptureProfile struct {
 	MetadataIcon           *bool `json:"metadata_icon,omitempty"`
 }
 
-type ScreenshotRequestOptions struct {
-	URL string `json:"url"`
-	CaptureProfile
+func GetScreenshotRequestOptions(url string, captureProfile CaptureProfile) ScreenshotRequestOptions {
+	options := GetDefaultScreenshotRequestOptions(url)
+	if captureProfile.Selector != nil {
+		options.Selector = captureProfile.Selector
+	}
+	if captureProfile.ScrollIntoView != nil {
+		options.ScrollIntoView = captureProfile.ScrollIntoView
+	}
+	if captureProfile.AdjustTop != nil {
+		options.AdjustTop = captureProfile.AdjustTop
+	}
+	if captureProfile.CaptureBeyondViewport != nil {
+		options.CaptureBeyondViewport = captureProfile.CaptureBeyondViewport
+	}
+	if captureProfile.FullPage != nil {
+		options.FullPage = captureProfile.FullPage
+	}
+	if captureProfile.FullPageScroll != nil {
+		options.FullPageScroll = captureProfile.FullPageScroll
+	}
+	if captureProfile.FullPageAlgorithm != nil {
+		options.FullPageAlgorithm = captureProfile.FullPageAlgorithm
+	}
+	if captureProfile.ScrollDelay != nil {
+		options.ScrollDelay = captureProfile.ScrollDelay
+	}
+	if captureProfile.ScrollBy != nil {
+		options.ScrollBy = captureProfile.ScrollBy
+	}
+	if captureProfile.MaxHeight != nil {
+		options.MaxHeight = captureProfile.MaxHeight
+	}
+	if captureProfile.OmitBackground != nil {
+		options.OmitBackground = captureProfile.OmitBackground
+	}
+	if captureProfile.Clip != nil {
+		options.Clip = captureProfile.Clip
+	}
+	if captureProfile.BlockAds != nil {
+		options.BlockAds = captureProfile.BlockAds
+	}
+	if captureProfile.BlockCookieBanners != nil {
+		options.BlockCookieBanners = captureProfile.BlockCookieBanners
+	}
+	if captureProfile.BlockBannersByHeuristics != nil {
+		options.BlockBannersByHeuristics = captureProfile.BlockBannersByHeuristics
+	}
+	if captureProfile.BlockTrackers != nil {
+		options.BlockTrackers = captureProfile.BlockTrackers
+	}
+	if captureProfile.BlockChats != nil {
+		options.BlockChats = captureProfile.BlockChats
+	}
+	if len(captureProfile.BlockRequests) > 0 {
+		options.BlockRequests = captureProfile.BlockRequests
+	}
+	if len(captureProfile.BlockResources) > 0 {
+		options.BlockResources = captureProfile.BlockResources
+	}
+	if captureProfile.DarkMode != nil {
+		options.DarkMode = captureProfile.DarkMode
+	}
+	if captureProfile.ReducedMotion != nil {
+		options.ReducedMotion = captureProfile.ReducedMotion
+	}
+	if captureProfile.UserAgent != nil {
+		options.UserAgent = captureProfile.UserAgent
+	}
+	if captureProfile.Authorization != nil {
+		options.Authorization = captureProfile.Authorization
+	}
+	if len(captureProfile.Headers) > 0 {
+		options.Headers = captureProfile.Headers
+	}
+	if len(captureProfile.Cookies) > 0 {
+		options.Cookies = captureProfile.Cookies
+	}
+	if captureProfile.Timezone != nil {
+		options.Timezone = captureProfile.Timezone
+	}
+	if captureProfile.BypassCSP != nil {
+		options.BypassCSP = captureProfile.BypassCSP
+	}
+	if captureProfile.IpCountryCode != nil {
+		options.IpCountryCode = captureProfile.IpCountryCode
+	}
+	if captureProfile.Delay != nil {
+		options.Delay = captureProfile.Delay
+	}
+	if captureProfile.WaitForSelector != nil {
+		options.WaitForSelector = captureProfile.WaitForSelector
+	}
+	if captureProfile.WaitForSelectorAlgorithm != nil {
+		options.WaitForSelectorAlgorithm = captureProfile.WaitForSelectorAlgorithm
+	}
+	if len(captureProfile.WaitUntil) > 0 {
+		options.WaitUntil = captureProfile.WaitUntil
+	}
+
+	return options
+}
+
+func GetDefaultScreenshotRequestOptions(url string) ScreenshotRequestOptions {
+	defaultOpts := ScreenshotRequestOptions{
+		URL: url,
+
+		// Default capture options
+		Format:                utils.ToPtr("png"),
+		ImageQuality:          utils.ToPtr(80),
+		CaptureBeyondViewport: utils.ToPtr(true),
+		FullPage:              utils.ToPtr(true),
+		FullPageAlgorithm:     utils.ToPtr(FullPageAlgorithmDefault),
+
+		// Default resource blocking options
+		BlockAds:                 utils.ToPtr(true),
+		BlockCookieBanners:       utils.ToPtr(true),
+		BlockBannersByHeuristics: utils.ToPtr(true),
+		BlockTrackers:            utils.ToPtr(true),
+		BlockChats:               utils.ToPtr(true),
+
+		// Default wait and delay options
+		Delay:             utils.ToPtr(0),
+		Timeout:           utils.ToPtr(60),
+		NavigationTimeout: utils.ToPtr(30),
+		WaitUntil: []WaitUntilOption{
+			WaitUntilNetworkIdle2,
+			WaitUntilNetworkIdle0,
+		},
+
+		// Default styling options
+		DarkMode:      utils.ToPtr(false),
+		ReducedMotion: utils.ToPtr(true),
+
+		// Default response options
+		MetadataImageSize:      utils.ToPtr(true),
+		MetadataPageTitle:      utils.ToPtr(true),
+		MetadataContent:        utils.ToPtr(true),
+		MetadataHttpStatusCode: utils.ToPtr(true),
+	}
+
+	return defaultOpts
 }
