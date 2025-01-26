@@ -15,6 +15,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/openai/openai-go v0.1.0-alpha.40
+	github.com/resend/resend-go/v2 v2.15.0
 	github.com/robfig/cron/v3 v3.0.0
 	github.com/slack-go/slack v0.15.0
 	go.uber.org/zap v1.27.0

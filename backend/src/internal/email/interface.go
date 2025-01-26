@@ -1,6 +1,6 @@
 // ./src/internal/email/interface.go
 // ./src/internal/interfaces/client/email.go
-package interfaces
+package email
 
 import (
 	"context"
@@ -9,11 +9,5 @@ import (
 )
 
 type EmailClient interface {
-	// Send(ctx context.Context, params models.EmailParams) error
-
-	// Send sends an alert via email
-	SendAlert(ctx context.Context, alert models.Alert) error
-
-	// SendBatch sends a batch of alerts via email
-	SendBatchAlert(ctx context.Context, alerts []models.Alert) error
+	Send(ctx context.Context, email models.Email) error
 }
