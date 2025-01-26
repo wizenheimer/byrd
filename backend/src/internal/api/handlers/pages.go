@@ -2,13 +2,12 @@
 package handlers
 
 import (
-	"net/url"
-
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/wizenheimer/byrd/src/internal/api/commons"
 	api "github.com/wizenheimer/byrd/src/internal/models/api"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
+	"github.com/wizenheimer/byrd/src/internal/service/ai"
 	"github.com/wizenheimer/byrd/src/pkg/utils"
 )
 
@@ -64,11 +63,12 @@ func (wh *WorkspaceHandler) AddPagesToCompetitor(c *fiber.Ctx) error {
 	}
 
 	var pages []models.PageProps
-	for _, page := range req {
-		if _, err := url.Parse(page.URL); err != nil {
+	for _, r := range req {
+		r.DiffProfile, err = ai.Sanitize(r.DiffProfile)
+		if err != nil {
 			continue
 		}
-		page.Title, err = utils.GetPageTitle(page.URL)
+		page, err := r.ToProps()
 		if err != nil {
 			continue
 		}
@@ -124,13 +124,13 @@ func (wh *WorkspaceHandler) UpdatePageForCompetitor(c *fiber.Ctx) error {
 		return sendErrorResponse(c, wh.logger, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 
-	req.Title, err = utils.GetPageTitle(req.URL)
+	prop, err := req.ToProps()
 	if err != nil {
 		return sendErrorResponse(c, wh.logger, fiber.StatusBadRequest, "Invalid request body", err.Error())
 	}
 
 	ctx := c.Context()
-	page, err := wh.workspaceService.UpdateCompetitorPage(ctx, competitorID, pageID, req)
+	page, err := wh.workspaceService.UpdateCompetitorPage(ctx, competitorID, pageID, prop)
 	if err != nil {
 		return sendErrorResponse(c, wh.logger, fiber.StatusInternalServerError, "Could not update page in competitor", err.Error())
 	}

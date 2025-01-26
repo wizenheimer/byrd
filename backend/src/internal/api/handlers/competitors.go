@@ -2,13 +2,12 @@
 package handlers
 
 import (
-	"net/url"
-
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/wizenheimer/byrd/src/internal/api/commons"
 	api "github.com/wizenheimer/byrd/src/internal/models/api"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
+	"github.com/wizenheimer/byrd/src/internal/service/ai"
 	"github.com/wizenheimer/byrd/src/pkg/utils"
 	"go.uber.org/zap"
 )
@@ -79,11 +78,13 @@ func (wh *WorkspaceHandler) CreateCompetitorForWorkspace(c *fiber.Ctx) error {
 	}
 
 	var pages []models.PageProps
-	for _, page := range req {
-		if _, err := url.Parse(page.URL); err != nil {
+	for _, r := range req {
+		r.DiffProfile, err = ai.Sanitize(r.DiffProfile)
+		if err != nil {
 			continue
 		}
-		if page.Title, err = utils.GetPageTitle(page.URL); err != nil {
+		page, err := r.ToProps()
+		if err != nil {
 			continue
 		}
 		pages = append(pages, page)

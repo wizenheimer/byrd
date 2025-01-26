@@ -1,4 +1,4 @@
-// ./src/internal/models/core/ai.go
+
 package models
 
 import (
