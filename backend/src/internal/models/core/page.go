@@ -286,7 +286,7 @@ func GetDefaultCaptureProfile() CaptureProfile {
 		BlockChats:               utils.ToPtr(true),
 
 		// Wait and delay options
-		Delay:             utils.ToPtr(0),
+		Delay: utils.ToPtr(0),
 		WaitUntil: []WaitUntilOption{
 			WaitUntilNetworkIdle2,
 			WaitUntilNetworkIdle0,

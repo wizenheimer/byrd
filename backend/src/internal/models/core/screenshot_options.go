@@ -119,8 +119,6 @@ const (
 	FullPageAlgorithmDefault    FullPageAlgorithm = "default"
 )
 
-
-
 type ScreenshotRequestOptions struct {
 	URL string `json:"url"`
 	// Selector Options

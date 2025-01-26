@@ -500,7 +500,7 @@ func (r *pageRepo) DeleteAllCompetitorPages(ctx context.Context, competitorID uu
 	}
 
 	if result.RowsAffected() == 0 {
-		return errors.New("pages not found")
+		r.logger.Warn("pages not found", zap.Any("competitorID", competitorID))
 	}
 
 	return nil
@@ -523,7 +523,7 @@ func (r *pageRepo) BatchDeleteAllCompetitorPages(ctx context.Context, competitor
 	}
 
 	if result.RowsAffected() == 0 {
-		return errors.New("pages not found")
+		r.logger.Warn("pages not found", zap.Any("competitorIDs", competitorIDs))
 	}
 
 	return nil

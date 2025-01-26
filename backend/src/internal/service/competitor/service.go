@@ -194,6 +194,10 @@ func (cs *competitorService) RemoveCompetitorForWorkspace(ctx context.Context, w
 		if err != nil {
 			return err
 		}
+		if len(competitors) == 0 {
+			// No competitors to remove, return from here
+			return nil
+		}
 		// Populate the competitorIDs from the competitors retrieved
 		for _, competitor := range competitors {
 			competitorIDs = append(competitorIDs, competitor.ID)
@@ -242,7 +246,11 @@ func (cs *competitorService) RemoveCompetitorForWorkspace(ctx context.Context, w
 		if err != nil {
 			return err
 		}
-		cs.logger.Debug("competitorIDs for removal", zap.Any("competitorIDs", competitorIDs))
+		// Check if competitorIDs is empty
+		if len(competitorIDs) == 0 {
+			// This means pages for competitors are already removed, including their pages
+			return nil
+		}
 		return cs.pageService.RemovePage(ctx, competitorIDs, nil)
 	})
 }
