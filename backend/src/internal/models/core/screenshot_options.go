@@ -1,7 +1,14 @@
 // ./src/internal/models/core/screenshot_options.go
 package models
 
-import "github.com/wizenheimer/byrd/src/pkg/utils"
+import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"sort"
+
+	"github.com/wizenheimer/byrd/src/pkg/utils"
+)
 
 // ClipOptions defines the coordinates and dimensions for screenshot clipping
 type ClipOptions struct {
@@ -328,4 +335,141 @@ func GetDefaultScreenshotRequestOptions(url string) ScreenshotRequestOptions {
 	}
 
 	return defaultOpts
+}
+
+// Hash generates a deterministic hash of the ScreenshotRequestOptions
+func (s *ScreenshotRequestOptions) Hash() string {
+	// Create a normalized version of the struct for consistent hashing
+	normalized := normalizeOptions(s)
+
+	// Marshal to JSON with sorted keys
+	data, _ := json.Marshal(normalized)
+
+	// Generate SHA-256 hash
+	hash := sha256.Sum256(data)
+	return hex.EncodeToString(hash[:])
+}
+
+// normalizedOptions is a flat structure used for consistent hashing
+type normalizedOptions struct {
+	URL                      string            `json:"url"`
+	Selector                 string            `json:"selector,omitempty"`
+	ScrollIntoView           string            `json:"scroll_into_view,omitempty"`
+	AdjustTop                int               `json:"adjust_top,omitempty"`
+	CaptureBeyondViewport    bool              `json:"capture_beyond_viewport"`
+	FullPage                 bool              `json:"full_page"`
+	FullPageScroll           bool              `json:"full_page_scroll"`
+	FullPageAlgorithm        string            `json:"full_page_algorithm,omitempty"`
+	ScrollDelay              int               `json:"scroll_delay,omitempty"`
+	ScrollBy                 int               `json:"scroll_by,omitempty"`
+	MaxHeight                int               `json:"max_height,omitempty"`
+	Format                   string            `json:"format"`
+	ImageQuality             int               `json:"image_quality"`
+	OmitBackground           bool              `json:"omit_background"`
+	Clip                     json.RawMessage   `json:"clip,omitempty"`
+	BlockAds                 bool              `json:"block_ads"`
+	BlockCookieBanners       bool              `json:"block_cookie_banners"`
+	BlockBannersByHeuristics bool              `json:"block_banners_by_heuristics"`
+	BlockTrackers            bool              `json:"block_trackers"`
+	BlockChats               bool              `json:"block_chats"`
+	BlockRequests            []string          `json:"block_requests,omitempty"`
+	BlockResources           []string          `json:"block_resources,omitempty"`
+	DarkMode                 bool              `json:"dark_mode"`
+	ReducedMotion            bool              `json:"reduced_motion"`
+	UserAgent                string            `json:"user_agent,omitempty"`
+	Authorization            string            `json:"authorization,omitempty"`
+	Headers                  map[string]string `json:"headers,omitempty"`
+	Cookies                  []string          `json:"cookies,omitempty"`
+	Timezone                 string            `json:"timezone,omitempty"`
+	BypassCSP                bool              `json:"bypass_csp"`
+	IpCountryCode            string            `json:"ip_country_code,omitempty"`
+	Delay                    int               `json:"delay"`
+	Timeout                  int               `json:"timeout"`
+	NavigationTimeout        int               `json:"navigation_timeout"`
+	WaitForSelector          string            `json:"wait_for_selector,omitempty"`
+	WaitForSelectorAlgorithm string            `json:"wait_for_selector_algorithm,omitempty"`
+	WaitUntil                []string          `json:"wait_until,omitempty"`
+	Click                    string            `json:"click,omitempty"`
+	FailIfClickNotFound      bool              `json:"fail_if_click_not_found"`
+	HideSelectors            []string          `json:"hide_selectors,omitempty"`
+	Styles                   string            `json:"styles,omitempty"`
+	Scripts                  string            `json:"scripts,omitempty"`
+	ScriptWaitUntil          []string          `json:"script_wait_until,omitempty"`
+	MetadataImageSize        bool              `json:"metadata_image_size"`
+	MetadataPageTitle        bool              `json:"metadata_page_title"`
+	MetadataContent          bool              `json:"metadata_content"`
+	MetadataHttpStatusCode   bool              `json:"metadata_http_status_code"`
+	MetadataIcon             bool              `json:"metadata_icon"`
+}
+
+func normalizeOptions(s *ScreenshotRequestOptions) normalizedOptions {
+	normalized := normalizedOptions{
+		URL: s.URL,
+		// Handle pointer fields with their default values if nil
+		CaptureBeyondViewport:    getPointerValue(s.CaptureBeyondViewport, true),
+		FullPage:                 getPointerValue(s.FullPage, true),
+		Format:                   getPointerValue(s.Format, "png"),
+		ImageQuality:             getPointerValue(s.ImageQuality, 80),
+		BlockAds:                 getPointerValue(s.BlockAds, true),
+		BlockCookieBanners:       getPointerValue(s.BlockCookieBanners, true),
+		BlockBannersByHeuristics: getPointerValue(s.BlockBannersByHeuristics, true),
+		BlockTrackers:            getPointerValue(s.BlockTrackers, true),
+		BlockChats:               getPointerValue(s.BlockChats, true),
+		DarkMode:                 getPointerValue(s.DarkMode, false),
+		ReducedMotion:            getPointerValue(s.ReducedMotion, true),
+		Delay:                    getPointerValue(s.Delay, 0),
+		Timeout:                  getPointerValue(s.Timeout, 60),
+		NavigationTimeout:        getPointerValue(s.NavigationTimeout, 30),
+	}
+
+	// Handle optional string pointers
+	if s.Selector != nil {
+		normalized.Selector = *s.Selector
+	}
+	if s.ScrollIntoView != nil {
+		normalized.ScrollIntoView = *s.ScrollIntoView
+	}
+	if s.UserAgent != nil {
+		normalized.UserAgent = *s.UserAgent
+	}
+
+	// Handle slices by sorting them for consistency
+	if s.BlockRequests != nil {
+		normalized.BlockRequests = make([]string, len(s.BlockRequests))
+		copy(normalized.BlockRequests, s.BlockRequests)
+		sort.Strings(normalized.BlockRequests)
+	}
+
+	if s.BlockResources != nil {
+		resources := make([]string, len(s.BlockResources))
+		for i, r := range s.BlockResources {
+			resources[i] = string(r)
+		}
+		sort.Strings(resources)
+		normalized.BlockResources = resources
+	}
+
+	// Handle map by sorting keys
+	if s.Headers != nil {
+		normalized.Headers = make(map[string]string)
+		for k, v := range s.Headers {
+			normalized.Headers[k] = v
+		}
+	}
+
+	// Handle complex objects by marshaling them to JSON
+	if s.Clip != nil {
+		clipData, _ := json.Marshal(s.Clip)
+		normalized.Clip = clipData
+	}
+
+	return normalized
+}
+
+// Helper function to handle pointer values with defaults
+func getPointerValue[T comparable](ptr *T, defaultValue T) T {
+	if ptr == nil {
+		return defaultValue
+	}
+	return *ptr
 }

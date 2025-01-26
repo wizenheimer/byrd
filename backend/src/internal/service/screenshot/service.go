@@ -70,11 +70,11 @@ func (s *screenshotService) Refresh(ctx context.Context, opts models.ScreenshotR
 
 	// Step 2: If the screenshot does not exist in storage, create a new screenshot
 	// Step 2.1: Determine the screenshot path
-	screenshotPath, err := DeterminePath(opts.URL, ContentTypeImage, backDate)
+	screenshotPath, err := DeterminePath(opts, ContentTypeImage, backDate)
 	if err != nil {
 		return nil, nil, err
 	}
-	contentPath, err := DeterminePath(opts.URL, ContentTypeContent, backDate)
+	contentPath, err := DeterminePath(opts, ContentTypeContent, backDate)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -118,7 +118,7 @@ func (s *screenshotService) Refresh(ctx context.Context, opts models.ScreenshotR
 
 func (s *screenshotService) Retrieve(ctx context.Context, opts models.ScreenshotRequestOptions, backDate bool) (*models.ScreenshotImage, *models.ScreenshotContent, error) {
 	// Step 1: Determine the screenshot path
-	screenshotPath, err := DeterminePath(opts.URL, ContentTypeImage, backDate)
+	screenshotPath, err := DeterminePath(opts, ContentTypeImage, backDate)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -130,7 +130,7 @@ func (s *screenshotService) Retrieve(ctx context.Context, opts models.Screenshot
 	}
 
 	// Step 3: Determine the screenshot content path
-	contentPath, err := DeterminePath(opts.URL, ContentTypeContent, backDate)
+	contentPath, err := DeterminePath(opts, ContentTypeContent, backDate)
 	if err != nil {
 		return nil, nil, err
 	}

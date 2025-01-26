@@ -2,27 +2,13 @@
 package screenshot
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"strconv"
 	"time"
 
 	"github.com/wizenheimer/byrd/src/internal/constants"
+	models "github.com/wizenheimer/byrd/src/internal/models/core"
 )
-
-// generateURLHash normalizes the URL and generates a consistent hash
-func generateURLHash(rawURL string) (string, error) {
-	// pre-process the URL
-	processedURL, err := preProcessURL(rawURL)
-	if err != nil {
-		return "", fmt.Errorf("failed to normalize URL: %w", err)
-	}
-
-	hasher := sha256.New()
-	hasher.Write([]byte(processedURL))
-	return hex.EncodeToString(hasher.Sum(nil))[:32], nil
-}
 
 // GeneratePath generates a path for a given hash, year, week number and run id
 func generatePath(hash string, year, weekNumber int, runID string) (string, error) {
@@ -51,11 +37,8 @@ func generatePath(hash string, year, weekNumber int, runID string) (string, erro
 }
 
 // GetCurrentScreenshotPath returns the path to the current screenshot for a given url
-func getCurrentScreenshotPath(url string) (string, error) {
-	hash, err := generateURLHash(url)
-	if err != nil {
-		return "", fmt.Errorf("failed to generate URL hash: %w", err)
-	}
+func getCurrentScreenshotPath(opts models.ScreenshotRequestOptions) (string, error) {
+	hash := opts.Hash()
 
 	year, weekNumber, runID := getCurrentTimeComponents(true)
 	path, err := generatePath(hash, year, weekNumber, runID)
@@ -67,11 +50,8 @@ func getCurrentScreenshotPath(url string) (string, error) {
 }
 
 // GetCurrentContentPath returns the path to the current content for a given url
-func getCurrentContentPath(url string) (string, error) {
-	hash, err := generateURLHash(url)
-	if err != nil {
-		return "", fmt.Errorf("failed to generate URL hash: %w", err)
-	}
+func getCurrentContentPath(opts models.ScreenshotRequestOptions) (string, error) {
+	hash := opts.Hash()
 
 	year, weekNumber, runID := getCurrentTimeComponents(true)
 	path, err := generatePath(hash, year, weekNumber, runID)
@@ -83,11 +63,8 @@ func getCurrentContentPath(url string) (string, error) {
 }
 
 // GetPreviousScreenshotPath returns the path to the previous screenshot for a given url
-func getPreviousScreenshotPath(url string) (string, error) {
-	hash, err := generateURLHash(url)
-	if err != nil {
-		return "", fmt.Errorf("failed to generate URL hash: %w", err)
-	}
+func getPreviousScreenshotPath(opts models.ScreenshotRequestOptions) (string, error) {
+	hash := opts.Hash()
 
 	year, weekNumber, runID := getPreviousTimeComponents(true)
 	path, err := generatePath(hash, year, weekNumber, runID)
@@ -99,11 +76,8 @@ func getPreviousScreenshotPath(url string) (string, error) {
 }
 
 // GetPreviousContentPath returns the path to the previous content for a given url
-func getPreviousContentPath(url string) (string, error) {
-	hash, err := generateURLHash(url)
-	if err != nil {
-		return "", fmt.Errorf("failed to generate URL hash: %w", err)
-	}
+func getPreviousContentPath(opts models.ScreenshotRequestOptions) (string, error) {
+	hash := opts.Hash()
 
 	year, weekNumber, runID := getPreviousTimeComponents(true)
 	path, err := generatePath(hash, year, weekNumber, runID)
