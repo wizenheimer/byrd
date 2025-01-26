@@ -5,14 +5,20 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"net/url"
+	"reflect"
 	"time"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
+	"github.com/wizenheimer/byrd/src/pkg/utils"
 )
 
 // PageStatus is the status of a page
 type PageStatus string
+
+// DiffProfile is the profile used to diff the page
+type DiffProfile []string
 
 const (
 	// When PageStatusActive, the page is active and will be checked for changes
@@ -37,10 +43,10 @@ type Page struct {
 	URL string `json:"url" validate:"required,url"`
 
 	// CaptureProfile is the profile used to capture the page
-	CaptureProfile ScreenshotRequestOptions `json:"capture_profile"`
+	CaptureProfile CaptureProfile `json:"capture_profile"`
 
 	// DiffProfile is the profile used to diff the page
-	DiffProfile []string `json:"diff_profile" default:"[\"branding\", \"customers\", \"integration\", \"product\", \"pricing\", \"partnerships\", \"messaging\"]"`
+	DiffProfile DiffProfile `json:"diff_profile" default:"[\"branding\", \"customers\", \"integration\", \"product\", \"pricing\", \"partnerships\", \"messaging\"]"`
 
 	// LastCheckedAt is the time the page was last checked
 	// this is updated after every check
@@ -79,25 +85,45 @@ type PageProps struct {
 
 	// CaptureProfile is the profile used to capture the page
 	// This is optional and defaults to an default capture profile
-	CaptureProfile *ScreenshotRequestOptions `json:"capture_profile"`
+	CaptureProfile *CaptureProfile `json:"capture_profile"`
 
 	// DiffProfile is the profile used to diff the page
 	// This is optional and defaults to an default diff profile
-	DiffProfile []string `json:"diff_profile" default:"[\"branding\", \"customers\", \"integration\", \"product\", \"pricing\", \"partnerships\", \"messaging\"]"`
+	DiffProfile DiffProfile `json:"diff_profile" validate:"dive,oneof=branding customers integration product pricing partnerships messaging" default:"[\"branding\", \"customers\", \"integration\", \"product\", \"pricing\", \"partnerships\", \"messaging\"]"`
+}
+
+func NewPageProps(pageURL string, diffProfile DiffProfile) (PageProps, error) {
+	if _, err := url.Parse(pageURL); err != nil {
+		return PageProps{}, fmt.Errorf("invalid URL: %w", err)
+	}
+	cp := GetDefaultCaptureProfile()
+	if len(diffProfile) == 0 {
+		diffProfile = GetDefaultDiffProfile()
+	}
+	title, err := utils.GetPageTitle(pageURL)
+	if err != nil {
+		title = pageURL
+	}
+	return PageProps{
+		Title:          title,
+		URL:            pageURL,
+		CaptureProfile: &cp,
+		DiffProfile:    diffProfile,
+	}, nil
 }
 
 // pageJSON is an internal type for JSON marshaling/unmarshaling
 type pageJSON struct {
-	ID             string                   `json:"id"`
-	CompetitorID   string                   `json:"competitor_id"`
-	URL            string                   `json:"url"`
-	Title          string                   `json:"title"`
-	CaptureProfile ScreenshotRequestOptions `json:"capture_profile"`
-	DiffProfile    []string                 `json:"diff_profile"`
-	LastCheckedAt  *time.Time               `json:"last_checked_at,omitempty"`
-	Status         PageStatus               `json:"status"`
-	CreatedAt      time.Time                `json:"created_at"`
-	UpdatedAt      time.Time                `json:"updated_at"`
+	ID             string         `json:"id"`
+	CompetitorID   string         `json:"competitor_id"`
+	URL            string         `json:"url"`
+	Title          string         `json:"title"`
+	CaptureProfile CaptureProfile `json:"capture_profile"`
+	DiffProfile    DiffProfile    `json:"diff_profile"`
+	LastCheckedAt  *time.Time     `json:"last_checked_at,omitempty"`
+	Status         PageStatus     `json:"status"`
+	CreatedAt      time.Time      `json:"created_at"`
+	UpdatedAt      time.Time      `json:"updated_at"`
 }
 
 // MarshalJSON implements custom JSON marshaling for Page
@@ -169,17 +195,157 @@ func (p *Page) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// GetDefaultDiffProfile returns the default diff profile
+func GetDefaultDiffProfile() DiffProfile {
+	return []string{
+		"branding",
+		"customers",
+		"integration",
+		"product",
+		"pricing",
+		"partnerships",
+		"messaging",
+	}
+}
+
 // Set default values for DiffProfile if it's empty
 func (p *Page) SetDefaultDiffProfile() {
 	if len(p.DiffProfile) == 0 {
-		p.DiffProfile = []string{
-			"branding",
-			"customers",
-			"integration",
-			"product",
-			"pricing",
-			"partnerships",
-			"messaging",
+		p.DiffProfile = GetDefaultDiffProfile()
+	}
+}
+
+// SetDefaultCaptureProfile sets the default capture profile
+func (p *Page) SetDefaultCaptureProfile() {
+	p.CaptureProfile = GetDefaultCaptureProfile()
+}
+
+// GetDefaultCaptureProfile returns the default capture profile
+// This is used when creating a new page
+func GetDefaultCaptureProfile() CaptureProfile {
+	return CaptureProfile{
+		Format:                utils.ToPtr("png"),
+		ImageQuality:          utils.ToPtr(80),
+		CaptureBeyondViewport: utils.ToPtr(true),
+		FullPage:              utils.ToPtr(true),
+		FullPageAlgorithm:     utils.ToPtr(FullPageAlgorithmDefault),
+
+		// Resource blocking options
+		BlockAds:                 utils.ToPtr(true),
+		BlockCookieBanners:       utils.ToPtr(true),
+		BlockBannersByHeuristics: utils.ToPtr(true),
+		BlockTrackers:            utils.ToPtr(true),
+		BlockChats:               utils.ToPtr(true),
+
+		// Wait and delay options
+		Delay:             utils.ToPtr(0),
+		Timeout:           utils.ToPtr(60),
+		NavigationTimeout: utils.ToPtr(30),
+		WaitUntil: []WaitUntilOption{
+			WaitUntilNetworkIdle2,
+			WaitUntilNetworkIdle0,
+		},
+
+		// Styling options
+		DarkMode:      utils.ToPtr(false),
+		ReducedMotion: utils.ToPtr(true),
+
+		// Response options
+		MetadataImageSize:      utils.ToPtr(true),
+		MetadataPageTitle:      utils.ToPtr(true),
+		MetadataContent:        utils.ToPtr(true),
+		MetadataHttpStatusCode: utils.ToPtr(true),
+	}
+}
+
+// getDefaultScreenshotRequestOptions returns the default options for the screenshot request
+func GetDefaultScreenshotRequestOptions(url string) ScreenshotRequestOptions {
+	// Get default options
+	defaultOpt := ScreenshotRequestOptions{
+		URL: url,
+		// Capture options
+		CaptureProfile: GetDefaultCaptureProfile(),
+	}
+
+	return defaultOpt
+}
+
+// MergeOptions merges the provided options with default options
+func MergeScreenshotRequestOptions(defaults, override ScreenshotRequestOptions) ScreenshotRequestOptions {
+	result := defaults
+
+	// Use reflection to handle all fields
+	rOverride := reflect.ValueOf(override)
+	rResult := reflect.ValueOf(&result).Elem()
+
+	for i := 0; i < rOverride.NumField(); i++ {
+		field := rOverride.Field(i)
+		resultField := rResult.Field(i)
+
+		// Skip if the override field is nil or zero
+		if field.IsZero() {
+			continue
+		}
+
+		switch field.Kind() {
+		case reflect.Ptr:
+			if !field.IsNil() {
+				resultField.Set(field)
+			}
+		case reflect.String:
+			if field.String() != "" {
+				resultField.Set(field)
+			}
+		case reflect.Slice:
+			if field.Len() > 0 {
+				resultField.Set(field)
+			}
+		case reflect.Map:
+			if field.Len() > 0 {
+				resultField.Set(field)
+			}
 		}
 	}
+
+	return result
+}
+
+// MergeOptions merges the provided options with default options
+func MergeScreenshotCaptureProfile(defaults, override CaptureProfile) CaptureProfile {
+	result := defaults
+
+	// Use reflection to handle all fields
+	rOverride := reflect.ValueOf(override)
+	rResult := reflect.ValueOf(&result).Elem()
+
+	for i := 0; i < rOverride.NumField(); i++ {
+		field := rOverride.Field(i)
+		resultField := rResult.Field(i)
+
+		// Skip if the override field is nil or zero
+		if field.IsZero() {
+			continue
+		}
+
+		switch field.Kind() {
+		case reflect.Ptr:
+			if !field.IsNil() {
+				resultField.Set(field)
+			}
+		case reflect.String:
+			if field.String() != "" {
+				resultField.Set(field)
+			}
+		case reflect.Slice:
+			if field.Len() > 0 {
+				resultField.Set(field)
+			}
+		case reflect.Map:
+			if field.Len() > 0 {
+				resultField.Set(field)
+			}
+		}
+	}
+
+	return result
 }

@@ -25,7 +25,7 @@ type PageRepository interface {
 
 	UpdateCompetitorPageURL(ctx context.Context, competitorID, pageID uuid.UUID, url string) (*models.Page, error)
 
-	UpdateCompetitorCaptureProfile(ctx context.Context, competitorID, pageID uuid.UUID, captureProfile *models.ScreenshotRequestOptions, url string) (*models.Page, error)
+	UpdateCompetitorCaptureProfile(ctx context.Context, competitorID, pageID uuid.UUID, captureProfile *models.CaptureProfile, url string) (*models.Page, error)
 
 	UpdateCompetitorDiffProfile(ctx context.Context, competitorID, pageID uuid.UUID, diffProfile []string) (*models.Page, error)
 

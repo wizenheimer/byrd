@@ -40,60 +40,44 @@ func (ws *workspaceService) CreateWorkspace(ctx context.Context, workspaceOwner 
 	ws.logger.Debug("creating workspace", zap.Any("workspaceOwner", workspaceOwner), zap.Any("pages", pages), zap.Any("userEmails", userEmails))
 	// Step 0: Create workspace along with the owner
 	var workspace *models.Workspace
-	if err := ws.tm.RunInTx(context.Background(), nil, func(ctx context.Context) error {
-		createdUser, err := ws.userService.GetOrCreateUser(ctx, workspaceOwner)
+	var workspaceCreator *models.User
+	createWorkspaceWithOwner := func(ctx context.Context) error {
+		var err error
+		// Step 1: Get or create the workspace owner
+		workspaceCreator, err = ws.userService.GetOrCreateUser(ctx, workspaceOwner)
 		if err != nil {
 			return err
 		}
 
 		// Step 2: Create the workspace
 		workspaceName := utils.GenerateWorkspaceName(workspaceOwner)
-		workspace, err = ws.workspaceRepo.CreateWorkspace(ctx, workspaceName, *createdUser.Email, createdUser.ID)
+		workspace, err = ws.workspaceRepo.CreateWorkspace(ctx, workspaceName, *workspaceCreator.Email, workspaceCreator.ID)
 		if err != nil {
 			return err
 		}
 
+		// Step 3: Sanity check
+		if workspace == nil {
+			return errors.New("failed to create workspace")
+		}
+
 		return nil
-	}); err != nil {
+	}
+
+	// Run the transaction
+	if err := ws.tm.RunInTx(context.Background(), nil, createWorkspaceWithOwner); err != nil {
 		return nil, err
 	}
 
 	// STEP 1: Validate and Create Competitors for the workspace
-	err := utils.SetDefaultsAndValidateArray(&pages)
-	if err != nil {
-		ws.logger.Debug("failed to validate pages", zap.Error(err))
-	} else {
-		// Add competitors to the workspace
-		_, err = ws.competitorService.AddCompetitorsToWorkspace(ctx, workspace.ID, pages)
-		if err != nil {
-			ws.logger.Debug("failed to add competitors to workspace", zap.Error(err))
-		}
+	// Add competitors to the workspace
+	if _, err := ws.competitorService.BatchCreateCompetitorForWorkspace(ctx, workspace.ID, pages); err != nil {
+		ws.logger.Debug("failed to add competitors to workspace", zap.Error(err))
 	}
 
 	// Step 2: Validate and invite users to the workspace
-	ownerEmail, err := utils.GetClerkUserEmail(workspaceOwner)
-	if err != nil {
-		return nil, err
-	}
-	ownerEmail = utils.NormalizeEmail(ownerEmail)
-
-	emailMap := make(map[string]bool)
-	emailMap[ownerEmail] = true
-
-	memberEmails := make([]string, 0)
-	for _, memberEmail := range userEmails {
-		// Normalize email address
-		memberEmail = utils.NormalizeEmail(memberEmail)
-
-		// Check if the email is already in the map
-		if _, ok := emailMap[memberEmail]; ok {
-			continue
-		}
-		emailMap[memberEmail] = true
-
-		// Add the member to the list of invited users
-		memberEmails = append(memberEmails, memberEmail)
-	}
+	ownerEmail := *workspaceCreator.Email
+	memberEmails := utils.CleanEmailList(userEmails, []string{ownerEmail})
 
 	members, err := ws.userService.BatchGetOrCreateUsers(ctx, memberEmails)
 	if err != nil {
@@ -144,22 +128,20 @@ func (ws *workspaceService) GetWorkspace(ctx context.Context, workspaceID uuid.U
 }
 
 func (ws *workspaceService) UpdateWorkspace(ctx context.Context, workspaceID uuid.UUID, workspaceProps models.WorkspaceProps) error {
-	// Check which fields are being updated, and update them
-	updatedBillingEmail := utils.NormalizeEmail(workspaceProps.BillingEmail)
-	// TODO: add normalization for workspace name
-	updateWorkspaceName := workspaceProps.Name
+	// Check if the workspace name or billing email is being updated
+	updatedNameRequiresUpdate := workspaceProps.Name != ""
+	billingEmailRequiresUpdate := workspaceProps.BillingEmail != ""
 
-	updatedNameRequiresUpdate := updateWorkspaceName != ""
-	billingEmailRequiresUpdate := updatedBillingEmail != ""
-
-	ws.logger.Debug("updating workspace", zap.Any("workspaceID", workspaceID), zap.Any("workspaceProps", workspaceProps), zap.Bool("updatedNameRequiresUpdate", updatedNameRequiresUpdate), zap.Bool("billingEmailRequiresUpdate", billingEmailRequiresUpdate))
-
+	// Update the workspace
 	if updatedNameRequiresUpdate && billingEmailRequiresUpdate {
-		return ws.workspaceRepo.UpdateWorkspaceDetails(ctx, workspaceID, updateWorkspaceName, updatedBillingEmail)
+		// Update both the workspace name and billing email
+		return ws.workspaceRepo.UpdateWorkspaceDetails(ctx, workspaceID, workspaceProps.Name, workspaceProps.BillingEmail)
 	} else if updatedNameRequiresUpdate {
-		return ws.workspaceRepo.UpdateWorkspaceName(ctx, workspaceID, updateWorkspaceName)
+		// Update the workspace name
+		return ws.workspaceRepo.UpdateWorkspaceName(ctx, workspaceID, workspaceProps.Name)
 	} else if billingEmailRequiresUpdate {
-		return ws.workspaceRepo.UpdateWorkspaceBillingEmail(ctx, workspaceID, updatedBillingEmail)
+		// Update the billing email
+		return ws.workspaceRepo.UpdateWorkspaceBillingEmail(ctx, workspaceID, workspaceProps.BillingEmail)
 	}
 
 	return nil
@@ -237,10 +219,7 @@ func (ws *workspaceService) AddUsersToWorkspace(ctx context.Context, workspaceMe
 	ws.logger.Debug("adding users to workspace", zap.Any("workspaceID", workspaceID), zap.Any("workspaceMember", workspaceMember), zap.Any("emails", emails))
 
 	// Step 1: Normalize the emails
-	normalizedEmails := make([]string, 0)
-	for _, email := range emails {
-		normalizedEmails = append(normalizedEmails, utils.NormalizeEmail(email))
-	}
+	normalizedEmails := utils.CleanEmailList(emails, nil)
 
 	// Step 2: Get or create users
 	users, err := ws.userService.BatchGetOrCreateUsers(ctx, normalizedEmails)
@@ -426,17 +405,28 @@ func (ws *workspaceService) WorkspaceCompetitorPageExists(ctx context.Context, w
 
 func (ws *workspaceService) AddCompetitorToWorkspace(ctx context.Context, workspaceID uuid.UUID, pages []models.PageProps) (*models.Competitor, error) {
 	ws.logger.Debug("adding competitors to workspace", zap.Any("workspaceID", workspaceID), zap.Any("pages", pages))
-	competitors, err := ws.competitorService.AddCompetitorsToWorkspace(ctx, workspaceID, pages)
+	competitor, err := ws.competitorService.CreateCompetitorForWorkspace(ctx, workspaceID, pages)
+	if err != nil {
+		return nil, err
+	}
+
+	return &competitor, nil
+}
+
+func (ws *workspaceService) BatchAddCompetitorToWorkspace(ctx context.Context, workspaceID uuid.UUID, pages []models.PageProps) ([]models.Competitor, error) {
+	ws.logger.Debug("batch adding competitors to workspace", zap.Any("workspaceID", workspaceID), zap.Any("pageProps", pages))
+
+	competitors, err := ws.competitorService.BatchCreateCompetitorForWorkspace(ctx, workspaceID, pages)
 	if err != nil {
 		return nil, err
 	}
 
 	if len(competitors) == 0 {
-		ws.logger.Debug("failed to create competitor", zap.Int("numPages", len(pages)), zap.Int("numCreatedCompetitors", len(competitors)))
-		return nil, errors.New("failed to create competitor")
+		ws.logger.Debug("failed to create competitors", zap.Int("numPages", len(pages)), zap.Int("numCreatedCompetitors", len(competitors)))
+		return nil, errors.New("failed to create competitors")
 	}
 
-	return &competitors[0], nil
+	return competitors, nil
 }
 
 func (ws *workspaceService) AddPageToCompetitor(ctx context.Context, competitorID uuid.UUID, pageProps []models.PageProps) ([]models.Page, error) {

@@ -45,7 +45,7 @@ type Workspace struct {
 // WorkspaceProps records essential properties of a workspace
 type WorkspaceProps struct {
 	// Name is the name of the workspace
-	Name string `json:"name"`
+	Name string `json:"name,omitempty"`
 
 	// BillingEmail is the email address to which billing information is sent
 	BillingEmail string `json:"billing_email,omitempty" validate:"omitempty,email"`

@@ -55,7 +55,13 @@ type WorkspaceService interface {
 
 	WorkspaceCompetitorPageExists(ctx context.Context, workspaceID, competitorID, pageID uuid.UUID) (bool, error)
 
+	// AddCompetitorToWorkspace adds a competitor to a workspace
+	// It creates a single competitor for a workspace using multiple pages
 	AddCompetitorToWorkspace(ctx context.Context, workspaceID uuid.UUID, pages []models.PageProps) (*models.Competitor, error)
+
+	// BatchAddCompetitorToWorkspace adds multiple competitors to a workspace
+	// It flattens the pages and creates a competitor for each page
+	BatchAddCompetitorToWorkspace(ctx context.Context, workspaceID uuid.UUID, pages []models.PageProps) ([]models.Competitor, error)
 
 	AddPageToCompetitor(ctx context.Context, competitorID uuid.UUID, pages []models.PageProps) ([]models.Page, error)
 

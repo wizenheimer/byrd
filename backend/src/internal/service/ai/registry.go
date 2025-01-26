@@ -2,6 +2,8 @@
 package ai
 
 import (
+	"fmt"
+
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 )
 
@@ -134,24 +136,41 @@ var fields = []models.FieldConfig{
 
 // fieldMap is a map of field name to field config
 // This is used to quickly lookup field config by name
-var fieldMap map[string]models.FieldConfig
+var AvailableFields = make(map[string]models.FieldConfig)
 
 // init initializes the field map
 // This is called when the package is imported
 func init() {
-	fieldMap = make(map[string]models.FieldConfig)
 	for _, field := range fields {
-		fieldMap[field.Name] = field
+		AvailableFields[field.Name] = field
 	}
 }
 
-// GetField returns the field config for the given field name
-func GetField(name string) (models.FieldConfig, error) {
-	field, exists := fieldMap[name]
-	if !exists {
-		return models.FieldConfig{}, ErrProfileFieldNotFound
+// Sanitize removes duplicates from a profile.
+// It also validates the profile fields.
+// If a field is not valid, it returns an error.
+// If a field is duplicated, it removes the duplicates.
+func Sanitize(profile models.DiffProfile) (models.DiffProfile, error) {
+	// Use a map to track unique fields
+	fields := make(map[string]bool)
+	var result models.DiffProfile
+
+	// First validate all fields
+	for _, f := range profile {
+		if _, exists := AvailableFields[f]; !exists {
+			return nil, fmt.Errorf("field %s is not a valid field", f)
+		}
 	}
-	return field, nil
+
+	// Then deduplicate
+	for _, f := range profile {
+		if !fields[f] {
+			fields[f] = true
+			result = append(result, f)
+		}
+	}
+
+	return result, nil
 }
 
 // FieldRegistry contains all available predefined fields

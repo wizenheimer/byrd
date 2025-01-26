@@ -4,10 +4,10 @@ package screenshot
 import (
 	"context"
 	"errors"
+	"fmt"
 	"image"
 	"io"
 	"net/http"
-	"reflect"
 	"strconv"
 
 	_ "image/jpeg" // Register JPEG format
@@ -17,93 +17,11 @@ import (
 	"github.com/wizenheimer/byrd/src/pkg/utils"
 )
 
-// getDefaultScreenshotRequestOptions returns the default options for the screenshot request
-func GetDefaultScreenshotRequestOptions(url string) models.ScreenshotRequestOptions {
-	// Get default options
-	defaultOpt := models.ScreenshotRequestOptions{
-		URL: url,
-		// Capture options
-		Format:                utils.ToPtr("png"),
-		ImageQuality:          utils.ToPtr(80),
-		CaptureBeyondViewport: utils.ToPtr(true),
-		FullPage:              utils.ToPtr(true),
-		FullPageAlgorithm:     utils.ToPtr(models.FullPageAlgorithmDefault),
-
-		// Resource blocking options
-		BlockAds:                 utils.ToPtr(true),
-		BlockCookieBanners:       utils.ToPtr(true),
-		BlockBannersByHeuristics: utils.ToPtr(true),
-		BlockTrackers:            utils.ToPtr(true),
-		BlockChats:               utils.ToPtr(true),
-
-		// Wait and delay options
-		Delay:             utils.ToPtr(0),
-		Timeout:           utils.ToPtr(60),
-		NavigationTimeout: utils.ToPtr(30),
-		WaitUntil: []models.WaitUntilOption{
-			models.WaitUntilNetworkIdle2,
-			models.WaitUntilNetworkIdle0,
-		},
-
-		// Styling options
-		DarkMode:      utils.ToPtr(false),
-		ReducedMotion: utils.ToPtr(true),
-
-		// Response options
-		MetadataImageSize:      utils.ToPtr(true),
-		MetadataPageTitle:      utils.ToPtr(true),
-		MetadataContent:        utils.ToPtr(true),
-		MetadataHttpStatusCode: utils.ToPtr(true),
-	}
-
-	return defaultOpt
-}
-
-// MergeOptions merges the provided options with default options
-func MergeScreenshotRequestOptions(defaults, override models.ScreenshotRequestOptions) models.ScreenshotRequestOptions {
-	result := defaults
-
-	// Use reflection to handle all fields
-	rOverride := reflect.ValueOf(override)
-	rResult := reflect.ValueOf(&result).Elem()
-
-	for i := 0; i < rOverride.NumField(); i++ {
-		field := rOverride.Field(i)
-		resultField := rResult.Field(i)
-
-		// Skip if the override field is nil or zero
-		if field.IsZero() {
-			continue
-		}
-
-		switch field.Kind() {
-		case reflect.Ptr:
-			if !field.IsNil() {
-				resultField.Set(field)
-			}
-		case reflect.String:
-			if field.String() != "" {
-				resultField.Set(field)
-			}
-		case reflect.Slice:
-			if field.Len() > 0 {
-				resultField.Set(field)
-			}
-		case reflect.Map:
-			if field.Len() > 0 {
-				resultField.Set(field)
-			}
-		}
-	}
-
-	return result
-}
-
 // refreshScreenshot refreshes the screenshot and html content for the given URL
 // it ensures that the screenshot and content are fetched and aren't null before returning
 func (s *screenshotService) refreshScreenshot(_ context.Context, opts models.ScreenshotRequestOptions) (*image.Image, *string, error) {
-	defaultOpt := GetDefaultScreenshotRequestOptions(opts.URL)
-	mergedOpt := MergeScreenshotRequestOptions(defaultOpt, opts)
+	defaultOpt := models.GetDefaultScreenshotRequestOptions(opts.URL)
+	mergedOpt := models.MergeScreenshotRequestOptions(defaultOpt, opts)
 
 	resp, err := s.httpClient.NewRequest().
 		BaseURL(s.origin).
@@ -162,8 +80,9 @@ func (s *screenshotService) getScreenshot(resp *http.Response) (*image.Image, er
 		"image/png",
 	}
 
-	if !utils.Contains(imageContentTypes, resp.Header.Get("Content-Type")) {
-		return nil, errors.New("received unexpected content type")
+	contentType := resp.Header.Get("Content-Type")
+	if !utils.Contains(imageContentTypes, contentType) {
+		return nil, fmt.Errorf("received unexpected content type: %v", contentType)
 	}
 
 	img, _, err := image.Decode(resp.Body)

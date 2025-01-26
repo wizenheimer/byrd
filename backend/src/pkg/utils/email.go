@@ -60,3 +60,38 @@ func splitByCase(s string) []string {
 
 	return parts
 }
+
+// CleanEmailList normalizes and cleans a list of emails.
+// Remove list is a list of emails to remove from the list if they exist.
+func CleanEmailList(emails []string, removeList []string) []string {
+	// Normalize email
+	for i, email := range emails {
+		emails[i] = NormalizeEmail(email)
+	}
+
+	// Normalize remove list
+	for i, email := range removeList {
+		removeList[i] = NormalizeEmail(email)
+	}
+
+	// Remove List Map
+	removeMap := make(map[string]bool)
+	for _, email := range removeList {
+		removeMap[email] = true
+	}
+
+	// Existing emails
+	var cleanedEmails []string
+	seenEmails := make(map[string]bool)
+
+	// Clean emails
+	for _, email := range emails {
+		if !removeMap[email] && !seenEmails[email] {
+			cleanedEmails = append(cleanedEmails, email)
+			seenEmails[email] = true
+		}
+	}
+
+	// Return cleaned emails
+	return cleanedEmails
+}

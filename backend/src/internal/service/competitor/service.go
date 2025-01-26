@@ -9,10 +9,8 @@ import (
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/internal/repository/competitor"
 	"github.com/wizenheimer/byrd/src/internal/service/page"
-	"github.com/wizenheimer/byrd/src/internal/service/screenshot"
 	"github.com/wizenheimer/byrd/src/internal/transaction"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
-	"github.com/wizenheimer/byrd/src/pkg/utils"
 	"go.uber.org/zap"
 )
 
@@ -34,7 +32,60 @@ func NewCompetitorService(competitorRepository competitor.CompetitorRepository, 
 	}
 }
 
-func (cs *competitorService) AddCompetitorsToWorkspace(ctx context.Context, workspaceID uuid.UUID, pages []models.PageProps) ([]models.Competitor, error) {
+func (cs *competitorService) CreateCompetitorForWorkspace(ctx context.Context, workspaceID uuid.UUID, pages []models.PageProps) (models.Competitor, error) {
+	var competitor models.Competitor
+	var urls []string
+	for _, page := range pages {
+		urls = append(urls, page.URL)
+	}
+	competitorName := cs.nameFinder.FindCompanyName(urls)
+
+	// Utility function to create a competitor
+	createCompetitor := func(ctx context.Context) (*models.Competitor, error) {
+		// Create a new competitor using the competitor's name
+		c, err := cs.competitorRepository.CreateCompetitorForWorkspace(
+			ctx,
+			workspaceID,
+			competitorName,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		if c == nil {
+			return nil, errors.New("failed to create competitor")
+		}
+
+		// Create a page, and associate it with the created competitor
+		if _, err = cs.pageService.CreatePage(
+			ctx,
+			competitor.ID,
+			pages,
+		); err != nil {
+			return nil, err
+		}
+
+		return c, nil
+	}
+
+	// Run the transaction
+	err := cs.tm.RunInTx(context.Background(), nil, func(ctx context.Context) error {
+		c, err := createCompetitor(ctx)
+		if err != nil {
+			return err
+		}
+		competitor = *c
+		return nil
+	})
+
+	if err != nil {
+		return models.Competitor{}, err
+	}
+
+	return competitor, nil
+}
+
+func (cs *competitorService) BatchCreateCompetitorForWorkspace(ctx context.Context, workspaceID uuid.UUID, pages []models.PageProps) ([]models.Competitor, error) {
 	if len(pages) == 0 {
 		return nil, errors.New("non-fatal: pages unspecified for creating competitors")
 	}
@@ -45,9 +96,6 @@ func (cs *competitorService) AddCompetitorsToWorkspace(ctx context.Context, work
 		competitorName := cs.nameFinder.FindCompanyName([]string{
 			page.URL,
 		})
-
-		cp := utils.FromPtr(page.CaptureProfile, screenshot.GetDefaultScreenshotRequestOptions(page.URL))
-		page.CaptureProfile = &cp
 
 		var competitor *models.Competitor
 		err := cs.tm.RunInTx(context.Background(), nil, func(ctx context.Context) error {
@@ -216,10 +264,6 @@ func (cs *competitorService) PageExists(ctx context.Context, competitorID, pageI
 }
 
 func (cs *competitorService) AddPagesToCompetitor(ctx context.Context, competitorID uuid.UUID, pages []models.PageProps) ([]models.Page, error) {
-	for index, page := range pages {
-		cp := utils.FromPtr(page.CaptureProfile, screenshot.GetDefaultScreenshotRequestOptions(page.URL))
-		pages[index].CaptureProfile = &cp
-	}
 	return cs.pageService.CreatePage(
 		ctx,
 		competitorID,
@@ -236,9 +280,6 @@ func (cs *competitorService) GetCompetitorPage(ctx context.Context, competitorID
 }
 
 func (cs *competitorService) UpdatePage(ctx context.Context, competitorID, pageID uuid.UUID, page models.PageProps) (*models.Page, error) {
-	cp := utils.FromPtr(page.CaptureProfile, screenshot.GetDefaultScreenshotRequestOptions(page.URL))
-	page.CaptureProfile = &cp
-
 	return cs.pageService.UpdatePage(
 		ctx,
 		competitorID,

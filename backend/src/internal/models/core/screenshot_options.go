@@ -118,10 +118,7 @@ const (
 )
 
 // ScreenshotRequestOptions defines all possible options for taking a screenshot
-type ScreenshotRequestOptions struct {
-	// Target Options
-	URL string `json:"url"` // The URL of the website to take a screenshot of
-
+type CaptureProfile struct {
 	// Selector Options
 	Selector              *string `json:"selector,omitempty"`
 	ScrollIntoView        *string `json:"scroll_into_view,omitempty"`
@@ -135,7 +132,7 @@ type ScreenshotRequestOptions struct {
 	ScrollDelay       *int               `json:"scroll_delay,omitempty"`
 	ScrollBy          *int               `json:"scroll_by,omitempty"`
 	MaxHeight         *int               `json:"max_height,omitempty"`
-	Format            *string            `json:"format,omitempty" default:"png"`
+	Format            *string            `json:"format" default:"png"`
 	ImageQuality      *int               `json:"image_quality,omitempty" default:"80"`
 	OmitBackground    *bool              `json:"omit_background,omitempty"`
 
@@ -188,18 +185,7 @@ type ScreenshotRequestOptions struct {
 	MetadataIcon           *bool `json:"metadata_icon,omitempty"`
 }
 
-// ScreenshotHTMLRequestOptions defines all possible options for capturing html
-type ScreenshotHTMLRequestOptions struct {
-	// Source URL
-	SourceURL string `json:"source_url"`
-	// Rendered URL
-	RenderedURL string `json:"redered_url"` // The URL of the website to take a screenshot of
-}
-
-type GetScreenshotOptions struct {
-	// Target Options
-	URL        string `json:"url"`                   // The URL of the website to take a screenshot of
-	WeekNumber *int   `json:"week_number,omitempty"` // The week number of the screenshot
-	WeekDay    *int   `json:"week_day,omitempty"`    // The day of the week of the screenshot
-	Year       *int   `json:"year,omitempty"`        // The year of the screenshot
+type ScreenshotRequestOptions struct {
+	URL string `json:"url"`
+	CaptureProfile
 }

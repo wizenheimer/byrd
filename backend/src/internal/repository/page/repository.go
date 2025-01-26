@@ -323,7 +323,7 @@ func (r *pageRepo) UpdateCompetitorPageURL(ctx context.Context, competitorID, pa
 	return result, nil
 }
 
-func (r *pageRepo) UpdateCompetitorCaptureProfile(ctx context.Context, competitorID, pageID uuid.UUID, captureProfile *models.ScreenshotRequestOptions, url string) (*models.Page, error) {
+func (r *pageRepo) UpdateCompetitorCaptureProfile(ctx context.Context, competitorID, pageID uuid.UUID, captureProfile *models.CaptureProfile, url string) (*models.Page, error) {
 	result := &models.Page{}
 
 	err := r.getQuerier(ctx).QueryRow(ctx, `

@@ -31,7 +31,7 @@ func NewWorkspaceRepository(tm *transaction.TxManager, logger *logger.Logger) Wo
 }
 
 func (r *workspaceRepo) CreateWorkspace(ctx context.Context, workspaceName, billingEmail string, workspaceCreatorUserID uuid.UUID) (*models.Workspace, error) {
-	slug := generateSlug(workspaceName)
+	workspaceSlug := getSlug(workspaceName)
 	workspace := &models.Workspace{}
 
 	// Create workspace
@@ -39,7 +39,7 @@ func (r *workspaceRepo) CreateWorkspace(ctx context.Context, workspaceName, bill
 		INSERT INTO workspaces (name, slug, billing_email, workspace_status)
 		VALUES ($1, $2, $3, $4)
 		RETURNING id, name, slug, billing_email, workspace_status, created_at, updated_at`,
-		workspaceName, slug, billingEmail, models.WorkspaceActive,
+		workspaceName, workspaceSlug, billingEmail, models.WorkspaceActive,
 	).Scan(
 		&workspace.ID,
 		&workspace.Name,
@@ -494,11 +494,12 @@ func (r *workspaceRepo) UpdateWorkspaceBillingEmail(ctx context.Context, workspa
 }
 
 func (r *workspaceRepo) UpdateWorkspaceName(ctx context.Context, workspaceID uuid.UUID, workspaceName string) error {
+	workspaceSlug := getSlug(workspaceName)
 	result, err := r.getQuerier(ctx).Exec(ctx, `
 		UPDATE workspaces
-		SET name = $1
-		WHERE id = $2 AND workspace_status != $3`,
-		workspaceName, workspaceID, models.WorkspaceInactive,
+		SET name = $1, slug = $2
+		WHERE id = $3 AND workspace_status != $4`,
+		workspaceName, workspaceSlug, workspaceID, models.WorkspaceInactive,
 	)
 
 	if err != nil {
@@ -513,11 +514,12 @@ func (r *workspaceRepo) UpdateWorkspaceName(ctx context.Context, workspaceID uui
 }
 
 func (r *workspaceRepo) UpdateWorkspaceDetails(ctx context.Context, workspaceID uuid.UUID, workspaceName, billingEmail string) error {
+	workspaceSlug := getSlug(workspaceName)
 	result, err := r.getQuerier(ctx).Exec(ctx, `
 		UPDATE workspaces
-		SET name = $1, billing_email = $2
-		WHERE id = $3 AND workspace_status != $4`,
-		workspaceName, billingEmail, workspaceID, models.WorkspaceInactive,
+		SET name = $1, slug = $2, billing_email = $3
+		WHERE id = $4 AND workspace_status != $5`,
+		workspaceName, workspaceSlug, billingEmail, workspaceID, models.WorkspaceInactive,
 	)
 
 	if err != nil {
@@ -595,15 +597,15 @@ func (r *workspaceRepo) BatchDeleteWorkspaces(ctx context.Context, workspaceIDs 
 	return nil
 }
 
-func generateSlug(workspaceName string) string {
-	baseSlug := slug.Make(workspaceName)
-	return baseSlug + "-" + uuid.New().String()
-}
-
 func (r *workspaceRepo) getQuerier(ctx context.Context) interface {
 	Exec(context.Context, string, ...interface{}) (pgconn.CommandTag, error)
 	Query(context.Context, string, ...interface{}) (pgx.Rows, error)
 	QueryRow(context.Context, string, ...interface{}) pgx.Row
 } {
 	return r.tm.GetQuerier(ctx)
+}
+
+func getSlug(name string) string {
+	// remove non alphanumeric characters
+	return slug.Make(name) + "-" + uuid.New().String()
 }

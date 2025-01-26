@@ -37,7 +37,6 @@ func (us *userService) GetOrCreateUser(ctx context.Context, clerk *clerk.User) (
 	if err != nil {
 		return nil, err
 	}
-	clerkEmail = utils.NormalizeEmail(clerkEmail)
 
 	clerkUserName := utils.GetClerkUserFullName(clerk)
 
@@ -58,9 +57,7 @@ func (us *userService) BatchGetOrCreateUsers(ctx context.Context, emails []strin
 		return nil, errors.New("non-fatal: user batch size exceeds the maximum limit")
 	}
 
-	for i, email := range emails {
-		emails[i] = utils.NormalizeEmail(email)
-	}
+	emails = utils.CleanEmailList(emails, nil)
 
 	var users []models.User
 	var err error
@@ -129,7 +126,6 @@ func (us *userService) GetUserByClerkCredentials(ctx context.Context, clerk *cle
 	if err != nil {
 		return nil, err
 	}
-	userEmail = utils.NormalizeEmail(userEmail)
 
 	user, err := us.userRepository.GetUserByClerkCredentials(ctx, clerk.ID, userEmail)
 	if err != nil {
@@ -153,7 +149,6 @@ func (us *userService) SyncUser(ctx context.Context, clerk *clerk.User) error {
 	if err != nil {
 		return err
 	}
-	clerkEmail = utils.NormalizeEmail(clerkEmail)
 
 	err = us.userRepository.SyncUser(ctx, clerk.ID, clerkEmail)
 	if err != nil {
@@ -177,7 +172,6 @@ func (us *userService) DeleteUser(ctx context.Context, clerk *clerk.User) error 
 	if err != nil {
 		return err
 	}
-	clerkEmail = utils.NormalizeEmail(clerkEmail)
 
 	user, err := us.userRepository.GetUserByClerkCredentials(ctx, clerk.ID, clerkEmail)
 	if err != nil {
@@ -206,8 +200,6 @@ func (us *userService) ClerkUserExists(ctx context.Context, clerk *clerk.User) (
 	if err != nil {
 		return false, err
 	}
-
-	email = utils.NormalizeEmail(email)
 
 	return us.userRepository.ClerkUserExists(ctx, clerk.ID, email)
 }

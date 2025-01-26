@@ -2,19 +2,15 @@
 package handlers
 
 import (
-	"net/url"
-
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	api "github.com/wizenheimer/byrd/src/internal/models/api"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/internal/service/ai"
-	"github.com/wizenheimer/byrd/src/internal/service/screenshot"
 	"github.com/wizenheimer/byrd/src/internal/service/workspace"
 	"github.com/wizenheimer/byrd/src/internal/transaction"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"github.com/wizenheimer/byrd/src/pkg/utils"
-	"go.uber.org/zap"
 )
 
 type WorkspaceHandler struct {
@@ -37,59 +33,35 @@ func NewWorkspaceHandler(
 
 // CreateWorkspace creates a new workspace
 func (wh *WorkspaceHandler) CreateWorkspaceForUser(c *fiber.Ctx) error {
+	clerkUser, err := getClerkUserFromContext(c)
+	if err != nil {
+		return sendErrorResponse(c, wh.logger, fiber.StatusUnauthorized, "User not found in request context", err.Error())
+	}
+
 	var req api.WorkspaceCreationRequest
 	if err := c.BodyParser(&req); err != nil {
-		return sendErrorResponse(c, wh.logger, fiber.StatusBadRequest, "InvalidRequest", err.Error())
+		return sendErrorResponse(c, wh.logger, fiber.StatusBadRequest, "Couldn't parse the workspace creation request", err.Error())
 	}
 
-	// Prepare the diff profiles
-	var diffProfiles []string
-	addedProfile := make(map[string]bool)
-
-	// Loop through the profiles
-	for _, profile := range req.Profiles {
-		// Check if the profile exists in the AI service
-		// Or if the profile has already been added
-		if _, err := ai.GetField(profile); addedProfile[profile] || err != nil {
-			wh.logger.Debug("skipping profile", zap.Any("profile", profile))
-			continue
-		}
-		// Add the profile to the list of diff profiles
-		addedProfile[profile] = true
-		// Append the profile to the list of diff profiles
-		diffProfiles = append(diffProfiles, profile)
+	if err := utils.SetDefaultsAndValidate(&req); err != nil {
+		return sendErrorResponse(c, wh.logger, fiber.StatusBadRequest, "Validation failed for workspace creation request", err.Error())
 	}
 
-	// If there are no diff profiles, add the default field
-	if len(diffProfiles) == 0 {
-		diffProfiles = append(diffProfiles, ai.DefaultField)
-		wh.logger.Debug("No valid profiles found, defaulting to default profile")
+	req.Profiles, err = ai.Sanitize(req.Profiles)
+	if err != nil {
+		return sendErrorResponse(c, wh.logger, fiber.StatusBadRequest, "Couldn't sanitize the profiles", err.Error())
 	}
 
 	var pages []models.PageProps
 	for _, competitorURL := range req.Competitors {
-		if _, err := url.Parse(competitorURL); err != nil {
-			continue
-		}
-		pageTitle, err := utils.GetPageTitle(competitorURL)
+		page, err := models.NewPageProps(competitorURL, req.Profiles)
 		if err != nil {
 			continue
 		}
-		captureProfile := screenshot.GetDefaultScreenshotRequestOptions(competitorURL)
-		pages = append(pages, models.PageProps{
-			URL:            competitorURL,
-			Title:          pageTitle,
-			CaptureProfile: &captureProfile,
-			DiffProfile:    diffProfiles,
-		})
+		pages = append(pages, page)
 	}
 	if len(pages) == 0 {
 		pages = make([]models.PageProps, 0)
-	}
-
-	clerkUser, err := getClerkUserFromContext(c)
-	if err != nil {
-		return sendErrorResponse(c, wh.logger, fiber.StatusUnauthorized, "User not found in request context", err.Error())
 	}
 
 	ctx := c.Context()
@@ -106,13 +78,13 @@ func (wh *WorkspaceHandler) CreateWorkspaceForUser(c *fiber.Ctx) error {
 func (wh *WorkspaceHandler) ListWorkspacesForUser(c *fiber.Ctx) error {
 	clerkUser, err := getClerkUserFromContext(c)
 	if err != nil {
-		return sendErrorResponse(c, wh.logger, fiber.StatusUnauthorized, "Unauthorized", err.Error())
+		return sendErrorResponse(c, wh.logger, fiber.StatusUnauthorized, "User is not authorized to list the workspace", err.Error())
 	}
 
 	ctx := c.Context()
 	workspaces, err := wh.workspaceService.ListUserWorkspaces(ctx, clerkUser)
 	if err != nil {
-		return sendErrorResponse(c, wh.logger, fiber.StatusInternalServerError, "Could not list workspaces", err.Error())
+		return sendErrorResponse(c, wh.logger, fiber.StatusInternalServerError, "Workspace couldn't be listed for the user", err.Error())
 	}
 	return sendDataResponse(c, fiber.StatusOK, "Listed workspaces successfully", workspaces)
 }
@@ -150,13 +122,13 @@ func (wh *WorkspaceHandler) UpdateWorkspaceByID(c *fiber.Ctx) error {
 	}
 
 	ctx := c.Context()
-	if err := wh.workspaceService.UpdateWorkspace(ctx, workspaceID, req); err != nil {
+	if err := wh.workspaceService.UpdateWorkspace(ctx, workspaceID, req.ToProps()); err != nil {
 		return sendErrorResponse(c, wh.logger, fiber.StatusInternalServerError, "Could not update workspace", err.Error())
 	}
 
 	return sendDataResponse(c, fiber.StatusOK, "Updated workspace successfully",
 		map[string]any{
-			"workspaceId":  workspaceID,
+			"workspaceId": workspaceID,
 		})
 }
 

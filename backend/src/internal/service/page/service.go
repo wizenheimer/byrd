@@ -89,7 +89,12 @@ func (ps *pageService) backdateRefresh(pages []models.Page) {
 		go func(page models.Page) {
 			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 			defer cancel()
-			if ir, hr, err := ps.screenshotService.Refresh(ctx, page.CaptureProfile, true); err != nil {
+
+			screenshotRequestOptions := models.ScreenshotRequestOptions{
+				URL:            page.URL,
+				CaptureProfile: page.CaptureProfile,
+			}
+			if ir, hr, err := ps.screenshotService.Refresh(ctx, screenshotRequestOptions, true); err != nil {
 				ps.logger.Error("failed to refresh page", zap.Any("pageID", page.ID), zap.Error(err))
 			} else {
 				ps.logger.Debug("refreshed page", zap.Any("pageID", page.ID), zap.Any("imagePath", ir.StoragePath), zap.Any("contentPath", hr.StoragePath))
@@ -110,29 +115,50 @@ func (ps *pageService) ListPageHistory(ctx context.Context, pageID uuid.UUID, li
 
 func (ps *pageService) UpdatePage(ctx context.Context, competitorID uuid.UUID, pageID uuid.UUID, page models.PageProps) (*models.Page, error) {
 	ps.logger.Debug("updating page", zap.Any("competitorID", competitorID), zap.Any("pageID", pageID), zap.Any("page", page))
-	captureProfileRequiresUpdate := page.CaptureProfile != nil || page.URL != ""
+	captureProfileRequiresUpdate := page.CaptureProfile != nil
 	diffProfileRequiresUpdate := len(page.DiffProfile) > 0
 	urlRequiresUpdate := page.URL != ""
 
 	var updatedPage *models.Page
 	var err error
+
+	// If all three fields require an update, update the page
 	if captureProfileRequiresUpdate && diffProfileRequiresUpdate && urlRequiresUpdate {
 		updatedPage, err = ps.pageRepo.UpdateCompetitorPage(ctx, competitorID, pageID, page)
-	} else {
-		if captureProfileRequiresUpdate {
-			updatedPage, err = ps.pageRepo.UpdateCompetitorCaptureProfile(ctx, competitorID, pageID, page.CaptureProfile, page.URL)
+		if err != nil {
+			return nil, err
 		}
-		if diffProfileRequiresUpdate {
-			updatedPage, err = ps.pageRepo.UpdateCompetitorDiffProfile(ctx, competitorID, pageID, page.DiffProfile)
-		}
-		if urlRequiresUpdate {
-			updatedPage, err = ps.pageRepo.UpdateCompetitorPageURL(ctx, competitorID, pageID, page.URL)
-		}
-	}
-	if err != nil {
-		return nil, err
+		return updatedPage, nil
 	}
 
+	// If only one field requires an update, update the page with that field one at a time
+  // This is done to avoid updating the page with a nil value
+	if captureProfileRequiresUpdate {
+		updatedPage, err = ps.pageRepo.UpdateCompetitorCaptureProfile(ctx, competitorID, pageID, page.CaptureProfile, page.URL)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+  // If only one field requires an update, update the page with that field one at a time
+  // This is done to avoid updating the page with an empty value
+	if diffProfileRequiresUpdate {
+		updatedPage, err = ps.pageRepo.UpdateCompetitorDiffProfile(ctx, competitorID, pageID, page.DiffProfile)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+  // If only one field requires an update, update the page with that field one at a time
+  // This is done to avoid updating the page with an empty value
+	if urlRequiresUpdate {
+		updatedPage, err = ps.pageRepo.UpdateCompetitorPageURL(ctx, competitorID, pageID, page.URL)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+  // Return the updated page
 	return updatedPage, nil
 }
 
@@ -176,12 +202,16 @@ func (ps *pageService) RefreshPage(ctx context.Context, pageID uuid.UUID) error 
 		return err
 	}
 
-	currentImgResp, currentHTMLContentResp, err := ps.screenshotService.Refresh(urlContext, page.CaptureProfile, false)
+	screenshotOptions := models.ScreenshotRequestOptions{
+		URL:            page.URL,
+		CaptureProfile: page.CaptureProfile,
+	}
+	currentImgResp, currentHTMLContentResp, err := ps.screenshotService.Refresh(urlContext, screenshotOptions, false)
 	if err != nil {
 		return err
 	}
 
-	prevImgResp, previousHtmlContentResp, err := ps.screenshotService.Retrieve(ctx, page.CaptureProfile, false)
+	prevImgResp, previousHtmlContentResp, err := ps.screenshotService.Retrieve(ctx, screenshotOptions, false)
 	if err != nil {
 		return err
 	}

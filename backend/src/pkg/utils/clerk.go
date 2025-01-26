@@ -12,6 +12,10 @@ func NormalizeEmail(email string) string {
 	return strings.ToLower(strings.Trim(email, " "))
 }
 
+// GetClerkUserEmail gets the primary email address of a Clerk user.
+// It returns an error if the primary email address is not found.
+// It returns the primary email address of the Clerk user.
+// It normalizes the email address prior to returning it.
 func GetClerkUserEmail(clerkUser *clerk.User) (string, error) {
 	if clerkUser.PrimaryEmailAddressID == nil {
 		return "", errors.New("primary email address not found")

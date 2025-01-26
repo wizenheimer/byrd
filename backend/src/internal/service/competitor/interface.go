@@ -16,7 +16,13 @@ var (
 // It holds the business logic for competitor management
 // PageService is embedded to manage pages within the context of a competitor
 type CompetitorService interface {
-	AddCompetitorsToWorkspace(ctx context.Context, workspaceID uuid.UUID, pages []models.PageProps) ([]models.Competitor, error)
+	// BatchCreateCompetitorsForWorkspace creates multiple competitors for a workspace
+	// Each page in the pages slice is used to create a competitor
+	BatchCreateCompetitorForWorkspace(ctx context.Context, workspaceID uuid.UUID, pages []models.PageProps) ([]models.Competitor, error)
+
+	// CreateCompetitorForWorkspace creates a competitor for a workspace
+	// Here all the pages are used to create a single competitor
+	CreateCompetitorForWorkspace(ctx context.Context, workspaceID uuid.UUID, pages []models.PageProps) (models.Competitor, error)
 
 	GetCompetitorForWorkspace(ctx context.Context, workspaceID uuid.UUID, competitorIDs []uuid.UUID) ([]models.Competitor, error)
 
