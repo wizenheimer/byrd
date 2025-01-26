@@ -7,6 +7,8 @@ import (
 
 	"github.com/wizenheimer/byrd/src/internal/alert"
 	"github.com/wizenheimer/byrd/src/internal/config"
+	"github.com/wizenheimer/byrd/src/internal/email"
+	"github.com/wizenheimer/byrd/src/internal/event"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/internal/repository/schedule"
 	workflow_repo "github.com/wizenheimer/byrd/src/internal/repository/workflow"
@@ -15,6 +17,7 @@ import (
 	"github.com/wizenheimer/byrd/src/internal/service/diff"
 	"github.com/wizenheimer/byrd/src/internal/service/executor"
 	"github.com/wizenheimer/byrd/src/internal/service/history"
+	"github.com/wizenheimer/byrd/src/internal/service/notification"
 	"github.com/wizenheimer/byrd/src/internal/service/page"
 	scheduler_svc "github.com/wizenheimer/byrd/src/internal/service/scheduler"
 	"github.com/wizenheimer/byrd/src/internal/service/screenshot"
@@ -27,14 +30,15 @@ import (
 )
 
 type Services struct {
-	History      history.PageHistoryService
-	Page         page.PageService
-	Competitor   competitor.CompetitorService
-	User         user.UserService
-	Workspace    workspace.WorkspaceService
-	Workflow     workflow.WorkflowService
-	Scheduler    scheduler_svc.SchedulerService
-	TokenManager *utils.TokenManager
+	History             history.PageHistoryService
+	Page                page.PageService
+	Competitor          competitor.CompetitorService
+	User                user.UserService
+	Workspace           workspace.WorkspaceService
+	Workflow            workflow.WorkflowService
+	Scheduler           scheduler_svc.SchedulerService
+	NotificationService notification.NotificationService
+	TokenManager        *utils.TokenManager
 }
 
 func SetupServices(
@@ -79,15 +83,28 @@ func SetupServices(
 
 	tokenManager := utils.NewTokenManager(cfg.Services.ManagementAPIKey, cfg.Services.ManagementAPIRefreshInterval)
 
+	emailClient, err := email.NewResendClient(context.Background(), cfg.Services.ResendAPIKey, cfg.Services.ResendNotificationEmail, logger)
+	if err != nil {
+		return nil, err
+	}
+
+	eventClient, err := setupEventClient(logger)
+	if err != nil {
+		return nil, err
+	}
+
+	notificationService := notification.NewNotificationService(alertClient, eventClient, emailClient, logger)
+
 	return &Services{
-		History:      historyService,
-		Page:         pageService,
-		Competitor:   competitorService,
-		User:         userService,
-		Workspace:    workspaceService,
-		Workflow:     workflowService,
-		Scheduler:    schedulerSvc,
-		TokenManager: tokenManager,
+		History:             historyService,
+		Page:                pageService,
+		Competitor:          competitorService,
+		User:                userService,
+		Workspace:           workspaceService,
+		Workflow:            workflowService,
+		NotificationService: notificationService,
+		Scheduler:           schedulerSvc,
+		TokenManager:        tokenManager,
 	}, nil
 }
 
@@ -102,6 +119,12 @@ func setupAlertClient(cfg *config.Config, logger *logger.Logger) (alert.AlertCli
 	}
 
 	return alert.NewSlackAlertClient(clientConfig, logger)
+}
+
+func setupEventClient(logger *logger.Logger) (event.EventClient, error) {
+	eventClient := event.NewLocalEventClient(logger)
+	// TODO: add environment specific event client
+	return eventClient, nil
 }
 
 func setupWorkflowService(
