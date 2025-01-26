@@ -41,7 +41,7 @@ func NewHandlerContainer(
 		// Handlers for AI management
 		AIHandler: handlers.NewAIHandler(aiService, logger),
 		// Handlers for user management
-		UserHandler: handlers.NewUserHandler(userService, logger),
+		UserHandler: handlers.NewUserHandler(userService, workspaceService, logger),
 		// Handlers for workspace management
 		WorkspaceHandler: handlers.NewWorkspaceHandler(
 			workspaceService,

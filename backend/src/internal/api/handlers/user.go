@@ -4,18 +4,21 @@ package handlers
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/wizenheimer/byrd/src/internal/service/user"
+	"github.com/wizenheimer/byrd/src/internal/service/workspace"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 )
 
 type UserHandler struct {
-	userService user.UserService
-	logger      *logger.Logger
+	userService      user.UserService
+	workspaceService workspace.WorkspaceService
+	logger           *logger.Logger
 }
 
-func NewUserHandler(userService user.UserService, logger *logger.Logger) *UserHandler {
+func NewUserHandler(userService user.UserService, workspaceService workspace.WorkspaceService, logger *logger.Logger) *UserHandler {
 	return &UserHandler{
-		userService: userService,
-		logger:      logger.WithFields(map[string]interface{}{"module": "user_handler"}),
+		userService:      userService,
+		workspaceService: workspaceService,
+		logger:           logger.WithFields(map[string]interface{}{"module": "user_handler"}),
 	}
 }
 
@@ -40,6 +43,16 @@ func (uh *UserHandler) DeleteCurrentUser(c *fiber.Ctx) error {
 	clerkUser, err := getClerkUserFromContext(c)
 	if err != nil {
 		return sendErrorResponse(c, uh.logger, fiber.StatusUnauthorized, "Couldn't get user from context", err.Error())
+	}
+
+	// Find if the user has any workspaces
+	workspaces, err := uh.workspaceService.ListUserWorkspaces(c.Context(), clerkUser)
+	if err != nil {
+		return sendErrorResponse(c, uh.logger, fiber.StatusInternalServerError, "Could not list user workspaces", err.Error())
+	}
+
+	if len(workspaces) > 0 {
+		return sendErrorResponse(c, uh.logger, fiber.StatusForbidden, "Exit the existing workspaces prior to deleting account", "User has active membership to workspaces")
 	}
 
 	if err := uh.userService.DeleteUser(c.Context(), clerkUser); err != nil {

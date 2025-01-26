@@ -57,14 +57,3 @@ func getClerkUserIDFromContext(c *fiber.Ctx) (string, error) {
 
 	return clerkUserID, nil
 }
-
-// getClerkClaimsFromContext gets the Clerk session claims from the context
-// This function returns an error if the Clerk session claims are not found in the context
-// func getClerkClaimsFromContext(c *fiber.Ctx) (*clerk.SessionClaims, error) {
-// 	clerkSessionClaims, ok := c.Locals(ClaimsContextKey).(*clerk.SessionClaims)
-// 	if !ok || clerkSessionClaims == nil {
-// 		return nil, fmt.Errorf("clerk session claims not found in context")
-// 	}
-
-// 	return clerkSessionClaims, nil
-// }
