@@ -254,6 +254,25 @@ func (r *userRepo) SyncUser(ctx context.Context, clerkID, normalizedUserEmail st
 	}
 
 	if result.RowsAffected() == 0 {
+		return errors.New("failed to sync user, user not found")
+	}
+
+	return nil
+}
+
+func (r *userRepo) ActivateUser(ctx context.Context, userID uuid.UUID, clerkID, normalizedUserEmail string) error {
+	result, err := r.getQuerier(ctx).Exec(ctx, `
+    UPDATE users
+    SET status = $1, email = $3, clerk_id = $4
+    WHERE id = $2 AND status != $1`,
+		models.AccountStatusActive, userID, normalizedUserEmail, clerkID,
+	)
+
+	if err != nil {
+		return fmt.Errorf("failed to activate user: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
 		return errors.New("user not found")
 	}
 

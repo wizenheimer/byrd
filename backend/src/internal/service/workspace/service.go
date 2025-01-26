@@ -102,14 +102,14 @@ func (ws *workspaceService) CreateWorkspace(ctx context.Context, workspaceOwner 
 	return workspace, nil
 }
 
-func (ws *workspaceService) ListUserWorkspaces(ctx context.Context, workspaceMember *clerk.User) ([]models.Workspace, error) {
+func (ws *workspaceService) ListUserWorkspaces(ctx context.Context, workspaceMember *clerk.User, membershipStatus models.MembershipStatus) ([]models.Workspace, error) {
 	ws.logger.Debug("listing user workspaces", zap.Any("workspaceMember", workspaceMember))
 	user, err := ws.userService.GetUserByClerkCredentials(ctx, workspaceMember)
 	if err != nil {
 		return nil, err
 	}
 
-	workspaces, err := ws.workspaceRepo.GetWorkspacesForUserID(ctx, user.ID)
+	workspaces, err := ws.workspaceRepo.GetWorkspacesForUserID(ctx, user.ID, membershipStatus)
 	if err != nil {
 		return nil, err
 	}
@@ -301,6 +301,7 @@ func (ws *workspaceService) LeaveWorkspace(ctx context.Context, workspaceMember 
 
 func (ws *workspaceService) UpdateWorkspaceMemberRole(ctx context.Context, workspaceID uuid.UUID, workspaceMemberID uuid.UUID, role models.WorkspaceRole) error {
 	ws.logger.Debug("updating workspace member role", zap.Any("workspaceID", workspaceID), zap.Any("workspaceMemberID", workspaceMemberID), zap.Any("role", role))
+
 	err := ws.workspaceRepo.UpdateUserRoleForWorkspace(ctx, workspaceID, workspaceMemberID, role)
 	if err != nil {
 		return err
@@ -311,9 +312,8 @@ func (ws *workspaceService) UpdateWorkspaceMemberRole(ctx context.Context, works
 
 func (ws *workspaceService) RemoveUserFromWorkspace(ctx context.Context, workspaceID uuid.UUID, workspaceMemberID uuid.UUID) error {
 	ws.logger.Debug("removing user from workspace", zap.Any("workspaceID", workspaceID), zap.Any("workspaceMemberID", workspaceMemberID))
-	err := ws.workspaceRepo.RemoveUserFromWorkspace(ctx, workspaceID, workspaceMemberID)
 
-	if err != nil {
+	if err := ws.workspaceRepo.RemoveUserFromWorkspace(ctx, workspaceID, workspaceMemberID); err != nil {
 		return err
 	}
 	return nil
@@ -321,11 +321,23 @@ func (ws *workspaceService) RemoveUserFromWorkspace(ctx context.Context, workspa
 
 func (ws *workspaceService) JoinWorkspace(ctx context.Context, invitedMember *clerk.User, workspaceID uuid.UUID) error {
 	ws.logger.Debug("joining workspace", zap.Any("workspaceID", workspaceID), zap.Any("invitedMember", invitedMember))
+	// Get the user by clerk credentials
 	user, err := ws.userService.GetUserByClerkCredentials(ctx, invitedMember)
 	if err != nil {
 		return err
 	}
 
+	ws.logger.Debug("user details", zap.Any("user", user))
+
+	// Synchronize the user with the database if the user is first time user
+	if user.ClerkID == nil {
+		if err := ws.userService.ActivateUser(ctx, user.ID, invitedMember); err != nil {
+			return err
+		}
+		// TODO: Kick off a background job to onboard the user to the workspace
+	}
+
+	// Update the user's membership status
 	err = ws.workspaceRepo.UpdateUserMembershipStatusForWorkspace(ctx, workspaceID, user.ID, models.ActiveMember)
 	if err != nil {
 		return err

@@ -135,10 +135,10 @@ func (us *userService) GetUserByClerkCredentials(ctx context.Context, clerk *cle
 	return user, nil
 }
 
-// SyncUser syncs a user with Clerk
-// It returns an error if the user could not be synced
-// When sync is triggered, it marks the account status as active
-// And updates the user's email and name if they have changed
+// SyncUser syncs a user with Clerk.
+// It returns an error if the user could not be synced.
+// When sync is triggered, it marks the account status as active.
+// And updates the user's email and name if they have changed.
 func (us *userService) SyncUser(ctx context.Context, clerk *clerk.User) error {
 	if clerk == nil {
 		return errors.New("non-fatal: clerk user is nil")
@@ -158,10 +158,27 @@ func (us *userService) SyncUser(ctx context.Context, clerk *clerk.User) error {
 	return nil
 }
 
-// DeleteUser deletes a user from Clerk
-// It returns an error if the user could not be deleted
-// It returns nil if the user was deleted successfully
-// This is the only user-facing and handler-owned method
+// ActivateUser activates a user in Clerk.
+// It returns an error if the user could not be activated.
+func (us *userService) ActivateUser(ctx context.Context, userID uuid.UUID, clerkUser *clerk.User) error {
+	if clerkUser == nil {
+		return errors.New("non-fatal: clerk user is nil")
+	}
+
+	us.logger.Debug("activating user", zap.Any("userID", userID), zap.Any("clerk", clerkUser))
+	userEmail, err := utils.GetClerkUserEmail(clerkUser)
+	if err != nil {
+		return err
+	}
+
+	clerkID := clerkUser.ID
+	return us.userRepository.ActivateUser(ctx, userID, clerkID, userEmail)
+}
+
+// DeleteUser deletes a user from Clerk.
+// It returns an error if the user could not be deleted.
+// It returns nil if the user was deleted successfully.
+// This is the only user-facing and handler-owned method.
 func (us *userService) DeleteUser(ctx context.Context, clerk *clerk.User) error {
 	if clerk == nil {
 		return errors.New("non-fatal: clerk user is nil")

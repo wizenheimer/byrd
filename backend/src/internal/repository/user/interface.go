@@ -26,6 +26,8 @@ type UserRepository interface {
 
 	SyncUser(ctx context.Context, clerkID, normalizedUserEmail string) error
 
+	ActivateUser(ctx context.Context, userID uuid.UUID, clerkID, normalizedUserEmail string) error
+
 	DeleteUser(ctx context.Context, userID uuid.UUID) error
 
 	UserExists(ctx context.Context, userID uuid.UUID) (bool, error)

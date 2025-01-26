@@ -28,7 +28,7 @@ type WorkspaceRepository interface {
 
 	PromoteRandomUserToAdmin(ctx context.Context, workspaceID uuid.UUID) error
 
-	GetWorkspacesForUserID(ctx context.Context, userID uuid.UUID) ([]models.Workspace, error)
+	GetWorkspacesForUserID(ctx context.Context, userID uuid.UUID, membershipStatus models.MembershipStatus) ([]models.Workspace, error)
 
 	BatchAddUsersToWorkspace(ctx context.Context, workspaceID uuid.UUID, userIDs []uuid.UUID) ([]models.PartialWorkspaceUser, error)
 

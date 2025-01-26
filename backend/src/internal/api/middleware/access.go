@@ -85,6 +85,19 @@ func (m *AccessMiddleware) RequiresWorkspaceMember(c *fiber.Ctx) error {
 	return c.Next()
 }
 
+func (m *AccessMiddleware) RequiresActiveOrPendingWorkspaceMembership(c *fiber.Ctx) error {
+	// Validate workspace membership
+	allowedRoles := []models.WorkspaceRole{models.RoleAdmin, models.RoleUser}
+	allowedStatus := []models.MembershipStatus{models.ActiveMember, models.PendingMember}
+
+	if err := m.validateWorkspaceMembership(c, allowedRoles, allowedStatus); err != nil {
+		return sendErrorResponse(c, m.logger, fiber.StatusForbidden, "User Access Denied", err.Error())
+	}
+
+	// Continue to next middleware
+	return c.Next()
+}
+
 // Checks if the user has an pending membership in the workspace with role admin or user
 func (m *AccessMiddleware) RequiresPendingWorkspaceMember(c *fiber.Ctx) error {
 	// Validate workspace membership

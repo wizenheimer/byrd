@@ -28,6 +28,8 @@ type UserService interface {
 
 	SyncUser(ctx context.Context, clerk *clerk.User) error
 
+	ActivateUser(ctx context.Context, userID uuid.UUID, clerk *clerk.User) error
+
 	DeleteUser(ctx context.Context, clerk *clerk.User) error
 
 	UserExistsByUserID(ctx context.Context, userID uuid.UUID) (bool, error)

@@ -3,6 +3,7 @@ package handlers
 
 import (
 	"github.com/gofiber/fiber/v2"
+	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/internal/service/user"
 	"github.com/wizenheimer/byrd/src/internal/service/workspace"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
@@ -46,7 +47,7 @@ func (uh *UserHandler) DeleteCurrentUser(c *fiber.Ctx) error {
 	}
 
 	// Find if the user has any workspaces
-	workspaces, err := uh.workspaceService.ListUserWorkspaces(c.Context(), clerkUser)
+	workspaces, err := uh.workspaceService.ListUserWorkspaces(c.Context(), clerkUser, models.ActiveMember)
 	if err != nil {
 		return sendErrorResponse(c, uh.logger, fiber.StatusInternalServerError, "Could not list user workspaces", err.Error())
 	}

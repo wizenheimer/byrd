@@ -299,15 +299,15 @@ func (r *workspaceRepo) PromoteRandomUserToAdmin(ctx context.Context, workspaceI
 	return nil
 }
 
-func (r *workspaceRepo) GetWorkspacesForUserID(ctx context.Context, userID uuid.UUID) ([]models.Workspace, error) {
+func (r *workspaceRepo) GetWorkspacesForUserID(ctx context.Context, userID uuid.UUID, membershipStatus models.MembershipStatus) ([]models.Workspace, error) {
 	rows, err := r.getQuerier(ctx).Query(ctx, `
 		SELECT w.id, w.name, w.slug, w.billing_email, w.workspace_status, w.created_at, w.updated_at
 		FROM workspaces w
 		INNER JOIN workspace_users wu ON w.id = wu.workspace_id
 		WHERE wu.user_id = $1
-		AND wu.membership_status != $2
+		AND wu.membership_status = $2
 		AND w.workspace_status != $3`,
-		userID, models.InactiveMember, models.WorkspaceInactive,
+		userID, membershipStatus, models.WorkspaceInactive,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get workspaces for user: %w", err)

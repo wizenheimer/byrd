@@ -2,6 +2,8 @@
 package handlers
 
 import (
+	"strings"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	api "github.com/wizenheimer/byrd/src/internal/models/api"
@@ -81,12 +83,26 @@ func (wh *WorkspaceHandler) ListWorkspacesForUser(c *fiber.Ctx) error {
 		return sendErrorResponse(c, wh.logger, fiber.StatusUnauthorized, "User is not authorized to list the workspace", err.Error())
 	}
 
+	membershipStatusString := strings.ToLower(c.Query("membershipStatus", "active"))
+	var membershipStatus models.MembershipStatus
+	switch membershipStatusString {
+	case "active":
+		membershipStatus = models.ActiveMember
+	case "pending":
+		membershipStatus = models.PendingMember
+	default:
+		membershipStatus = models.ActiveMember
+	}
+
 	ctx := c.Context()
-	workspaces, err := wh.workspaceService.ListUserWorkspaces(ctx, clerkUser)
+	workspaces, err := wh.workspaceService.ListUserWorkspaces(ctx, clerkUser, membershipStatus)
 	if err != nil {
 		return sendErrorResponse(c, wh.logger, fiber.StatusInternalServerError, "Workspace couldn't be listed for the user", err.Error())
 	}
-	return sendDataResponse(c, fiber.StatusOK, "Listed workspaces successfully", workspaces)
+	return sendDataResponse(c, fiber.StatusOK, "Listed workspaces successfully", map[string]any{
+		"workspaces":       workspaces,
+		"membershipStatus": membershipStatus,
+	})
 }
 
 // GetWorkspace gets a workspace by ID

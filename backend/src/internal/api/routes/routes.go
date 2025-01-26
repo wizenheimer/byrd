@@ -149,7 +149,7 @@ func setupWorkspaceRoutes(
 
 	// Exit a workspace by ID
 	router.Post("/workspace/:workspaceID/exit",
-		m.RequiresWorkspaceMember,
+		m.RequiresActiveOrPendingWorkspaceMembership,
 		workspaceHandler.ExitWorkspaceByID)
 }
 
