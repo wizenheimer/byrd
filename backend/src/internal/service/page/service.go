@@ -87,15 +87,29 @@ func (ps *pageService) CreatePage(ctx context.Context, competitorID uuid.UUID, p
 func (ps *pageService) backdateRefresh(pages []models.Page) {
 	for _, page := range pages {
 		go func(page models.Page) {
-			ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 180*time.Second)
 			defer cancel()
 
 			screenshotRequestOptions := models.GetScreenshotRequestOptions(page.URL, page.CaptureProfile)
 			ps.logger.Debug("requestOptions", zap.Any("screenshotRequestOptions", screenshotRequestOptions))
-			if ir, hr, err := ps.screenshotService.Refresh(ctx, screenshotRequestOptions, true); err != nil {
+			ir, hr, err := ps.screenshotService.Refresh(ctx, screenshotRequestOptions, true)
+
+			if err != nil {
 				ps.logger.Error("failed to refresh page", zap.Any("pageID", page.ID), zap.Error(err))
 			} else {
 				ps.logger.Debug("refreshed page", zap.Any("pageID", page.ID), zap.Any("imagePath", ir.StoragePath), zap.Any("contentPath", hr.StoragePath))
+			}
+
+			if err := ps.pageHistoryService.CreatePageHistory(
+				context.Background(),
+				page.ID,
+				nil,
+				ir.StoragePath,
+				ir.StoragePath,
+			); err != nil {
+				ps.logger.Error("failed to create page history", zap.Any("pageID", page.ID), zap.Error(err))
+			} else {
+				ps.logger.Debug("created page history", zap.Any("pageID", page.ID))
 			}
 		}(page)
 	}
