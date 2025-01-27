@@ -20,8 +20,8 @@ type Template interface {
 type TemplateLibrary interface {
 	// GetTemplate returns a template by name.
 	// Returns a copy of the template, so that the original template is not modified.
-	GetTemplate(name string) (Template, error)
+	GetTemplate(name TemplateName) (Template, error)
 	// RegisterTemplate registers a template by name
 	// Returns an error if a template with the same name already exists.
-	RegisterTemplate(name string, t Template) error
+	RegisterTemplate(name TemplateName, t Template) error
 }
