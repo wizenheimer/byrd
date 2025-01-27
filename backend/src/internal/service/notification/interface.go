@@ -27,13 +27,13 @@ var (
 
 type NotificationService interface {
 	// GetAlertChannel returns a channel for alerts or error if service is busy/timeout
-	GetAlertChannel(ctx context.Context, priority int, bufferSize int) (<-chan models.Alert, error)
+	GetAlertChannel(ctx context.Context, priority int, bufferSize int) (chan models.Alert, error)
 
 	// GetEventChannel returns a channel for events or error if service is busy/timeout
-	GetEventChannel(ctx context.Context, priority int, bufferSize int) (<-chan models.Event, error)
+	GetEventChannel(ctx context.Context, priority int, bufferSize int) (chan models.Event, error)
 
 	// GetEmailChannel returns a channel for emails or error if service is busy/timeout
-	GetEmailChannel(ctx context.Context, priority int, bufferSize int) (<-chan models.Email, error)
+	GetEmailChannel(ctx context.Context, priority int, bufferSize int) (chan models.Email, error)
 
 	// Returns the shared log channel for all writers
 	// Log channel is used as a fallback when the service is busy

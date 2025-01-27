@@ -71,11 +71,14 @@ func NewNotificationService(alertClient alert.AlertClient, eventClient event.Eve
 	service.eventChannelCount.Store(0)
 	service.emailChannelCount.Store(0)
 
+	// Start the service
+	service.Start()
+
 	return &service
 }
 
 // GetAlertChannel returns a channel for alerts or error if service is busy/timeout
-func (s *notificationService) GetAlertChannel(ctx context.Context, priority int, bufferSize int) (<-chan models.Alert, error) {
+func (s *notificationService) GetAlertChannel(ctx context.Context, priority int, bufferSize int) (chan models.Alert, error) {
 	if bufferSize <= 0 {
 		return nil, ErrInvalidBufferSize
 	}
@@ -148,7 +151,7 @@ func (s *notificationService) forwardAlerts(ch <-chan models.Alert) {
 	}
 }
 
-func (s *notificationService) GetEventChannel(ctx context.Context, priority int, bufferSize int) (<-chan models.Event, error) {
+func (s *notificationService) GetEventChannel(ctx context.Context, priority int, bufferSize int) (chan models.Event, error) {
 	if bufferSize <= 0 {
 		return nil, ErrInvalidBufferSize
 	}
@@ -224,7 +227,7 @@ func (s *notificationService) forwardEvents(ch <-chan models.Event) {
 	}
 }
 
-func (s *notificationService) GetEmailChannel(ctx context.Context, priority int, bufferSize int) (<-chan models.Email, error) {
+func (s *notificationService) GetEmailChannel(ctx context.Context, priority int, bufferSize int) (chan models.Email, error) {
 	if bufferSize <= 0 {
 		return nil, ErrInvalidBufferSize
 	}
