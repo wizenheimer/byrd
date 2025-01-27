@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
+	"github.com/wizenheimer/byrd/src/internal/email/template"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/internal/repository/workspace"
 	"github.com/wizenheimer/byrd/src/internal/service/competitor"
@@ -21,16 +22,18 @@ import (
 type workspaceService struct {
 	workspaceRepo     workspace.WorkspaceRepository
 	competitorService competitor.CompetitorService
+	library           template.TemplateLibrary
 	userService       user.UserService
 	logger            *logger.Logger
 	tm                *transaction.TxManager
 }
 
-func NewWorkspaceService(workspaceRepo workspace.WorkspaceRepository, competitorService competitor.CompetitorService, userService user.UserService, tm *transaction.TxManager, logger *logger.Logger) WorkspaceService {
+func NewWorkspaceService(workspaceRepo workspace.WorkspaceRepository, competitorService competitor.CompetitorService, userService user.UserService, library template.TemplateLibrary, tm *transaction.TxManager, logger *logger.Logger) WorkspaceService {
 	return &workspaceService{
 		workspaceRepo:     workspaceRepo,
 		competitorService: competitorService,
 		userService:       userService,
+		library:           library,
 		logger:            logger.WithFields(map[string]interface{}{"module": "workspace_service"}),
 		tm:                tm,
 	}
