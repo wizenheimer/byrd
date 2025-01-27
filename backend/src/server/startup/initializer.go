@@ -5,6 +5,7 @@ import (
 	"github.com/wizenheimer/byrd/src/internal/api/middleware"
 	"github.com/wizenheimer/byrd/src/internal/api/routes"
 	"github.com/wizenheimer/byrd/src/internal/config"
+	"github.com/wizenheimer/byrd/src/internal/email/template"
 	"github.com/wizenheimer/byrd/src/internal/service/diff"
 	"github.com/wizenheimer/byrd/src/internal/transaction"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
@@ -51,7 +52,10 @@ func Initialize(cfg *config.Config, tm *transaction.TxManager, logger *logger.Lo
 	}
 
 	// Set up template library
-	templateLibrary := setupLibrary(logger)
+	templateLibrary, err := template.NewTemplateLibrary(logger)
+	if err != nil {
+		return nil, nil, nil, err
+	}
 
 	// Set up all services
 	services, err := SetupServices(cfg, repos, diffService, screenshotService, templateLibrary, tm, logger)

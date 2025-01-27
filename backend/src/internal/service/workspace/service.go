@@ -513,3 +513,7 @@ func (ws *workspaceService) GetPageForCompetitor(ctx context.Context, competitor
 	ws.logger.Debug("getting page for competitor", zap.Any("competitorID", competitorID), zap.Any("pageID", pageID))
 	return ws.competitorService.GetCompetitorPage(ctx, competitorID, pageID)
 }
+
+func (ws *workspaceService) SendEmail(ctx context.Context, email models.Email) {
+	ws.logger.Debug("sending email", zap.Any("email", email))
+}

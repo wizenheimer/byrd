@@ -78,4 +78,6 @@ type WorkspaceService interface {
 	UpdateCompetitorPage(ctx context.Context, competitorID, pageID uuid.UUID, page models.PageProps) (*models.Page, error)
 
 	GetPageForCompetitor(ctx context.Context, competitorID, pageID uuid.UUID) (*models.Page, error)
+
+	SendEmail(ctx context.Context, email models.Email)
 }

@@ -7,6 +7,7 @@ import (
 
 	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/google/uuid"
+	"github.com/wizenheimer/byrd/src/internal/email/template"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/internal/repository/user"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
@@ -15,14 +16,16 @@ import (
 )
 
 type userService struct {
-	userRepository user.UserRepository
-	logger         *logger.Logger
+	userRepository  user.UserRepository
+	templateLibrary template.TemplateLibrary
+	logger          *logger.Logger
 }
 
-func NewUserService(userRepository user.UserRepository, logger *logger.Logger) UserService {
+func NewUserService(userRepository user.UserRepository, templateLibrary template.TemplateLibrary, logger *logger.Logger) UserService {
 	return &userService{
-		userRepository: userRepository,
-		logger:         logger.WithFields(map[string]interface{}{"module": "user_service"}),
+		userRepository:  userRepository,
+		templateLibrary: templateLibrary,
+		logger:          logger.WithFields(map[string]interface{}{"module": "user_service"}),
 	}
 }
 
@@ -172,7 +175,18 @@ func (us *userService) ActivateUser(ctx context.Context, userID uuid.UUID, clerk
 	}
 
 	clerkID := clerkUser.ID
-	return us.userRepository.ActivateUser(ctx, userID, clerkID, userEmail)
+	if err := us.userRepository.ActivateUser(ctx, userID, clerkID, userEmail); err != nil {
+		return err
+	}
+
+	// TODO: Figure this out.
+	us.SendEmail(ctx, models.Email{
+		To:           []string{userEmail},
+		EmailFormat:  models.EmailFormatHTML,
+		EmailContent: "Your account has been activated.",
+		EmailSubject: "Account Activation",
+	})
+	return nil
 }
 
 // DeleteUser deletes a user from Clerk.
@@ -219,4 +233,8 @@ func (us *userService) ClerkUserExists(ctx context.Context, clerk *clerk.User) (
 	}
 
 	return us.userRepository.ClerkUserExists(ctx, clerk.ID, email)
+}
+
+func (us *userService) SendEmail(ctx context.Context, email models.Email) {
+	us.logger.Debug("sending email", zap.Any("email", email))
 }
