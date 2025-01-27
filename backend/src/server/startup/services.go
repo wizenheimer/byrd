@@ -49,11 +49,10 @@ func SetupServices(
 	repos *Repositories,
 	diffService diff.DiffService,
 	screenshotService screenshot.ScreenshotService,
+	templateLibrary template.TemplateLibrary,
 	tm *transaction.TxManager,
 	logger *logger.Logger,
 ) (*Services, error) {
-	templateLibrary := setupLibrary(logger)
-
 	historyService := history.NewPageHistoryService(repos.History, logger)
 	pageService := page.NewPageService(repos.Page, historyService, diffService, screenshotService, logger)
 	competitorService := competitor.NewCompetitorService(repos.Competitor, pageService, tm, logger)

@@ -50,8 +50,11 @@ func Initialize(cfg *config.Config, tm *transaction.TxManager, logger *logger.Lo
 		return nil, nil, nil, err
 	}
 
+	// Set up template library
+	templateLibrary := setupLibrary(logger)
+
 	// Set up all services
-	services, err := SetupServices(cfg, repos, diffService, screenshotService, tm, logger)
+	services, err := SetupServices(cfg, repos, diffService, screenshotService, templateLibrary, tm, logger)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -60,16 +63,21 @@ func Initialize(cfg *config.Config, tm *transaction.TxManager, logger *logger.Lo
 	accessMiddleware := middleware.NewAccessMiddleware(services.Workspace, services.User, services.TokenManager, logger)
 
 	// Initialize handlers
-	handlers := SetupHandlerContainer(
+	handlers, err := SetupHandlerContainer(
 		screenshotService,
 		aiService,
 		services.User,
 		services.Workspace,
 		services.Workflow,
 		services.Scheduler,
+		services.NotificationService,
+		templateLibrary,
 		tm,
 		logger,
 	)
+	if err != nil {
+		return nil, nil, nil, err
+	}
 
 	return handlers, resourceMiddleware, accessMiddleware, nil
 }
