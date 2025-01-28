@@ -49,12 +49,12 @@ func NewOpenAIService(apiKey string, logger *logger.Logger) (AIService, error) {
 	return &s, s.validate()
 }
 
-func (s *openAIService) SummarizeChanges(ctx context.Context, changeList []*models.DynamicChanges) ([]CategoryChange, error) {
+func (s *openAIService) SummarizeChanges(ctx context.Context, changeList []*models.DynamicChanges) ([]models.CategoryChange, error) {
 	if len(changeList) == 0 {
-		return []CategoryChange{}, nil
+		return []models.CategoryChange{}, nil
 	}
 
-	changes, err := models.MergeDynamicChanges(changeList...)
+	changes, err := models.MergeDynamicChanges(changeList)
 	if err != nil {
 		return nil, err
 	}
@@ -90,8 +90,8 @@ func (s *openAIService) SummarizeChanges(ctx context.Context, changeList []*mode
 		close(resultChan)
 	}()
 
-	response := ChangeResponse{
-		Changes: make([]CategoryChange, 0, numCategories),
+	response := models.ChangeResponse{
+		Changes: make([]models.CategoryChange, 0, numCategories),
 	}
 
 	for res := range resultChan {
@@ -111,7 +111,7 @@ func (s *openAIService) SummarizeChanges(ctx context.Context, changeList []*mode
 			stringList[i] = v.(string)
 		}
 
-		categoryChange := CategoryChange{
+		categoryChange := models.CategoryChange{
 			Category: res.summary.Category,
 			Summary:  res.summary.Summary,
 			Changes:  stringList,
@@ -130,7 +130,7 @@ func (s *openAIService) SummarizeChanges(ctx context.Context, changeList []*mode
 				stringList[i] = v.(string)
 			}
 
-			categoryChange := CategoryChange{
+			categoryChange := models.CategoryChange{
 				Category: category,
 				Summary:  getFallbackSummary(category, stringList),
 				Changes:  stringList,

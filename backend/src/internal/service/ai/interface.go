@@ -17,7 +17,7 @@ type AIService interface {
 	AnalyzeVisualDifferences(ctx context.Context, version1, version2 image.Image, fields []string) (*models.DynamicChanges, error)
 
 	// SummarizeChanges summarizes the changes in a report
-	SummarizeChanges(ctx context.Context, changes []*models.DynamicChanges) ([]CategoryChange, error)
+	SummarizeChanges(ctx context.Context, changes []*models.DynamicChanges) ([]models.CategoryChange, error)
 }
 
 var (

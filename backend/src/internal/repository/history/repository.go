@@ -34,10 +34,14 @@ func (r *historyRepo) getQuerier(ctx context.Context) interface {
 	return r.tm.GetQuerier(ctx)
 }
 
-func (r *historyRepo) CreateHistoryForPage(ctx context.Context, pageID uuid.UUID, diffContent any, prev, curr string) error {
+func (r *historyRepo) CreateHistoryForPage(ctx context.Context, pageID uuid.UUID, diffContent *models.DynamicChanges, prev, curr string) error {
 	// Validate diffContent as well
-	if pageID == uuid.Nil || diffContent == nil {
-		return fmt.Errorf("page ID and diff content are required")
+	if pageID == uuid.Nil {
+		return fmt.Errorf("page ID is required")
+	}
+
+	if diffContent == nil {
+		return fmt.Errorf("diff content is required")
 	}
 
 	// Convert diffContent to JSONB

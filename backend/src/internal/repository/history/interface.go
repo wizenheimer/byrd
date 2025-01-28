@@ -12,7 +12,7 @@ import (
 // This is used to interact with the page history repository
 
 type PageHistoryRepository interface {
-	CreateHistoryForPage(ctx context.Context, pageID uuid.UUID, diffContent any, prev, curr string) error
+	CreateHistoryForPage(ctx context.Context, pageID uuid.UUID, diffContent *models.DynamicChanges, prev, curr string) error
 
 	BatchGetPageHistory(ctx context.Context, pageID uuid.UUID, limit, offset *int) ([]models.PageHistory, bool, error)
 
