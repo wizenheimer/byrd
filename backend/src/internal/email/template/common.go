@@ -35,7 +35,7 @@ type Footer struct {
 	Location       string // defaults to "ByrdLabs • San Francisco"
 }
 
-func (data CommonTemplate) RenderHTML() (string, error) {
+func (data *CommonTemplate) RenderHTML() (string, error) {
 	const emailTemplate = `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html dir="ltr" lang="en">
   <head>
@@ -163,7 +163,7 @@ func (data CommonTemplate) RenderHTML() (string, error) {
 	return buf.String(), nil
 }
 
-func (t CommonTemplate) Copy() (Template, error) {
+func (t *CommonTemplate) Copy() (Template, error) {
 	copied := CommonTemplate{
 		PreviewText: t.PreviewText,
 		Logo:        t.Logo,

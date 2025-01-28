@@ -1,8 +1,6 @@
 package template
 
 import (
-	"fmt"
-
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"go.uber.org/zap"
 )
@@ -28,48 +26,6 @@ func NewTemplateLibrary(logger *logger.Logger) (TemplateLibrary, error) {
 	}
 
 	return &tl, nil
-}
-
-type TemplateName string
-
-const (
-	// -- user lifecycle templates --
-	WelcomeTemplate  TemplateName = "welcome"
-	WaitlistTemplate TemplateName = "waitlist"
-
-	// -- workspace user lifecycle templates --
-	RequestWorkspaceInviteTemplate   TemplateName = "request_workspace_invite"
-	PendingWorkspaceInviteTemplate   TemplateName = "pending_workspace_invite"
-	AcceptWorkspaceInviteTemplateFTU TemplateName = "accept_workspace_invite_ftu"
-	AcceptWorkspaceInviteTemplateRU  TemplateName = "accept_workspace_invite_ru"
-	DeclineWorkspaceInviteTemplate   TemplateName = "decline_workspace_invite"
-	DeletedWorkspaceUserTemplate     TemplateName = "deleted_workspace_user"
-
-	// -- trial lifecycle templates --
-	TrailSucceededTemplate TemplateName = "trial_succeeded"
-
-	// -- workspace lifecycle templates --
-	DeletedWorkspaceTemplate TemplateName = "deleted_workspace"
-
-	// -- subscription lifecycle templates --
-	RenewalFailedTemplate    TemplateName = "renewal_failed"
-	RenewalSucceededTemplate TemplateName = "renewal_succeeded"
-	RenewalCanceledTemplate  TemplateName = "renewal_canceled"
-
-	// -- weekly roundup templates --
-	WeeklyRoundupTemplate TemplateName = "weekly_roundup"
-)
-
-// registerDefaultTemplates pre-registers all the default email templates
-func registerDefaultTemplates(lib TemplateLibrary) error {
-	// Register each template
-	for name, tmpl := range templates {
-		if err := lib.RegisterTemplate(name, tmpl); err != nil {
-			return fmt.Errorf("failed to register template %s: %w", name, err)
-		}
-	}
-
-	return nil
 }
 
 // GetTemplate returns a template by name.
