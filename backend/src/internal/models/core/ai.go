@@ -279,7 +279,7 @@ func normalizeKey(key string) string {
 
 // MergeDynamicChanges combines multiple DynamicChanges instances into a single one
 // It normalizes keys by removing punctuation, extra spaces, and standardizing case
-func MergeDynamicChanges(changes ...*DynamicChanges) (*DynamicChanges, error) {
+func MergeDynamicChanges(changes []*DynamicChanges) (*DynamicChanges, error) {
 	if len(changes) == 0 {
 		return &DynamicChanges{Fields: make(map[string]interface{})}, nil
 	}

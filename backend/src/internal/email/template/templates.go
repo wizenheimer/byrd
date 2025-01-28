@@ -17,9 +17,9 @@ const (
 )
 
 var templates = map[TemplateName]Template{
-	WorkspaceInvitePendingTemplate:  workspaceInvitePending,
-	WorkspaceInviteAcceptedTemplate: workspaceInviteAccepted,
-	WeeklyRoundupTemplate:           weeklyRoundup,
+	WorkspaceInvitePendingTemplate:  WorkspaceInvitePending,
+	WorkspaceInviteAcceptedTemplate: WorkspaceInviteAccepted,
+	WeeklyRoundupTemplate:           WeeklyRoundup,
 }
 
 // registerDefaultTemplates pre-registers all the default email templates
@@ -36,7 +36,7 @@ func registerDefaultTemplates(lib TemplateLibrary) error {
 
 var (
 	// WorkspaceInvitePendingTemplate is the template for a pending workspace invite
-	workspaceInvitePending = &CommonTemplate{
+	WorkspaceInvitePending = &CommonTemplate{
 		PreviewText: "Welcome to the Team!",
 		Title:       "You just got added to a workspace",
 		Body: []string{
@@ -56,7 +56,7 @@ var (
 	}
 
 	// WorkspaceInviteAcceptedTemplate is the template for an accepted workspace invite
-	workspaceInviteAccepted = &CommonTemplate{
+	WorkspaceInviteAccepted = &CommonTemplate{
 		PreviewText: "You're In! Own Their Next Move Before They Make It",
 		Title:       "Turn Their Next Move Into Your Next Win",
 		Body: []string{
@@ -82,5 +82,5 @@ var (
 	}
 
 	// WeeklyRoundupTemplate is the template for a weekly roundup
-	weeklyRoundup = &SectionedTemplate{}
+	WeeklyRoundup = &SectionedTemplate{}
 )
