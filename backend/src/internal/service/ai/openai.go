@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"image"
 	"image/png"
+	"sync"
+	"time"
 
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
@@ -45,6 +47,102 @@ func NewOpenAIService(apiKey string, logger *logger.Logger) (AIService, error) {
 	}
 
 	return &s, s.validate()
+}
+
+func (s *openAIService) SummarizeChanges(ctx context.Context, changeList []*models.DynamicChanges) ([]CategoryChange, error) {
+	if len(changeList) == 0 {
+		return []CategoryChange{}, nil
+	}
+
+	changes, err := models.MergeDynamicChanges(changeList...)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancel()
+
+	numCategories := len(changes.Fields)
+	resultChan := make(chan result, numCategories)
+	var wg sync.WaitGroup
+
+	processedCategories := make(map[string]bool)
+	var mu sync.Mutex
+
+	// Fixed type conversion in goroutines
+	for category, changesList := range changes.Fields {
+		wg.Add(1)
+		go func(cat string, list interface{}) {
+			defer wg.Done()
+
+			interfaceList := list.([]interface{})
+			stringList := make([]string, len(interfaceList))
+			for i, v := range interfaceList {
+				stringList[i] = v.(string)
+			}
+
+			processCategoryAsync(ctx, s.client, cat, stringList, resultChan)
+		}(category, changesList)
+	}
+
+	go func() {
+		wg.Wait()
+		close(resultChan)
+	}()
+
+	response := ChangeResponse{
+		Changes: make([]CategoryChange, 0, numCategories),
+	}
+
+	for res := range resultChan {
+		if res.err != nil {
+			s.logger.Error("error processing category", zap.Error(res.err))
+			continue
+		}
+
+		mu.Lock()
+		processedCategories[res.summary.Category] = true
+		mu.Unlock()
+
+		// Fixed type conversion here too
+		interfaceList := changes.Fields[res.summary.Category].([]interface{})
+		stringList := make([]string, len(interfaceList))
+		for i, v := range interfaceList {
+			stringList[i] = v.(string)
+		}
+
+		categoryChange := CategoryChange{
+			Category: res.summary.Category,
+			Summary:  res.summary.Summary,
+			Changes:  stringList,
+		}
+
+		response.Changes = append(response.Changes, categoryChange)
+	}
+
+	for category, changesList := range changes.Fields {
+		mu.Lock()
+		if !processedCategories[category] {
+			// And here
+			interfaceList := changesList.([]interface{})
+			stringList := make([]string, len(interfaceList))
+			for i, v := range interfaceList {
+				stringList[i] = v.(string)
+			}
+
+			categoryChange := CategoryChange{
+				Category: category,
+				Summary:  getFallbackSummary(category, stringList),
+				Changes:  stringList,
+			}
+
+			response.Changes = append(response.Changes, categoryChange)
+			s.logger.Debug("fallback summary", zap.String("category", category), zap.Strings("changes", stringList))
+		}
+		mu.Unlock()
+	}
+
+	return response.Changes, nil
 }
 
 // AnalyzeContentDifferences analyzes the content differences between two versions of a URL

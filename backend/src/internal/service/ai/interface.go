@@ -15,6 +15,9 @@ type AIService interface {
 
 	// AnalyzeVisualDifferences analyzes the visual differences between two screenshots
 	AnalyzeVisualDifferences(ctx context.Context, version1, version2 image.Image, fields []string) (*models.DynamicChanges, error)
+
+	// SummarizeChanges summarizes the changes in a report
+	SummarizeChanges(ctx context.Context, changes []*models.DynamicChanges) ([]CategoryChange, error)
 }
 
 var (
