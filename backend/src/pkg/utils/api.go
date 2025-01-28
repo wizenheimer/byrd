@@ -5,6 +5,9 @@ import (
 	"bytes"
 	"image"
 	"image/png"
+	"strconv"
+
+	"github.com/gofiber/fiber/v2"
 )
 
 // WritePNGResponse writes an image to a PNG byte array
@@ -14,4 +17,13 @@ func WritePNGResponse(img image.Image) ([]byte, error) {
 		return nil, err
 	}
 	return buffer.Bytes(), nil
+}
+
+func QueryIntPtr(c *fiber.Ctx, key string, defaultValue int) *int {
+	if value := c.Query(key); value != "" {
+		if val, err := strconv.Atoi(value); err == nil {
+			return &val
+		}
+	}
+	return &defaultValue
 }
