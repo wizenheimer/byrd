@@ -11,26 +11,12 @@ import (
 
 	"github.com/invopop/jsonschema"
 	"github.com/openai/openai-go"
+	models "github.com/wizenheimer/byrd/src/internal/models/core"
 )
 
-type CategoryChange struct {
-	Category string   `json:"category" jsonschema_description:"The category of changes"`
-	Summary  string   `json:"summary" jsonschema_description:"Brief summary of the changes"`
-	Changes  []string `json:"changes" jsonschema_description:"List of detailed changes"`
-}
-
-type ChangeResponse struct {
-	Changes []CategoryChange `json:"changes"`
-}
-
 type result struct {
-	summary ChangeSummary
+	summary models.ChangeSummary
 	err     error
-}
-
-type ChangeSummary struct {
-	Category string `json:"category"`
-	Summary  string `json:"summary"`
 }
 
 var fallbackTemplates = []string{
@@ -130,7 +116,7 @@ func GenerateSchema[T any]() interface{} {
 	return schema
 }
 
-var ChangeSummaryResponseSchema = GenerateSchema[ChangeSummary]()
+var ChangeSummaryResponseSchema = GenerateSchema[models.ChangeSummary]()
 
 func getFallbackSummary(category string, changes []string) string {
 	// Create a new random seed for each function call
@@ -149,7 +135,7 @@ func getFallbackSummary(category string, changes []string) string {
 	return fmt.Sprintf(template, category)
 }
 
-func generateCategorySummary(ctx context.Context, client *openai.Client, category string, changes []string) (ChangeSummary, error) {
+func generateCategorySummary(ctx context.Context, client *openai.Client, category string, changes []string) (models.ChangeSummary, error) {
 	prompt := fmt.Sprintf("Give a brief 1-2 line summary of these changes for %s category:\n\n%s",
 		category,
 		strings.Join(changes, "\n"),
@@ -176,13 +162,13 @@ func generateCategorySummary(ctx context.Context, client *openai.Client, categor
 	})
 
 	if err != nil {
-		return ChangeSummary{}, fmt.Errorf("OpenAI API error: %v", err)
+		return models.ChangeSummary{}, fmt.Errorf("OpenAI API error: %v", err)
 	}
 
-	var summary ChangeSummary
+	var summary models.ChangeSummary
 	err = json.Unmarshal([]byte(chat.Choices[0].Message.Content), &summary)
 	if err != nil {
-		return ChangeSummary{}, fmt.Errorf("JSON parsing error: %v", err)
+		return models.ChangeSummary{}, fmt.Errorf("JSON parsing error: %v", err)
 	}
 
 	return summary, nil
