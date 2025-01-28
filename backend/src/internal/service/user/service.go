@@ -10,6 +10,7 @@ import (
 	"github.com/wizenheimer/byrd/src/internal/email/template"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/internal/repository/user"
+	"github.com/wizenheimer/byrd/src/internal/service/notification"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"github.com/wizenheimer/byrd/src/pkg/utils"
 	"go.uber.org/zap"
@@ -18,15 +19,24 @@ import (
 type userService struct {
 	userRepository  user.UserRepository
 	templateLibrary template.TemplateLibrary
+	emailChannel    chan models.Email
 	logger          *logger.Logger
 }
 
-func NewUserService(userRepository user.UserRepository, templateLibrary template.TemplateLibrary, logger *logger.Logger) UserService {
-	return &userService{
+func NewUserService(notificationService notification.NotificationService, userRepository user.UserRepository, templateLibrary template.TemplateLibrary, logger *logger.Logger) (UserService, error) {
+	emailChannel, err := notificationService.GetEmailChannel(context.TODO(), 1, 25)
+	if err != nil {
+		return nil, err
+	}
+
+	us := userService{
 		userRepository:  userRepository,
 		templateLibrary: templateLibrary,
+		emailChannel:    emailChannel,
 		logger:          logger.WithFields(map[string]interface{}{"module": "user_service"}),
 	}
+
+	return &us, nil
 }
 
 // GetOrCreateWorkspaceOwner gets or creates a single user.
@@ -179,13 +189,6 @@ func (us *userService) ActivateUser(ctx context.Context, userID uuid.UUID, clerk
 		return err
 	}
 
-	// TODO: Figure this out.
-	us.SendEmail(ctx, models.Email{
-		To:           []string{userEmail},
-		EmailFormat:  models.EmailFormatHTML,
-		EmailContent: "Your account has been activated.",
-		EmailSubject: "Account Activation",
-	})
 	return nil
 }
 

@@ -54,8 +54,6 @@ func SetupServices(
 	historyService := history.NewPageHistoryService(repos.History, logger)
 	pageService := page.NewPageService(repos.Page, historyService, diffService, screenshotService, logger)
 	competitorService := competitor.NewCompetitorService(repos.Competitor, pageService, tm, logger)
-	userService := user.NewUserService(repos.User, templateLibrary, logger)
-	workspaceService := workspace.NewWorkspaceService(repos.Workspace, competitorService, userService, templateLibrary, tm, logger)
 
 	alertClient, err := setupAlertClient(cfg, logger)
 	if err != nil {
@@ -85,7 +83,7 @@ func SetupServices(
 
 	tokenManager := utils.NewTokenManager(cfg.Services.ManagementAPIKey, cfg.Services.ManagementAPIRefreshInterval)
 
-	emailClient, err := email.NewResendClient(context.Background(), cfg.Services.ResendAPIKey, cfg.Services.ResendNotificationEmail, logger)
+	emailClient, err := setupEmailClient(cfg, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -96,6 +94,16 @@ func SetupServices(
 	}
 
 	notificationService := notification.NewNotificationService(alertClient, eventClient, emailClient, logger)
+
+	userService, err := user.NewUserService(notificationService, repos.User, templateLibrary, logger)
+	if err != nil {
+		return nil, err
+	}
+
+	workspaceService, err := workspace.NewWorkspaceService(repos.Workspace, competitorService, userService, notificationService, templateLibrary, tm, logger)
+	if err != nil {
+		return nil, err
+	}
 
 	return &Services{
 		History:             historyService,
@@ -108,6 +116,15 @@ func SetupServices(
 		Scheduler:           schedulerSvc,
 		TokenManager:        tokenManager,
 	}, nil
+}
+
+func setupEmailClient(cfg *config.Config, logger *logger.Logger) (email.EmailClient, error) {
+	if cfg.Environment.EnvProfile == "development" {
+		logger.Debug("using local email client")
+		return email.NewLocalEmailClient(context.Background(), logger)
+	}
+
+	return email.NewResendClient(context.Background(), cfg.Services.ResendAPIKey, cfg.Services.ResendNotificationEmail, logger)
 }
 
 func setupAlertClient(cfg *config.Config, logger *logger.Logger) (alert.AlertClient, error) {

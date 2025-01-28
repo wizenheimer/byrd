@@ -35,6 +35,4 @@ type UserService interface {
 	UserExistsByUserID(ctx context.Context, userID uuid.UUID) (bool, error)
 
 	ClerkUserExists(ctx context.Context, clerk *clerk.User) (bool, error)
-
-	SendEmail(ctx context.Context, email models.Email)
 }

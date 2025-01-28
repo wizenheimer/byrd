@@ -13,6 +13,7 @@ import (
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/internal/repository/workspace"
 	"github.com/wizenheimer/byrd/src/internal/service/competitor"
+	"github.com/wizenheimer/byrd/src/internal/service/notification"
 	"github.com/wizenheimer/byrd/src/internal/service/user"
 	"github.com/wizenheimer/byrd/src/internal/transaction"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
@@ -23,20 +24,29 @@ type workspaceService struct {
 	workspaceRepo     workspace.WorkspaceRepository
 	competitorService competitor.CompetitorService
 	library           template.TemplateLibrary
+	emailChannel      chan models.Email
 	userService       user.UserService
 	logger            *logger.Logger
 	tm                *transaction.TxManager
 }
 
-func NewWorkspaceService(workspaceRepo workspace.WorkspaceRepository, competitorService competitor.CompetitorService, userService user.UserService, library template.TemplateLibrary, tm *transaction.TxManager, logger *logger.Logger) WorkspaceService {
-	return &workspaceService{
+func NewWorkspaceService(workspaceRepo workspace.WorkspaceRepository, competitorService competitor.CompetitorService, userService user.UserService, notificationService notification.NotificationService, library template.TemplateLibrary, tm *transaction.TxManager, logger *logger.Logger) (WorkspaceService, error) {
+	emailChannel, err := notificationService.GetEmailChannel(context.TODO(), 1, 50)
+	if err != nil {
+		return nil, err
+	}
+
+	ws := workspaceService{
 		workspaceRepo:     workspaceRepo,
 		competitorService: competitorService,
 		userService:       userService,
+		emailChannel:      emailChannel,
 		library:           library,
 		logger:            logger.WithFields(map[string]interface{}{"module": "workspace_service"}),
 		tm:                tm,
 	}
+
+	return &ws, nil
 }
 
 func (ws *workspaceService) CreateWorkspace(ctx context.Context, workspaceOwner *clerk.User, pages []models.PageProps, userEmails []string) (*models.Workspace, error) {
@@ -78,28 +88,9 @@ func (ws *workspaceService) CreateWorkspace(ctx context.Context, workspaceOwner 
 		ws.logger.Debug("failed to add competitors to workspace", zap.Error(err))
 	}
 
-	// Step 2: Validate and invite users to the workspace
-	ownerEmail := *workspaceCreator.Email
-	memberEmails := utils.CleanEmailList(userEmails, []string{ownerEmail})
-
-	members, err := ws.userService.BatchGetOrCreateUsers(ctx, memberEmails)
+	_, err := ws.AddUsersToWorkspace(ctx, workspaceOwner, workspace.ID, userEmails)
 	if err != nil {
-		ws.logger.Debug("failed to get or create users", zap.Error(err))
-	}
-
-	if len(members) == 0 {
-		ws.logger.Debug("no users to invite")
-	} else {
-		// Add the users to the workspace
-		memberIDs := make([]uuid.UUID, 0)
-		for _, member := range members {
-			memberIDs = append(memberIDs, member.ID)
-		}
-
-		_, err := ws.workspaceRepo.BatchAddUsersToWorkspace(ctx, workspace.ID, memberIDs)
-		if err != nil {
-			return nil, err
-		}
+		ws.logger.Debug("failed to add users to workspace", zap.Error(err))
 	}
 
 	return workspace, nil
@@ -221,8 +212,13 @@ func (ws *workspaceService) ListWorkspaceMembers(ctx context.Context, workspaceI
 func (ws *workspaceService) AddUsersToWorkspace(ctx context.Context, workspaceMember *clerk.User, workspaceID uuid.UUID, emails []string) ([]models.WorkspaceUser, error) {
 	ws.logger.Debug("adding users to workspace", zap.Any("workspaceID", workspaceID), zap.Any("workspaceMember", workspaceMember), zap.Any("emails", emails))
 
+	inviterEmail, err := utils.GetClerkUserEmail(workspaceMember)
+	if err != nil {
+		return nil, err
+	}
+
 	// Step 1: Normalize the emails
-	normalizedEmails := utils.CleanEmailList(emails, nil)
+	normalizedEmails := utils.CleanEmailList(emails, []string{inviterEmail})
 
 	// Step 2: Get or create users
 	users, err := ws.userService.BatchGetOrCreateUsers(ctx, normalizedEmails)
@@ -244,6 +240,7 @@ func (ws *workspaceService) AddUsersToWorkspace(ctx context.Context, workspaceMe
 	}
 
 	workspaceUsers := make([]models.WorkspaceUser, 0)
+	workspaceUsersEmail := make([]string, 0)
 	for _, member := range partialWorkspaceUsers {
 		user, ok := userIDsToUserMap[member.ID]
 		if !ok {
@@ -251,6 +248,9 @@ func (ws *workspaceService) AddUsersToWorkspace(ctx context.Context, workspaceMe
 			continue
 		} else {
 			ws.logger.Debug("adding user to workspace", zap.Any("member", member))
+			if user.Email != nil {
+				workspaceUsersEmail = append(workspaceUsersEmail, *user.Email)
+			}
 		}
 		workspaceUser := models.WorkspaceUser{
 			ID:               member.ID,
@@ -262,6 +262,26 @@ func (ws *workspaceService) AddUsersToWorkspace(ctx context.Context, workspaceMe
 		}
 		workspaceUsers = append(workspaceUsers, workspaceUser)
 	}
+
+	go func() {
+		// TODO: Send Email to the users acknowledging the invitation to the workspace
+		emailTemplate, err := ws.library.GetTemplate(template.WorkspaceInvitePendingTemplate)
+		if err != nil {
+			ws.logger.Error("couldn't get email template", zap.Error(err))
+			return
+		}
+
+		emailHTML, err := emailTemplate.RenderHTML()
+		if err != nil {
+			return
+		}
+		ws.SendEmail(ctx, models.Email{
+			To:           workspaceUsersEmail,
+			EmailFormat:  models.EmailFormatHTML,
+			EmailContent: emailHTML,
+			EmailSubject: "You've been invited to Byrd",
+		})
+	}()
 
 	return workspaceUsers, nil
 }
@@ -329,15 +349,18 @@ func (ws *workspaceService) JoinWorkspace(ctx context.Context, invitedMember *cl
 	if err != nil {
 		return err
 	}
+	userEmail, err := utils.GetClerkUserEmail(invitedMember)
+	if err != nil {
+		return err
+	}
 
 	ws.logger.Debug("user details", zap.Any("user", user))
-
+	firstTimeUser := user.ClerkID == nil
 	// Synchronize the user with the database if the user is first time user
-	if user.ClerkID == nil {
+	if firstTimeUser {
 		if err := ws.userService.ActivateUser(ctx, user.ID, invitedMember); err != nil {
 			return err
 		}
-		// TODO: Kick off a background job to onboard the user to the workspace
 	}
 
 	// Update the user's membership status
@@ -345,6 +368,25 @@ func (ws *workspaceService) JoinWorkspace(ctx context.Context, invitedMember *cl
 	if err != nil {
 		return err
 	}
+
+	go func() {
+		emailTemplate, err := ws.library.GetTemplate(template.WorkspaceInviteAcceptedTemplate)
+		if err != nil {
+			ws.logger.Error("couldn't get email template", zap.Error(err))
+			return
+		}
+		emailHTML, err := emailTemplate.RenderHTML()
+		if err != nil {
+			ws.logger.Error("couldn't template convert to html", zap.Error(err))
+			return
+		}
+		ws.SendEmail(ctx, models.Email{
+			To:           []string{userEmail},
+			EmailFormat:  models.EmailFormatHTML,
+			EmailContent: emailHTML,
+			EmailSubject: "And You're In! Own Your Competitor's Next Move As They Make It",
+		})
+	}()
 
 	return nil
 }
@@ -515,5 +557,5 @@ func (ws *workspaceService) GetPageForCompetitor(ctx context.Context, competitor
 }
 
 func (ws *workspaceService) SendEmail(ctx context.Context, email models.Email) {
-	ws.logger.Debug("sending email", zap.Any("email", email))
+	ws.emailChannel <- email
 }

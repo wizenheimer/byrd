@@ -49,11 +49,21 @@ func NewHandlerContainer(
 
 	hc := HandlerContainer{
 		// Handlers for screenshot management
-		ScreenshotHandler: handlers.NewScreenshotHandler(screenshotService, logger),
+		ScreenshotHandler: handlers.NewScreenshotHandler(
+			screenshotService,
+			logger,
+		),
 		// Handlers for AI management
-		AIHandler: handlers.NewAIHandler(aiService, logger),
+		AIHandler: handlers.NewAIHandler(
+			aiService,
+			logger,
+		),
 		// Handlers for user management
-		UserHandler: handlers.NewUserHandler(userService, workspaceService, logger),
+		UserHandler: handlers.NewUserHandler(
+			userService,
+			workspaceService,
+			logger,
+		),
 		// Handlers for workspace management
 		WorkspaceHandler: handlers.NewWorkspaceHandler(
 			workspaceService,
@@ -61,9 +71,15 @@ func NewHandlerContainer(
 			logger,
 		),
 		// Handlers for workflow management
-		WorkflowHandler: handlers.NewWorkflowHandler(workflowService, logger),
+		WorkflowHandler: handlers.NewWorkflowHandler(
+			workflowService,
+			logger,
+		),
 		// Handlers for schedule management
-		ScheduleHandler: handlers.NewScheduleHandler(schedulerService, logger),
+		ScheduleHandler: handlers.NewScheduleHandler(
+			schedulerService,
+			logger,
+		),
 		// Handlers for notification management
 		NotificationHandler: notificationHandler,
 	}
