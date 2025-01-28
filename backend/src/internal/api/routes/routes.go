@@ -46,6 +46,13 @@ func NewHandlerContainer(
 		logger.Error("Couldn't create notification handler", zap.Error(err))
 		return nil, err
 	}
+	ah, err := handlers.NewAIHandler(
+		aiService,
+		logger,
+	)
+	if err != nil {
+		return nil, err
+	}
 
 	hc := HandlerContainer{
 		// Handlers for screenshot management
@@ -54,10 +61,7 @@ func NewHandlerContainer(
 			logger,
 		),
 		// Handlers for AI management
-		AIHandler: handlers.NewAIHandler(
-			aiService,
-			logger,
-		),
+		AIHandler: ah,
 		// Handlers for user management
 		UserHandler: handlers.NewUserHandler(
 			userService,
@@ -335,6 +339,7 @@ func setupAIRoutes(router fiber.Router, handler *handlers.AIHandler) {
 	// Analysis endpoints
 	router.Post("/ai/content", handler.AnalyzeContentDifferences)
 	router.Post("/ai/visual", handler.AnalyzeVisualDifferences)
+	router.Post("/ai/summary", handler.SummarizeContentDifferences)
 }
 
 // setupScheduleRoutes configures schedule management endpoints

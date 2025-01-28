@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/invopop/jsonschema"
 	"github.com/openai/openai-go"
@@ -240,5 +241,138 @@ func formatValue(value interface{}, indent string) string {
 		return strings.TrimSuffix(builder.String(), "\n")
 	default:
 		return fmt.Sprintf("%v", v)
+	}
+}
+
+// normalizeKey cleans and standardizes a key string
+func normalizeKey(key string) string {
+	// Convert to title case first
+	caser := cases.Title(language.English)
+	normalized := caser.String(key)
+
+	// Remove leading/trailing whitespace
+	normalized = strings.TrimSpace(normalized)
+
+	// Remove common punctuation
+	normalized = strings.Map(func(r rune) rune {
+		switch r {
+		case '.', ',', ':', ';', '-', '_', '/', '\\', '(', ')', '[', ']', '{', '}', '!', '?', '"', '\'':
+			return ' '
+		default:
+			return r
+		}
+	}, normalized)
+
+	// Replace multiple spaces with single space
+	normalized = strings.Join(strings.Fields(normalized), " ")
+
+	// Remove any remaining non-alphanumeric characters except spaces
+	normalized = strings.Map(func(r rune) rune {
+		if unicode.IsLetter(r) || unicode.IsNumber(r) || r == ' ' {
+			return r
+		}
+		return -1
+	}, normalized)
+
+	return normalized
+}
+
+// MergeDynamicChanges combines multiple DynamicChanges instances into a single one
+// It normalizes keys by removing punctuation, extra spaces, and standardizing case
+func MergeDynamicChanges(changes ...*DynamicChanges) (*DynamicChanges, error) {
+	if len(changes) == 0 {
+		return &DynamicChanges{Fields: make(map[string]interface{})}, nil
+	}
+
+	merged := &DynamicChanges{
+		Fields: make(map[string]interface{}),
+	}
+
+	// Process each DynamicChanges instance
+	for _, change := range changes {
+		if change == nil {
+			continue
+		}
+
+		for key, value := range change.Fields {
+			// Apply comprehensive normalization to the key
+			normalizedKey := normalizeKey(key)
+			if normalizedKey == "" {
+				continue // Skip empty keys after normalization
+			}
+
+			// If the key already exists, merge the values
+			if existingValue, exists := merged.Fields[normalizedKey]; exists {
+				mergedValue, err := mergeValues(existingValue, value)
+				if err != nil {
+					return nil, fmt.Errorf("error merging values for key '%s': %w", normalizedKey, err)
+				}
+				merged.Fields[normalizedKey] = mergedValue
+			} else {
+				// For new keys, just add the value
+				merged.Fields[normalizedKey] = value
+			}
+		}
+	}
+
+	return merged, nil
+}
+
+// mergeValues combines two values based on their types
+func mergeValues(existing, new interface{}) (interface{}, error) {
+	// Handle nil cases
+	if existing == nil {
+		return new, nil
+	}
+	if new == nil {
+		return existing, nil
+	}
+
+	switch existingVal := existing.(type) {
+	case []interface{}:
+		// If existing is an array, append new values
+		switch newVal := new.(type) {
+		case []interface{}:
+			return append(existingVal, newVal...), nil
+		default:
+			return append(existingVal, newVal), nil
+		}
+
+	case map[string]interface{}:
+		// If existing is a map, merge with new map
+		newMap, ok := new.(map[string]interface{})
+		if !ok {
+			return nil, fmt.Errorf("cannot merge map with non-map value")
+		}
+
+		result := make(map[string]interface{})
+		for k, v := range existingVal {
+			normalizedKey := normalizeKey(k)
+			if normalizedKey != "" {
+				result[normalizedKey] = v
+			}
+		}
+
+		for k, v := range newMap {
+			normalizedKey := normalizeKey(k)
+			if normalizedKey == "" {
+				continue
+			}
+
+			if existingMapVal, exists := result[normalizedKey]; exists {
+				mergedMapVal, err := mergeValues(existingMapVal, v)
+				if err != nil {
+					return nil, err
+				}
+				result[normalizedKey] = mergedMapVal
+			} else {
+				result[normalizedKey] = v
+			}
+		}
+		return result, nil
+
+	default:
+		// For other types, prefer the new value
+		return new, nil
 	}
 }
