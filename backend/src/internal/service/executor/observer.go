@@ -7,9 +7,9 @@ import (
 	"sync"
 
 	"github.com/google/uuid"
-	"github.com/wizenheimer/byrd/src/internal/alert"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/internal/repository/workflow"
+	"github.com/wizenheimer/byrd/src/internal/service/notification"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"go.uber.org/zap"
 )
@@ -24,10 +24,16 @@ type workflowObserver struct {
 	repository workflow.WorkflowRepository
 
 	// alertClient represents the alert client for the workflow
-	alertClient alert.AlertClient
+	// alertClient alert.AlertClient
 
 	// eventClient represents the event client for the workflow
-	// eventClient    event.WorkflowEventClient
+	// eventClient event.EventClient
+
+	// alertChannel represents the alert channel for the workflow
+	alertChannel chan models.Alert
+
+	// eventChannel represents the event channel for the workflow
+	eventChannel chan models.Event
 
 	// jobExecutor represents the job executor for the workflow
 	// this would be used to execute the jobs in the workflow in a background
@@ -43,16 +49,28 @@ type workflowObserver struct {
 func NewWorkflowExecutor(
 	workflowType models.WorkflowType,
 	repository workflow.WorkflowRepository,
-	alertClient alert.AlertClient,
-	// eventClient    event.WorkflowEventClient,
+	notificationService notification.NotificationService,
+	// alertClient alert.AlertClient,
+	// eventClient event.EventClient,
 	jobExecutor JobExecutor,
 	logger *logger.Logger,
 ) (WorkflowObserver, error) {
 
+	alertChannel, err := notificationService.GetAlertChannel(context.TODO(), 1, 25)
+	if err != nil {
+		return nil, err
+	}
+
+	eventChannel, err := notificationService.GetEventChannel(context.TODO(), 1, 25)
+	if err != nil {
+		return nil, err
+	}
+
 	workflowObserver := &workflowObserver{
 		workflowType: workflowType,
 		repository:   repository,
-		alertClient:  alertClient,
+		alertChannel: alertChannel,
+		eventChannel: eventChannel,
 		jobExecutor:  jobExecutor,
 		logger: logger.WithFields(
 			map[string]interface{}{
@@ -169,7 +187,15 @@ func (e *workflowObserver) handleJobCompletion(ctx context.Context, jobContext *
 func (e *workflowObserver) handleJobError(jobContext *models.JobContext, jobError *models.JobError) {
 	e.logger.Debug("handling job error", zap.Error(jobError.Error))
 	jobContext.IncrementFailed(1)
-	// TODO: inject event client
+
+	// Sync the job error with the job context
+	jobErrorEvent := models.NewJobErrorEvent(jobContext, jobError)
+
+	// Send the event
+	go func() {
+		e.eventChannel <- jobErrorEvent
+	}()
+
 }
 
 func (e *workflowObserver) handleJobUpdate(ctx context.Context, jobContext *models.JobContext, jobUpdate models.JobUpdate) {

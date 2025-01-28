@@ -1,31 +1,21 @@
 // ./src/internal/models/core/event.go
 package models
 
-import "time"
-
 // EventType is the type of event
 type EventType string
 
-// EventSource is the source of the event
-type EventSource string
+const (
+	JobErrorEventType EventType = "job_error"
+)
 
-// Event is a generic event model
-type Event struct {
-	// Data is the event data
-	Data any
-	// Timestamp is the time the event occurred
-	Time time.Time
-	// Type is the event type
-	Type EventType
-	// Source is the event source
-	Source EventSource
-}
+// Event represents the interface that any type can implement to be tracked as an event
+type Event interface {
+	// GetEventType returns the type of the event
+	GetEventType() EventType
 
-func NewEvent(data any, eventType EventType, eventSource EventSource) Event {
-	return Event{
-		Data:   data,
-		Time:   time.Now(),
-		Type:   eventType,
-		Source: eventSource,
-	}
+	// GetDistinctID returns the unique identifier for the event
+	GetDistinctID() string
+
+	// GetProperties returns the event properties as a key-value map
+	GetProperties() map[string]interface{}
 }

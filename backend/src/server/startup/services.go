@@ -60,11 +60,23 @@ func SetupServices(
 		return nil, err
 	}
 
+	emailClient, err := setupEmailClient(cfg, logger)
+	if err != nil {
+		return nil, err
+	}
+
+	eventClient, err := setupEventClient(cfg, logger)
+	if err != nil {
+		return nil, err
+	}
+
+	notificationService := notification.NewNotificationService(alertClient, eventClient, emailClient, logger)
+
 	workflowService, err := setupWorkflowService(
 		cfg,
 		repos.Workflow,
+		notificationService,
 		pageService,
-		alertClient,
 		logger,
 	)
 	if err != nil {
@@ -82,18 +94,6 @@ func SetupServices(
 	}
 
 	tokenManager := utils.NewTokenManager(cfg.Services.ManagementAPIKey, cfg.Services.ManagementAPIRefreshInterval)
-
-	emailClient, err := setupEmailClient(cfg, logger)
-	if err != nil {
-		return nil, err
-	}
-
-	eventClient, err := setupEventClient(logger)
-	if err != nil {
-		return nil, err
-	}
-
-	notificationService := notification.NewNotificationService(alertClient, eventClient, emailClient, logger)
 
 	userService, err := user.NewUserService(notificationService, repos.User, templateLibrary, logger)
 	if err != nil {
@@ -140,17 +140,18 @@ func setupAlertClient(cfg *config.Config, logger *logger.Logger) (alert.AlertCli
 	return alert.NewSlackAlertClient(clientConfig, logger)
 }
 
-func setupEventClient(logger *logger.Logger) (event.EventClient, error) {
-	eventClient := event.NewLocalEventClient(logger)
-	// TODO: add environment specific event client
-	return eventClient, nil
+func setupEventClient(cfg *config.Config, logger *logger.Logger) (event.EventClient, error) {
+	if cfg.Environment.EnvProfile == "development" {
+		return event.NewLocalEventClient(logger), nil
+	}
+	return event.NewPostHogEventClient(cfg.Services.PostHogAPIKey, logger)
 }
 
 func setupWorkflowService(
 	cfg *config.Config,
 	workflowRepo workflow_repo.WorkflowRepository,
+	notificationService notification.NotificationService,
 	pageService page.PageService,
-	alertClient alert.AlertClient,
 	logger *logger.Logger,
 ) (workflow.WorkflowService, error) {
 	runtimeConfig := models.JobExecutorConfig{
@@ -167,7 +168,7 @@ func setupWorkflowService(
 	screenshotWorkflowExecutor, err := executor.NewWorkflowExecutor(
 		models.ScreenshotWorkflowType,
 		workflowRepo,
-		alertClient,
+		notificationService,
 		screenshotTaskExecutor,
 		logger,
 	)

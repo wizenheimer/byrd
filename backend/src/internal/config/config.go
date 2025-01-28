@@ -66,6 +66,7 @@ type ServicesConfig struct {
 	OpenAIKey                    string
 	ResendAPIKey                 string
 	ResendNotificationEmail      string
+	PostHogAPIKey                string
 	ManagementAPIKey             string
 	ManagementAPIRefreshInterval time.Duration
 }
@@ -209,6 +210,8 @@ func LoadServicesConfig() ServicesConfig {
 		ResendAPIKey: GetEnv("RESEND_API_KEY", "", utils.StrParser),
 		// ResendNotificationEmail is set to the value of the RESEND_NOTIFICATION_EMAIL environment variable, or "" if the variable is not set.
 		ResendNotificationEmail: GetEnv("RESEND_NOTIFICATION_EMAIL", "hey@byrdhq.com", utils.StrParser),
+		// PostHogAPIKey is set to the value of the POSTHOG_API_KEY environment variable, or "" if the variable is not set.
+		PostHogAPIKey: GetEnv("POSTHOG_API_KEY", "", utils.StrParser),
 		// ManagementAPIKey is set to the value of the MANAGEMENT_API_KEY environment variable, or "" if the variable is not set.
 		ManagementAPIKey: GetEnv("MANAGEMENT_API_KEY", "", utils.StrParser),
 		// ManagementAPIRefreshInterval is set to the value of the MANAGEMENT_API_REFRESH_INTERVAL environment variable, or 5 minutes if the variable is not set.
