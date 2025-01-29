@@ -12,6 +12,7 @@ import (
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/internal/transaction"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
+	"go.uber.org/zap"
 )
 
 type userRepo struct {
@@ -261,6 +262,7 @@ func (r *userRepo) SyncUser(ctx context.Context, clerkID, normalizedUserEmail st
 }
 
 func (r *userRepo) ActivateUser(ctx context.Context, userID uuid.UUID, clerkID, normalizedUserEmail string) error {
+	r.logger.Debug("activating user", zap.Any("userID", userID), zap.String("clerkID", clerkID), zap.String("normalizedUserEmail", normalizedUserEmail))
 	result, err := r.getQuerier(ctx).Exec(ctx, `
     UPDATE users
     SET status = $1, email = $3, clerk_id = $4

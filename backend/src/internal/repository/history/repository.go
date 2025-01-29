@@ -183,3 +183,63 @@ func (r *historyRepo) BatchRemovePageHistory(ctx context.Context, pageIDs []uuid
 
 	return nil
 }
+
+func (r *historyRepo) GetLatestPageHistory(ctx context.Context, pageIDs []uuid.UUID) ([]models.PageHistory, error) {
+	if len(pageIDs) == 0 {
+		return nil, fmt.Errorf("page IDs are required")
+	}
+
+	query := `
+        SELECT
+            id,
+            page_id,
+            diff_content,
+            created_at,
+            status,
+            prev,
+            current
+        FROM page_history
+        WHERE page_id = ANY($1)
+        AND status = $2
+        AND created_at >= NOW() - INTERVAL '7 days'
+        ORDER BY created_at DESC`
+
+	rows, err := r.getQuerier(ctx).Query(ctx, query, pageIDs, models.HistoryStatusActive)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query latest page history: %w", err)
+	}
+	defer rows.Close()
+
+	histories := make([]models.PageHistory, 0)
+	for rows.Next() {
+		var history models.PageHistory
+		var diffContentJSON []byte
+
+		err := rows.Scan(
+			&history.ID,
+			&history.PageID,
+			&diffContentJSON,
+			&history.CreatedAt,
+			&history.Status,
+			&history.Prev,
+			&history.Curr,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan page history: %w", err)
+		}
+
+		// Unmarshal JSON content
+		err = json.Unmarshal(diffContentJSON, &history.DiffContent)
+		if err != nil {
+			return nil, fmt.Errorf("failed to unmarshal diff content: %w", err)
+		}
+
+		histories = append(histories, history)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating page history: %w", err)
+	}
+
+	return histories, nil
+}

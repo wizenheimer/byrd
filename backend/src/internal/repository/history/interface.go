@@ -17,4 +17,6 @@ type PageHistoryRepository interface {
 	BatchGetPageHistory(ctx context.Context, pageID uuid.UUID, limit, offset *int) ([]models.PageHistory, bool, error)
 
 	BatchRemovePageHistory(ctx context.Context, pageIDs []uuid.UUID) error
+
+	GetLatestPageHistory(ctx context.Context, pageID []uuid.UUID) ([]models.PageHistory, error)
 }
