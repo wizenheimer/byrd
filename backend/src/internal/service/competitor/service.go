@@ -9,6 +9,7 @@ import (
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/internal/repository/competitor"
 	"github.com/wizenheimer/byrd/src/internal/service/page"
+	"github.com/wizenheimer/byrd/src/internal/service/report"
 	"github.com/wizenheimer/byrd/src/internal/transaction"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"go.uber.org/zap"
@@ -16,15 +17,17 @@ import (
 
 type competitorService struct {
 	competitorRepository competitor.CompetitorRepository
+	reportService        report.ReportService
 	pageService          page.PageService
 	tm                   *transaction.TxManager
 	nameFinder           *CompanyNameFinder
 	logger               *logger.Logger
 }
 
-func NewCompetitorService(competitorRepository competitor.CompetitorRepository, pageService page.PageService, tm *transaction.TxManager, logger *logger.Logger) CompetitorService {
+func NewCompetitorService(pageService page.PageService, reportService report.ReportService, tm *transaction.TxManager, competitorRepository competitor.CompetitorRepository, logger *logger.Logger) CompetitorService {
 	return &competitorService{
 		competitorRepository: competitorRepository,
+		reportService:        reportService,
 		pageService:          pageService,
 		logger:               logger,
 		tm:                   tm,
@@ -59,7 +62,7 @@ func (cs *competitorService) CreateCompetitorForWorkspace(ctx context.Context, w
 		// Create a page, and associate it with the created competitor
 		if _, err = cs.pageService.CreatePage(
 			ctx,
-			competitor.ID,
+			c.ID,
 			pages,
 		); err != nil {
 			return nil, err
@@ -320,4 +323,87 @@ func (cs *competitorService) ListPageHistory(ctx context.Context, pageID uuid.UU
 		limit,
 		offset,
 	)
+}
+
+// ListReports returns a list of reports for a competitor.
+// The limit and offset parameters are used for pagination.
+func (cs *competitorService) ListReports(ctx context.Context, workspaceID, competitorID uuid.UUID, limit, offset *int) ([]models.Report, bool, error) {
+	if limit == nil {
+		return nil, false, errors.New("limit is required")
+	}
+	if offset == nil {
+		return nil, false, errors.New("offset is required")
+	}
+
+	reports, hasMore, err := cs.reportService.List(
+		ctx,
+		workspaceID,
+		competitorID,
+		limit,
+		offset,
+	)
+	if err != nil {
+		return nil, false, err
+	}
+
+	return reports, hasMore, nil
+}
+
+// CreateReport creates a new report for a competitor.
+// The report is generated based on the latest page history for the competitor.
+func (cs *competitorService) CreateReport(ctx context.Context, workspaceID uuid.UUID, competitorID uuid.UUID) (*models.Report, error) {
+
+	// Get the competitor
+	competitor, err := cs.GetCompetitorForWorkspace(ctx, workspaceID, []uuid.UUID{competitorID})
+	if err != nil {
+		return nil, err
+	}
+	if len(competitor) == 0 {
+		return nil, errors.New("competitor not found")
+	}
+
+	// List all the active pages for the competitor
+	pages, _, err := cs.pageService.ListCompetitorPages(ctx, competitorID, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var pageIDs []uuid.UUID
+	for _, page := range pages {
+		pageIDs = append(pageIDs, page.ID)
+	}
+
+	// Get the latest page history for the pages
+	pageHistories, err := cs.pageService.GetLatestPageHistory(ctx, pageIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create a new report
+	report, err := cs.reportService.Create(ctx, workspaceID, competitorID, pageHistories)
+	if err != nil {
+		return nil, err
+	}
+
+	// Return the created report
+	return report, nil
+}
+
+// DispatchReport sends the report to the subscribers.
+func (cs *competitorService) DispatchReport(ctx context.Context, workspaceID uuid.UUID, competitorID uuid.UUID, subscriberEmails []string) error {
+	// Get the competitor
+	competitor, err := cs.GetCompetitorForWorkspace(ctx, workspaceID, []uuid.UUID{competitorID})
+	if err != nil {
+		return err
+	}
+	if len(competitor) == 0 {
+		return errors.New("competitor not found")
+	}
+
+	// Send the report to the subscribers
+	if err := cs.reportService.Dispatch(ctx, workspaceID, competitorID, competitor[0].Name, subscriberEmails); err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -47,3 +47,9 @@ func (ph *pageHistoryService) ClearPageHistory(ctx context.Context, pageIDs []uu
 	ph.logger.Debug("clearing page history", zap.Any("pageIDs", pageIDs))
 	return ph.pageHistoryRepo.BatchRemovePageHistory(ctx, pageIDs)
 }
+
+// GetLatestPageHistory returns the latest page history for a page
+func (ph *pageHistoryService) GetLatestPageHistory(ctx context.Context, pageID []uuid.UUID) ([]models.PageHistory, error) {
+	ph.logger.Debug("getting latest page history", zap.Any("pageID", pageID))
+	return ph.pageHistoryRepo.GetLatestPageHistory(ctx, pageID)
+}

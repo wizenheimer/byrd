@@ -63,47 +63,49 @@ var fallbackTemplates = []string{
 }
 
 var noChangeTemplates = []string{
-	// Sassy nothing
-	"Your competition's %s game? Still snoozing",
-	"Breaking: Absolutely nothing happening in %s",
-	"Crickets chirping in the %s space",
+	// All original templates properly articled
+	"All quiet on the %s front",
+	"No noteworthy changes on the %s front",
+	"No changes detected in %s",
+	"No new activity in %s",
+	"The %s remains unchanged",
 
-	// Dramatic silence
-	"Plot twist: There is no plot twist in %s",
-	"The %s update we've all been waiting for... isn't here",
-	"Your competition's %s moves? Still loading...",
-	"Some suspense in %s (just kidding, nothing changed)",
+	"No activity on the %s front",
+	"The situation remains unchanged in %s",
+	"No developments in %s today",
+	"The %s status: no changes",
+	"No notable updates in %s",
+	"The %s remains static",
+	"No movement detected in %s",
+	"The %s remains constant",
+	"No shifts observed in %s",
+	"All steady on the %s side",
 
-	// Business zen
-	"The %s space is channeling peace and quiet today",
-	"Your competition chose meditation for their %s strategy",
-	"Someone's taking a power nap in %s wing, apparently",
-
-	// Market commentary
-	"Competitive intelligence report for %s: *tumbleweeds*",
-	"In today's riveting %s news: nothing",
-	"Your %s radar is clear (almost too clear 🤔)",
-	"The %s space is giving strong 'do not disturb' energy",
-	"Groundbreaking update: Nothing changed in %s",
-	"Your rival is really committed to keeping %s exactly the same",
-
-	// Playful shade
-	"The %s space is taking a power nap",
-	"Someone hit pause on %s changes",
-	"Plot twist: There is no plot twist in %s",
-	"Your competition chose peace in %s today",
-
-	// Dramatic nothing
-	"Breaking news: Still nothing new in %s",
-	"The suspense continues in %s (jk, nothing changed)",
-	"Things are getting wild in %s (they're not)",
-	"Alert: Your competition is living their best %s life (unchanged)",
-
-	// Chef's kiss
-	"Your %s radar is picking up pure silence",
-	"The most consistent thing about %s? No updates",
-	"Some things never change (like %s)",
-	"Your competition's really nailing the whole 'stable %s' vibe",
+	"Nothing to report on %s",
+	"The %s shows no changes",
+	"No changes found in %s",
+	"All clear on the %s front",
+	"No movement in the %s space",
+	"The status quo maintains in %s",
+	"The %s remains static",
+	"No updates detected in %s",
+	"No new developments for %s",
+	"No developments on the %s end",
+	"The %s continues unchanged",
+	"No activity detected in %s",
+	"All quiet in the %s sphere",
+	"No shifts spotted in %s",
+	"Nothing notable in %s",
+	"The %s stays consistent",
+	"No changes observed in %s",
+	"The situation remains stable in %s",
+	"No modifications to %s",
+	"The %s holds steady",
+	"No variation found in %s",
+	"The status remains unchanged for %s",
+	"No alterations in %s",
+	"The %s remains the same",
+	"Nothing different in %s",
 }
 
 func GenerateSchema[T any]() interface{} {
@@ -117,6 +119,16 @@ func GenerateSchema[T any]() interface{} {
 }
 
 var ChangeSummaryResponseSchema = GenerateSchema[models.ChangeSummary]()
+
+func getNoChangeSummary(category string) string {
+	// Create a new random seed for each function call
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+
+	// Get a truly random index for no changes template
+	templateIndex := r.Intn(len(noChangeTemplates))
+	template := noChangeTemplates[templateIndex]
+	return fmt.Sprintf(template, category)
+}
 
 func getFallbackSummary(category string, changes []string) string {
 	// Create a new random seed for each function call
@@ -136,6 +148,13 @@ func getFallbackSummary(category string, changes []string) string {
 }
 
 func generateCategorySummary(ctx context.Context, client *openai.Client, category string, changes []string) (models.ChangeSummary, error) {
+	if len(changes) == 0 {
+		return models.ChangeSummary{
+			Category: category,
+			Summary:  getNoChangeSummary(category),
+		}, nil
+	}
+
 	prompt := fmt.Sprintf("Give a brief 1-2 line summary of these changes for %s category:\n\n%s",
 		category,
 		strings.Join(changes, "\n"),

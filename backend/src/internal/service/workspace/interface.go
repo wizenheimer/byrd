@@ -78,4 +78,16 @@ type WorkspaceService interface {
 	UpdateCompetitorPage(ctx context.Context, competitorID, pageID uuid.UUID, page models.PageProps) (*models.Page, error)
 
 	GetPageForCompetitor(ctx context.Context, competitorID, pageID uuid.UUID) (*models.Page, error)
+
+	// ListReports lists the reports for a competitor.
+	ListReports(ctx context.Context, workspaceID, competitorID uuid.UUID, limit, offset *int) ([]models.Report, bool, error)
+
+	// CreateReport creates a report for a competitor.
+	CreateReport(ctx context.Context, workspaceID uuid.UUID, competitorID uuid.UUID) (*models.Report, error)
+
+	// DispatchReport dispatches a report for a competitor.
+	DispatchReportToWorkspaceMembers(ctx context.Context, workspaceID uuid.UUID, competitorID uuid.UUID) error
+
+	// DispatchReport dispatches a report for a competitor to an email list.
+	DispatchReport(ctx context.Context, workspaceID uuid.UUID, competitorID uuid.UUID, subscriberEmails []string) error
 }

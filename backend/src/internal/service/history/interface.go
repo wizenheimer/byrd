@@ -28,4 +28,7 @@ type PageHistoryService interface {
 
 	// ClearPageHistory clears the history of a page.
 	ClearPageHistory(ctx context.Context, pageIDs []uuid.UUID) error
+
+	// GetLatestPageHistory returns the latest page history for a page
+	GetLatestPageHistory(ctx context.Context, pageID []uuid.UUID) ([]models.PageHistory, error)
 }

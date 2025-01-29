@@ -355,7 +355,7 @@ func (ws *workspaceService) JoinWorkspace(ctx context.Context, invitedMember *cl
 	}
 
 	ws.logger.Debug("user details", zap.Any("user", user))
-	firstTimeUser := user.ClerkID == nil
+	firstTimeUser := user.ClerkID == nil || user.Status != models.AccountStatusActive
 	// Synchronize the user with the database if the user is first time user
 	if firstTimeUser {
 		if err := ws.userService.ActivateUser(ctx, user.ID, invitedMember); err != nil {
@@ -554,6 +554,56 @@ func (ws *workspaceService) UpdateCompetitorPage(ctx context.Context, competitor
 func (ws *workspaceService) GetPageForCompetitor(ctx context.Context, competitorID, pageID uuid.UUID) (*models.Page, error) {
 	ws.logger.Debug("getting page for competitor", zap.Any("competitorID", competitorID), zap.Any("pageID", pageID))
 	return ws.competitorService.GetCompetitorPage(ctx, competitorID, pageID)
+}
+
+func (ws *workspaceService) ListReports(ctx context.Context, workspaceID, competitorID uuid.UUID, limit, offset *int) ([]models.Report, bool, error) {
+	ws.logger.Debug("listing reports for competitor", zap.Any("workspaceID", workspaceID), zap.Any("competitorID", competitorID), zap.Any("limit", limit), zap.Any("offset", offset))
+	return ws.competitorService.ListReports(ctx, workspaceID, competitorID, limit, offset)
+}
+
+func (ws *workspaceService) CreateReport(ctx context.Context, workspaceID uuid.UUID, competitorID uuid.UUID) (*models.Report, error) {
+	ws.logger.Debug("creating report for competitor", zap.Any("workspaceID", workspaceID), zap.Any("competitorID", competitorID))
+	return ws.competitorService.CreateReport(ctx, workspaceID, competitorID)
+}
+
+func (ws *workspaceService) DispatchReportToWorkspaceMembers(ctx context.Context, workspaceID uuid.UUID, competitorID uuid.UUID) error {
+	members, hasMore, err := ws.workspaceRepo.ListWorkspaceMembers(ctx, workspaceID, nil, nil, nil)
+	if err != nil {
+		return err
+	}
+	if len(members) == 0 {
+		return errors.New("no members found")
+	}
+	if hasMore {
+		ws.logger.Warn("more members found", zap.Any("workspaceID", workspaceID))
+	}
+
+	userIDs := make([]uuid.UUID, 0)
+	for _, member := range members {
+		userIDs = append(userIDs, member.ID)
+	}
+
+	users, err := ws.userService.ListUsersByUserIDs(ctx, userIDs)
+	if err != nil {
+		return err
+	}
+
+	subscriberEmails := make([]string, 0)
+	for _, user := range users {
+		if user.Email != nil {
+			subscriberEmails = append(subscriberEmails, *user.Email)
+		}
+	}
+
+	return ws.competitorService.DispatchReport(ctx, workspaceID, competitorID, subscriberEmails)
+}
+
+func (ws *workspaceService) DispatchReport(ctx context.Context, workspaceID uuid.UUID, competitorID uuid.UUID, subscriberEmails []string) error {
+	// Clean up the email list for duplicates and nil values
+	subscriberEmails = utils.CleanEmailList(subscriberEmails, nil)
+
+	// Dispatch the report
+	return ws.competitorService.DispatchReport(ctx, workspaceID, competitorID, subscriberEmails)
 }
 
 func (ws *workspaceService) SendEmail(ctx context.Context, email models.Email) {

@@ -50,9 +50,7 @@ func NewOpenAIService(apiKey string, logger *logger.Logger) (AIService, error) {
 }
 
 func (s *openAIService) SummarizeChanges(ctx context.Context, changeList []*models.DynamicChanges) ([]models.CategoryChange, error) {
-	if len(changeList) == 0 {
-		return []models.CategoryChange{}, nil
-	}
+	s.logger.Debug("summarizing changes", zap.Any("change_list", changeList))
 
 	changes, err := models.MergeDynamicChanges(changeList)
 	if err != nil {

@@ -30,4 +30,6 @@ type PageService interface {
 	PageExists(ctx context.Context, competitorID, pageID uuid.UUID) (bool, error)
 
 	RefreshPage(ctx context.Context, pageID uuid.UUID) error
+
+	GetLatestPageHistory(ctx context.Context, pageID []uuid.UUID) ([]models.PageHistory, error)
 }

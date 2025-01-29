@@ -100,10 +100,16 @@ func (ps *pageService) backdateRefresh(pages []models.Page) {
 				ps.logger.Debug("refreshed page", zap.Any("pageID", page.ID), zap.Any("imagePath", ir.StoragePath), zap.Any("contentPath", hr.StoragePath))
 			}
 
+			diff, err := models.NewEmptyDynamicChanges(page.DiffProfile)
+			if err != nil {
+				ps.logger.Error("failed to create empty dynamic changes", zap.Any("pageID", page.ID), zap.Error(err))
+				diff = &models.DynamicChanges{}
+			}
+
 			if err := ps.pageHistoryService.CreatePageHistory(
 				context.Background(),
 				page.ID,
-				nil,
+				diff,
 				ir.StoragePath,
 				ir.StoragePath,
 			); err != nil {
@@ -273,4 +279,10 @@ func (ps *pageService) PageExists(ctx context.Context, competitorID, pageID uuid
 		return false, err
 	}
 	return page != nil, nil
+}
+
+func (ps *pageService) GetLatestPageHistory(ctx context.Context, pageID []uuid.UUID) ([]models.PageHistory, error) {
+	ps.logger.Debug("getting latest page history", zap.Any("pageIDs", pageID))
+
+	return ps.pageHistoryService.GetLatestPageHistory(ctx, pageID)
 }
