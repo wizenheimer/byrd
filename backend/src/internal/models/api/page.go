@@ -52,7 +52,7 @@ func (r *CreatePageRequest) ToProps() (models.PageProps, error) {
 		}
 	}
 
-	if r.DiffProfile == nil {
+	if len(r.DiffProfile) == 0 {
 		r.DiffProfile = models.GetDefaultDiffProfile()
 	}
 

@@ -36,6 +36,14 @@ func (uh *UserHandler) GetCurrentUser(c *fiber.Ctx) error {
 		return sendErrorResponse(c, uh.logger, fiber.StatusInternalServerError, "Could not get user", err.Error())
 	}
 
+	// Synchronize the user with the database if the user is first time user
+	firstTimeUser := user.ClerkID == nil || user.Status != models.AccountStatusActive
+	if firstTimeUser {
+		if err := uh.userService.ActivateUser(ctx, user.ID, clerkUser); err != nil {
+			return err
+		}
+	}
+
 	return sendDataResponse(c, fiber.StatusOK, "User retrieved successfully", user)
 }
 
@@ -74,6 +82,14 @@ func (uh *UserHandler) CreateOrUpdateUser(c *fiber.Ctx) error {
 	user, err := uh.userService.GetOrCreateUser(ctx, clerkUser)
 	if err != nil {
 		return sendErrorResponse(c, uh.logger, fiber.StatusInternalServerError, "Could not create or update user", err.Error())
+	}
+
+	// Synchronize the user with the database if the user is first time user
+	firstTimeUser := user.ClerkID == nil || user.Status != models.AccountStatusActive
+	if firstTimeUser {
+		if err := uh.userService.ActivateUser(ctx, user.ID, clerkUser); err != nil {
+			return err
+		}
 	}
 
 	return sendDataResponse(c, fiber.StatusOK, "User created or updated successfully", user)

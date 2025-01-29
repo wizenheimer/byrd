@@ -176,3 +176,82 @@ func (wh *WorkspaceHandler) RemoveCompetitorFromWorkspace(c *fiber.Ctx) error {
 
 	return sendDataResponse(c, fiber.StatusOK, "Removed competitor from workspace successfully", nil)
 }
+
+func (wh *WorkspaceHandler) ListReportsForCompetitor(c *fiber.Ctx) error {
+	workspaceID, err := uuid.Parse(c.Params("workspaceID"))
+	if err != nil {
+		return sendErrorResponse(c, wh.logger, fiber.StatusBadRequest, "Invalid workspace ID format", err.Error())
+	}
+
+	competitorID, err := uuid.Parse(c.Params("competitorID"))
+	if err != nil {
+		return sendErrorResponse(c, wh.logger, fiber.StatusBadRequest, "Invalid competitor ID format", err.Error())
+	}
+
+	pageNumber := max(1, c.QueryInt("_page", commons.DefaultPageNumber))
+	pageSize := max(10, c.QueryInt("_limit", commons.DefaultPageSize))
+
+	params := api.PaginationParams{
+		Page:     pageNumber,
+		PageSize: pageSize,
+	}
+
+	limit := params.GetLimit()
+	offset := params.GetOffset()
+
+	ctx := c.Context()
+	reports, hasMore, err := wh.workspaceService.ListReports(ctx, workspaceID, competitorID, &limit, &offset)
+	if err != nil {
+		return sendErrorResponse(c, wh.logger, fiber.StatusInternalServerError, "Could not list reports", err.Error())
+	}
+
+	return sendDataResponse(c, fiber.StatusOK, "Retrieved reports successfully", map[string]any{
+		"reports": reports,
+		"hasMore": hasMore,
+	})
+}
+
+func (wh *WorkspaceHandler) CreateReportForCompetitor(c *fiber.Ctx) error {
+	workspaceID, err := uuid.Parse(c.Params("workspaceID"))
+	if err != nil {
+		return sendErrorResponse(c, wh.logger, fiber.StatusBadRequest, "Invalid workspace ID format", err.Error())
+	}
+
+	competitorID, err := uuid.Parse(c.Params("competitorID"))
+	if err != nil {
+		return sendErrorResponse(c, wh.logger, fiber.StatusBadRequest, "Invalid competitor ID format", err.Error())
+	}
+
+	ctx := c.Context()
+	report, err := wh.workspaceService.CreateReport(ctx, workspaceID, competitorID)
+	if err != nil {
+		return sendErrorResponse(c, wh.logger, fiber.StatusInternalServerError, "Could not create report", err.Error())
+	}
+
+	return sendDataResponse(c, fiber.StatusCreated, "Created report successfully", report)
+}
+
+func (wh *WorkspaceHandler) DispatchReportForCompetitor(c *fiber.Ctx) error {
+	workspaceID, err := uuid.Parse(c.Params("workspaceID"))
+	if err != nil {
+		return sendErrorResponse(c, wh.logger, fiber.StatusBadRequest, "Invalid workspace ID format", err.Error())
+	}
+
+	competitorID, err := uuid.Parse(c.Params("competitorID"))
+	if err != nil {
+		return sendErrorResponse(c, wh.logger, fiber.StatusBadRequest, "Invalid competitor ID format", err.Error())
+	}
+
+	var req api.DispatchReportRequest
+	if err := c.BodyParser(&req); err != nil {
+		return sendErrorResponse(c, wh.logger, fiber.StatusBadRequest, "Invalid request body", err.Error())
+	}
+
+	ctx := c.Context()
+	err = wh.workspaceService.DispatchReport(ctx, workspaceID, competitorID, req.Emails)
+	if err != nil {
+		return sendErrorResponse(c, wh.logger, fiber.StatusInternalServerError, "Could not dispatch report", err.Error())
+	}
+
+	return sendDataResponse(c, fiber.StatusOK, "Dispatched report successfully", nil)
+}

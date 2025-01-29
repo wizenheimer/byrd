@@ -247,6 +247,24 @@ func setupCompetitorRoutes(
 		m.RequiresWorkspaceMember,
 		r.ValidateCompetitorResource,
 		workspaceHandler.RemoveCompetitorFromWorkspace)
+
+	// Report management routes
+	router.Post("/workspace/:workspaceID/competitors/:competitorID/reports",
+		m.RequiresWorkspaceMember,
+		r.ValidateCompetitorResource,
+		workspaceHandler.CreateReportForCompetitor)
+
+	// Dispatch a report to workspace members
+	router.Post("/workspace/:workspaceID/competitors/:competitorID/reports/dispatch",
+		m.RequiresWorkspaceMember,
+		r.ValidateCompetitorResource,
+		workspaceHandler.DispatchReportForCompetitor)
+
+	// List reports for a competitor
+	router.Get("/workspace/:workspaceID/competitors/:competitorID/reports",
+		m.RequiresWorkspaceMember,
+		r.ValidateCompetitorResource,
+		workspaceHandler.ListReportsForCompetitor)
 }
 
 func setupPageRoutes(
