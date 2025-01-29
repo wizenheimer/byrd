@@ -3,6 +3,7 @@ package report
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -33,7 +34,7 @@ type reportService struct {
 }
 
 // NewReportService creates a new report service.
-func NewReportService(logger *logger.Logger, aiService ai.AIService, notificationService notification.NotificationService, library template.TemplateLibrary, repo report.ReportRepository) (ReportService, error) {
+func NewReportService(aiService ai.AIService, notificationService notification.NotificationService, library template.TemplateLibrary, repo report.ReportRepository, logger *logger.Logger) (ReportService, error) {
 	emailChannel, err := notificationService.GetEmailChannel(context.TODO(), 1, 25)
 	if err != nil {
 		logger.Error("Failed to get email channel", zap.Error(err))
@@ -62,13 +63,35 @@ func (s *reportService) GetLatest(ctx context.Context, workspaceID, competitorID
 }
 
 // List returns a list of reports for the given workspace and competitor
-func (s *reportService) List(ctx context.Context, workspaceID, competitorID uuid.UUID, limit, offset *int) ([]models.Report, error) {
+func (s *reportService) List(ctx context.Context, workspaceID, competitorID uuid.UUID, limit, offset *int) ([]models.Report, bool, error) {
 	s.logger.Debug("Listing reports", zap.Any("workspaceID", workspaceID), zap.Any("competitorID", competitorID), zap.Any("limit", limit), zap.Any("offset", offset))
 	return s.repo.List(ctx, workspaceID, competitorID, limit, offset)
 }
 
 // Create creates a new report for the given workspace and competitor
 func (s *reportService) Create(ctx context.Context, workspaceID, competitorID uuid.UUID, history []models.PageHistory) (*models.Report, error) {
+	// Calculate the period boundaries
+	// Check for reports in the last week
+	oneWeekAgo := time.Now().UTC().AddDate(0, 0, -7)
+
+	existingReport, err := s.repo.GetForPeriod(ctx, workspaceID, competitorID, oneWeekAgo)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check existing report: %w", err)
+	}
+
+	// If report exists, return it
+	if existingReport != nil {
+		s.logger.Debug("Found existing report for period",
+			zap.Any("reportID", existingReport.ID))
+		return existingReport, nil
+	}
+
+	// No existing report found, create a new one
+	s.logger.Debug("Creating new report for period",
+		zap.Any("workspaceID", workspaceID),
+		zap.Any("competitorID", competitorID),
+		zap.Any("history", history))
+
 	changeList := make([]*models.DynamicChanges, 0)
 	for _, pageHistory := range history {
 		changeList = append(changeList, &pageHistory.DiffContent)

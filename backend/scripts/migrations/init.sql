@@ -95,6 +95,16 @@ CREATE TABLE job_records (
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
   deleted_at TIMESTAMP WITH TIME ZONE
 );
+-- reports table with JSON column
+CREATE TABLE reports (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  workspace_id UUID NOT NULL,
+  competitor_id UUID NOT NULL,
+  changes JSONB NOT NULL,
+  time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE,
+  FOREIGN KEY (competitor_id) REFERENCES competitors(id) ON DELETE CASCADE
+);
 -- Create indexes for better query performance
 -- Indexes for workspaces
 CREATE INDEX idx_workspaces_status ON workspaces(workspace_status);
@@ -128,6 +138,9 @@ CREATE INDEX idx_job_records_workflow_type ON job_records(workflow_type)
 WHERE deleted_at IS NULL;
 CREATE INDEX idx_job_records_start_time ON job_records(start_time)
 WHERE deleted_at IS NULL;
+-- Indexes for faster querying
+CREATE INDEX idx_reports_workspace_competitor ON reports(workspace_id, competitor_id);
+CREATE INDEX idx_reports_time ON reports(time DESC);
 -- Functions for updating timestamps
 CREATE OR REPLACE FUNCTION update_updated_at_column() RETURNS TRIGGER AS $$ BEGIN NEW.updated_at = CURRENT_TIMESTAMP;
 RETURN NEW;

@@ -16,7 +16,7 @@ type ReportService interface {
 	GetLatest(ctx context.Context, workspaceID, competitorID uuid.UUID) (*models.Report, error)
 
 	// List returns a list of reports for the given workspace and competitor
-	List(ctx context.Context, workspaceID, competitorID uuid.UUID, limit, offset *int) ([]models.Report, error)
+	List(ctx context.Context, workspaceID, competitorID uuid.UUID, limit, offset *int) ([]models.Report, bool, error)
 
 	// Create creates a new report for the given workspace and competitor
 	Create(ctx context.Context, workspaceID, competitorID uuid.UUID, history []models.PageHistory) (*models.Report, error)
