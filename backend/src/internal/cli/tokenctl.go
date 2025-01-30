@@ -1,123 +1,107 @@
-// ./src/internal/cli/tokenctl.go
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
+	"net/http"
 	"os"
 	"time"
 
-	"github.com/briandowns/spinner"
-	"github.com/fatih/color"
-	"github.com/olekukonko/tablewriter"
-	"github.com/spf13/cobra"
+	"github.com/joho/godotenv"
 	"github.com/wizenheimer/byrd/src/pkg/utils"
 )
 
-var (
-	secretKey    string
-	rotationTime time.Duration
-	tokenManager *utils.TokenManager
-	watchMode    bool
-	compactMode  bool
-)
+type TokenResponse struct {
+	Token        string        `json:"token"`
+	ExpiresIn    int64         `json:"expires_in"`
+	RefreshAfter time.Duration `json:"refresh_after"`
+}
+
+type ErrorResponse struct {
+	Error string `json:"error"`
+}
+
+var tokenManager *utils.TokenManager
 
 func main() {
-	rootCmd := &cobra.Command{
-		Use:   "tokenctl",
-		Short: "A CLI tool for managing rotating bearer tokens",
-		Run:   run,
+	// Load environment variables
+	if err := godotenv.Load(".env.development"); err != nil {
+		log.Fatal("Error loading .env.development file")
 	}
 
-	rootCmd.PersistentFlags().StringVarP(&secretKey, "secret", "s", "", "Secret key for token generation")
-	rootCmd.PersistentFlags().DurationVarP(&rotationTime, "rotation", "r", 5*time.Minute, "Token rotation interval")
-	rootCmd.PersistentFlags().BoolVarP(&watchMode, "watch", "w", false, "Watch mode - continuously display token")
-	rootCmd.PersistentFlags().BoolVarP(&compactMode, "compact", "c", false, "Compact display mode")
-
-	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-}
-
-func run(cmd *cobra.Command, args []string) {
+	secretKey := os.Getenv("MANAGEMENT_API_KEY")
 	if secretKey == "" {
-		fmt.Println("Error: Secret key is required")
-		os.Exit(1)
+		log.Fatal("MANAGEMENT_API_KEY is required")
 	}
 
+	// Initialize token manager
+	rotationTime := 10 * time.Minute // Default rotation time
 	tokenManager = utils.NewTokenManager(secretKey, rotationTime)
 
-	if watchMode {
-		watchTokens()
-	} else {
-		displayToken()
+	// Set up routes
+	http.HandleFunc("/token", handleGetToken)
+	http.HandleFunc("/token/status", handleTokenStatus)
+	http.HandleFunc("/health", handleHealth)
+
+	// Start server
+	port := 4004
+	fmt.Printf("Starting token management server on port %d...\n", port)
+	if err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil); err != nil {
+		log.Fatal(err)
 	}
 }
 
-func displayToken() {
+func handleGetToken(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		sendError(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	token := tokenManager.GenerateToken()
 	remaining := getRemainingTime()
 
-	if compactMode {
-		displayCompact(token, remaining)
-	} else {
-		displayFull(token, remaining)
-	}
-}
-
-func watchTokens() {
-	s := spinner.New(spinner.CharSets[14], 100*time.Millisecond)
-	s.Prefix = "Monitoring tokens "
-	s.Start()
-
-	for {
-		clearScreen()
-		s.Stop()
-		displayToken()
-		time.Sleep(1 * time.Second)
-		s.Start()
-	}
-}
-
-func displayFull(token string, remaining time.Duration) {
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Token", "Status", "Expires In", "Rotation Interval"})
-	table.SetAutoWrapText(false)
-	table.SetBorder(true)
-	table.SetRowLine(true)
-	table.SetAlignment(tablewriter.ALIGN_LEFT)
-	table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
-
-	status := color.New(color.FgCyan).Sprintf("Valid")
-	if remaining.Seconds() < 30 {
-		status = color.New(color.FgYellow).Sprintf("Rotating Soon")
+	response := TokenResponse{
+		Token:        token,
+		ExpiresIn:    int64(remaining.Seconds()),
+		RefreshAfter: remaining,
 	}
 
-	table.Append([]string{
-		token,
-		status,
-		fmt.Sprintf("%.0fs", remaining.Seconds()),
-		fmt.Sprintf("%.0fm", rotationTime.Minutes()),
-	})
-
-	table.Render()
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
 
-func displayCompact(token string, remaining time.Duration) {
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Token", "TTL"})
-	table.SetAutoWrapText(false)
-	table.SetBorder(false)
-	table.SetHeaderLine(false)
-	table.SetColumnSeparator(" ")
-	table.SetAlignment(tablewriter.ALIGN_LEFT)
+func handleTokenStatus(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		sendError(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
 
-	table.Append([]string{
-		token,
-		fmt.Sprintf("%.0fs", remaining.Seconds()),
-	})
+	remaining := getRemainingTime()
+	currentInterval := tokenManager.GetCurrentInterval()
 
-	table.Render()
+	status := map[string]interface{}{
+		"current_interval": currentInterval,
+		"expires_in":       remaining.Seconds(),
+		"rotation_time":    tokenManager.GetRotationTime(),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(status)
+}
+
+func handleHealth(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		sendError(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	status := map[string]string{
+		"status": "healthy",
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(status)
 }
 
 func getRemainingTime() time.Duration {
@@ -127,6 +111,8 @@ func getRemainingTime() time.Duration {
 	return time.Duration(nextRotation-time.Now().Unix()) * time.Second
 }
 
-func clearScreen() {
-	fmt.Print("\033[H\033[2J")
+func sendError(w http.ResponseWriter, message string, status int) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(ErrorResponse{Error: message})
 }
