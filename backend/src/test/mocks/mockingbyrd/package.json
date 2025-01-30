@@ -1,0 +1,37 @@
+{
+  "name": "mockingbyrd",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"bun run dev:server\" \"bun run dev:client\"",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "dev:server": "json-server --watch ./src/server/token.json --port 4000",
+    "dev:client": "next dev"
+  },
+  "dependencies": {
+    "@clerk/nextjs": "^6.10.4",
+    "@radix-ui/react-slot": "^1.1.1",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "concurrently": "^9.1.2",
+    "json-server": "^1.0.0-beta.3",
+    "lucide-react": "^0.474.0",
+    "next": "14.2.23",
+    "react": "^18",
+    "react-dom": "^18",
+    "tailwind-merge": "^2.6.0",
+    "tailwindcss-animate": "^1.0.7"
+  },
+  "devDependencies": {
+    "typescript": "^5",
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1",
+    "eslint": "^8",
+    "eslint-config-next": "14.2.23"
+  }
+}
