@@ -81,11 +81,24 @@ func SetupServices(
 
 	competitorService := competitor.NewCompetitorService(pageService, reportService, tm, repos.Competitor, logger)
 
+	tokenManager := utils.NewTokenManager(cfg.Services.ManagementAPIKey, cfg.Services.ManagementAPIRefreshInterval)
+
+	userService, err := user.NewUserService(notificationService, repos.User, templateLibrary, logger)
+	if err != nil {
+		return nil, err
+	}
+
+	workspaceService, err := workspace.NewWorkspaceService(repos.Workspace, competitorService, userService, notificationService, templateLibrary, tm, logger)
+	if err != nil {
+		return nil, err
+	}
+
 	workflowService, err := setupWorkflowService(
 		cfg,
 		repos.Workflow,
 		notificationService,
 		pageService,
+		workspaceService,
 		logger,
 	)
 	if err != nil {
@@ -99,18 +112,6 @@ func SetupServices(
 	)
 
 	if err := schedulerSvc.Start(context.Background(), true); err != nil {
-		return nil, err
-	}
-
-	tokenManager := utils.NewTokenManager(cfg.Services.ManagementAPIKey, cfg.Services.ManagementAPIRefreshInterval)
-
-	userService, err := user.NewUserService(notificationService, repos.User, templateLibrary, logger)
-	if err != nil {
-		return nil, err
-	}
-
-	workspaceService, err := workspace.NewWorkspaceService(repos.Workspace, competitorService, userService, notificationService, templateLibrary, tm, logger)
-	if err != nil {
 		return nil, err
 	}
 
@@ -161,6 +162,7 @@ func setupWorkflowService(
 	workflowRepo workflow_repo.WorkflowRepository,
 	notificationService notification.NotificationService,
 	pageService page.PageService,
+	workspaceService workspace.WorkspaceService,
 	logger *logger.Logger,
 ) (workflow.WorkflowService, error) {
 	runtimeConfig := models.JobExecutorConfig{
@@ -174,11 +176,27 @@ func setupWorkflowService(
 		return nil, err
 	}
 
-	screenshotWorkflowExecutor, err := executor.NewWorkflowExecutor(
+	screenshotWorkflowObserver, err := executor.NewWorkflowObserver(
 		models.ScreenshotWorkflowType,
 		workflowRepo,
 		notificationService,
 		screenshotTaskExecutor,
+		logger,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	reportTaskExecutor, err := executor.NewReportExecutor(workspaceService, logger, runtimeConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	reportWorkflowObserver, err := executor.NewWorkflowObserver(
+		models.ReportWorkflowType,
+		workflowRepo,
+		notificationService,
+		reportTaskExecutor,
 		logger,
 	)
 	if err != nil {
@@ -190,7 +208,11 @@ func setupWorkflowService(
 		return nil, err
 	}
 
-	if err := workflowService.Register(models.ScreenshotWorkflowType, screenshotWorkflowExecutor); err != nil {
+	if err := workflowService.Register(models.ScreenshotWorkflowType, screenshotWorkflowObserver); err != nil {
+		return nil, err
+	}
+
+	if err := workflowService.Register(models.ReportWorkflowType, reportWorkflowObserver); err != nil {
 		return nil, err
 	}
 
