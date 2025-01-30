@@ -90,4 +90,6 @@ type WorkspaceService interface {
 
 	// DispatchReport dispatches a report for a competitor to an email list.
 	DispatchReport(ctx context.Context, workspaceID uuid.UUID, competitorID uuid.UUID, subscriberEmails []string) error
+
+	ListActiveWorkspaces(ctx context.Context, batchSize int, lastWorkspaceID *uuid.UUID) (<-chan []uuid.UUID, <-chan error)
 }

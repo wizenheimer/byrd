@@ -606,6 +606,31 @@ func (ws *workspaceService) DispatchReport(ctx context.Context, workspaceID uuid
 	return ws.competitorService.DispatchReport(ctx, workspaceID, competitorID, subscriberEmails)
 }
 
+func (ws *workspaceService) ListActiveWorkspaces(ctx context.Context, batchSize int, lastWorkspaceID *uuid.UUID) (<-chan []uuid.UUID, <-chan error) {
+	ws.logger.Debug("listing active workspaces", zap.Any("batchSize", batchSize), zap.Any("lastWorkspaceID", lastWorkspaceID))
+	workspaceChan := make(chan []uuid.UUID)
+	errorChan := make(chan error)
+
+	go func() {
+		defer close(workspaceChan)
+		defer close(errorChan)
+
+		hasMore := true
+		for hasMore {
+			activeWorkspaces, err := ws.workspaceRepo.ListActiveWorkspaces(ctx, batchSize, lastWorkspaceID)
+			if err != nil {
+				errorChan <- err
+				return
+			}
+
+			hasMore = activeWorkspaces.HasMore
+			workspaceChan <- activeWorkspaces.WorkspaceIDs
+		}
+	}()
+
+	return workspaceChan, errorChan
+}
+
 func (ws *workspaceService) SendEmail(ctx context.Context, email models.Email) {
 	ws.emailChannel <- email
 }

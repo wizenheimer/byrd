@@ -46,7 +46,7 @@ type workflowObserver struct {
 	activeJobs sync.Map // map[uuid.UUID]*jobContext
 }
 
-func NewWorkflowExecutor(
+func NewWorkflowObserver(
 	workflowType models.WorkflowType,
 	repository workflow.WorkflowRepository,
 	notificationService notification.NotificationService,

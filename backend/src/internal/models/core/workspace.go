@@ -50,3 +50,14 @@ type WorkspaceProps struct {
 	// BillingEmail is the email address to which billing information is sent
 	BillingEmail string `json:"billing_email,omitempty" validate:"omitempty,email"`
 }
+
+// ActiveWorkspaceBatch is a batch of active workspaces
+type ActiveWorkspaceBatch struct {
+	WorkspaceIDs []uuid.UUID `json:"workspaces"`
+
+	// HasMore is true if there are more pages
+	HasMore bool `json:"has_more"`
+
+	// LastSeen is the last seen page
+	LastSeen *uuid.UUID `json:"last_seen,omitempty"`
+}
