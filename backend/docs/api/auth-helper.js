@@ -1,7 +1,6 @@
 // auth-helper.js
 
 const helper = {
-  // Added userIndex parameter with default value of 0
   setAuthToken: async function (request, userIndex = 0, tokenUrl) {
     try {
       const url = tokenUrl || 'http://localhost:4000/tokens';
@@ -236,7 +235,78 @@ Resolved Value: ${collectionValue || envValue || 'not available'}
       console.error('Error setting page ID from create:', error);
       return false;
     }
-  }
+  },
+  setManagementToken: async function (request) {
+    try {
+      const url = 'http://localhost:4004/token';
+
+      const response = await pm.sendRequest({
+        url: url,
+        method: 'GET'
+      });
+
+      const tokenData = response.json();
+
+      if (tokenData && tokenData.token) {
+        request.headers.remove('Authorization');
+        request.headers.add({
+          key: 'Authorization',
+          value: `Bearer ${tokenData.token}`
+        });
+
+        console.log('Management token set successfully');
+        return true;
+      } else {
+        console.error('No valid token received from management token server');
+        return false;
+      }
+    } catch (error) {
+      console.error('Error setting management token:', error);
+      return false;
+    }
+  },
+  // Get the current job ID
+  getJobId: function () {
+    const jobId = pm.collectionVariables.get("jobID");
+    if (!jobId) {
+      console.warn('No job ID found in collection variables');
+    }
+    return jobId;
+  },
+  setJobIdFromWorkflow: function (response) {
+    try {
+      const jsonData = response.json();
+      if (jsonData.data && jsonData.data.jobID) {
+        const jobId = jsonData.data.jobID;
+        pm.collectionVariables.set("jobID", jobId);
+        console.log(`Job ID set to: ${jobId}`);
+        return true;
+      } else {
+        console.error('No job ID found in workflow response');
+        return false;
+      }
+    } catch (error) {
+      console.error('Error setting job ID:', error);
+      return false;
+    }
+  },
+  setScheduleIdFromResponse: function (response) {
+    try {
+      const jsonData = response.json();
+      if (jsonData.data && jsonData.data.scheduleID) {
+        const scheduleId = jsonData.data.scheduleID;
+        pm.collectionVariables.set("scheduleID", scheduleId);
+        console.log(`Schedule ID set to: ${scheduleId}`);
+        return true;
+      } else {
+        console.error('No schedule ID found in response');
+        return false;
+      }
+    } catch (error) {
+      console.error('Error setting schedule ID:', error);
+      return false;
+    }
+  },
 };
 
 module.exports = helper;
