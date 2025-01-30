@@ -35,4 +35,5 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# mockingbyrd tokenfile
 src/test/mocks/mockingbyrd/src/server/token.json
