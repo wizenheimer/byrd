@@ -63,6 +63,3 @@ playground
 # Logs
 logs
 data
-
-# Ignore any token.json file
-**/token.json
