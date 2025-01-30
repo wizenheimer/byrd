@@ -6,6 +6,7 @@ import (
 	"github.com/wizenheimer/byrd/src/internal/repository/competitor"
 	"github.com/wizenheimer/byrd/src/internal/repository/history"
 	"github.com/wizenheimer/byrd/src/internal/repository/page"
+	"github.com/wizenheimer/byrd/src/internal/repository/report"
 	"github.com/wizenheimer/byrd/src/internal/repository/schedule"
 	"github.com/wizenheimer/byrd/src/internal/repository/user"
 	"github.com/wizenheimer/byrd/src/internal/repository/workflow"
@@ -22,6 +23,7 @@ type Repositories struct {
 	History    history.PageHistoryRepository
 	Schedule   schedule.ScheduleRepository
 	Workflow   workflow.WorkflowRepository
+	Report     report.ReportRepository
 }
 
 func SetupRepositories(tm *transaction.TxManager, redisClient *redis.Client, logger *logger.Logger) (*Repositories, error) {
@@ -37,6 +39,7 @@ func SetupRepositories(tm *transaction.TxManager, redisClient *redis.Client, log
 		Page:       page.NewPageRepository(tm, logger),
 		History:    history.NewPageHistoryRepository(tm, logger),
 		Schedule:   schedule.NewScheduleRepo(tm, logger),
+		Report:     report.NewReportRepository(tm, logger),
 		Workflow:   workflowRepo,
 	}, nil
 }

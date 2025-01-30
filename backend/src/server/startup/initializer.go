@@ -58,7 +58,7 @@ func Initialize(cfg *config.Config, tm *transaction.TxManager, logger *logger.Lo
 	}
 
 	// Set up all services
-	services, err := SetupServices(cfg, repos, diffService, screenshotService, templateLibrary, tm, logger)
+	services, err := SetupServices(cfg, repos, aiService, diffService, screenshotService, templateLibrary, tm, logger)
 	if err != nil {
 		return nil, nil, nil, err
 	}

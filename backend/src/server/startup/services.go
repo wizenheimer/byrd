@@ -14,12 +14,14 @@ import (
 	"github.com/wizenheimer/byrd/src/internal/repository/schedule"
 	workflow_repo "github.com/wizenheimer/byrd/src/internal/repository/workflow"
 	scheduler "github.com/wizenheimer/byrd/src/internal/scheduler"
+	"github.com/wizenheimer/byrd/src/internal/service/ai"
 	"github.com/wizenheimer/byrd/src/internal/service/competitor"
 	"github.com/wizenheimer/byrd/src/internal/service/diff"
 	"github.com/wizenheimer/byrd/src/internal/service/executor"
 	"github.com/wizenheimer/byrd/src/internal/service/history"
 	"github.com/wizenheimer/byrd/src/internal/service/notification"
 	"github.com/wizenheimer/byrd/src/internal/service/page"
+	"github.com/wizenheimer/byrd/src/internal/service/report"
 	scheduler_svc "github.com/wizenheimer/byrd/src/internal/service/scheduler"
 	"github.com/wizenheimer/byrd/src/internal/service/screenshot"
 	"github.com/wizenheimer/byrd/src/internal/service/user"
@@ -45,6 +47,7 @@ type Services struct {
 func SetupServices(
 	cfg *config.Config,
 	repos *Repositories,
+	aiService ai.AIService,
 	diffService diff.DiffService,
 	screenshotService screenshot.ScreenshotService,
 	templateLibrary template.TemplateLibrary,
@@ -53,7 +56,6 @@ func SetupServices(
 ) (*Services, error) {
 	historyService := history.NewPageHistoryService(repos.History, logger)
 	pageService := page.NewPageService(repos.Page, historyService, diffService, screenshotService, logger)
-	competitorService := competitor.NewCompetitorService(repos.Competitor, pageService, tm, logger)
 
 	alertClient, err := setupAlertClient(cfg, logger)
 	if err != nil {
@@ -71,6 +73,13 @@ func SetupServices(
 	}
 
 	notificationService := notification.NewNotificationService(alertClient, eventClient, emailClient, logger)
+
+	reportService, err := report.NewReportService(aiService, notificationService, templateLibrary, repos.Report, logger)
+	if err != nil {
+		return nil, err
+	}
+
+	competitorService := competitor.NewCompetitorService(pageService, reportService, tm, repos.Competitor, logger)
 
 	workflowService, err := setupWorkflowService(
 		cfg,

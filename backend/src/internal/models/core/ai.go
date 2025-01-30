@@ -376,3 +376,11 @@ func mergeValues(existing, new interface{}) (interface{}, error) {
 		return new, nil
 	}
 }
+
+func NewEmptyDynamicChanges(fieldNames []string) (*DynamicChanges, error) {
+	fields := make(map[string]interface{})
+	for _, name := range fieldNames {
+		fields[name] = make([]interface{}, 0)
+	}
+	return &DynamicChanges{Fields: fields}, nil
+}
