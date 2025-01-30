@@ -548,7 +548,7 @@ func (r *pageRepo) GetActivePages(ctx context.Context, batchSize int, lastPageID
 	}
 
 	// Ensure deterministic ordering
-	query += ` ORDER BY id ASC`
+	query += ` ORDER BY created_at ASC`
 
 	// Add limit
 	query += fmt.Sprintf(" LIMIT $%d", len(args)+1)

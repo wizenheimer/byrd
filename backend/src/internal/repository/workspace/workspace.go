@@ -599,6 +599,75 @@ func (r *workspaceRepo) BatchDeleteWorkspaces(ctx context.Context, workspaceIDs 
 	return nil
 }
 
+func (r *workspaceRepo) ListActiveWorkspaces(ctx context.Context, batchSize int, lastWorkspaceID *uuid.UUID) (models.ActiveWorkspaceBatch, error) {
+	if batchSize <= 0 {
+		return models.ActiveWorkspaceBatch{}, errors.New("invalid batch size")
+	}
+
+	// Build base query
+	query := `
+		SELECT id
+		FROM workspaces
+		WHERE workspace_status = $1`
+	args := []interface{}{models.WorkspaceActive}
+
+	// Add cursor-based pagination using lastWorkspaceID
+	if lastWorkspaceID != nil {
+		// Ensure UUID ordering is appropriate for pagination
+		query += ` AND id > $2`
+		args = append(args, *lastWorkspaceID)
+	}
+
+	// Ensure deterministic ordering using created_at
+	query += ` ORDER BY created_at ASC`
+
+	// Add limit
+	query += fmt.Sprintf(" LIMIT $%d", len(args)+1)
+	args = append(args, batchSize+1) // Request one extra to determine if there are more workspaces
+
+	// Execute query
+	rows, err := r.getQuerier(ctx).Query(ctx, query, args...)
+	if err != nil {
+		return models.ActiveWorkspaceBatch{}, fmt.Errorf("failed to query active workspaces: %w", err)
+	}
+	if rows == nil {
+		return models.ActiveWorkspaceBatch{}, errors.New("query returned nil rows")
+	}
+	defer rows.Close()
+
+	// Collect results
+	var workspaceIDs []uuid.UUID
+	for rows.Next() {
+		var workspaceID uuid.UUID
+		if err := rows.Scan(&workspaceID); err != nil {
+			return models.ActiveWorkspaceBatch{}, fmt.Errorf("failed to scan workspace ID: %w", err)
+		}
+		workspaceIDs = append(workspaceIDs, workspaceID)
+	}
+
+	if err = rows.Err(); err != nil {
+		return models.ActiveWorkspaceBatch{}, fmt.Errorf("error iterating workspaces: %w", err)
+	}
+
+	// Determine if there are more workspaces
+	hasMore := len(workspaceIDs) > batchSize
+	if hasMore {
+		workspaceIDs = workspaceIDs[:batchSize] // Remove the extra item we requested
+	}
+
+	// Set the last seen ID
+	var lastSeen *uuid.UUID
+	if len(workspaceIDs) > 0 {
+		lastSeen = &workspaceIDs[len(workspaceIDs)-1]
+	}
+
+	return models.ActiveWorkspaceBatch{
+		WorkspaceIDs: workspaceIDs,
+		HasMore:      hasMore,
+		LastSeen:     lastSeen,
+	}, nil
+}
+
 func (r *workspaceRepo) getQuerier(ctx context.Context) interface {
 	Exec(context.Context, string, ...interface{}) (pgconn.CommandTag, error)
 	Query(context.Context, string, ...interface{}) (pgx.Rows, error)

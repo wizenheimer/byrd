@@ -51,4 +51,6 @@ type WorkspaceRepository interface {
 	DeleteWorkspace(ctx context.Context, workspaceID uuid.UUID) error
 
 	BatchDeleteWorkspaces(ctx context.Context, workspaceIDs []uuid.UUID) error
+
+	ListActiveWorkspaces(ctx context.Context, batchSize int, lastPageID *uuid.UUID) (models.ActiveWorkspaceBatch, error)
 }
