@@ -1,13 +1,12 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"time"
 
+	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
 	"github.com/wizenheimer/byrd/src/pkg/utils"
 )
@@ -39,69 +38,48 @@ func main() {
 	rotationTime := 10 * time.Minute // Default rotation time
 	tokenManager = utils.NewTokenManager(secretKey, rotationTime)
 
+	// Create new Fiber app
+	app := fiber.New()
+
 	// Set up routes
-	http.HandleFunc("/token", handleGetToken)
-	http.HandleFunc("/token/status", handleTokenStatus)
-	http.HandleFunc("/health", handleHealth)
+	app.Get("/token", handleGetToken)
+	app.Get("/token/status", handleTokenStatus)
+	app.Get("/health", handleHealth)
 
 	// Start server
 	port := 4004
 	fmt.Printf("Starting token management server on port %d...\n", port)
-	if err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil); err != nil {
+	if err := app.Listen(fmt.Sprintf(":%d", port)); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func handleGetToken(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		sendError(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
+func handleGetToken(c *fiber.Ctx) error {
 	token := tokenManager.GenerateToken()
 	remaining := getRemainingTime()
 
-	response := TokenResponse{
+	return c.JSON(TokenResponse{
 		Token:        token,
 		ExpiresIn:    int64(remaining.Seconds()),
 		RefreshAfter: remaining,
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	})
 }
 
-func handleTokenStatus(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		sendError(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
+func handleTokenStatus(c *fiber.Ctx) error {
 	remaining := getRemainingTime()
 	currentInterval := tokenManager.GetCurrentInterval()
 
-	status := map[string]interface{}{
+	return c.JSON(fiber.Map{
 		"current_interval": currentInterval,
 		"expires_in":       remaining.Seconds(),
 		"rotation_time":    tokenManager.GetRotationTime(),
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(status)
+	})
 }
 
-func handleHealth(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		sendError(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	status := map[string]string{
+func handleHealth(c *fiber.Ctx) error {
+	return c.JSON(fiber.Map{
 		"status": "healthy",
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(status)
+	})
 }
 
 func getRemainingTime() time.Duration {
@@ -109,10 +87,4 @@ func getRemainingTime() time.Duration {
 	rotationTime := tokenManager.GetRotationTime()
 	nextRotation := (currentInterval + 1) * int64(rotationTime.Seconds())
 	return time.Duration(nextRotation-time.Now().Unix()) * time.Second
-}
-
-func sendError(w http.ResponseWriter, message string, status int) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(ErrorResponse{Error: message})
 }
