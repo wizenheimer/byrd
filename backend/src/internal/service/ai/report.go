@@ -3,6 +3,7 @@ package ai
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -184,8 +185,17 @@ func generateCategorySummary(ctx context.Context, client *openai.Client, categor
 		return models.ChangeSummary{}, fmt.Errorf("OpenAI API error: %v", err)
 	}
 
+	if chat == nil {
+		return models.ChangeSummary{}, errors.New("received nil response from OpenAI")
+	}
+
 	var summary models.ChangeSummary
-	err = json.Unmarshal([]byte(chat.Choices[0].Message.Content), &summary)
+	choices := chat.Choices
+	if len(choices) == 0 || choices == nil {
+		return models.ChangeSummary{}, errors.New("no choices returned from ai service")
+	}
+
+	err = json.Unmarshal([]byte(choices[0].Message.Content), &summary)
 	if err != nil {
 		return models.ChangeSummary{}, fmt.Errorf("JSON parsing error: %v", err)
 	}

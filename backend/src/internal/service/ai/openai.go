@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"image"
 	"image/png"
@@ -316,7 +317,16 @@ func (s *openAIService) prepareImageCompletion(ctx context.Context, version1, ve
 }
 
 func (s *openAIService) parseCompletion(chat *openai.ChatCompletion) (*models.DynamicChanges, error) {
-	if chat.Choices[0].Message.Refusal != "" {
+	if chat == nil {
+		return nil, errors.New("chat completion is nil")
+	}
+
+	choices := chat.Choices
+	if len(choices) == 0 || choices == nil {
+		return nil, errors.New("no choices in chat, cannot parse completion")
+	}
+
+	if choices[0].Message.Refusal != "" {
 		return nil, ErrEncounteredRefusal
 	}
 
@@ -324,7 +334,7 @@ func (s *openAIService) parseCompletion(chat *openai.ChatCompletion) (*models.Dy
 		Fields: make(map[string]interface{}),
 	}
 
-	err := json.Unmarshal([]byte(chat.Choices[0].Message.Content), changes)
+	err := json.Unmarshal([]byte(choices[0].Message.Content), changes)
 	if err != nil {
 		return nil, ErrParsingChanges
 	}

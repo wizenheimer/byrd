@@ -17,6 +17,11 @@ type TokenManager struct {
 
 // NewTokenManager creates a new token manager with the given secret key and rotation interval
 func NewTokenManager(secretKey string, rotationTime time.Duration) *TokenManager {
+	if rotationTime <= 0 {
+		// Set a default rotation time, e.g., 1 hour
+		rotationTime = time.Hour
+	}
+
 	return &TokenManager{
 		secretKey:    []byte(secretKey),
 		rotationTime: rotationTime,
@@ -54,7 +59,14 @@ func (tm *TokenManager) ValidateToken(token string) bool {
 
 // getCurrentInterval returns the current time interval number
 func (tm *TokenManager) GetCurrentInterval() int64 {
-	return tm.timeProvider().Unix() / int64(tm.rotationTime.Seconds())
+	rotationTime := tm.rotationTime
+
+	if rotationTime.Seconds() <= 0 {
+		// Set a default rotation time, e.g., 1 hour
+		rotationTime = time.Hour
+	}
+
+	return tm.timeProvider().Unix() / int64(rotationTime.Seconds())
 }
 
 // generateTokenForInterval creates a token for a specific time interval

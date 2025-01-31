@@ -150,6 +150,10 @@ func (rb *requestBuilder) AddQueryParamsFromStruct(opts interface{}) RequestBuil
 
 		// Split the json tag to get the name and options
 		parts := strings.Split(jsonTag, ",")
+		if len(parts) == 0 {
+			// TODO: figure out migration
+			continue
+		}
 		name := parts[0]
 
 		// Skip empty fields

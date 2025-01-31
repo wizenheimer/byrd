@@ -104,6 +104,9 @@ func (s *screenshotService) getContent(resp *http.Response) (*string, error) {
 	if err != nil {
 		return nil, err
 	}
+	if htmlResp == nil {
+		return nil, errors.New("received nil response from content URL")
+	}
 	defer htmlResp.Body.Close()
 	if htmlResp.StatusCode != http.StatusOK {
 		return nil, errors.New("failed to retrieve content")

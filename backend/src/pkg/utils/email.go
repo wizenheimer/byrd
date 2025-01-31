@@ -9,7 +9,12 @@ import (
 // GenerateNameFromEmail extracts a readable name from an email address
 func generateNameFromEmail(email string) string {
 	// Get the part before @ symbol
-	localPart := strings.Split(email, "@")[0]
+	parts := strings.Split(email, "@")
+	if len(parts) == 0 {
+		return email
+	}
+
+	localPart := parts[0]
 
 	// Remove numbers and special characters, keeping only letters and separators
 	cleanPart := strings.Map(func(r rune) rune {

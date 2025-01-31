@@ -562,7 +562,7 @@ func (r *pageRepo) GetActivePages(ctx context.Context, batchSize int, lastPageID
 	defer rows.Close()
 
 	// Collect results
-	var pageIDs []uuid.UUID
+  pageIDs := make([]uuid.UUID, 0)
 	for rows.Next() {
 		var pageID uuid.UUID
 		if err := rows.Scan(&pageID); err != nil {

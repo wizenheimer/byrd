@@ -198,7 +198,12 @@ func (r *workspaceRepo) ListWorkspaceMembers(ctx context.Context, workspaceID uu
 		members = append(members, member)
 	}
 
-	hasMore := len(members) == *limit
+	var hasMore bool
+	if limit != nil && len(members) == *limit {
+		hasMore = true
+	} else {
+		hasMore = false
+	}
 
 	return members, hasMore, rows.Err()
 }
@@ -636,7 +641,7 @@ func (r *workspaceRepo) ListActiveWorkspaces(ctx context.Context, batchSize int,
 	defer rows.Close()
 
 	// Collect results
-	var workspaceIDs []uuid.UUID
+	workspaceIDs := make([]uuid.UUID, 0)
 	for rows.Next() {
 		var workspaceID uuid.UUID
 		if err := rows.Scan(&workspaceID); err != nil {

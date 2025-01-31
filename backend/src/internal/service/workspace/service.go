@@ -84,6 +84,9 @@ func (ws *workspaceService) CreateWorkspace(ctx context.Context, workspaceOwner 
 
 	// STEP 1: Validate and Create Competitors for the workspace
 	// Add competitors to the workspace
+	if workspace == nil {
+		return nil, errors.New("workspace is nil after successful transaction")
+	}
 	if _, err := ws.competitorService.BatchCreateCompetitorForWorkspace(ctx, workspace.ID, pages); err != nil {
 		ws.logger.Debug("failed to add competitors to workspace", zap.Error(err))
 	}

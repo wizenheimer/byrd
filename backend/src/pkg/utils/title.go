@@ -45,7 +45,10 @@ func GetPageTitle(url string) (string, error) {
 
 	doc, err := html.Parse(resp.Body)
 	if err != nil {
-		return "", err
+		return url, err
+	}
+	if doc == nil {
+		return url, fmt.Errorf("no document found")
 	}
 
 	strategies := []TitleStrategy{
