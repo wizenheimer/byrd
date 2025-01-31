@@ -76,11 +76,13 @@ func main() {
 		ErrorHandler: middleware.CustomErrorHandler,
 	})
 
+	ratelimiters := middleware.NewRateLimiters(cfg, logger)
+
 	// Setup middleware
-	middleware.SetupMiddleware(cfg, app)
+	middleware.SetupMiddleware(cfg, app, ratelimiters)
 
 	// Setup routes
-	routes.SetupRoutes(app, handlers, am, rm)
+	routes.SetupRoutes(app, handlers, ratelimiters, am, rm)
 
 	// Start server in a goroutine
 	serverError := make(chan error, 1)

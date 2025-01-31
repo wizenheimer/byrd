@@ -10,13 +10,15 @@ import (
 	"github.com/wizenheimer/byrd/src/internal/config"
 )
 
-func SetupMiddleware(cfg *config.Config, app *fiber.App) {
+func SetupMiddleware(cfg *config.Config, app *fiber.App, rc *RateLimiters) {
 	// Recover from panics
 	app.Use(recover.New())
 	// Handle shutdown
 	app.Use(rejectRequestsDuringShutdown)
 	// Log requests
 	app.Use(logger.New())
+	// Rate limiter - Global rate limiting
+	app.Use(rc.GlobalLimiter)
 	// CORS
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     cfg.Server.CorsAllowedOrigins,

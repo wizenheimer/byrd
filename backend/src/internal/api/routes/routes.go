@@ -95,11 +95,12 @@ func NewHandlerContainer(
 func SetupRoutes(
 	app *fiber.App,
 	handlers *HandlerContainer,
+	l *middleware.RateLimiters,
 	m *middleware.AccessMiddleware,
 	r *middleware.ResourceMiddleware,
 ) {
 
-	setupPublicRoutes(app, handlers, m, r)
+	setupPublicRoutes(app, handlers, l, m, r)
 
 	if config.IsDevelopment() {
 		setupPrivateRoutes(app, handlers, m)
@@ -110,6 +111,7 @@ func SetupRoutes(
 func setupPublicRoutes(
 	app *fiber.App,
 	h *HandlerContainer,
+	l *middleware.RateLimiters,
 	m *middleware.AccessMiddleware,
 	r *middleware.ResourceMiddleware,
 ) {
@@ -120,42 +122,45 @@ func setupPublicRoutes(
 	public.Get("/token", h.UserHandler.ValidateClerkToken)
 
 	// User management routes
-	setupUserRoutes(public, h.UserHandler)
+	setupUserRoutes(public, l, h.UserHandler)
 
 	// Workspace and related routes
-	setupWorkspaceRoutes(public, h.WorkspaceHandler, m)
+	setupWorkspaceRoutes(public, h.WorkspaceHandler, l, m)
 
 	// Member management routes
-	setupMemberRoutes(public, h.WorkspaceHandler, m)
+	setupMemberRoutes(public, h.WorkspaceHandler, l, m)
 
 	// Competitor management routes
-	setupCompetitorRoutes(public, h.WorkspaceHandler, m, r)
+	setupCompetitorRoutes(public, h.WorkspaceHandler, l, m, r)
 
 	// Page management routes
-	setupPageRoutes(public, h.WorkspaceHandler, m, r)
+	setupPageRoutes(public, h.WorkspaceHandler, l, m, r)
 }
 
 // setupUserRoutes configures user management routes
 func setupUserRoutes(
 	router fiber.Router,
+	l *middleware.RateLimiters,
 	handler *handlers.UserHandler,
 ) {
 	// Delete the current user account
-	router.Delete("/users", handler.DeleteCurrentUser)
+	router.Delete("/users", l.UserCDLimiter, handler.DeleteCurrentUser)
 	// Get the current user account
 	router.Get("/users", handler.GetCurrentUser)
 	// Create or update a user account
-	router.Post("/users", handler.CreateOrUpdateUser)
+	router.Post("/users", l.UserCDLimiter, handler.CreateOrUpdateUser)
 }
 
 // setupWorkspaceRoutes configures workspace and related resource management routes
 func setupWorkspaceRoutes(
 	router fiber.Router,
 	workspaceHandler *handlers.WorkspaceHandler,
+	l *middleware.RateLimiters,
 	m *middleware.AccessMiddleware,
 ) {
 	// Create a new workspace for a user
 	router.Post("/workspace",
+		l.WorkspaceCDLimiter,
 		workspaceHandler.CreateWorkspaceForUser)
 
 	// List all workspaces for a user
@@ -175,6 +180,7 @@ func setupWorkspaceRoutes(
 	// Delete a workspace by ID
 	router.Delete("/workspace/:workspaceID",
 		m.RequiresWorkspaceAdmin,
+		l.WorkspaceCDLimiter,
 		workspaceHandler.DeleteWorkspaceByID)
 
 	// Join a workspace by ID
@@ -191,6 +197,7 @@ func setupWorkspaceRoutes(
 func setupMemberRoutes(
 	router fiber.Router,
 	workspaceHandler *handlers.WorkspaceHandler,
+	l *middleware.RateLimiters,
 	m *middleware.AccessMiddleware,
 ) {
 	// List all users in a workspace
@@ -200,6 +207,7 @@ func setupMemberRoutes(
 
 	// Invite a user to a workspace
 	router.Post("/workspace/:workspaceID/users",
+		l.UserCDLimiter, // Rate limit user creation
 		m.RequiresWorkspaceMember,
 		workspaceHandler.InviteUsersToWorkspace)
 
@@ -210,6 +218,7 @@ func setupMemberRoutes(
 
 	// Remove a user from a workspace
 	router.Delete("/workspace/:workspaceID/users/:userID",
+		l.UserCDLimiter, // Rate limit user deletion
 		m.RequiresWorkspaceAdmin,
 		workspaceHandler.RemoveUserFromWorkspace)
 }
@@ -217,6 +226,7 @@ func setupMemberRoutes(
 func setupCompetitorRoutes(
 	router fiber.Router,
 	workspaceHandler *handlers.WorkspaceHandler,
+	l *middleware.RateLimiters,
 	m *middleware.AccessMiddleware,
 	r *middleware.ResourceMiddleware,
 ) {
@@ -227,6 +237,7 @@ func setupCompetitorRoutes(
 
 	// Add a competitor to a workspace
 	router.Post("/workspace/:workspaceID/competitors",
+		l.CompetitorCDLimiter, // Rate limit competitor creation
 		m.RequiresWorkspaceMember,
 		workspaceHandler.CreateCompetitorForWorkspace)
 
@@ -244,6 +255,7 @@ func setupCompetitorRoutes(
 
 	// Delete a competitor from a workspace
 	router.Delete("/workspace/:workspaceID/competitors/:competitorID",
+		l.CompetitorCDLimiter, // Rate limit competitor deletion
 		m.RequiresWorkspaceMember,
 		r.ValidateCompetitorResource,
 		workspaceHandler.RemoveCompetitorFromWorkspace)
@@ -256,6 +268,7 @@ func setupCompetitorRoutes(
 
 	// Dispatch a report to workspace members
 	router.Post("/workspace/:workspaceID/competitors/:competitorID/reports/dispatch",
+		l.CompetitorCDLimiter, // Rate limit report dispatch
 		m.RequiresWorkspaceMember,
 		r.ValidateCompetitorResource,
 		workspaceHandler.DispatchReportForCompetitor)
@@ -270,6 +283,7 @@ func setupCompetitorRoutes(
 func setupPageRoutes(
 	router fiber.Router,
 	workspaceHandler *handlers.WorkspaceHandler,
+	l *middleware.RateLimiters,
 	m *middleware.AccessMiddleware,
 	r *middleware.ResourceMiddleware,
 ) {
@@ -281,6 +295,7 @@ func setupPageRoutes(
 
 	// Add a page to a competitor
 	router.Post("/workspace/:workspaceID/competitors/:competitorID/pages",
+		l.PageCDLimiter, // Rate limit page creation
 		m.RequiresWorkspaceMember,
 		r.ValidateCompetitorResource,
 		workspaceHandler.AddPagesToCompetitor)
@@ -299,6 +314,7 @@ func setupPageRoutes(
 
 	// Delete a page from a competitor
 	router.Delete("/workspace/:workspaceID/competitors/:competitorID/pages/:pageID",
+		l.PageCDLimiter, // Rate limit page deletion
 		m.RequiresWorkspaceMember,
 		r.ValidatePageResource,
 		workspaceHandler.RemovePageFromCompetitor)

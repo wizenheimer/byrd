@@ -17,10 +17,42 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	Port                string
-	CorsAllowedOrigins  string
-	IdleTimeout         time.Duration
-	ShutdownTimeout     time.Duration
+	// Port is the port on which the server listens for incoming requests.
+	Port string
+
+	// Limits the number of requests for all endpoints.
+	GlobalRequestsPerMinute int
+
+	// Limits the number of requests for workspace creation and deletion.
+	// Defaults to 1 request per minute.
+	WorkspaceCDRequestsPerMinute int
+
+	// Limits the number of requests for competitor creation and deletion.
+	// Defaults to 5 requests per second.
+	CompetitorCDRequestsPerSecond int
+
+	// Limits the number of requests for page creation and deletion.
+	// Defaults to 10 requests per second.
+	PageCDRequestsPerSecond int
+
+	// UserCDRequestsPerSecond limits the number of requests for user creation and deletion.
+	// Defaults to 1 request per second.
+	UserCDRequestsPerSecond int
+
+	// Limit the number of report created or dispatched per minute.
+	// Defaults to 10 requests per minute.
+	ReportCDPerMinute int
+
+	// CorsAllowedOrigins is a comma-separated list of origins that are allowed to make requests to the server.
+	CorsAllowedOrigins string
+
+	// IdleTimeout is the time after which the server waits for the next request before shutting down.
+	IdleTimeout time.Duration
+
+	// ShutdownTimeout is the maximum amount of time to wait for the server to shut down gracefully.
+	ShutdownTimeout time.Duration
+
+	// ShutdownMaxAttempts is the maximum number of attempts to shut down the server gracefully.
 	ShutdownMaxAttempts int
 }
 
@@ -147,6 +179,24 @@ func LoadServerConfig() ServerConfig {
 	return ServerConfig{
 		// Port is set to the value of the SERVER_PORT environment variable, or "8080" if the variable is not set.
 		Port: GetEnv("SERVER_PORT", "8080", utils.StrParser),
+
+		// RequestsPerMinute is set to the value of the REQUESTS_PER_MINUTE environment variable, or 100 if the variable is not set.
+		GlobalRequestsPerMinute: GetEnv("GLOBAL_REQUESTS_PER_MINUTE", 100, utils.IntParser),
+
+		// WorkspaceCDRequestsPerSecond is set to the value of the WORKSPACE_CD_REQUESTS_PER_SECOND environment variable, or 1 if the variable is not set.
+		WorkspaceCDRequestsPerMinute: GetEnv("WORKSPACE_CD_REQUESTS_PER_MINUTE", 1, utils.IntParser),
+
+		// CompetitorCDRequestsPerSecond is set to the value of the COMPETITOR_CD_REQUESTS_PER_SECOND environment variable, or 5 if the variable is not set.
+		CompetitorCDRequestsPerSecond: GetEnv("COMPETITOR_CD_REQUESTS_PER_SECOND", 5, utils.IntParser),
+
+		// PageCDRequestsPerSecond is set to the value of the PAGE_CD_REQUESTS_PER_SECOND environment variable, or 10 if the variable is not set.
+		PageCDRequestsPerSecond: GetEnv("PAGE_CD_REQUESTS_PER_SECOND", 10, utils.IntParser),
+
+		// UserCDRequestsPerSecond is set to the value of the USER_CD_REQUESTS_PER_SECOND environment variable, or 1 if the variable is not set.
+		UserCDRequestsPerSecond: GetEnv("USER_CD_REQUESTS_PER_SECOND", 1, utils.IntParser),
+
+		// ReportCDPerMinute is set to the value of the REPORT_CD_PER_MINUTE environment variable, or 10 if the variable is not set.
+		ReportCDPerMinute: GetEnv("REPORT_CD_PER_MINUTE", 10, utils.IntParser),
 
 		// CorsAllowedOrigins is set to the value of the CORS_ALLOWED_ORIGINS environment variable, or "http://localhost:5173" if the variable is not set.
 		CorsAllowedOrigins: GetEnv("CORS_ALLOWED_ORIGINS", "http://localhost:5173", utils.StrParser),
