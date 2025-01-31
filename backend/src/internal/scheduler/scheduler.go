@@ -115,7 +115,11 @@ func (s *scheduler) Schedule(cmd func(), opts ScheduleOptions) (*models.Schedule
 
 			entry := s.cron.Entry(entryID)
 			if existing, ok := s.schedules.Load(id); ok {
-				sf := existing.(*models.ScheduledFunc)
+				sf, ok := existing.(*models.ScheduledFunc)
+				if !ok {
+					s.logger.Error("failed to load scheduled function due to type mismatch", zap.Any("id", id))
+					return
+				}
 				sf.EntryID = entryID
 				sf.NextRun = entry.Next
 				sf.State = models.ActiveFuncState
@@ -263,7 +267,10 @@ func (s *scheduler) Get(id models.ScheduleID) (*models.ScheduledFunc, error) {
 	s.logger.Info("getting a scheduled function", zap.Any("id", id))
 
 	if value, ok := s.schedules.Load(id); ok {
-		sf := value.(*models.ScheduledFunc)
+		sf, ok := value.(*models.ScheduledFunc)
+		if !ok {
+			return nil, fmt.Errorf("failed to load scheduled function due to type mismatch")
+		}
 		// If the function is not delayed,
 		// and has been scheduled
 		// update the last run and next run times
@@ -284,7 +291,11 @@ func (s *scheduler) List() []*models.ScheduledFunc {
 
 	var funcs []*models.ScheduledFunc
 	s.schedules.Range(func(key, value interface{}) bool {
-		sf := value.(*models.ScheduledFunc)
+		sf, ok := value.(*models.ScheduledFunc)
+		if !ok {
+			s.logger.Error("failed to load scheduled function due to type mismatch", zap.Any("id", key))
+			return true
+		}
 		// If the function is not delayed,
 		// and has been scheduled
 		// update the last run and next run times
@@ -313,7 +324,12 @@ func (s *scheduler) Stop() error {
 	}
 
 	s.schedules.Range(func(key, value interface{}) bool {
-		if err := s.Delete(key.(models.ScheduleID)); err != nil {
+		scheduleKey, ok := key.(models.ScheduleID)
+		if !ok {
+			s.logger.Error("failed to load scheduled function due to type mismatch", zap.Any("id", key))
+			return true
+		}
+		if err := s.Delete(scheduleKey); err != nil {
 			s.logger.Error("failed to delete scheduled function", zap.Any("id", key), zap.Error(err))
 		}
 		return true
@@ -330,7 +346,11 @@ func (s *scheduler) Stop() error {
 func (s *scheduler) wrapCommand(id models.ScheduleID, cmd func(), hooks ...func()) func() {
 	return func() {
 		if value, ok := s.schedules.Load(id); ok {
-			sf := value.(*models.ScheduledFunc)
+			sf, ok := value.(*models.ScheduledFunc)
+			if !ok {
+				s.logger.Error("failed to load scheduled function due to type mismatch", zap.Any("id", id))
+				return
+			}
 
 			// Execute the command safely
 			s.logger.Info("executing scheduled function", zap.Any("id", id))
@@ -376,7 +396,10 @@ func (s *scheduler) NextRun(scheduleID models.ScheduleID, runtime *time.Time) (t
 		return time.Time{}, fmt.Errorf("scheduled function not found")
 	}
 
-	f := value.(*models.ScheduledFunc)
+	f, ok := value.(*models.ScheduledFunc)
+	if !ok {
+		return time.Time{}, fmt.Errorf("failed to load scheduled function due to type mismatch")
+	}
 
 	var currentTime time.Time
 	if runtime == nil {
@@ -398,7 +421,10 @@ func (s *scheduler) PrevRun(scheduleID models.ScheduleID, runtime *time.Time) (t
 		return time.Time{}, fmt.Errorf("scheduled function not found")
 	}
 
-	f := value.(*models.ScheduledFunc)
+	f, ok := value.(*models.ScheduledFunc)
+	if !ok {
+		return time.Time{}, fmt.Errorf("failed to load scheduled function due to type mismatch")
+	}
 
 	var currentTime time.Time
 	if runtime == nil {

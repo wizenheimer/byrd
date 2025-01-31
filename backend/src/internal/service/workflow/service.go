@@ -71,7 +71,11 @@ func (ws *workflowService) Shutdown(ctx context.Context) error {
 	var errs []error
 	ws.executors.Range(func(key, value interface{}) bool {
 		ws.logger.Debug("shutting down executor", zap.Any("workflow_type", key))
-		exc := value.(executor.WorkflowObserver)
+		exc, ok := value.(executor.WorkflowObserver)
+		if !ok {
+			ws.logger.Error("failed to cast executor to WorkflowObserver")
+			return false
+		}
 		if err := exc.Shutdown(ctx); err != nil {
 			ws.logger.Error("failed to shutdown executor", zap.Error(err))
 			errs = append(errs, err)
@@ -93,7 +97,11 @@ func (ws *workflowService) Recover(ctx context.Context) error {
 	count := 0
 	ws.executors.Range(func(key, value interface{}) bool {
 		ws.logger.Debug("recovering workflows", zap.Any("workflow_type", key))
-		exc := value.(executor.WorkflowObserver)
+		exc, ok := value.(executor.WorkflowObserver)
+		if !ok {
+			ws.logger.Error("failed to cast executor to WorkflowObserver")
+			return false
+		}
 		if err := exc.Recover(ctx); err != nil {
 			ws.logger.Error("failed to recover executor", zap.Error(err))
 			errs = append(errs, err)
@@ -160,7 +168,12 @@ func (ws *workflowService) Stop(ctx context.Context, workflowType models.Workflo
 		return errors.New("executor not found")
 	}
 
-	return exc.(executor.WorkflowObserver).Cancel(ctx, jobID)
+	executor, ok := exc.(executor.WorkflowObserver)
+	if !ok {
+		return errors.New("failed to cast executor to WorkflowObserver")
+	}
+
+	return executor.Cancel(ctx, jobID)
 }
 
 // Gets a running job in the workflow
@@ -207,7 +220,12 @@ func (ws *workflowService) History(ctx context.Context, limit, offset *int, work
 		// Get all executors history
 		ws.executors.Range(func(_, value interface{}) bool {
 			ws.logger.Debug("getting observer history", zap.Any("observer", workflowType))
-			observers = append(observers, value.(executor.WorkflowObserver))
+			obs, ok := value.(executor.WorkflowObserver)
+			if !ok {
+				ws.logger.Error("failed to cast executor to WorkflowObserver")
+				return false
+			}
+			observers = append(observers, obs)
 			return true
 		})
 	} else {
@@ -218,7 +236,11 @@ func (ws *workflowService) History(ctx context.Context, limit, offset *int, work
 		}
 
 		ws.logger.Debug("getting observer history", zap.Any("observer", workflowType))
-		observers = append(observers, exc.(executor.WorkflowObserver))
+		obs, ok := exc.(executor.WorkflowObserver)
+		if !ok {
+			return nil, errors.New("failed to cast executor to WorkflowObserver")
+		}
+		observers = append(observers, obs)
 	}
 
 	var observerHistory []models.JobRecord

@@ -37,7 +37,7 @@ type reportService struct {
 func NewReportService(aiService ai.AIService, notificationService notification.NotificationService, library template.TemplateLibrary, repo report.ReportRepository, logger *logger.Logger) (ReportService, error) {
 	emailChannel, err := notificationService.GetEmailChannel(context.TODO(), 1, 25)
 	if err != nil {
-		logger.Error("Failed to get email channel", zap.Error(err))
+		logger.Error("failed to get email channel", zap.Error(err))
 		return nil, err
 	}
 	rs := reportService{

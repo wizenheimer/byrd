@@ -73,10 +73,18 @@ func (s *openAIService) SummarizeChanges(ctx context.Context, changeList []*mode
 		go func(cat string, list interface{}) {
 			defer wg.Done()
 
-			interfaceList := list.([]interface{})
+			interfaceList, ok := list.([]interface{})
+			if !ok {
+				s.logger.Error("error converting changes list to interface list")
+				return
+			}
 			stringList := make([]string, len(interfaceList))
 			for i, v := range interfaceList {
-				stringList[i] = v.(string)
+				stringList[i], ok = v.(string)
+				if !ok {
+					s.logger.Error("error converting changes list to string list")
+					return
+				}
 			}
 
 			processCategoryAsync(ctx, s.client, cat, stringList, resultChan)
@@ -103,10 +111,18 @@ func (s *openAIService) SummarizeChanges(ctx context.Context, changeList []*mode
 		mu.Unlock()
 
 		// Fixed type conversion here too
-		interfaceList := changes.Fields[res.summary.Category].([]interface{})
+		interfaceList, ok := changes.Fields[res.summary.Category].([]interface{})
+		if !ok {
+			s.logger.Error("error converting changes list to interface list")
+			continue
+		}
 		stringList := make([]string, len(interfaceList))
 		for i, v := range interfaceList {
-			stringList[i] = v.(string)
+			stringList[i], ok = v.(string)
+			if !ok {
+				s.logger.Error("error converting changes list to string list")
+				continue
+			}
 		}
 
 		categoryChange := models.CategoryChange{
@@ -122,10 +138,18 @@ func (s *openAIService) SummarizeChanges(ctx context.Context, changeList []*mode
 		mu.Lock()
 		if !processedCategories[category] {
 			// And here
-			interfaceList := changesList.([]interface{})
+			interfaceList, ok := changesList.([]interface{})
+			if !ok {
+				s.logger.Error("error converting changes list to interface list")
+				continue
+			}
 			stringList := make([]string, len(interfaceList))
 			for i, v := range interfaceList {
-				stringList[i] = v.(string)
+				stringList[i], ok = v.(string)
+				if !ok {
+					s.logger.Error("error converting changes list to string list")
+					continue
+				}
 			}
 
 			categoryChange := models.CategoryChange{

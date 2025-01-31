@@ -137,7 +137,10 @@ func (op *UpdateScheduleOperation) Execute(ctx context.Context) error {
 	if !ok {
 		return fmt.Errorf("scheduled function not found")
 	}
-	op.oldFunc = v.(*models.ScheduledFunc)
+	op.oldFunc, ok = v.(*models.ScheduledFunc)
+	if !ok {
+		return fmt.Errorf("failed to cast scheduled function")
+	}
 
 	// Update repository
 	if err := op.svc.repository.UpdateSchedule(ctx, op.remoteID, op.workflowProp); err != nil {
@@ -212,7 +215,10 @@ func (op *DeleteScheduleOperation) Execute(ctx context.Context) error {
 	if !ok {
 		return errors.New("scheduled function not found")
 	}
-	op.oldFunc = value.(*models.ScheduledFunc)
+	op.oldFunc, ok = value.(*models.ScheduledFunc)
+	if !ok {
+		return errors.New("failed to cast scheduled function")
+	}
 
 	// Delete from repository first
 	if err := op.svc.repository.DeleteSchedule(ctx, op.remoteID); err != nil {

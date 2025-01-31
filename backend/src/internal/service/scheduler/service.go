@@ -83,7 +83,11 @@ func (s *schedulerService) syncWorkflow(ctx context.Context, remoteScheduleID mo
 			s.logger.Error("scheduled function not found")
 			return
 		}
-		sf := v.(*models.ScheduledFunc)
+		sf, ok := v.(*models.ScheduledFunc)
+		if !ok {
+			s.logger.Error("failed to cast scheduled function")
+			return
+		}
 
 		// Sync the workflow times
 		if err := s.repository.Sync(ctx, remoteScheduleID, sf.LastRun, sf.NextRun); err != nil {
@@ -147,7 +151,10 @@ func (s *schedulerService) Get(ctx context.Context, remoteScheduleID models.Sche
 	if !ok {
 		return nil, errors.New("scheduled function not found")
 	}
-	f := v.(*models.ScheduledFunc)
+	f, ok := v.(*models.ScheduledFunc)
+	if !ok {
+		return nil, errors.New("failed to cast scheduled function")
+	}
 
 	_, err := s.scheduler.Get(f.ID)
 	if err != nil {

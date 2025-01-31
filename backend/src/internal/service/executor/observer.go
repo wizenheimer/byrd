@@ -218,8 +218,12 @@ func (e *workflowObserver) Status(ctx context.Context, jobID uuid.UUID) (*models
 		return nil, errors.New("job not found")
 	}
 
+	jc, ok := jobContext.(*models.JobContext)
+	if !ok {
+		return nil, errors.New("cannot parse job context")
+	}
 	// Get the job status
-	status := jobContext.(*models.JobContext).GetStatus()
+	status := jc.GetStatus()
 	return &status, nil
 }
 
@@ -232,8 +236,13 @@ func (e *workflowObserver) State(ctx context.Context, jobID uuid.UUID) (*models.
 		return nil, errors.New("job not found")
 	}
 
+	jc, ok := jobContext.(*models.JobContext)
+	if !ok {
+		return nil, errors.New("cannot parse job context")
+	}
+
 	// Get the job state
-	status, checkpoint := jobContext.(*models.JobContext).GetState()
+	status, checkpoint := jc.GetState()
 	return &models.JobState{
 		Status:     status,
 		Checkpoint: checkpoint,
@@ -249,8 +258,12 @@ func (e *workflowObserver) Get(ctx context.Context, jobID uuid.UUID) (*models.Jo
 		return nil, errors.New("job not found")
 	}
 
+	jc, ok := jobContext.(*models.JobContext)
+	if !ok {
+		return nil, errors.New("cannot parse job context")
+	}
 	// Get the job
-	job := jobContext.(*models.JobContext).Job
+	job := jc.Job
 	return &job, nil
 }
 
@@ -263,8 +276,12 @@ func (e *workflowObserver) Cancel(ctx context.Context, jobID uuid.UUID) error {
 		return errors.New("job not found")
 	}
 
+	jc, ok := jobContext.(*models.JobContext)
+	if !ok {
+		return errors.New("cannot parse job context")
+	}
 	// Cancel the job
-	jobContext.(*models.JobContext).HandleCancellation()
+	jc.HandleCancellation()
 	e.activeJobs.Delete(jobID)
 	return nil
 }
@@ -275,7 +292,12 @@ func (e *workflowObserver) List(ctx context.Context, status models.JobStatus) ([
 	// List the jobs from the active jobs
 	var jobs []models.Job
 	e.activeJobs.Range(func(key, value interface{}) bool {
-		job := value.(*models.JobContext).Job
+		jc, ok := value.(*models.JobContext)
+		if !ok {
+			e.logger.Error("cannot parse job context")
+			return false
+		}
+		job := jc.Job
 		if job.Status == status {
 			jobs = append(jobs, job)
 		}
@@ -290,7 +312,11 @@ func (e *workflowObserver) Shutdown(ctx context.Context) error {
 
 	// Iterate over the active jobs and cancel them
 	e.activeJobs.Range(func(key, value interface{}) bool {
-		jobContext := value.(*models.JobContext)
+		jobContext, ok := value.(*models.JobContext)
+		if !ok {
+			e.logger.Error("cannot parse job context")
+			return false
+		}
 		jobContext.HandleCancellation()
 		return true
 	})

@@ -110,6 +110,10 @@ func (ps *pageService) backdateRefresh(pages []models.Page) {
 			diff, err := models.NewEmptyDynamicChanges(page.DiffProfile)
 			if err != nil {
 				ps.logger.Error("failed to create empty dynamic changes", zap.Any("pageID", page.ID), zap.Error(err))
+			}
+
+			if diff == nil {
+				ps.logger.Error("failed to get diff for page, defaulting to empty", zap.Any("pageID", page.ID))
 				diff = &models.DynamicChanges{}
 			}
 
