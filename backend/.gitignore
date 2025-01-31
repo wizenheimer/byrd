@@ -63,3 +63,5 @@ playground
 # Logs
 logs
 data
+
+test/mocks/mockingbyrd/src/server/token.json

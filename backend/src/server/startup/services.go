@@ -165,13 +165,13 @@ func setupWorkflowService(
 	workspaceService workspace.WorkspaceService,
 	logger *logger.Logger,
 ) (workflow.WorkflowService, error) {
-	runtimeConfig := models.JobExecutorConfig{
-		Parallelism: cfg.Workflow.ExecutorParallelism,
-		LowerBound:  time.Duration(cfg.Workflow.ExecutorLowerBound) * time.Second,
-		UpperBound:  time.Duration(cfg.Workflow.ExecutorUpperBound) * time.Second,
+	screenshotTaskRuntimeConfig := models.JobExecutorConfig{
+		Parallelism: cfg.Workflow.ScreenshotExecutorParallelism,
+		LowerBound:  time.Duration(cfg.Workflow.ScreenshotExecutorLowerBound) * time.Second,
+		UpperBound:  time.Duration(cfg.Workflow.ScreenshotExecutorUpperBound) * time.Second,
 	}
 
-	screenshotTaskExecutor, err := executor.NewPageExecutor(pageService, runtimeConfig, logger)
+	screenshotTaskExecutor, err := executor.NewPageExecutor(pageService, screenshotTaskRuntimeConfig, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +187,13 @@ func setupWorkflowService(
 		return nil, err
 	}
 
-	reportTaskExecutor, err := executor.NewReportExecutor(workspaceService, logger, runtimeConfig)
+	reportTaskRuntimeConfig := models.JobExecutorConfig{
+		Parallelism: cfg.Workflow.ReportExecutorParallelism,
+		LowerBound:  time.Duration(cfg.Workflow.ReportExecutorLowerBound) * time.Second,
+		UpperBound:  time.Duration(cfg.Workflow.ReportExecutorUpperBound) * time.Second,
+	}
+
+	reportTaskExecutor, err := executor.NewReportExecutor(workspaceService, logger, reportTaskRuntimeConfig)
 	if err != nil {
 		return nil, err
 	}

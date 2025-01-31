@@ -87,11 +87,17 @@ type WorkflowConfig struct {
 	// WorkflowTTL is the time-to-live for the workflow
 	WorkflowTTL time.Duration
 	// ExecutorParallelism is the number of parallel jobs
-	ExecutorParallelism int
+	ReportExecutorParallelism int
+	// ScreenshotExecutorParallelism is the number of parallel jobs
+	ScreenshotExecutorParallelism int
+	// ReportExecutorLowerBound is the lower bound for the executor
+	ReportExecutorLowerBound int
 	// ExecutorLowerBound is the lower bound for the executor
-	ExecutorLowerBound int
+	ScreenshotExecutorLowerBound int
+	// ReportExecutorUpperBound is the upper bound for the executor
+	ReportExecutorUpperBound int
 	// ExecutorUpperBound is the upper bound for the executor
-	ExecutorUpperBound int
+	ScreenshotExecutorUpperBound int
 }
 
 func Load() (*Config, error) {
@@ -238,10 +244,16 @@ func LoadWorkflowConfig() WorkflowConfig {
 		// WorkflowTTL is set to the value of the WORKFLOW_TTL environment variable, or 4 days if the variable is not set.
 		WorkflowTTL: time.Duration(GetEnv("WORKFLOW_TTL", 4*24*60, utils.IntParser)) * time.Second,
 		// ExecutorParallelism is set to the value of the EXECUTOR_PARALLELISM environment variable, or 10 if the variable is not set.
-		ExecutorParallelism: GetEnv("EXECUTOR_PARALLELISM", 10, utils.IntParser),
+		ScreenshotExecutorParallelism: GetEnv("SCREENSHOT_EXECUTOR_PARALLELISM", 10, utils.IntParser),
 		// ExecutorLowerBound is set to the value of the EXECUTOR_LOWER_BOUND environment variable, or 10 seconds if the variable is not set.
-		ExecutorLowerBound: GetEnv("EXECUTOR_LOWER_BOUND", 10, utils.IntParser),
+		ScreenshotExecutorLowerBound: GetEnv("SCREENSHOT_EXECUTOR_LOWER_BOUND", 10, utils.IntParser),
 		// ExecutorUpperBound is set to the value of the EXECUTOR_UPPER_BOUND environment variable, or 20 seconds if the variable is not set.
-		ExecutorUpperBound: GetEnv("EXECUTOR_UPPER_BOUND", 120, utils.IntParser),
+		ScreenshotExecutorUpperBound: GetEnv("SCREENSHOT_EXECUTOR_UPPER_BOUND", 120, utils.IntParser),
+		// ReportExecutorParallelism is set to the value of the REPORT_EXECUTOR_PARALLELISM environment variable, or 10 if the variable is not set.
+		ReportExecutorParallelism: GetEnv("REPORT_EXECUTOR_PARALLELISM", 10, utils.IntParser),
+		// ReportExecutorLowerBound is set to the value of the REPORT_EXECUTOR_LOWER_BOUND environment variable, or 10 seconds if the variable is not set.
+		ReportExecutorLowerBound: GetEnv("REPORT_EXECUTOR_LOWER_BOUND", 10, utils.IntParser),
+		// ReportExecutorUpperBound is set to the value of the REPORT_EXECUTOR_UPPER_BOUND environment variable, or 20 seconds if the variable is not set.
+		ReportExecutorUpperBound: GetEnv("REPORT_EXECUTOR_UPPER_BOUND", 120, utils.IntParser),
 	}
 }
