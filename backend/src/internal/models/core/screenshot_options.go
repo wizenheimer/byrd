@@ -143,6 +143,7 @@ type ScreenshotRequestOptions struct {
 	MaxHeight         *int               `json:"max_height,omitempty"`
 	Format            *string            `json:"format" default:"png"`
 	ImageQuality      *int               `json:"image_quality,omitempty" default:"80"`
+	IgnoreHostErrors  *bool              `json:"ignore_host_errors,omitempty" default:"true"`
 	OmitBackground    *bool              `json:"omit_background,omitempty"`
 
 	// Clip Options
@@ -303,6 +304,7 @@ func GetDefaultScreenshotRequestOptions(url string) ScreenshotRequestOptions {
 		// Default capture options
 		Format:                utils.ToPtr("png"),
 		ImageQuality:          utils.ToPtr(80),
+		IgnoreHostErrors:      utils.ToPtr(true),
 		CaptureBeyondViewport: utils.ToPtr(true),
 		FullPage:              utils.ToPtr(true),
 		FullPageAlgorithm:     utils.ToPtr(FullPageAlgorithmDefault),
@@ -365,6 +367,7 @@ type normalizedOptions struct {
 	MaxHeight                int               `json:"max_height,omitempty"`
 	Format                   string            `json:"format"`
 	ImageQuality             int               `json:"image_quality"`
+	IgnoreHostErrors         bool              `json:"ignore_host_errors"`
 	OmitBackground           bool              `json:"omit_background"`
 	Clip                     json.RawMessage   `json:"clip,omitempty"`
 	BlockAds                 bool              `json:"block_ads"`
@@ -410,6 +413,7 @@ func normalizeOptions(s *ScreenshotRequestOptions) normalizedOptions {
 		FullPage:                 getPointerValue(s.FullPage, true),
 		Format:                   getPointerValue(s.Format, "png"),
 		ImageQuality:             getPointerValue(s.ImageQuality, 80),
+		IgnoreHostErrors:         getPointerValue(s.IgnoreHostErrors, true),
 		BlockAds:                 getPointerValue(s.BlockAds, true),
 		BlockCookieBanners:       getPointerValue(s.BlockCookieBanners, true),
 		BlockBannersByHeuristics: getPointerValue(s.BlockBannersByHeuristics, true),

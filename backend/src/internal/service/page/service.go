@@ -100,6 +100,13 @@ func (ps *pageService) backdateRefresh(pages []models.Page) {
 				ps.logger.Debug("refreshed page", zap.Any("pageID", page.ID), zap.Any("imagePath", ir.StoragePath), zap.Any("contentPath", hr.StoragePath))
 			}
 
+			if ir == nil {
+				ps.logger.Error("failed to get image response for page", zap.Any("pageID", page.ID))
+				ir = &models.ScreenshotImage{
+					StoragePath: "",
+				}
+			}
+
 			diff, err := models.NewEmptyDynamicChanges(page.DiffProfile)
 			if err != nil {
 				ps.logger.Error("failed to create empty dynamic changes", zap.Any("pageID", page.ID), zap.Error(err))

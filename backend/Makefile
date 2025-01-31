@@ -105,7 +105,6 @@ help:
 	@echo "  make unpause-dev    - Unpause development services"
 	@echo "  make unpause-prod   - Unpause production services"
 	@echo "$(GREEN)Mock Server Commands:$(RESET)"
-	@echo "  make mock-servers       - Start all mock servers"
 	@echo "  make mock-private       - Start private endpoints mock server"
 	@echo "  make mock-public        - Start public endpoints mock server"
 	@echo "  make stop-mock-servers  - Stop all mock servers"
@@ -371,12 +370,6 @@ format:
 	@echo "$(BLUE)== Formatting Code ==$(RESET)"
 	go fmt ./...
 
-# Mock Server Commands
-.PHONY: mock-servers
-mock-servers:
-	@echo "$(BLUE)== Starting All Mock Servers ==$(RESET)"
-	make mock-private & make mock-public
-
 .PHONY: mock-private
 mock-private:
 	@echo "$(BLUE)== Starting Private Endpoints Mock Server ==$(RESET)"
@@ -385,7 +378,7 @@ mock-private:
 .PHONY:  mock-public
 mock-public:
 	@echo "$(BLUE)== Starting Public Endpoints Mock Server ==$(RESET)"
-	cd src/test/mocks/mockingbyrd && bun run dev
+	cd ./test/mocks/mockingbyrd && bun run dev
 
 .PHONY:  stop-mock-servers
 stop-mock-servers:
