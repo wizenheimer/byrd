@@ -23,5 +23,5 @@ type ReportRepository interface {
 	GetLatest(ctx context.Context, workspaceID, competitorID uuid.UUID) (*models.Report, error)
 
 	// GetForPeriod returns a report for the given workspace, competitor and time period
-	GetForPeriod(ctx context.Context, workspaceID, competitorID uuid.UUID, since time.Time) (*models.Report, error)
+	GetForPeriod(ctx context.Context, workspaceID, competitorID uuid.UUID, since time.Time) (*models.Report, bool, error)
 }

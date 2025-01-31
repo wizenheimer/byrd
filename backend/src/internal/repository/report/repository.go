@@ -204,7 +204,7 @@ func (r *reportRespository) GetLatest(ctx context.Context, workspaceID, competit
 	return report, nil
 }
 
-func (r *reportRespository) GetForPeriod(ctx context.Context, workspaceID, competitorID uuid.UUID, since time.Time) (*models.Report, error) {
+func (r *reportRespository) GetForPeriod(ctx context.Context, workspaceID, competitorID uuid.UUID, since time.Time) (*models.Report, bool, error) {
 	querier := r.getQuerier(ctx)
 
 	const getSQL = `
@@ -229,15 +229,15 @@ func (r *reportRespository) GetForPeriod(ctx context.Context, workspaceID, compe
 	)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return nil, nil
+			return nil, false, nil
 		}
-		return nil, fmt.Errorf("failed to get report for period: %w", err)
+		return nil, false, fmt.Errorf("failed to get report for period: %w", err)
 	}
 
 	err = json.Unmarshal(changesJSON, &report.Changes)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal changes: %w", err)
+		return nil, false, fmt.Errorf("failed to unmarshal changes: %w", err)
 	}
 
-	return report, nil
+	return report, true, nil
 }

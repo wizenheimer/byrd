@@ -138,14 +138,6 @@ var fields = []models.FieldConfig{
 // This is used to quickly lookup field config by name
 var AvailableFields = make(map[string]models.FieldConfig)
 
-// init initializes the field map
-// This is called when the package is imported
-func init() {
-	for _, field := range fields {
-		AvailableFields[field.Name] = field
-	}
-}
-
 // Sanitize removes duplicates from a profile.
 // It also validates the profile fields.
 // If a field is not valid, it returns an error.

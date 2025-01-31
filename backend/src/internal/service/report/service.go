@@ -74,13 +74,13 @@ func (s *reportService) Create(ctx context.Context, workspaceID, competitorID uu
 	// Check for reports in the last week
 	oneWeekAgo := time.Now().UTC().AddDate(0, 0, -7)
 
-	existingReport, err := s.repo.GetForPeriod(ctx, workspaceID, competitorID, oneWeekAgo)
+	existingReport, exists, err := s.repo.GetForPeriod(ctx, workspaceID, competitorID, oneWeekAgo)
 	if err != nil {
 		return nil, fmt.Errorf("failed to check existing report: %w", err)
 	}
 
 	// If report exists, return it
-	if existingReport != nil {
+	if existingReport != nil && exists {
 		s.logger.Debug("Found existing report for period",
 			zap.Any("reportID", existingReport.ID))
 		return existingReport, nil

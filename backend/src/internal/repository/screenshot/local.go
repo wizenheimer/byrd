@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"image"
 	_ "image/jpeg" // Register JPEG format
@@ -173,7 +174,7 @@ func (s *localScreenshotRepo) loadMetadata(path string) (*models.ScreenshotMetad
 	data, err := os.ReadFile(metadataPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil, nil
+			return nil, errors.New("metadata not found")
 		}
 		return nil, fmt.Errorf("failed to read metadata: %w", err)
 	}

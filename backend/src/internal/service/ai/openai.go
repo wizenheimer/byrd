@@ -46,6 +46,10 @@ func NewOpenAIService(apiKey string, logger *logger.Logger) (AIService, error) {
 		builder: builder,
 	}
 
+	for _, field := range fields {
+		AvailableFields[field.Name] = field
+	}
+
 	return &s, s.validate()
 }
 
