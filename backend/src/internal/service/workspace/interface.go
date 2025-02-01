@@ -25,9 +25,19 @@ type WorkspaceService interface {
 
 	ListUserWorkspaces(ctx context.Context, workspaceMember *clerk.User, membershipStatus models.MembershipStatus) ([]models.Workspace, error)
 
+	CountUserWorkspaces(context.Context, uuid.UUID) (int, error)
+
+	CountWorkspaceMembers(ctx context.Context, workspaceID uuid.UUID) (activeCount, pendingCount int, err error)
+
+	CountWorkspaceCompetitors(ctx context.Context, workspaceID uuid.UUID) (int, error)
+
+	CountWorkspacePages(ctx context.Context, workspaceID uuid.UUID) (int, error)
+
 	GetWorkspace(ctx context.Context, workspaceID uuid.UUID) (*models.Workspace, error)
 
 	UpdateWorkspace(ctx context.Context, workspaceID uuid.UUID, workspaceProps models.WorkspaceProps) error
+
+	UpdateWorkspacePlan(ctx context.Context, workspaceID uuid.UUID, plan models.WorkspacePlan) error
 
 	DeleteWorkspace(ctx context.Context, workspaceID uuid.UUID) (models.WorkspaceStatus, error)
 
@@ -63,7 +73,7 @@ type WorkspaceService interface {
 	// It flattens the pages and creates a competitor for each page
 	BatchAddCompetitorToWorkspace(ctx context.Context, workspaceID uuid.UUID, pages []models.PageProps) ([]models.Competitor, error)
 
-	AddPageToCompetitor(ctx context.Context, competitorID uuid.UUID, pages []models.PageProps) ([]models.Page, error)
+	AddPageToCompetitor(ctx context.Context, workspaceID, competitorID uuid.UUID, pages []models.PageProps) ([]models.Page, error)
 
 	ListCompetitorsForWorkspace(ctx context.Context, workspaceID uuid.UUID, limit, offset *int) ([]models.Competitor, bool, error)
 

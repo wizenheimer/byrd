@@ -51,51 +51,70 @@ func NewWorkspaceService(workspaceRepo workspace.WorkspaceRepository, competitor
 
 func (ws *workspaceService) CreateWorkspace(ctx context.Context, workspaceOwner *clerk.User, pages []models.PageProps, userEmails []string) (*models.Workspace, error) {
 	ws.logger.Debug("creating workspace", zap.Any("workspaceOwner", workspaceOwner), zap.Any("pages", pages), zap.Any("userEmails", userEmails))
+
 	// Step 0: Create workspace along with the owner
 	var workspace *models.Workspace
 	var workspaceCreator *models.User
-	createWorkspaceWithOwner := func(ctx context.Context) error {
-		var err error
-		// Step 1: Get or create the workspace owner
-		workspaceCreator, err = ws.userService.GetOrCreateUser(ctx, workspaceOwner)
-		if err != nil {
-			return err
-		}
+	var err error
 
-		// Step 2: Create the workspace
-		workspaceName := utils.GenerateWorkspaceName(workspaceOwner)
-		workspace, err = ws.workspaceRepo.CreateWorkspace(ctx, workspaceName, *workspaceCreator.Email, workspaceCreator.ID)
-		if err != nil {
-			return err
-		}
-
-		// Step 3: Sanity check
-		if workspace == nil {
-			return errors.New("failed to create workspace")
-		}
-
-		return nil
-	}
-
-	// Run the transaction
-	if err := ws.tm.RunInTx(context.Background(), nil, createWorkspaceWithOwner); err != nil {
+	// Step 1: Get or create the workspace owner
+	workspaceCreator, err = ws.userService.GetOrCreateUser(ctx, workspaceOwner)
+	if err != nil {
 		return nil, err
 	}
 
-	// STEP 1: Validate and Create Competitors for the workspace
-	// Add competitors to the workspace
-	if workspace == nil {
-		return nil, errors.New("workspace is nil after successful transaction")
+	// Step 2: Check if the user can create a workspace
+	canCreate, err := ws.CanCreateWorkspace(ctx, workspaceCreator.ID)
+	if err != nil {
+		return nil, err
 	}
+	if !canCreate {
+		return nil, errors.New("user cannot create workspace")
+	}
+
+	// Step 3: Create the workspace
+	workspaceName := utils.GenerateWorkspaceName(workspaceOwner)
+	workspace, err = ws.workspaceRepo.CreateWorkspace(ctx, workspaceName, *workspaceCreator.Email, workspaceCreator.ID, models.WorkspaceTrial)
+	if err != nil {
+		return nil, err
+	}
+	if workspace == nil {
+		return nil, errors.New("failed to create workspace")
+	}
+
+	// Step 4: Check if the user creation request is valid
+	// If not, truncate the list to the maximum allowed limit
+	pageLimit, err := workspace.GetMaxPages()
+	if err != nil {
+		return nil, err
+	}
+	if len(pages) > pageLimit {
+		pages = pages[:pageLimit]
+	}
+
+	// Step 5: Add competitors to the workspace
 	if _, err := ws.competitorService.BatchCreateCompetitorForWorkspace(ctx, workspace.ID, pages); err != nil {
 		ws.logger.Debug("failed to add competitors to workspace", zap.Error(err))
 	}
 
-	_, err := ws.AddUsersToWorkspace(ctx, workspaceOwner, workspace.ID, userEmails)
+	// Step 6: Check if the user creation request is valid
+	// If not, truncate the list to the maximum allowed limit
+	userLimit, err := workspace.GetMaxUsers()
+	if err != nil {
+		return nil, err
+	}
+	if len(userEmails) > userLimit {
+		userEmails = userEmails[:userLimit]
+	}
+
+	// Step 7: Add users to the workspace
+	// If the user is the owner, add them as an admin
+	_, err = ws.AddUsersToWorkspace(ctx, workspaceOwner, workspace.ID, userEmails)
 	if err != nil {
 		ws.logger.Debug("failed to add users to workspace", zap.Error(err))
 	}
 
+	// Step 8: Return the workspace
 	return workspace, nil
 }
 
@@ -142,6 +161,11 @@ func (ws *workspaceService) UpdateWorkspace(ctx context.Context, workspaceID uui
 	}
 
 	return nil
+}
+
+func (ws *workspaceService) UpdateWorkspacePlan(ctx context.Context, workspaceID uuid.UUID, plan models.WorkspacePlan) error {
+	ws.logger.Debug("updating workspace plan", zap.Any("workspaceID", workspaceID), zap.Any("plan", plan))
+	return ws.workspaceRepo.UpdateWorkspacePlan(ctx, workspaceID, plan)
 }
 
 func (ws *workspaceService) DeleteWorkspace(ctx context.Context, workspaceID uuid.UUID) (models.WorkspaceStatus, error) {
@@ -214,6 +238,14 @@ func (ws *workspaceService) ListWorkspaceMembers(ctx context.Context, workspaceI
 
 func (ws *workspaceService) AddUsersToWorkspace(ctx context.Context, workspaceMember *clerk.User, workspaceID uuid.UUID, emails []string) ([]models.WorkspaceUser, error) {
 	ws.logger.Debug("adding users to workspace", zap.Any("workspaceID", workspaceID), zap.Any("workspaceMember", workspaceMember), zap.Any("emails", emails))
+
+	canCreate, err := ws.CanAddUsers(ctx, workspaceID, len(emails))
+	if err != nil {
+		return nil, err
+	}
+	if !canCreate {
+		return nil, errors.New("user cannot add users to workspace")
+	}
 
 	inviterEmail, err := utils.GetClerkUserEmail(workspaceMember)
 	if err != nil {
@@ -465,6 +497,14 @@ func (ws *workspaceService) WorkspaceCompetitorPageExists(ctx context.Context, w
 
 func (ws *workspaceService) AddCompetitorToWorkspace(ctx context.Context, workspaceID uuid.UUID, pages []models.PageProps) (*models.Competitor, error) {
 	ws.logger.Debug("adding competitors to workspace", zap.Any("workspaceID", workspaceID), zap.Any("pages", pages))
+	canCreateCompetitor, err := ws.CanCreateCompetitor(ctx, workspaceID, 1, len(pages))
+	if err != nil {
+		return nil, err
+	}
+	if !canCreateCompetitor {
+		return nil, errors.New("user cannot create competitor")
+	}
+
 	competitor, err := ws.competitorService.CreateCompetitorForWorkspace(ctx, workspaceID, pages)
 	if err != nil {
 		return nil, err
@@ -475,6 +515,13 @@ func (ws *workspaceService) AddCompetitorToWorkspace(ctx context.Context, worksp
 
 func (ws *workspaceService) BatchAddCompetitorToWorkspace(ctx context.Context, workspaceID uuid.UUID, pages []models.PageProps) ([]models.Competitor, error) {
 	ws.logger.Debug("batch adding competitors to workspace", zap.Any("workspaceID", workspaceID), zap.Any("pageProps", pages))
+	canCreateCompetitor, err := ws.CanCreateCompetitor(ctx, workspaceID, len(pages), len(pages))
+	if err != nil {
+		return nil, err
+	}
+	if !canCreateCompetitor {
+		return nil, errors.New("user cannot create competitor")
+	}
 
 	competitors, err := ws.competitorService.BatchCreateCompetitorForWorkspace(ctx, workspaceID, pages)
 	if err != nil {
@@ -489,8 +536,16 @@ func (ws *workspaceService) BatchAddCompetitorToWorkspace(ctx context.Context, w
 	return competitors, nil
 }
 
-func (ws *workspaceService) AddPageToCompetitor(ctx context.Context, competitorID uuid.UUID, pageProps []models.PageProps) ([]models.Page, error) {
+func (ws *workspaceService) AddPageToCompetitor(ctx context.Context, workspaceID, competitorID uuid.UUID, pageProps []models.PageProps) ([]models.Page, error) {
 	ws.logger.Debug("adding pages to competitor", zap.Any("competitorID", competitorID), zap.Any("pages", pageProps))
+	canCreatePage, err := ws.CanCreatePage(ctx, workspaceID, len(pageProps))
+	if err != nil {
+		return nil, err
+	}
+	if !canCreatePage {
+		return nil, errors.New("user cannot create page")
+	}
+
 	createdPages, err := ws.competitorService.AddPagesToCompetitor(ctx, competitorID, pageProps)
 	if err != nil {
 		return nil, err
@@ -636,4 +691,165 @@ func (ws *workspaceService) ListActiveWorkspaces(ctx context.Context, batchSize 
 
 func (ws *workspaceService) SendEmail(ctx context.Context, email models.Email) {
 	ws.emailChannel <- email
+}
+
+// CanCreateWorkspace checks if the user can create a workspace
+// based on the user's current workspace count and the maximum workspace limit
+func (ws *workspaceService) CanCreateWorkspace(ctx context.Context, userID uuid.UUID) (bool, error) {
+	ws.logger.Debug("checking if workspace can be created", zap.Any("userID", userID))
+
+	totalIncomingWorkspaces := 1
+
+	currentCount, err := ws.CountUserWorkspaces(ctx, userID)
+	if err != nil {
+		return false, err
+	}
+
+	maxCount, err := models.GetWorkspaceCreationLimit()
+	if err != nil {
+		return false, err
+	}
+
+	// Check if the user can create a workspace
+	return currentCount+totalIncomingWorkspaces <= maxCount, nil
+}
+
+// CanCreateCompetitor checks if the user can create a competitor
+// based on the user's current competitor count and the maximum competitor limit
+// it also checks if the user can create a page based on the user's current page count and the maximum page limit
+func (ws *workspaceService) CanCreateCompetitor(ctx context.Context, workspaceID uuid.UUID, totalIncomingCompetitors int, totalIncomingPages int) (bool, error) {
+	ws.logger.Debug("checking if competitor can be created", zap.Any("workspaceID", workspaceID))
+	canCreatePage, err := ws.CanCreatePage(ctx, workspaceID, totalIncomingPages)
+	if err != nil {
+		return false, err
+	}
+	if !canCreatePage {
+		return false, errors.New("user cannot create page")
+	}
+
+	// Get the workspace
+	workspace, err := ws.GetWorkspace(ctx, workspaceID)
+	if err != nil {
+		return false, err
+	}
+
+	// Get the max competitors for the workspace
+	competitorLimit, err := workspace.GetMaxCompetitors()
+	if err != nil {
+		return false, err
+	}
+
+	// Get the current competitor count
+	currentCount, err := ws.CountWorkspaceCompetitors(ctx, workspaceID)
+	if err != nil {
+		return false, err
+	}
+
+	// Check if the user can create a competitor
+	return currentCount+totalIncomingCompetitors <= competitorLimit, nil
+}
+
+// CanCreatePage checks if the user can create a page
+// based on the user's current page count and the maximum page limit
+func (ws *workspaceService) CanCreatePage(ctx context.Context, workspaceID uuid.UUID, totalIncomingPages int) (bool, error) {
+	// Get the workspace
+	workspace, err := ws.GetWorkspace(ctx, workspaceID)
+	if err != nil {
+		return false, err
+	}
+
+	// Get the max pages for the competitor
+	limit, err := workspace.GetMaxPages()
+	if err != nil {
+		return false, err
+	}
+
+	// Get the current page count
+	pageCount, err := ws.CountWorkspacePages(ctx, workspaceID)
+	if err != nil {
+		return false, err
+	}
+
+	// Check if the user can create a page
+	return pageCount+totalIncomingPages <= limit, nil
+}
+
+// CanAddUsers checks if the user can add users to the workspace
+// based on the user's current user count and the maximum user limit
+func (ws *workspaceService) CanAddUsers(ctx context.Context, workspaceID uuid.UUID, totalIncomingUsers int) (bool, error) {
+	ws.logger.Debug("checking if users can be added", zap.Any("workspaceID", workspaceID))
+
+	// Get the workspace
+	workspace, err := ws.GetWorkspace(ctx, workspaceID)
+	if err != nil {
+		return false, err
+	}
+
+	// Get the max users for the workspace
+	maxCount, err := workspace.GetMaxUsers()
+	if err != nil {
+		return false, err
+	}
+
+	// Get the current user count
+	activeCount, pendingCount, err := ws.CountWorkspaceMembers(ctx, workspaceID)
+	if err != nil {
+		return false, err
+	}
+
+	// Check if the user can add users
+	return activeCount+pendingCount+totalIncomingUsers <= maxCount, nil
+}
+
+// CountUserWorkspaces counts the number of workspaces for a user
+func (ws *workspaceService) CountUserWorkspaces(ctx context.Context, userID uuid.UUID) (totalCount int, err error) {
+	totalCount, err = ws.workspaceRepo.GetWorkspaceCountForUser(ctx, userID)
+	if err != nil {
+		return 0, err
+	}
+
+	return totalCount, nil
+}
+
+// CountWorkspaceMembers counts the number of active and pending members for a workspace
+func (ws *workspaceService) CountWorkspaceMembers(ctx context.Context, workspaceID uuid.UUID) (activeCount, pendingCount int, err error) {
+	ws.logger.Debug("counting workspace members", zap.Any("workspaceID", workspaceID))
+	activeCount, pendingCount, err = ws.workspaceRepo.GetActivePendingMemberCounts(ctx, workspaceID)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	return activeCount, pendingCount, nil
+}
+
+// CountWorkspaceCompetitors counts the number of competitors for a workspace
+func (ws *workspaceService) CountWorkspaceCompetitors(ctx context.Context, workspaceID uuid.UUID) (int, error) {
+	ws.logger.Debug("counting workspace competitors", zap.Any("workspaceID", workspaceID))
+	count, err := ws.competitorService.CountCompetitorsForWorkspace(ctx, workspaceID)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
+// CountWorkspacePages counts the number of pages for a workspace
+func (ws *workspaceService) CountWorkspacePages(ctx context.Context, workspaceID uuid.UUID) (int, error) {
+	ws.logger.Debug("counting workspace pages", zap.Any("workspaceID", workspaceID))
+	competitors, _, err := ws.ListCompetitorsForWorkspace(ctx, workspaceID, nil, nil)
+	if err != nil {
+		return 0, err
+	}
+
+	competitorsIDs := make([]uuid.UUID, 0)
+	for _, competitor := range competitors {
+		competitorsIDs = append(competitorsIDs, competitor.ID)
+	}
+
+	count, err := ws.competitorService.CountPagesForCompetitors(ctx, competitorsIDs)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
 }
