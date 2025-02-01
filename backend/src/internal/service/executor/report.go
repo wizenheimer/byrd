@@ -3,6 +3,7 @@ package executor
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -199,13 +200,18 @@ func (re *reportExecutor) processWorkspace(ctx context.Context, workspaceID uuid
 		if err != nil {
 			return err
 		}
+		errs := make([]error, 0)
 		for _, competitor := range competitors {
 			if err := re.processCompetitor(ctx, workspaceID, competitor.ID); err != nil {
 				re.logger.Error("failed to process competitor", zap.Any("workspaceID", workspaceID), zap.Any("competitorID", competitor.ID), zap.Error(err))
+				errs = append(errs, err)
 			}
 		}
+		if len(errs) > 0 {
+			err = fmt.Errorf("failed to process some competitors, %v", errs)
+		}
 		re.logger.Debug("processed workspace", zap.Any("workspaceID", workspaceID))
-		return nil
+		return err
 	}
 }
 

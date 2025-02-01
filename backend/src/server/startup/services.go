@@ -213,6 +213,22 @@ func setupWorkflowService(
 		return nil, err
 	}
 
+	dispatchTaskExecutor, err := executor.NewDispatchExecutor(workspaceService, logger, reportTaskRuntimeConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	dispatchWorkflowObserver, err := executor.NewWorkflowObserver(
+		models.DispatchWorkflowType,
+		workflowRepo,
+		notificationService,
+		dispatchTaskExecutor,
+		logger,
+	)
+	if err != nil {
+		return nil, err
+	}
+
 	workflowService, err := workflow.NewWorkflowService(logger)
 	if err != nil {
 		return nil, err
@@ -223,6 +239,10 @@ func setupWorkflowService(
 	}
 
 	if err := workflowService.Register(models.ReportWorkflowType, reportWorkflowObserver); err != nil {
+		return nil, err
+	}
+
+	if err := workflowService.Register(models.DispatchWorkflowType, dispatchWorkflowObserver); err != nil {
 		return nil, err
 	}
 

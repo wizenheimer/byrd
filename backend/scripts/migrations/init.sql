@@ -9,7 +9,7 @@ CREATE TYPE membership_status AS ENUM ('pending', 'active', 'inactive');
 CREATE TYPE competitor_status AS ENUM ('active', 'inactive');
 CREATE TYPE page_status AS ENUM ('active', 'inactive');
 CREATE TYPE history_status AS ENUM ('active', 'inactive');
-CREATE TYPE workflow_type AS ENUM ('screenshot', 'reporting');
+CREATE TYPE workflow_type AS ENUM ('screenshot', 'report', 'dispatch');
 -- Create workspaces table
 CREATE TABLE workspaces (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -88,7 +88,9 @@ CREATE TABLE workflow_schedules (
 CREATE TABLE job_records (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   job_id UUID NOT NULL,
-  workflow_type TEXT NOT NULL CHECK (workflow_type IN ('screenshot', 'report')),
+  workflow_type TEXT NOT NULL CHECK (
+    workflow_type IN ('screenshot', 'report', 'dispatch')
+  ),
   start_time TIMESTAMP WITH TIME ZONE,
   end_time TIMESTAMP WITH TIME ZONE,
   cancel_time TIMESTAMP WITH TIME ZONE,

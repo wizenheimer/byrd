@@ -18,12 +18,14 @@ const (
 	ScreenshotWorkflowType WorkflowType = "screenshot"
 	// ReportWorkflowType is a workflow that generates a report
 	ReportWorkflowType WorkflowType = "report"
+	// DispatchWorkflowType is a workflow that dispatches a generated report
+	DispatchWorkflowType WorkflowType = "dispatch"
 )
 
 // Parses a string into a WorkflowType
 func ParseWorkflowType(s string) (WorkflowType, error) {
 	switch WorkflowType(s) {
-	case ScreenshotWorkflowType, ReportWorkflowType:
+	case ScreenshotWorkflowType, ReportWorkflowType, DispatchWorkflowType:
 		return WorkflowType(s), nil
 	default:
 		return "", fmt.Errorf("invalid workflow type: %s", s)
