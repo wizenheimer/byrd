@@ -49,7 +49,7 @@
 										"header": [],
 										"body": {
 											"mode": "raw",
-											"raw": "{\n    \"competitors\": [\n        \"https://www.cap.so/\",\n        \"https://www.commonroom.io/\"\n    ],\n    \"team\": [\n        \"xnayankumar@gmail.com\",\n        \"x4rc3us@gmail.com\",\n        \"byrdhq.dev@gmail.com\"\n    ],\n    \"profiles\": [\n        \"product\"\n    ],\n    \"features\": [\n        \"page\"\n    ]\n}",
+											"raw": "{\n    \"competitors\": [\n        \"https://www.stripe.com\",\n        \"https://www.airbnb.com\",\n        \"https://www.dropbox.com\",\n        \"https://www.instacart.com\",\n        \"https://www.gumroad.com\",\n        \"https://www.plaid.com\",\n        \"https://www.segment.com\"\n    ],\n    \"team\": [\n        \"xnayankumar@gmail.com\",\n        \"x4rc3us@gmail.com\",\n        \"byrdhq.dev@gmail.com\"\n    ],\n    \"profiles\": [\n        \"product\"\n    ],\n    \"features\": [\n        \"page\"\n    ]\n}",
 											"options": {
 												"raw": {
 													"language": "json"
@@ -1119,7 +1119,7 @@
 										"header": [],
 										"body": {
 											"mode": "raw",
-											"raw": "{\n    \"emails\": [\n        \"wxyz@test.com\"\n    ]\n}",
+											"raw": "{\n    \"emails\": [\n        \"po@test.com\"\n    ]\n}",
 											"options": {
 												"raw": {
 													"language": "json"
@@ -3757,6 +3757,43 @@
 								}
 							]
 						}
+					],
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"packages": {
+									"byrd-client": {
+										"id": "0194b886-b523-7d08-8739-1598ea10e093"
+									}
+								},
+								"exec": [
+									"const helper = pm.require('byrd-client');",
+									"",
+									"// Use index 1 to get the second user's token",
+									"helper.setAuthToken(pm.request,0)",
+									"    .then(success => {",
+									"        if (!success) {",
+									"            console.error('Failed to set auth token');",
+									"        }",
+									"    })",
+									"    .catch(error => {",
+									"        console.error('Error in auth process:', error);",
+									"    });"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"packages": {},
+								"exec": [
+									""
+								]
+							}
+						}
 					]
 				}
 			],
@@ -3794,6 +3831,23 @@
 					"item": [
 						{
 							"name": "Submit a new Job",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"const helper = pm.require('byrd-client');",
+											"helper.setJobIdFromWorkflow(pm.response);"
+										],
+										"type": "text/javascript",
+										"packages": {
+											"byrd-client": {
+												"id": "0194b886-b523-7d08-8739-1598ea10e093"
+											}
+										}
+									}
+								}
+							],
 							"request": {
 								"method": "POST",
 								"header": [],
@@ -3859,9 +3913,16 @@
 							"name": "List History",
 							"request": {
 								"method": "GET",
-								"header": [],
+								"header": [
+									{
+										"key": "",
+										"value": "",
+										"type": "text",
+										"disabled": true
+									}
+								],
 								"url": {
-									"raw": "{{origin}}/api/private/v1/workflow/history",
+									"raw": "{{origin}}/api/private/v1/workflow/history?workflowType=report",
 									"host": [
 										"{{origin}}"
 									],
@@ -3871,6 +3932,12 @@
 										"v1",
 										"workflow",
 										"history"
+									],
+									"query": [
+										{
+											"key": "workflowType",
+											"value": "report"
+										}
 									]
 								}
 							},
@@ -3918,6 +3985,18 @@
 						},
 						{
 							"name": "Get Job Status",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
 							"request": {
 								"method": "GET",
 								"header": [],
@@ -4010,7 +4089,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{origin}}/api/private/v1/workflow/checkpoint?jobStatus=running&workflowType=screenshot",
+									"raw": "{{origin}}/api/private/v1/workflow/checkpoint?jobStatus=running&workflowType={{workflowType}}",
 									"host": [
 										"{{origin}}"
 									],
@@ -4028,7 +4107,7 @@
 										},
 										{
 											"key": "workflowType",
-											"value": "screenshot"
+											"value": "{{workflowType}}"
 										}
 									]
 								}
@@ -4097,7 +4176,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n    \"options\": {\n        \"url\": \"https://www.trello.com/\"\n    },\n    \"backDate\": true\n}",
+									"raw": "{\n    \"options\": {\n        \"url\": \"https://www.letsjerk.tv\"\n    },\n    \"backDate\": true\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -4474,6 +4553,23 @@
 						},
 						{
 							"name": "Create a new Schedule",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"const helper = pm.require('byrd-client');",
+											"helper.setScheduleIdFromResponse(pm.response);"
+										],
+										"type": "text/javascript",
+										"packages": {
+											"byrd-client": {
+												"id": "0194b886-b523-7d08-8739-1598ea10e093"
+											}
+										}
+									}
+								}
+							],
 							"request": {
 								"method": "POST",
 								"header": [],
@@ -4799,16 +4895,6 @@
 						{
 							"name": "Validate Private Token",
 							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "6HN03ePfiClJqlNIip3Q857vW61Gz8dX8qgXmgQqerc=",
-											"type": "string"
-										}
-									]
-								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -4920,23 +5006,21 @@
 				}
 			],
 			"auth": {
-				"type": "bearer",
-				"bearer": [
-					{
-						"key": "token",
-						"value": "0LTyNkB-lQ7cnUi-PuLAefiMq9wKLTgvSQF4ILk1xBQ=",
-						"type": "string"
-					}
-				]
+				"type": "noauth"
 			},
 			"event": [
 				{
 					"listen": "prerequest",
 					"script": {
 						"type": "text/javascript",
-						"packages": {},
+						"packages": {
+							"byrd-client": {
+								"id": "0194b886-b523-7d08-8739-1598ea10e093"
+							}
+						},
 						"exec": [
-							""
+							"const byrdClient = pm.require('byrd-client');",
+							"await byrdClient.setManagementToken(pm.request);"
 						]
 					}
 				},
