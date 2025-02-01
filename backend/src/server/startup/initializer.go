@@ -18,13 +18,13 @@ func Initialize(cfg *config.Config, tm *transaction.TxManager, logger *logger.Lo
 	utils.InitializeValidator()
 
 	// Set up HTTP client
-	screenshotClient, err := SetupScreenshotClient(cfg, logger)
+	client, err := SetupScreenshotClient(cfg, logger)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
 	// Set up services
-	screenshotService, err := services.SetupScreenshotService(cfg, screenshotClient, logger)
+	screenshotService, err := services.SetupScreenshotService(cfg, client, logger)
 	if err != nil {
 		return nil, nil, nil, err
 	}

@@ -7,18 +7,16 @@ import (
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 )
 
-func SetupScreenshotClient(cfg *config.Config, logger *logger.Logger) (client.HTTPClient, error) {
+func SetupScreenshotClient(cfg *config.Config, logger *logger.Logger) (*client.HTTPClient, error) {
 	screenshotClientOpts := []client.ClientOption{
-		client.WithLogger(logger),
-		client.WithAuth(client.BearerAuth{
-			Token: cfg.Services.ScreenshotServiceAPIKey,
-		}),
+		client.WithRateLimit(cfg.Services.ScreenshotServiceQPS, 1),
+		client.WithRetry(3, []int{408, 429, 500, 502, 503, 504}),
 	}
 
-	screenshotHttpClient, err := client.NewClient(screenshotClientOpts...)
+	client, err := client.NewClient(logger, screenshotClientOpts...)
 	if err != nil {
 		return nil, err
 	}
 
-	return client.NewRateLimitedClient(screenshotHttpClient, cfg.Services.ScreenshotServiceQPS), nil
+	return client, nil
 }

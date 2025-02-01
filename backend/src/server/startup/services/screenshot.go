@@ -12,7 +12,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func SetupScreenshotService(cfg *config.Config, screenshotHTTPClient client.HTTPClient, logger *logger.Logger) (screenshot_svc.ScreenshotService, error) {
+func SetupScreenshotService(cfg *config.Config, screenshotHTTPClient *client.HTTPClient, logger *logger.Logger) (screenshot_svc.ScreenshotService, error) {
 	if logger == nil {
 		return nil, fmt.Errorf("can't initialize screenshot service, logger is required")
 	}

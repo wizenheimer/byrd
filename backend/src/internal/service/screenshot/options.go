@@ -17,7 +17,7 @@ func WithStorage(storage screenshot.ScreenshotRepository) ScreenshotServiceOptio
 }
 
 // WithHTTPClient sets the HTTP client
-func WithHTTPClient(client client.HTTPClient) ScreenshotServiceOption {
+func WithHTTPClient(client *client.HTTPClient) ScreenshotServiceOption {
 	return func(s *screenshotService) {
 		s.httpClient = client
 	}

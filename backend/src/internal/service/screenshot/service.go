@@ -16,7 +16,7 @@ import (
 
 type screenshotService struct {
 	storage    screenshot.ScreenshotRepository
-	httpClient client.HTTPClient
+	httpClient *client.HTTPClient
 	qps        float64
 	origin     string
 	key        string

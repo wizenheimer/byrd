@@ -43,7 +43,7 @@ type ScheduleStage string
 
 const (
 	RecoveryStage ScheduleStage = "recovery"
-  ShutdownStage ScheduleStage = "shutdown"
+	ShutdownStage ScheduleStage = "shutdown"
 )
 
 type ScheduleEvent struct {
