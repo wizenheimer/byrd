@@ -46,6 +46,12 @@ type User struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+// GetWorkspaceCreationLimit returns the number of workspaces a user can create
+// This is used to limit abuse
+func GetWorkspaceCreationLimit() (int, error) {
+	return 3, nil
+}
+
 type UserProps struct {
 	// Email is the email address of the user to create
 	Email string `json:"email" validate:"required,email"`

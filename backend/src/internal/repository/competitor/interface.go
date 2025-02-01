@@ -31,4 +31,6 @@ type CompetitorRepository interface {
 	RemoveAllCompetitorsForWorkspace(ctx context.Context, workspaceID uuid.UUID) error
 
 	WorkspaceCompetitorExists(ctx context.Context, workspaceID, competitorID uuid.UUID) (bool, error)
+
+	GetActiveCompetitorCount(ctx context.Context, workspaceID uuid.UUID) (int, error)
 }

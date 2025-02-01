@@ -320,3 +320,21 @@ func (r *competitorRepo) WorkspaceCompetitorExists(ctx context.Context, workspac
 
 	return exists, nil
 }
+
+func (r *competitorRepo) GetActiveCompetitorCount(ctx context.Context, workspaceID uuid.UUID) (int, error) {
+	var count int
+
+	err := r.getQuerier(ctx).QueryRow(ctx, `
+        SELECT COUNT(*)
+        FROM competitors
+        WHERE workspace_id = $1
+        AND status = $2`,
+		workspaceID, models.CompetitorStatusActive,
+	).Scan(&count)
+
+	if err != nil {
+		return 0, fmt.Errorf("failed to get competitor count: %w", err)
+	}
+
+	return count, nil
+}

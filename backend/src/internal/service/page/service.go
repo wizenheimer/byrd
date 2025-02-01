@@ -297,3 +297,18 @@ func (ps *pageService) GetLatestPageHistory(ctx context.Context, pageID []uuid.U
 
 	return ps.pageHistoryService.GetLatestPageHistory(ctx, pageID)
 }
+
+func (ps *pageService) CountActivePagesForCompetitors(ctx context.Context, competitorIDs []uuid.UUID) (int, error) {
+	ps.logger.Debug("counting active pages for competitors", zap.Any("competitorIDs", competitorIDs))
+	pageCountMap, err := ps.pageRepo.GetActivePageCountsByCompetitors(ctx, competitorIDs)
+	if err != nil {
+		return 0, err
+	}
+
+	count := 0
+	for _, c := range pageCountMap {
+		count += c
+	}
+
+	return count, nil
+}

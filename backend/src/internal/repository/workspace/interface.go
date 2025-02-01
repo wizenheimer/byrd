@@ -12,7 +12,7 @@ import (
 // This is used to interact with the workspace repository
 
 type WorkspaceRepository interface {
-	CreateWorkspace(ctx context.Context, workspaceName, billingEmail string, workspaceCreatorUserID uuid.UUID) (*models.Workspace, error)
+	CreateWorkspace(ctx context.Context, workspaceName, billingEmail string, workspaceCreatorUserID uuid.UUID, workspacePlan models.WorkspacePlan) (*models.Workspace, error)
 
 	WorkspaceExists(ctx context.Context, workspaceID uuid.UUID) (bool, error)
 
@@ -53,4 +53,13 @@ type WorkspaceRepository interface {
 	BatchDeleteWorkspaces(ctx context.Context, workspaceIDs []uuid.UUID) error
 
 	ListActiveWorkspaces(ctx context.Context, batchSize int, lastPageID *uuid.UUID) (models.ActiveWorkspaceBatch, error)
+
+	// UpdateWorkspacePlan updates the plan of a workspace
+	UpdateWorkspacePlan(ctx context.Context, workspaceID uuid.UUID, plan models.WorkspacePlan) error
+
+	// GetWorkspaceCountForUser returns the total number of workspaces for a user
+	GetWorkspaceCountForUser(ctx context.Context, userID uuid.UUID) (int, error)
+
+	// GetTotalActiveAndPendingMembers returns the total number of active and pending members in a workspace
+	GetActivePendingMemberCounts(ctx context.Context, workspaceID uuid.UUID) (activeCount, pendingCount int, err error)
 }

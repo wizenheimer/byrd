@@ -31,22 +31,23 @@ func NewWorkspaceRepository(tm *transaction.TxManager, logger *logger.Logger) Wo
 	}
 }
 
-func (r *workspaceRepo) CreateWorkspace(ctx context.Context, workspaceName, billingEmail string, workspaceCreatorUserID uuid.UUID) (*models.Workspace, error) {
+func (r *workspaceRepo) CreateWorkspace(ctx context.Context, workspaceName, billingEmail string, workspaceCreatorUserID uuid.UUID, workspacePlan models.WorkspacePlan) (*models.Workspace, error) {
 	workspaceSlug := getSlug(workspaceName)
 	workspace := &models.Workspace{}
 
 	// Create workspace
 	err := r.getQuerier(ctx).QueryRow(ctx, `
-		INSERT INTO workspaces (name, slug, billing_email, workspace_status)
-		VALUES ($1, $2, $3, $4)
-		RETURNING id, name, slug, billing_email, workspace_status, created_at, updated_at`,
-		workspaceName, workspaceSlug, billingEmail, models.WorkspaceActive,
+        INSERT INTO workspaces (name, slug, billing_email, workspace_status, workspace_plan)
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING id, name, slug, billing_email, workspace_status, workspace_plan, created_at, updated_at`,
+		workspaceName, workspaceSlug, billingEmail, models.WorkspaceActive, workspacePlan,
 	).Scan(
 		&workspace.ID,
 		&workspace.Name,
 		&workspace.Slug,
 		&workspace.BillingEmail,
 		&workspace.WorkspaceStatus,
+		&workspace.WorkspacePlan,
 		&workspace.CreatedAt,
 		&workspace.UpdatedAt,
 	)
@@ -87,9 +88,9 @@ func (r *workspaceRepo) WorkspaceExists(ctx context.Context, workspaceID uuid.UU
 func (r *workspaceRepo) GetWorkspaceByWorkspaceID(ctx context.Context, workspaceID uuid.UUID) (*models.Workspace, error) {
 	workspace := &models.Workspace{}
 	err := r.getQuerier(ctx).QueryRow(ctx, `
-		SELECT id, name, slug, billing_email, workspace_status, created_at, updated_at
-		FROM workspaces
-		WHERE id = $1 AND workspace_status != $2`,
+        SELECT id, name, slug, billing_email, workspace_status, workspace_plan, created_at, updated_at
+        FROM workspaces
+        WHERE id = $1 AND workspace_status != $2`,
 		workspaceID, models.WorkspaceInactive,
 	).Scan(
 		&workspace.ID,
@@ -97,6 +98,7 @@ func (r *workspaceRepo) GetWorkspaceByWorkspaceID(ctx context.Context, workspace
 		&workspace.Slug,
 		&workspace.BillingEmail,
 		&workspace.WorkspaceStatus,
+		&workspace.WorkspacePlan,
 		&workspace.CreatedAt,
 		&workspace.UpdatedAt,
 	)
@@ -117,9 +119,9 @@ func (r *workspaceRepo) BatchGetWorkspacesByIDs(ctx context.Context, workspaceID
 	}
 
 	rows, err := r.getQuerier(ctx).Query(ctx, `
-		SELECT id, name, slug, billing_email, workspace_status, created_at, updated_at
-		FROM workspaces
-		WHERE id = ANY($1) AND workspace_status != $2`,
+    SELECT id, name, slug, billing_email, workspace_status, workspace_plan, created_at, updated_at
+    FROM workspaces
+    WHERE id = ANY($1) AND workspace_status != $2`,
 		workspaceIDs, models.WorkspaceInactive,
 	)
 	if err != nil {
@@ -127,7 +129,7 @@ func (r *workspaceRepo) BatchGetWorkspacesByIDs(ctx context.Context, workspaceID
 	}
 	defer rows.Close()
 
-	var workspaces []models.Workspace
+	workspaces := make([]models.Workspace, 0)
 	for rows.Next() {
 		var workspace models.Workspace
 		err := rows.Scan(
@@ -136,6 +138,7 @@ func (r *workspaceRepo) BatchGetWorkspacesByIDs(ctx context.Context, workspaceID
 			&workspace.Slug,
 			&workspace.BillingEmail,
 			&workspace.WorkspaceStatus,
+			&workspace.WorkspacePlan,
 			&workspace.CreatedAt,
 			&workspace.UpdatedAt,
 		)
@@ -308,12 +311,12 @@ func (r *workspaceRepo) PromoteRandomUserToAdmin(ctx context.Context, workspaceI
 
 func (r *workspaceRepo) GetWorkspacesForUserID(ctx context.Context, userID uuid.UUID, membershipStatus models.MembershipStatus) ([]models.Workspace, error) {
 	rows, err := r.getQuerier(ctx).Query(ctx, `
-		SELECT w.id, w.name, w.slug, w.billing_email, w.workspace_status, w.created_at, w.updated_at
-		FROM workspaces w
-		INNER JOIN workspace_users wu ON w.id = wu.workspace_id
-		WHERE wu.user_id = $1
-		AND wu.membership_status = $2
-		AND w.workspace_status != $3`,
+        SELECT w.id, w.name, w.slug, w.billing_email, w.workspace_status, w.workspace_plan, w.created_at, w.updated_at
+        FROM workspaces w
+        INNER JOIN workspace_users wu ON w.id = wu.workspace_id
+        WHERE wu.user_id = $1
+        AND wu.membership_status = $2
+        AND w.workspace_status != $3`,
 		userID, membershipStatus, models.WorkspaceInactive,
 	)
 	if err != nil {
@@ -321,7 +324,7 @@ func (r *workspaceRepo) GetWorkspacesForUserID(ctx context.Context, userID uuid.
 	}
 	defer rows.Close()
 
-	var workspaces []models.Workspace
+	workspaces := make([]models.Workspace, 0)
 	for rows.Next() {
 		var workspace models.Workspace
 		err := rows.Scan(
@@ -330,6 +333,7 @@ func (r *workspaceRepo) GetWorkspacesForUserID(ctx context.Context, userID uuid.
 			&workspace.Slug,
 			&workspace.BillingEmail,
 			&workspace.WorkspaceStatus,
+			&workspace.WorkspacePlan,
 			&workspace.CreatedAt,
 			&workspace.UpdatedAt,
 		)
@@ -540,6 +544,25 @@ func (r *workspaceRepo) UpdateWorkspaceDetails(ctx context.Context, workspaceID 
 	return nil
 }
 
+func (r *workspaceRepo) UpdateWorkspacePlan(ctx context.Context, workspaceID uuid.UUID, plan models.WorkspacePlan) error {
+	result, err := r.getQuerier(ctx).Exec(ctx, `
+        UPDATE workspaces
+        SET workspace_plan = $1
+        WHERE id = $2 AND workspace_status != $3`,
+		plan, workspaceID, models.WorkspaceInactive,
+	)
+
+	if err != nil {
+		return fmt.Errorf("failed to update workspace plan: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("workspace not found")
+	}
+
+	return nil
+}
+
 func (r *workspaceRepo) DeleteWorkspace(ctx context.Context, workspaceID uuid.UUID) error {
 	// Start by soft deleting all workspace memberships
 	_, err := r.getQuerier(ctx).Exec(ctx, `
@@ -671,6 +694,64 @@ func (r *workspaceRepo) ListActiveWorkspaces(ctx context.Context, batchSize int,
 		HasMore:      hasMore,
 		LastSeen:     lastSeen,
 	}, nil
+}
+
+// Get total workspace count for a user
+func (r *workspaceRepo) GetWorkspaceCountForUser(ctx context.Context, userID uuid.UUID) (int, error) {
+	var count int
+
+	err := r.getQuerier(ctx).QueryRow(ctx, `
+        SELECT COUNT(DISTINCT w.id)
+        FROM workspaces w
+        INNER JOIN workspace_users wu ON w.id = wu.workspace_id
+        WHERE wu.user_id = $1
+        AND wu.membership_status != $2
+        AND w.workspace_status != $3`,
+		userID, models.InactiveMember, models.WorkspaceInactive,
+	).Scan(&count)
+
+	if err != nil {
+		return 0, fmt.Errorf("failed to get workspace count: %w", err)
+	}
+
+	return count, nil
+}
+
+// Get total active + pending members for a workspace
+func (r *workspaceRepo) GetActivePendingMemberCounts(ctx context.Context, workspaceID uuid.UUID) (activeCount, pendingCount int, err error) {
+	rows, err := r.getQuerier(ctx).Query(ctx, `
+        SELECT membership_status, COUNT(*)
+        FROM workspace_users
+        WHERE workspace_id = $1
+        AND membership_status IN ($2, $3)
+        GROUP BY membership_status`,
+		workspaceID, models.ActiveMember, models.PendingMember,
+	)
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to get member counts: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var status models.MembershipStatus
+		var count int
+		if err := rows.Scan(&status, &count); err != nil {
+			return 0, 0, fmt.Errorf("failed to scan member count: %w", err)
+		}
+
+		switch status {
+		case models.ActiveMember:
+			activeCount = count
+		case models.PendingMember:
+			pendingCount = count
+		}
+	}
+
+	if err = rows.Err(); err != nil {
+		return 0, 0, err
+	}
+
+	return activeCount, pendingCount, nil
 }
 
 func (r *workspaceRepo) getQuerier(ctx context.Context) interface {

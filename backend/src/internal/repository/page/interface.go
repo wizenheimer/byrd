@@ -42,4 +42,6 @@ type PageRepository interface {
 	GetActivePages(ctx context.Context, batchSize int, lastPageID *uuid.UUID) (models.ActivePageBatch, error)
 
 	GetPageByPageID(ctx context.Context, pageID uuid.UUID) (*models.Page, error)
+
+	GetActivePageCountsByCompetitors(ctx context.Context, competitorIDs []uuid.UUID) (map[uuid.UUID]int, error)
 }

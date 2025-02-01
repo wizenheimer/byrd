@@ -56,4 +56,8 @@ type CompetitorService interface {
 
 	// DispatchReport dispatches a report for a competitor.
 	DispatchReport(ctx context.Context, workspaceID uuid.UUID, competitorID uuid.UUID, subscriberEmails []string) error
+
+	CountPagesForCompetitors(ctx context.Context, competitorIDs []uuid.UUID) (int, error)
+
+	CountCompetitorsForWorkspace(ctx context.Context, workspaceID uuid.UUID) (int, error)
 }

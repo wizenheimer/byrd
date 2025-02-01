@@ -3,6 +3,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- Create ENUM types
 CREATE TYPE account_status AS ENUM ('pending', 'active', 'inactive');
 CREATE TYPE workspace_status AS ENUM ('active', 'inactive');
+CREATE TYPE workspace_plan AS ENUM ('trial', 'starter', 'scaleup', 'enterprise');
 CREATE TYPE workspace_role AS ENUM ('admin', 'user', 'viewer');
 CREATE TYPE membership_status AS ENUM ('pending', 'active', 'inactive');
 CREATE TYPE competitor_status AS ENUM ('active', 'inactive');
@@ -16,6 +17,7 @@ CREATE TABLE workspaces (
   slug VARCHAR(255) NOT NULL UNIQUE,
   billing_email VARCHAR(255) NOT NULL,
   workspace_status workspace_status NOT NULL DEFAULT 'active',
+  workspace_plan workspace_plan NOT NULL DEFAULT 'trial',
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -109,6 +111,7 @@ CREATE TABLE reports (
 -- Indexes for workspaces
 CREATE INDEX idx_workspaces_status ON workspaces(workspace_status);
 CREATE INDEX idx_workspaces_slug ON workspaces(slug);
+CREATE INDEX idx_workspaces_plan ON workspaces(workspace_plan);
 -- Indexes for users
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_clerk_id ON users(clerk_id);

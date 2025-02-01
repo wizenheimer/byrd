@@ -407,3 +407,11 @@ func (cs *competitorService) DispatchReport(ctx context.Context, workspaceID uui
 
 	return nil
 }
+
+func (cs *competitorService) CountPagesForCompetitors(ctx context.Context, competitorIDs []uuid.UUID) (int, error) {
+	return cs.pageService.CountActivePagesForCompetitors(ctx, competitorIDs)
+}
+
+func (cs *competitorService) CountCompetitorsForWorkspace(ctx context.Context, workspaceID uuid.UUID) (int, error) {
+	return cs.competitorRepository.GetActiveCompetitorCount(ctx, workspaceID)
+}

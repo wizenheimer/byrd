@@ -48,6 +48,11 @@ func (wh *WorkspaceHandler) ListPagesForCompetitor(c *fiber.Ctx) error {
 
 // AddPageToCompetitor adds a page to a competitor
 func (wh *WorkspaceHandler) AddPagesToCompetitor(c *fiber.Ctx) error {
+	workspaceID, err := uuid.Parse(c.Params("workspaceID"))
+	if err != nil {
+		return sendErrorResponse(c, wh.logger, fiber.StatusBadRequest, "Invalid workspace ID format", err.Error())
+	}
+
 	competitorID, err := uuid.Parse(c.Params("competitorID"))
 	if err != nil {
 		return sendErrorResponse(c, wh.logger, fiber.StatusBadRequest, "Invalid competitor ID format", err.Error())
@@ -76,7 +81,7 @@ func (wh *WorkspaceHandler) AddPagesToCompetitor(c *fiber.Ctx) error {
 	}
 
 	ctx := c.Context()
-	createdPages, err := wh.workspaceService.AddPageToCompetitor(ctx, competitorID, pages)
+	createdPages, err := wh.workspaceService.AddPageToCompetitor(ctx, workspaceID, competitorID, pages)
 	if err != nil {
 		return sendErrorResponse(c, wh.logger, fiber.StatusInternalServerError, "Could not add page to competitor", err.Error())
 	}

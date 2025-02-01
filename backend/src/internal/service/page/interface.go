@@ -32,4 +32,6 @@ type PageService interface {
 	RefreshPage(ctx context.Context, pageID uuid.UUID) error
 
 	GetLatestPageHistory(ctx context.Context, pageID []uuid.UUID) ([]models.PageHistory, error)
+
+	CountActivePagesForCompetitors(ctx context.Context, competitorIDs []uuid.UUID) (int, error)
 }

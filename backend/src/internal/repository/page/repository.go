@@ -638,3 +638,48 @@ func (r *pageRepo) GetPageByPageID(ctx context.Context, pageID uuid.UUID) (*mode
 
 	return page, nil
 }
+
+func (r *pageRepo) GetActivePageCountsByCompetitors(ctx context.Context, competitorIDs []uuid.UUID) (map[uuid.UUID]int, error) {
+	if len(competitorIDs) == 0 {
+		return map[uuid.UUID]int{}, nil
+	}
+
+	rows, err := r.getQuerier(ctx).Query(ctx, `
+        SELECT competitor_id, COUNT(*) as page_count
+        FROM pages
+        WHERE competitor_id = ANY($1)
+        AND status = $2
+        GROUP BY competitor_id`,
+		competitorIDs, models.PageStatusActive,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get page counts: %w", err)
+	}
+	defer rows.Close()
+
+	// Initialize result map
+	counts := make(map[uuid.UUID]int)
+
+	// Scan results
+	for rows.Next() {
+		var competitorID uuid.UUID
+		var count int
+		if err := rows.Scan(&competitorID, &count); err != nil {
+			return nil, fmt.Errorf("failed to scan page count: %w", err)
+		}
+		counts[competitorID] = count
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating page counts: %w", err)
+	}
+
+	// Initialize zero counts for competitors with no pages
+	for _, competitorID := range competitorIDs {
+		if _, exists := counts[competitorID]; !exists {
+			counts[competitorID] = 0
+		}
+	}
+
+	return counts, nil
+}
