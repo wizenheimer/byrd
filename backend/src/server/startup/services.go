@@ -105,11 +105,15 @@ func SetupServices(
 		return nil, err
 	}
 
-	schedulerSvc := setupSchedulerService(
+	schedulerSvc, err := setupSchedulerService(
 		repos.Schedule,
 		workflowService,
+		notificationService,
 		logger,
 	)
+	if err != nil {
+		return nil, err
+	}
 
 	if err := schedulerSvc.Start(context.Background(), true); err != nil {
 		return nil, err
@@ -232,12 +236,18 @@ func setupWorkflowService(
 func setupSchedulerService(
 	scheduleRepo schedule.ScheduleRepository,
 	workflowService workflow.WorkflowService,
+	notificationService notification.NotificationService,
 	logger *logger.Logger,
-) scheduler_svc.SchedulerService {
-	return scheduler_svc.NewSchedulerService(
+) (scheduler_svc.SchedulerService, error) {
+	s, err := scheduler_svc.NewSchedulerService(
 		scheduleRepo,
 		scheduler.NewScheduler(logger),
 		workflowService,
+		notificationService,
 		logger,
 	)
+	if err != nil {
+		return nil, err
+	}
+	return s, nil
 }

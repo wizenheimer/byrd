@@ -38,3 +38,44 @@ func NewJobErrorEvent(jobContext *JobContext, jobError *JobError) *JobErrorEvent
 		Time:  time.Now(),
 	}
 }
+
+func NewJobErrorEventFromProps(jobID uuid.UUID, err error) *JobErrorEvent {
+	return &JobErrorEvent{
+		JobID: jobID,
+		Error: err,
+		Time:  time.Now(),
+	}
+}
+
+type JobEvent struct {
+	// JobID is the unique identifier of the job
+	JobID uuid.UUID `json:"job_id"`
+	// Time is the time of the event
+	Time time.Time `json:"time"`
+	// Message is the message of the event
+	Message string `json:"message"`
+}
+
+// NewJobEvent event implementation
+func (ne *JobEvent) GetEventType() EventType {
+	return JobLifecycleEventType
+}
+
+func (ne *JobEvent) GetDistinctID() string {
+	return ne.JobID.String()
+}
+
+func (ne *JobEvent) GetProperties() map[string]interface{} {
+	return map[string]interface{}{
+		"timestamp": ne.Time.Unix(),
+		"message":   ne.Message,
+	}
+}
+
+func NewJobEvent(jobID uuid.UUID, msg string) *JobEvent {
+	return &JobEvent{
+		JobID:   jobID,
+		Time:    time.Now(),
+		Message: msg,
+	}
+}

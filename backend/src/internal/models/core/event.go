@@ -5,7 +5,10 @@ package models
 type EventType string
 
 const (
-	JobErrorEventType EventType = "job_error"
+	JobErrorEventType          EventType = "job_error"
+	JobLifecycleEventType      EventType = "job_lifecycle"
+	ScheduleErrorEventType     EventType = "schedule_error"
+	ScheduleLifecycleEventType EventType = "schedule_lifecycle"
 )
 
 // Event represents the interface that any type can implement to be tracked as an event

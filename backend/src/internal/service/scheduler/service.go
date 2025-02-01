@@ -4,11 +4,13 @@ package scheduler
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/internal/repository/schedule"
 	"github.com/wizenheimer/byrd/src/internal/scheduler"
+	"github.com/wizenheimer/byrd/src/internal/service/notification"
 	"github.com/wizenheimer/byrd/src/internal/service/workflow"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"go.uber.org/zap"
@@ -29,16 +31,28 @@ type schedulerService struct {
 
 	// scheduledFuncs is a map of scheduled functions
 	scheduledFuncs sync.Map
+
+	// eventChannel is the event channel for the scheduler service
+	eventChannel chan models.Event
 }
 
 // NewSchedulerService creates a new scheduler service
-func NewSchedulerService(repository schedule.ScheduleRepository, scheduler scheduler.Scheduler, workflowService workflow.WorkflowService, logger *logger.Logger) SchedulerService {
-	return &schedulerService{
-		repository:      repository,
-		logger:          logger.WithFields(map[string]interface{}{"module": "scheduler_service"}),
+func NewSchedulerService(repository schedule.ScheduleRepository, scheduler scheduler.Scheduler, workflowService workflow.WorkflowService, notificationService notification.NotificationService, logger *logger.Logger) (SchedulerService, error) {
+	// Create the event channel
+	eventChan, err := notificationService.GetEventChannel(context.Background(), 1, 50)
+	if err != nil {
+		return nil, err
+	}
+	s := schedulerService{
+		repository: repository,
+		logger: logger.WithFields(map[string]any{
+			"module": "scheduler_service",
+		}),
 		scheduler:       scheduler,
 		workflowService: workflowService,
+		eventChannel:    eventChan,
 	}
+	return &s, nil
 }
 
 // Start starts the scheduler service
@@ -59,7 +73,13 @@ func (s *schedulerService) Start(ctx context.Context, recovery bool) error {
 // Gracefully stops the scheduler service gracefully
 func (s *schedulerService) Stop(ctx context.Context) error {
 	s.logger.Info("stopping the scheduler service")
-	return s.scheduler.Stop()
+	event := models.NewScheduleEvent(nil, models.ShutdownStage, "stopping the scheduler service")
+	err := s.scheduler.Stop()
+	if err != nil {
+		event.Message = err.Error()
+	}
+	s.eventChannel <- event
+	return err
 }
 
 func (s *schedulerService) triggerWorkflow(ctx context.Context, workflowType models.WorkflowType) func() {
@@ -68,8 +88,12 @@ func (s *schedulerService) triggerWorkflow(ctx context.Context, workflowType mod
 		// Execute the workflow
 		jobID, err := s.workflowService.Submit(ctx, workflowType)
 		if err != nil {
+			event := models.NewJobErrorEventFromProps(jobID, err)
+			s.eventChannel <- event
 			s.logger.Error("failed to submit workflow", zap.Error(err))
 		} else {
+			event := models.NewJobEvent(jobID, "successfully submitted workflow")
+			s.eventChannel <- event
 			s.logger.Info("successfully submitted workflow", zap.Any("job_id", jobID))
 		}
 	}
@@ -80,17 +104,23 @@ func (s *schedulerService) syncWorkflow(ctx context.Context, remoteScheduleID mo
 		// Get the scheduled function
 		v, ok := s.scheduledFuncs.Load(remoteScheduleID)
 		if !ok {
+			event := models.NewScheduleErrorEvent(remoteScheduleID, errors.New("scheduled function not found"))
+			s.eventChannel <- event
 			s.logger.Error("scheduled function not found")
 			return
 		}
 		sf, ok := v.(*models.ScheduledFunc)
 		if !ok {
+			event := models.NewScheduleErrorEvent(remoteScheduleID, errors.New("failed to cast scheduled function"))
+			s.eventChannel <- event
 			s.logger.Error("failed to cast scheduled function")
 			return
 		}
 
 		// Sync the workflow times
 		if err := s.repository.Sync(ctx, remoteScheduleID, sf.LastRun, sf.NextRun); err != nil {
+			event := models.NewScheduleErrorEvent(remoteScheduleID, fmt.Errorf("failed to sync workflow times: %w", err))
+			s.eventChannel <- event
 			s.logger.Error("failed to sync workflow times", zap.Error(err))
 		}
 	}
@@ -108,6 +138,8 @@ func (s *schedulerService) Schedule(ctx context.Context, workflowProp models.Wor
 	}
 
 	if err := op.Execute(ctx); err != nil {
+		event := models.NewScheduleErrorEvent(remoteScheduleID, err)
+		s.eventChannel <- event
 		return models.NilScheduleID(), err
 	}
 
@@ -123,7 +155,13 @@ func (s *schedulerService) Unschedule(ctx context.Context, remoteScheduleID mode
 		remoteID: remoteScheduleID,
 	}
 
-	return op.Execute(ctx)
+	err := op.Execute(ctx)
+	if err != nil {
+		event := models.NewScheduleErrorEvent(remoteScheduleID, err)
+		s.eventChannel <- event
+	}
+
+	return err
 }
 
 // Reschedule reschedules a workflow
@@ -137,6 +175,8 @@ func (s *schedulerService) Reschedule(ctx context.Context, remoteScheduleID mode
 	}
 
 	if err := op.Execute(ctx); err != nil {
+		event := models.NewScheduleErrorEvent(remoteScheduleID, err)
+		s.eventChannel <- event
 		return models.NilScheduleID(), err
 	}
 
@@ -187,6 +227,8 @@ func (s *schedulerService) Recover(ctx context.Context) {
 	// Recover scheduled functions
 	workflows, err := s.List(ctx, nil, nil, nil)
 	if err != nil {
+		event := models.NewScheduleEvent(nil, models.RecoveryStage, "failed to list scheduled workflows")
+		s.eventChannel <- event
 		s.logger.Error("failed to list scheduled workflows", zap.Error(err))
 		return
 	}
@@ -205,6 +247,8 @@ func (s *schedulerService) Recover(ctx context.Context) {
 		// Trigger the scheduler to schedule the workflow
 		f, err := s.scheduler.Schedule(cmd, opts)
 		if err != nil {
+			event := models.NewScheduleErrorEvent(scheduleID, err)
+			s.eventChannel <- event
 			s.logger.Error("failed to schedule workflow", zap.Error(err))
 			continue
 		}
