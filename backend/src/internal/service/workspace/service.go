@@ -74,12 +74,19 @@ func (ws *workspaceService) CreateWorkspace(ctx context.Context, workspaceOwner 
 
 	// Step 3: Create the workspace
 	workspaceName := utils.GenerateWorkspaceName(workspaceOwner)
-	workspace, err = ws.workspaceRepo.CreateWorkspace(ctx, workspaceName, *workspaceCreator.Email, workspaceCreator.ID, models.WorkspaceTrial)
+
+	err = ws.tm.RunInTx(context.Background(), nil, func(ctx context.Context) error {
+		workspace, err = ws.workspaceRepo.CreateWorkspace(ctx, workspaceName, *workspaceCreator.Email, workspaceCreator.ID, models.WorkspaceTrial)
+		if err != nil {
+			return err
+		}
+		if workspace == nil {
+			return errors.New("failed to create workspace")
+		}
+		return nil
+	})
 	if err != nil {
 		return nil, err
-	}
-	if workspace == nil {
-		return nil, errors.New("failed to create workspace")
 	}
 
 	// Step 4: Check if the user creation request is valid
