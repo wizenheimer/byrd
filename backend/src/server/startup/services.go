@@ -11,6 +11,7 @@ import (
 	"github.com/wizenheimer/byrd/src/internal/email/template"
 	"github.com/wizenheimer/byrd/src/internal/event"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
+	"github.com/wizenheimer/byrd/src/internal/recorder"
 	"github.com/wizenheimer/byrd/src/internal/repository/schedule"
 	workflow_repo "github.com/wizenheimer/byrd/src/internal/repository/workflow"
 	scheduler "github.com/wizenheimer/byrd/src/internal/scheduler"
@@ -53,6 +54,7 @@ func SetupServices(
 	templateLibrary template.TemplateLibrary,
 	tm *transaction.TxManager,
 	logger *logger.Logger,
+	errorRecorder *recorder.ErrorRecorder,
 ) (*Services, error) {
 	historyService := history.NewPageHistoryService(repos.History, logger)
 	pageService := page.NewPageService(repos.Page, historyService, diffService, screenshotService, logger)
@@ -83,12 +85,12 @@ func SetupServices(
 
 	tokenManager := utils.NewTokenManager(cfg.Services.ManagementAPIKey, cfg.Services.ManagementAPIRefreshInterval)
 
-	userService, err := user.NewUserService(notificationService, repos.User, templateLibrary, logger)
+	userService, err := user.NewUserService(notificationService, repos.User, templateLibrary, logger, errorRecorder)
 	if err != nil {
 		return nil, err
 	}
 
-	workspaceService, err := workspace.NewWorkspaceService(repos.Workspace, competitorService, userService, notificationService, templateLibrary, tm, logger)
+	workspaceService, err := workspace.NewWorkspaceService(repos.Workspace, competitorService, userService, notificationService, templateLibrary, tm, logger, errorRecorder)
 	if err != nil {
 		return nil, err
 	}
@@ -100,6 +102,7 @@ func SetupServices(
 		pageService,
 		workspaceService,
 		logger,
+		errorRecorder,
 	)
 	if err != nil {
 		return nil, err
@@ -110,6 +113,7 @@ func SetupServices(
 		workflowService,
 		notificationService,
 		logger,
+		errorRecorder,
 	)
 	if err != nil {
 		return nil, err
@@ -168,6 +172,7 @@ func setupWorkflowService(
 	pageService page.PageService,
 	workspaceService workspace.WorkspaceService,
 	logger *logger.Logger,
+	errorRecorder *recorder.ErrorRecorder,
 ) (workflow.WorkflowService, error) {
 	screenshotTaskRuntimeConfig := models.JobExecutorConfig{
 		Parallelism: cfg.Workflow.ScreenshotExecutorParallelism,
@@ -186,6 +191,7 @@ func setupWorkflowService(
 		notificationService,
 		screenshotTaskExecutor,
 		logger,
+		errorRecorder,
 	)
 	if err != nil {
 		return nil, err
@@ -208,6 +214,7 @@ func setupWorkflowService(
 		notificationService,
 		reportTaskExecutor,
 		logger,
+		errorRecorder,
 	)
 	if err != nil {
 		return nil, err
@@ -224,12 +231,13 @@ func setupWorkflowService(
 		notificationService,
 		dispatchTaskExecutor,
 		logger,
+		errorRecorder,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	workflowService, err := workflow.NewWorkflowService(logger)
+	workflowService, err := workflow.NewWorkflowService(logger, errorRecorder)
 	if err != nil {
 		return nil, err
 	}
@@ -258,6 +266,7 @@ func setupSchedulerService(
 	workflowService workflow.WorkflowService,
 	notificationService notification.NotificationService,
 	logger *logger.Logger,
+	errorRecorder *recorder.ErrorRecorder,
 ) (scheduler_svc.SchedulerService, error) {
 	s, err := scheduler_svc.NewSchedulerService(
 		scheduleRepo,
@@ -265,6 +274,7 @@ func setupSchedulerService(
 		workflowService,
 		notificationService,
 		logger,
+		errorRecorder,
 	)
 	if err != nil {
 		return nil, err

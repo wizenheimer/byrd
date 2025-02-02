@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
+	"github.com/wizenheimer/byrd/src/internal/recorder"
 	"github.com/wizenheimer/byrd/src/internal/repository/schedule"
 	"github.com/wizenheimer/byrd/src/internal/scheduler"
 	"github.com/wizenheimer/byrd/src/internal/service/notification"
@@ -32,12 +33,15 @@ type schedulerService struct {
 	// scheduledFuncs is a map of scheduled functions
 	scheduledFuncs sync.Map
 
+	// errorRecord is the error recorder for the scheduler service
+	errorRecord *recorder.ErrorRecorder
+
 	// eventChannel is the event channel for the scheduler service
 	eventChannel chan models.Event
 }
 
 // NewSchedulerService creates a new scheduler service
-func NewSchedulerService(repository schedule.ScheduleRepository, scheduler scheduler.Scheduler, workflowService workflow.WorkflowService, notificationService notification.NotificationService, logger *logger.Logger) (SchedulerService, error) {
+func NewSchedulerService(repository schedule.ScheduleRepository, scheduler scheduler.Scheduler, workflowService workflow.WorkflowService, notificationService notification.NotificationService, logger *logger.Logger, errorRecord *recorder.ErrorRecorder) (SchedulerService, error) {
 	// Create the event channel
 	eventChan, err := notificationService.GetEventChannel(context.Background(), 1, 50)
 	if err != nil {
@@ -48,6 +52,7 @@ func NewSchedulerService(repository schedule.ScheduleRepository, scheduler sched
 		logger: logger.WithFields(map[string]any{
 			"module": "scheduler_service",
 		}),
+		errorRecord:     errorRecord,
 		scheduler:       scheduler,
 		workflowService: workflowService,
 		eventChannel:    eventChan,

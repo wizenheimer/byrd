@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/wizenheimer/byrd/src/internal/email/template"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
+	"github.com/wizenheimer/byrd/src/internal/recorder"
 	"github.com/wizenheimer/byrd/src/internal/repository/user"
 	"github.com/wizenheimer/byrd/src/internal/service/notification"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
@@ -21,9 +22,10 @@ type userService struct {
 	templateLibrary template.TemplateLibrary
 	emailChannel    chan models.Email
 	logger          *logger.Logger
+	errorRecord     *recorder.ErrorRecorder
 }
 
-func NewUserService(notificationService notification.NotificationService, userRepository user.UserRepository, templateLibrary template.TemplateLibrary, logger *logger.Logger) (UserService, error) {
+func NewUserService(notificationService notification.NotificationService, userRepository user.UserRepository, templateLibrary template.TemplateLibrary, logger *logger.Logger, errorRecord *recorder.ErrorRecorder) (UserService, error) {
 	emailChannel, err := notificationService.GetEmailChannel(context.TODO(), 1, 25)
 	if err != nil {
 		return nil, err
@@ -33,6 +35,7 @@ func NewUserService(notificationService notification.NotificationService, userRe
 		userRepository:  userRepository,
 		templateLibrary: templateLibrary,
 		emailChannel:    emailChannel,
+		errorRecord:     errorRecord,
 		logger:          logger.WithFields(map[string]interface{}{"module": "user_service"}),
 	}
 

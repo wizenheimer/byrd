@@ -6,6 +6,7 @@ import (
 	"github.com/wizenheimer/byrd/src/internal/api/routes"
 	"github.com/wizenheimer/byrd/src/internal/config"
 	"github.com/wizenheimer/byrd/src/internal/email/template"
+	"github.com/wizenheimer/byrd/src/internal/recorder"
 	"github.com/wizenheimer/byrd/src/internal/service/diff"
 	"github.com/wizenheimer/byrd/src/internal/transaction"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
@@ -13,7 +14,12 @@ import (
 	"github.com/wizenheimer/byrd/src/server/startup/services"
 )
 
-func Initialize(cfg *config.Config, tm *transaction.TxManager, logger *logger.Logger) (*routes.HandlerContainer, *middleware.ResourceMiddleware, *middleware.AccessMiddleware, error) {
+func Initialize(
+	cfg *config.Config,
+	tm *transaction.TxManager,
+	logger *logger.Logger,
+	errorRecorder *recorder.ErrorRecorder,
+) (*routes.HandlerContainer, *middleware.ResourceMiddleware, *middleware.AccessMiddleware, error) {
 	// Initialize utilities
 	utils.InitializeValidator()
 
@@ -58,7 +64,7 @@ func Initialize(cfg *config.Config, tm *transaction.TxManager, logger *logger.Lo
 	}
 
 	// Set up all services
-	services, err := SetupServices(cfg, repos, aiService, diffService, screenshotService, templateLibrary, tm, logger)
+	services, err := SetupServices(cfg, repos, aiService, diffService, screenshotService, templateLibrary, tm, logger, errorRecorder)
 	if err != nil {
 		return nil, nil, nil, err
 	}

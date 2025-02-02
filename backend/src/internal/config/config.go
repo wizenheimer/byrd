@@ -92,6 +92,7 @@ type StorageConfig struct {
 
 type ServicesConfig struct {
 	ClerkAPIKey                  string
+	HightlightProjectID          string
 	ScreenshotServiceAPIKey      string
 	ScreenshotServiceOrigin      string
 	ScreenshotServiceQPS         float64
@@ -254,6 +255,8 @@ func LoadServicesConfig() ServicesConfig {
 	return ServicesConfig{
 		// ClerkAPIKey is set to the value of the CLERK_API_KEY environment variable, or "" if the variable is not set.
 		ClerkAPIKey: GetEnv("CLERK_API_KEY", "", utils.StrParser),
+		// HightlightProjectID is set to the value of the HIGHLIGHT_PROJECT_ID environment variable, or "" if the variable is not set.
+		HightlightProjectID: GetEnv("HIGHLIGHT_PROJECT_ID", "", utils.StrParser),
 		// ScreenshotServiceAPIKey is set to the value of the SCREENSHOT_API_KEY environment variable, or "" if the variable is not set.
 		ScreenshotServiceAPIKey: GetEnv("SCREENSHOT_API_KEY", "", utils.StrParser),
 		// ScreenshotServiceOrigin is set to the value of the SCREENSHOT_API_ORIGIN environment variable, or "" if the variable is not set.

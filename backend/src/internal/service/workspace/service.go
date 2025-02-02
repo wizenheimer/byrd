@@ -11,6 +11,7 @@ import (
 
 	"github.com/wizenheimer/byrd/src/internal/email/template"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
+	"github.com/wizenheimer/byrd/src/internal/recorder"
 	"github.com/wizenheimer/byrd/src/internal/repository/workspace"
 	"github.com/wizenheimer/byrd/src/internal/service/competitor"
 	"github.com/wizenheimer/byrd/src/internal/service/notification"
@@ -27,10 +28,20 @@ type workspaceService struct {
 	emailChannel      chan models.Email
 	userService       user.UserService
 	logger            *logger.Logger
+	errorRecord       *recorder.ErrorRecorder
 	tm                *transaction.TxManager
 }
 
-func NewWorkspaceService(workspaceRepo workspace.WorkspaceRepository, competitorService competitor.CompetitorService, userService user.UserService, notificationService notification.NotificationService, library template.TemplateLibrary, tm *transaction.TxManager, logger *logger.Logger) (WorkspaceService, error) {
+func NewWorkspaceService(
+	workspaceRepo workspace.WorkspaceRepository,
+	competitorService competitor.CompetitorService,
+	userService user.UserService,
+	notificationService notification.NotificationService,
+	library template.TemplateLibrary,
+	tm *transaction.TxManager,
+	logger *logger.Logger,
+	errorRecord *recorder.ErrorRecorder,
+) (WorkspaceService, error) {
 	emailChannel, err := notificationService.GetEmailChannel(context.TODO(), 1, 50)
 	if err != nil {
 		return nil, err
@@ -42,8 +53,11 @@ func NewWorkspaceService(workspaceRepo workspace.WorkspaceRepository, competitor
 		userService:       userService,
 		emailChannel:      emailChannel,
 		library:           library,
-		logger:            logger.WithFields(map[string]interface{}{"module": "workspace_service"}),
-		tm:                tm,
+		logger: logger.WithFields(map[string]any{
+			"module": "workspace_service",
+		}),
+		errorRecord: errorRecord,
+		tm:          tm,
 	}
 
 	return &ws, nil

@@ -7,12 +7,17 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/healthcheck"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
+	highlightFiber "github.com/highlight/highlight/sdk/highlight-go/middleware/fiber"
 	"github.com/wizenheimer/byrd/src/internal/config"
 )
 
 func SetupMiddleware(cfg *config.Config, app *fiber.App, rc *RateLimiters) {
 	// Recover from panics
 	app.Use(recover.New())
+	// Highlight middleware for Fiber, only in non-development environments
+	if cfg.Environment.EnvProfile != "development" {
+		app.Use(highlightFiber.Middleware())
+	}
 	// Handle shutdown
 	app.Use(rejectRequestsDuringShutdown)
 	// Log requests
@@ -30,6 +35,7 @@ func SetupMiddleware(cfg *config.Config, app *fiber.App, rc *RateLimiters) {
 	app.Use(healthcheck.New(healthcheck.Config{
 		LivenessProbe: func(c *fiber.Ctx) bool {
 			// TODO: Implement liveness probe
+			// highlight.RecordError(c.Context(), errors.New("some random error"), attribute.String("key", "value"))
 			return true
 		},
 		LivenessEndpoint: "/live",

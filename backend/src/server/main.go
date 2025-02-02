@@ -8,9 +8,11 @@ import (
 
 	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/gofiber/fiber/v2"
+	"github.com/highlight/highlight/sdk/highlight-go"
 	"github.com/wizenheimer/byrd/src/internal/api/middleware"
 	"github.com/wizenheimer/byrd/src/internal/api/routes"
 	"github.com/wizenheimer/byrd/src/internal/config"
+	"github.com/wizenheimer/byrd/src/internal/recorder"
 	"github.com/wizenheimer/byrd/src/internal/transaction"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"github.com/wizenheimer/byrd/src/server/shutdown"
@@ -24,6 +26,17 @@ func main() {
 	if err != nil {
 		log.Fatal("Failed to load configuration", zap.Error(err))
 		return
+	}
+
+	if cfg.Environment.EnvProfile != "development" {
+		highlight.SetProjectID(cfg.Services.HightlightProjectID)
+		highlight.Start(
+			highlight.WithServiceName("byrd-backend"),
+			highlight.WithServiceVersion("git-sha"),
+		)
+		defer highlight.Stop()
+	} else {
+		log.Printf("Highlight not started for %s environment", cfg.Environment.EnvProfile)
 	}
 
 	// Initialize Clerk with the secret key
@@ -53,6 +66,12 @@ func main() {
 		}
 	}()
 
+	errorRecorder := recorder.NewErrorRecorder(
+		logger,
+		cfg.Environment.EnvProfile == "development",
+		"byrd-backend",
+	)
+
 	// Initialize database
 	sqlDb, err := startup.SetupDB(cfg)
 	if err != nil {
@@ -64,7 +83,7 @@ func main() {
 	tm := transaction.NewTxManager(sqlDb, logger)
 
 	// Initialize handlers using the new modular initializer
-	handlers, rm, am, err := startup.Initialize(cfg, tm, logger)
+	handlers, rm, am, err := startup.Initialize(cfg, tm, logger, errorRecorder)
 	if err != nil {
 		logger.Fatal("Failed to initialize handlers", zap.Error(err))
 		return

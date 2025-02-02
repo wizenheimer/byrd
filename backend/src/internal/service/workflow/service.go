@@ -9,24 +9,29 @@ import (
 
 	"github.com/google/uuid"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
+	"github.com/wizenheimer/byrd/src/internal/recorder"
 	"github.com/wizenheimer/byrd/src/internal/service/executor"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"go.uber.org/zap"
 )
 
 type workflowService struct {
-	executors sync.Map //map[models.WorkflowType]executor.WorkflowObserver
-	logger    *logger.Logger
-	live      atomic.Bool
+	executors   sync.Map //map[models.WorkflowType]executor.WorkflowObserver
+	logger      *logger.Logger
+	errorRecord *recorder.ErrorRecorder
+	live        atomic.Bool
 }
 
-func NewWorkflowService(logger *logger.Logger) (WorkflowService, error) {
+func NewWorkflowService(logger *logger.Logger, errorRecord *recorder.ErrorRecorder) (WorkflowService, error) {
 	if logger == nil {
 		return nil, errors.New("logger is required")
 	}
 
 	ws := workflowService{
-		logger: logger.WithFields(map[string]interface{}{"module": "workflow_service"}),
+		logger: logger.WithFields(map[string]any{
+			"module": "workflow_service",
+		}),
+		errorRecord: errorRecord,
 	}
 
 	return &ws, nil

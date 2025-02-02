@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
+	"github.com/wizenheimer/byrd/src/internal/recorder"
 	"github.com/wizenheimer/byrd/src/internal/repository/workflow"
 	"github.com/wizenheimer/byrd/src/internal/service/notification"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
@@ -23,11 +24,8 @@ type workflowObserver struct {
 	// repository represents the repository for checkpoint related operations
 	repository workflow.WorkflowRepository
 
-	// alertClient represents the alert client for the workflow
-	// alertClient alert.AlertClient
-
-	// eventClient represents the event client for the workflow
-	// eventClient event.EventClient
+	// errorRecord represents the error recorder for the workflow
+	errorRecord *recorder.ErrorRecorder
 
 	// alertChannel represents the alert channel for the workflow
 	alertChannel chan models.Alert
@@ -50,10 +48,9 @@ func NewWorkflowObserver(
 	workflowType models.WorkflowType,
 	repository workflow.WorkflowRepository,
 	notificationService notification.NotificationService,
-	// alertClient alert.AlertClient,
-	// eventClient event.EventClient,
 	jobExecutor JobExecutor,
 	logger *logger.Logger,
+	errorRecord *recorder.ErrorRecorder,
 ) (WorkflowObserver, error) {
 
 	alertChannel, err := notificationService.GetAlertChannel(context.TODO(), 1, 25)
@@ -72,6 +69,7 @@ func NewWorkflowObserver(
 		alertChannel: alertChannel,
 		eventChannel: eventChannel,
 		jobExecutor:  jobExecutor,
+		errorRecord:  errorRecord,
 		logger: logger.WithFields(
 			map[string]interface{}{
 				"module": "workflow_executor",

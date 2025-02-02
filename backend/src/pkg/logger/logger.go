@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/wizenheimer/byrd/src/internal/config"
+	"github.com/wizenheimer/byrd/src/pkg/logger/highlightzap"
 	"github.com/wizenheimer/byrd/src/pkg/utils"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -27,21 +28,17 @@ func PrepareLoggerConfig(cfg *config.Config) LoggerConfig {
 	}
 }
 
-// NewLogger creates a new logger with the given configuration
 func NewLogger(cfg LoggerConfig) (*Logger, error) {
 	// Handle development mode specific configuration
 	if cfg.Development {
-		// Create a new log file
 		logFile, err := createLogFile(cfg.LogDir)
 		if err != nil {
 			return nil, err
 		}
 
-		// Always include stdout and the log file in development mode
 		cfg.OutputPaths = append([]string{"stdout", logFile}, cfg.OutputPaths...)
 		cfg.ErrorPaths = append([]string{"stderr", logFile}, cfg.ErrorPaths...)
 
-		// Remove duplicates from OutputPaths and ErrorPaths
 		cfg.OutputPaths = utils.DeduplicateElements(cfg.OutputPaths)
 		cfg.ErrorPaths = utils.DeduplicateElements(cfg.ErrorPaths)
 	}
@@ -61,7 +58,6 @@ func NewLogger(cfg LoggerConfig) (*Logger, error) {
 		zapLevel = zapcore.InfoLevel
 	}
 
-	// Create encoder configuration
 	encoderConfig := zapcore.EncoderConfig{
 		TimeKey:        "ts",
 		LevelKey:       "level",
@@ -77,16 +73,15 @@ func NewLogger(cfg LoggerConfig) (*Logger, error) {
 		EncodeCaller:   zapcore.ShortCallerEncoder,
 	}
 
-	// Customize for development
+	// Set the encoder to use colorized output in development mode
+	// if not use the default encoder
 	if cfg.Development {
-		// Use colorized output in development mode
 		encoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 		encoderConfig.EncodeTime = func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
 			enc.AppendString(t.Format("2006-01-02 15:04:05.000"))
 		}
 	}
 
-	// Create basic configuration
 	zapConfig := zap.Config{
 		Level:            zap.NewAtomicLevelAt(zapLevel),
 		Development:      cfg.Development,
@@ -97,13 +92,14 @@ func NewLogger(cfg LoggerConfig) (*Logger, error) {
 		InitialFields:    cfg.InitialFields,
 	}
 
+	// Set the encoding to console if in development mode
+	// otherwise use the default json encoding
 	if cfg.Development {
-		// Use console encoding for development
 		zapConfig.Encoding = "console"
 	}
 
-	// Create logger
-	logger, err := zapConfig.Build(
+	// Create base logger
+	baseLogger, err := zapConfig.Build(
 		zap.AddCallerSkip(1),
 		zap.AddStacktrace(zapcore.ErrorLevel),
 	)
@@ -111,16 +107,30 @@ func NewLogger(cfg LoggerConfig) (*Logger, error) {
 		return nil, fmt.Errorf("failed to create logger: %w", err)
 	}
 
+	finalLogger := baseLogger
+
+	// Only add Highlight core in non-development environments
+	if !cfg.Development {
+		// Create Highlight core with the same level as the base logger
+		highlightCore := highlightzap.NewHighlightCore(zapLevel)
+
+		// Wrap the logger with both cores
+		finalLogger = baseLogger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+			return zapcore.NewTee(core, highlightCore)
+		}))
+	}
+
 	// Add basic fields
-	logger = logger.With(
+	finalLogger = finalLogger.With(
 		zap.String("service", cfg.ServiceName),
 		zap.String("environment", cfg.Environment),
 	)
 
-	return &Logger{
-		log:   logger,
+	l := Logger{
+		log:   finalLogger,
 		level: cfg.Level,
-	}, nil
+	}
+	return &l, nil
 }
 
 func createLogFile(logDir string) (string, error) {
