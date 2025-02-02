@@ -2,75 +2,89 @@
 
 import LoadingStep from "@/app/(onboarding)/components/steps/LoadingStep";
 import {
-	type OnboardingData,
-	persistOnboardingData,
+  type OnboardingData,
+  persistOnboardingData,
 } from "@/app/actions/onboarding";
 import {
-	type OnboardingState,
-	useOnboardingStore,
+  type OnboardingState,
+  useOnboardingStore,
 } from "@/app/store/onboarding";
-import { useUser } from "@clerk/nextjs";
+import { useAuth, useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
 
 function transformOnboardingData(stateData: OnboardingState): OnboardingData {
-	return {
-		competitors: stateData.competitors,
-		profiles: stateData.profiles,
-		features: stateData.features,
-		team: stateData.team,
-	};
+  return {
+    competitors: stateData.competitors,
+    profiles: stateData.profiles,
+    features: stateData.features,
+    team: stateData.team,
+  };
 }
 
 export default function OnboardingComplete() {
-	const { isLoaded, isSignedIn, user } = useUser();
-	const router = useRouter();
-	const [isSubmitting, setIsSubmitting] = useState(false);
-	const onboardingState = useOnboardingStore();
+  const { isLoaded, isSignedIn, user } = useUser();
+  const { getToken } = useAuth();
+  const router = useRouter();
+  const onboardingState = useOnboardingStore();
+  const persistAttemptedRef = useRef(false);
 
-	useEffect(() => {
-		const persistData = async () => {
-			if (isLoaded && isSignedIn && user) {
-				setIsSubmitting(true);
-				try {
-					// Pick only the state properties, excluding actions
-					const stateData: OnboardingState = {
-						currentStep: onboardingState.currentStep,
-						competitors: onboardingState.competitors,
-						profiles: onboardingState.profiles,
-						features: onboardingState.features,
-						team: onboardingState.team,
-					};
+  useEffect(() => {
+    // If we've already attempted to persist, don't try again
+    if (persistAttemptedRef.current) {
+      return;
+    }
 
-					const onboardingData = transformOnboardingData(stateData);
-					const result = await persistOnboardingData(onboardingData);
+    const persistData = async () => {
+      if (!isLoaded) return;
 
-					if (result.success) {
-						// Clear onboarding state
-						onboardingState.reset();
-						router.push("/waitlist");
-					} else {
-						throw new Error("Failed to persist onboarding data");
-					}
-				} catch (error) {
-					console.error("Error persisting onboarding data:", error);
-					// You might want to show an error message to the user here
-				} finally {
-					setIsSubmitting(false);
-				}
-			} else if (isLoaded && !isSignedIn) {
-				// Clear state and redirect if not signed in
-				onboardingState.reset();
-				router.push("/");
-			}
-		};
+      if (!isSignedIn) {
+        onboardingState.reset();
+        router.push("/");
+        return;
+      }
 
-		persistData();
-	}, [isLoaded, isSignedIn, user, router, onboardingState]);
+      if (!user) return;
 
-	return (
-		<LoadingStep
-			message={isSubmitting ? "Saving your preferences..." : "Almost there..."}
-		/>
-	);
+      try {
+        // Mark that we've attempted persistence
+        persistAttemptedRef.current = true;
+
+        const stateData: OnboardingState = {
+          currentStep: onboardingState.currentStep,
+          competitors: onboardingState.competitors,
+          profiles: onboardingState.profiles,
+          features: onboardingState.features,
+          team: onboardingState.team,
+        };
+
+        const token = await getToken();
+        if (!token) {
+          throw new Error("Failed to retrieve authentication token");
+        }
+
+        const onboardingData = transformOnboardingData(stateData);
+        const result = await persistOnboardingData(onboardingData, token);
+
+        if (result.success) {
+          onboardingState.reset();
+          router.push("/waitlist");
+        } else {
+          throw new Error("Failed to persist onboarding data");
+        }
+      } catch (error) {
+        console.error("Error persisting onboarding data:", error);
+        // Reset the attempt flag on error so user can try again
+        persistAttemptedRef.current = false;
+      }
+    };
+
+    persistData();
+  }, [isLoaded, isSignedIn, user, getToken, onboardingState, router]);
+
+  return (
+    <LoadingStep
+      message={persistAttemptedRef.current ? "Saving your preferences..." : "Almost there..."}
+    />
+  );
 }
