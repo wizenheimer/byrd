@@ -52,12 +52,6 @@ func NewClient(logger *logger.Logger, opts ...ClientOption) (*HTTPClient, error)
 	if c.logger == nil {
 		return nil, errors.New("logger is required")
 	}
-	if c.limiter != nil {
-		c.logger.Info("rate limiting enabled")
-	}
-	if c.maxRetries > 0 {
-		c.logger.Info("retry enabled", zap.Any("max_retries", c.maxRetries), zap.Any("retry_codes", c.retryCodes))
-	}
 
 	// Deduplicate the retry codes
 	retryCodeMap := make(map[int]struct{})
@@ -76,7 +70,6 @@ func NewClient(logger *logger.Logger, opts ...ClientOption) (*HTTPClient, error)
 func (c *HTTPClient) shouldRetry(statusCode int) bool {
 	for _, code := range c.retryCodes {
 		if statusCode == code {
-			c.logger.Debug("retrying request", zap.Int("status_code", statusCode))
 			return true
 		}
 	}
@@ -99,20 +92,18 @@ func (c *HTTPClient) Do(req *http.Request) (*http.Response, error) {
 			backoff := time.Duration(1<<uint(attempt-1)) * time.Second
 			select {
 			case <-req.Context().Done():
-				c.logger.Debug("request cancelled", zap.Error(req.Context().Err()))
 				if resp != nil {
 					resp.Body.Close()
 				}
 				return nil, req.Context().Err()
 			case <-time.After(backoff):
-				c.logger.Debug("retrying request", zap.Int("attempt", attempt), zap.Duration("backoff", backoff))
 			}
 		}
 
 		// Execute the request
 		resp, err = c.httpClient.Do(req)
 		if err != nil {
-			c.logger.Debug("encountered request error", zap.Error(err))
+			c.logger.Error("http request failed", zap.Error(err), zap.Any("attempt", attempt), zap.Any("maxRetries", c.maxRetries), zap.Any("url", req.URL))
 			// Network-level error
 			if attempt == c.maxRetries {
 				return nil, fmt.Errorf("max retries reached: %w", err)

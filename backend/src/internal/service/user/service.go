@@ -13,7 +13,6 @@ import (
 	"github.com/wizenheimer/byrd/src/internal/repository/user"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"github.com/wizenheimer/byrd/src/pkg/utils"
-	"go.uber.org/zap"
 )
 
 type userService struct {
@@ -46,7 +45,6 @@ func (us *userService) GetOrCreateUser(ctx context.Context, clerk *clerk.User) (
 		return nil, errors.New("non-fatal: clerk user is nil")
 	}
 
-	us.logger.Debug("getting or creating user", zap.Any("clerk", clerk))
 	clerkEmail, err := utils.GetClerkUserEmail(clerk)
 	if err != nil {
 		return nil, err
@@ -66,7 +64,6 @@ func (us *userService) GetOrCreateUser(ctx context.Context, clerk *clerk.User) (
 // It returns the created or found users.
 // It returns an error if the users could not be created.
 func (us *userService) BatchGetOrCreateUsers(ctx context.Context, emails []string) ([]models.User, error) {
-	us.logger.Debug("batch getting or creating users", zap.Any("emails", emails))
 	if len(emails) > maxUserBatchSize {
 		return nil, errors.New("non-fatal: user batch size exceeds the maximum limit")
 	}
@@ -99,7 +96,6 @@ func (us *userService) BatchGetOrCreateUsers(ctx context.Context, emails []strin
 // ListUsersByUserIDs lists users by userIDs.
 // This is used to get the user details.
 func (us *userService) ListUsersByUserIDs(ctx context.Context, userIDs []uuid.UUID) ([]models.User, error) {
-	us.logger.Debug("listing users by userIDs", zap.Any("userIDs", userIDs))
 	if len(userIDs) == 0 {
 		return nil, errors.New("non-fatal: no userIDs provided")
 	}
@@ -124,7 +120,6 @@ func (us *userService) ListUsersByUserIDs(ctx context.Context, userIDs []uuid.UU
 		}
 	}
 
-	us.logger.Debug("users", zap.Any("users", users))
 	return users, nil
 }
 
@@ -135,7 +130,6 @@ func (us *userService) GetUserByClerkCredentials(ctx context.Context, clerk *cle
 		return nil, errors.New("non-fatal: clerk user is nil")
 	}
 
-	us.logger.Debug("getting user by clerk credentials", zap.Any("clerk", clerk))
 	userEmail, err := utils.GetClerkUserEmail(clerk)
 	if err != nil {
 		return nil, err
@@ -158,7 +152,6 @@ func (us *userService) SyncUser(ctx context.Context, clerk *clerk.User) error {
 		return errors.New("non-fatal: clerk user is nil")
 	}
 
-	us.logger.Debug("syncing user", zap.Any("clerk", clerk))
 	clerkEmail, err := utils.GetClerkUserEmail(clerk)
 	if err != nil {
 		return err
@@ -179,7 +172,6 @@ func (us *userService) ActivateUser(ctx context.Context, userID uuid.UUID, clerk
 		return errors.New("non-fatal: clerk user is nil")
 	}
 
-	us.logger.Debug("activating user", zap.Any("userID", userID), zap.Any("clerk", clerkUser))
 	userEmail, err := utils.GetClerkUserEmail(clerkUser)
 	if err != nil {
 		return err
@@ -202,7 +194,6 @@ func (us *userService) DeleteUser(ctx context.Context, clerk *clerk.User) error 
 		return errors.New("non-fatal: clerk user is nil")
 	}
 
-	us.logger.Debug("deleting user", zap.Any("clerk", clerk))
 	clerkEmail, err := utils.GetClerkUserEmail(clerk)
 	if err != nil {
 		return err
@@ -219,7 +210,6 @@ func (us *userService) DeleteUser(ctx context.Context, clerk *clerk.User) error 
 // UserExistsByUserID checks if a user exists by UserID.
 // It returns true if the user exists, otherwise it returns false.
 func (us *userService) UserExistsByUserID(ctx context.Context, userID uuid.UUID) (bool, error) {
-	us.logger.Debug("checking if user exists", zap.Any("userID", userID))
 	return us.userRepository.UserExists(ctx, userID)
 }
 
@@ -230,7 +220,6 @@ func (us *userService) ClerkUserExists(ctx context.Context, clerk *clerk.User) (
 		return false, errors.New("non-fatal: clerk user is nil")
 	}
 
-	us.logger.Debug("checking if clerk user exists", zap.Any("clerk", clerk))
 	email, err := utils.GetClerkUserEmail(clerk)
 	if err != nil {
 		return false, err

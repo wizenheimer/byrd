@@ -17,7 +17,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
-	"go.uber.org/zap"
 )
 
 // r2ScreenshotRepo is a storage repository that uses R2 as the backend
@@ -35,8 +34,6 @@ func NewR2ScreenshotRepo(accessKey, secretKey, bucket, accountID string, logger 
 	if logger == nil {
 		return nil, fmt.Errorf("can't initialize r2, logger is required")
 	}
-
-	logger.Debug("creating new r2 storage", zap.Any("bucket", bucket))
 
 	cfg, err := config.LoadDefaultConfig(context.TODO(),
 		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accessKey, secretKey, "")),

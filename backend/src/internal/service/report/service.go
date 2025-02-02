@@ -61,19 +61,16 @@ func NewReportService(
 
 // Get returns the report with the given ID.
 func (s *reportService) Get(ctx context.Context, reportID uuid.UUID) (*models.Report, error) {
-	s.logger.Debug("Getting report", zap.Any("reportID", reportID))
 	return s.repo.Get(ctx, reportID)
 }
 
 // GetLatest returns the latest report for the given workspace and competitor
 func (s *reportService) GetLatest(ctx context.Context, workspaceID, competitorID uuid.UUID) (*models.Report, error) {
-	s.logger.Debug("Getting latest report", zap.Any("workspaceID", workspaceID), zap.Any("competitorID", competitorID))
 	return s.repo.GetLatest(ctx, workspaceID, competitorID)
 }
 
 // List returns a list of reports for the given workspace and competitor
 func (s *reportService) List(ctx context.Context, workspaceID, competitorID uuid.UUID, limit, offset *int) ([]models.Report, bool, error) {
-	s.logger.Debug("Listing reports", zap.Any("workspaceID", workspaceID), zap.Any("competitorID", competitorID), zap.Any("limit", limit), zap.Any("offset", offset))
 	return s.repo.List(ctx, workspaceID, competitorID, limit, offset)
 }
 
@@ -90,17 +87,9 @@ func (s *reportService) Create(ctx context.Context, workspaceID, competitorID uu
 
 	// If report exists, return it
 	if existingReport != nil && exists {
-		s.logger.Debug("Found existing report for period",
-			zap.Any("reportID", existingReport.ID))
+		s.logger.Debug("existing report found for the time period, using it instead", zap.Any("workspaceID", workspaceID), zap.Any("competitorID", competitorID))
 		return existingReport, nil
 	}
-
-	// No existing report found, create a new one
-	s.logger.Debug("Creating new report for period",
-		zap.Any("workspaceID", workspaceID),
-		zap.Any("competitorID", competitorID),
-		zap.Any("history", history))
-
 	changeList := make([]*models.DynamicChanges, 0)
 	for _, pageHistory := range history {
 		changeList = append(changeList, &pageHistory.DiffContent)

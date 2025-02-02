@@ -8,6 +8,7 @@ import (
 )
 
 type Config struct {
+	ServiceName string
 	Environment EnvironmentConfig
 	Server      ServerConfig
 	Database    DatabaseConfig
@@ -158,6 +159,7 @@ func Load() (*Config, error) {
 	workflowConfig := LoadWorkflowConfig()
 
 	return &Config{
+		ServiceName: "byrd-go",
 		Environment: environmentConfig,
 		Server:      serverConfig,
 		Database:    databaseConfig,

@@ -18,7 +18,6 @@ import (
 
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/pkg/utils"
-	"go.uber.org/zap"
 )
 
 // refreshScreenshot refreshes the screenshot and html content for the given URL
@@ -26,7 +25,6 @@ import (
 func (s *screenshotService) refreshScreenshot(ctx context.Context, opts models.ScreenshotRequestOptions) (*image.Image, *string, error) {
 	defaultOpt := models.GetDefaultScreenshotRequestOptions(opts.URL)
 	mergedOpt := models.MergeScreenshotRequestOptions(defaultOpt, opts)
-	s.logger.Debug("refreshing screenshot", zap.Any("options", mergedOpt))
 
 	req, err := s.createScreenshotRequest(ctx, http.MethodGet, "take", mergedOpt)
 	if err != nil {
@@ -134,8 +132,6 @@ func (s *screenshotService) createScreenshotRequest(ctx context.Context, request
 	q.Set("access_key", s.key)
 	addStructToQuery(q, opts)
 	u.RawQuery = q.Encode()
-
-	s.logger.Debug("creating screenshot request", zap.String("url", u.String()))
 
 	// Create request with context
 	req, err := http.NewRequestWithContext(ctx, requestMethod, u.String(), nil)

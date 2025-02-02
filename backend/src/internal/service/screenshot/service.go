@@ -26,7 +26,6 @@ type screenshotService struct {
 
 // NewScreenshotService creates a new screenshot service with the given options
 func NewScreenshotService(logger *logger.Logger, opts ...ScreenshotServiceOption) (ScreenshotService, error) {
-	logger.Debug("creating new screenshot service")
 	s := &screenshotService{
 		logger: logger.WithFields(
 			map[string]interface{}{

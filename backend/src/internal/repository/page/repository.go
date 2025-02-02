@@ -149,7 +149,6 @@ func (r *pageRepo) GetCompetitorPageByID(ctx context.Context, competitorID, page
 		return nil, fmt.Errorf("failed to get page: %w", err)
 	}
 
-	r.logger.Debug("page", zap.Any("page", page))
 	return page, nil
 }
 

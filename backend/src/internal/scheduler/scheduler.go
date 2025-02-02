@@ -49,20 +49,22 @@ func (s *scheduler) Start() error {
 	defer s.mu.Unlock()
 
 	if s.running {
-		s.logger.Info("scheduler already running", zap.String("status", "running"))
 		return nil
 	}
 
 	s.cron.Start()
 	s.running = true
 
-	s.logger.Info("scheduler started", zap.String("status", "running"))
+	scheduleCount := 0
+	s.schedules.Range(func(_, _ interface{}) bool {
+		scheduleCount++
+		return true
+	})
+
 	return nil
 }
 
 func (s *scheduler) Schedule(cmd func(), opts ScheduleOptions) (*models.ScheduledFunc, error) {
-	s.logger.Info("scheduling a new function", zap.String("scheduleSpec", opts.ScheduleSpec), zap.Duration("delay", opts.Delay), zap.Any("hooks", len(opts.Hooks)))
-
 	// Validate scheduleSpec and cmd
 	if cmd == nil {
 		return nil, fmt.Errorf("command function cannot be nil")
@@ -151,8 +153,6 @@ func (s *scheduler) Schedule(cmd func(), opts ScheduleOptions) (*models.Schedule
 // Recover recovers scheduled functions that got pre-empted due to a restart
 // It executes the command immediately if the next run time is in the past
 func (s *scheduler) Recover(scheduleSpec string, cmd func(), lastRun *time.Time, nextRun *time.Time) (*models.ScheduledFunc, error) {
-	s.logger.Info("recovering a scheduled function", zap.String("scheduleSpec", scheduleSpec), zap.Any("lastRun", lastRun), zap.Any("nextRun", nextRun))
-
 	currentTime := time.Now()
 
 	// Validate schedule
@@ -223,8 +223,6 @@ func (s *scheduler) Recover(scheduleSpec string, cmd func(), lastRun *time.Time,
 // This doesn't stop a running function
 // It merely updates the schedule specification and command for the next run
 func (s *scheduler) Update(id models.ScheduleID, cmd func(), opts ScheduleOptions) (*models.ScheduledFunc, error) {
-	s.logger.Info("updating a scheduled function", zap.String("scheduleSpec", opts.ScheduleSpec), zap.Duration("delay", opts.Delay), zap.Any("hooks", len(opts.Hooks)))
-
 	// Get the existing scheduled function
 	sf, err := s.Get(id)
 	if err != nil {
@@ -242,8 +240,6 @@ func (s *scheduler) Update(id models.ScheduleID, cmd func(), opts ScheduleOption
 // Delete a scheduled function
 // This stops the function from running in the future
 func (s *scheduler) Delete(id models.ScheduleID) error {
-	s.logger.Info("deleting a scheduled function", zap.Any("id", id))
-
 	// Get the scheduled function
 	sf, err := s.Get(id)
 	if err != nil {
@@ -264,8 +260,6 @@ func (s *scheduler) Delete(id models.ScheduleID) error {
 // Get a scheduled function by ID
 // This returns the scheduled function with the last run and next run times
 func (s *scheduler) Get(id models.ScheduleID) (*models.ScheduledFunc, error) {
-	s.logger.Info("getting a scheduled function", zap.Any("id", id))
-
 	if value, ok := s.schedules.Load(id); ok {
 		sf, ok := value.(*models.ScheduledFunc)
 		if !ok {
@@ -287,8 +281,6 @@ func (s *scheduler) Get(id models.ScheduleID) (*models.ScheduledFunc, error) {
 // List all scheduled functions
 // This returns all the scheduled functions with the last run and next run times
 func (s *scheduler) List() []*models.ScheduledFunc {
-	s.logger.Info("listing all scheduled functions")
-
 	var funcs []*models.ScheduledFunc
 	s.schedules.Range(func(key, value interface{}) bool {
 		sf, ok := value.(*models.ScheduledFunc)
@@ -313,13 +305,10 @@ func (s *scheduler) List() []*models.ScheduledFunc {
 // Stop the scheduler
 // This stops the scheduler from running
 func (s *scheduler) Stop() error {
-	s.logger.Info("stopping the scheduler")
-
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	if !s.running {
-		s.logger.Info("scheduler already stopped", zap.String("status", "stopped"))
 		return nil
 	}
 
@@ -337,7 +326,6 @@ func (s *scheduler) Stop() error {
 
 	s.cron.Stop()
 	s.running = false
-	s.logger.Info("scheduler stopped", zap.String("status", "stopped"))
 	return nil
 }
 
@@ -353,17 +341,14 @@ func (s *scheduler) wrapCommand(id models.ScheduleID, cmd func(), hooks ...func(
 			}
 
 			// Execute the command safely
-			s.logger.Info("executing scheduled function", zap.Any("id", id))
 			s.safeExecute(cmd)
 
 			// Update LastRun and NextRun times
-			s.logger.Info("updating last run and next run times", zap.Any("id", id))
 			entry := s.cron.Entry(sf.EntryID)
 			sf.LastRun = entry.Prev
 			sf.NextRun = entry.Next
 
 			// Store the updated scheduled function
-			s.logger.Info("storing updated scheduled function", zap.Any("id", id))
 			s.schedules.Store(id, sf)
 
 			// Execute hooks

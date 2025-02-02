@@ -6,7 +6,6 @@ import (
 
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
-	"go.uber.org/zap"
 )
 
 type localEmailClient struct {
@@ -26,6 +25,5 @@ func NewLocalEmailClient(ctx context.Context, logger *logger.Logger) (EmailClien
 func (lc *localEmailClient) Send(ctx context.Context, email models.Email) error {
 	// Mock email sending latency
 	time.Sleep(1 * time.Second)
-	lc.logger.Debug("Sent email", zap.Any("email", email))
 	return nil
 }

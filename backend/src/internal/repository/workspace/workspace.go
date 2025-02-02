@@ -14,7 +14,6 @@ import (
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/internal/transaction"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
-	"go.uber.org/zap"
 )
 
 type workspaceRepo struct {
@@ -280,7 +279,6 @@ func (r *workspaceRepo) GetWorkspaceUserCountsByRoleAndStatus(ctx context.Contex
 }
 
 func (r *workspaceRepo) PromoteRandomUserToAdmin(ctx context.Context, workspaceID uuid.UUID) error {
-	r.logger.Debug("promoting random user to admin", zap.String("workspace_id", workspaceID.String()), zap.Any("role", models.RoleAdmin))
 	result, err := r.getQuerier(ctx).Exec(ctx, `
         UPDATE workspace_users
         SET workspace_role = $1

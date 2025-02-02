@@ -17,7 +17,6 @@ func SetupScreenshotService(cfg *config.Config, screenshotHTTPClient *client.HTT
 		return nil, fmt.Errorf("can't initialize screenshot service, logger is required")
 	}
 
-	logger.Debug("setting up screenshot service", zap.Any("storage_config", cfg.Storage))
 	validateStorageConfig(cfg, logger)
 
 	storageRepo, err := createStorageRepository(cfg, logger)
@@ -35,7 +34,12 @@ func SetupScreenshotService(cfg *config.Config, screenshotHTTPClient *client.HTT
 		screenshot_svc.WithOrigin(cfg.Services.ScreenshotServiceOrigin),
 	}
 
-	return screenshot_svc.NewScreenshotService(logger, screenshotServiceOptions...)
+	screenshotService, err := screenshot_svc.NewScreenshotService(logger, screenshotServiceOptions...)
+	if err != nil {
+		return nil, err
+	}
+
+	return screenshotService, nil
 }
 
 func validateStorageConfig(cfg *config.Config, logger *logger.Logger) {

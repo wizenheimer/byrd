@@ -60,8 +60,6 @@ func NewWorkflowObserver(
 }
 
 func (e *workflowObserver) Recover(ctx context.Context) error {
-	e.logger.Debug("recovering workflows")
-
 	// List the workflows from the repository
 	jobs, err := e.repository.ListActiveJobs(ctx, e.workflowType)
 	if err != nil {
@@ -80,8 +78,6 @@ func (e *workflowObserver) Recover(ctx context.Context) error {
 }
 
 func (e *workflowObserver) Submit(ctx context.Context) (uuid.UUID, error) {
-	e.logger.Debug("submitting workflow")
-
 	// Create a new job
 	job := models.NewJob()
 
@@ -130,7 +126,6 @@ func (e *workflowObserver) executeJob(executionContext context.Context, jobConte
 }
 
 func (e *workflowObserver) handleJobCancellation(jobContext *models.JobContext) {
-	e.logger.Debug("cancelling job", zap.Any("job_id", jobContext.JobID))
 	jobContext.HandleCancellation()
 
 	// Refresh remote state
@@ -144,8 +139,6 @@ func (e *workflowObserver) handleJobCancellation(jobContext *models.JobContext) 
 }
 
 func (e *workflowObserver) handleJobCompletion(ctx context.Context, jobContext *models.JobContext) {
-	e.logger.Debug("completing job", zap.Any("job_id", jobContext.JobID))
-
 	// Handle job completion
 	jobContext.HandleCompletion()
 
@@ -157,8 +150,6 @@ func (e *workflowObserver) handleJobCompletion(ctx context.Context, jobContext *
 
 	// Refresh local state
 	e.activeJobs.Delete(jobContext.JobID)
-
-	e.logger.Debug("job completed", zap.Any("job_id", jobContext.JobID))
 }
 
 func (e *workflowObserver) handleJobError(jobContext *models.JobContext, jobError *models.JobError) {
@@ -167,8 +158,6 @@ func (e *workflowObserver) handleJobError(jobContext *models.JobContext, jobErro
 }
 
 func (e *workflowObserver) handleJobUpdate(ctx context.Context, jobContext *models.JobContext, jobUpdate models.JobUpdate) {
-	e.logger.Debug("handling job update", zap.Any("update", jobUpdate))
-
 	if err := e.repository.SetState(ctx, jobContext.JobID, e.workflowType, jobContext.JobState); err != nil {
 		e.logger.Error("failed to persist job state", zap.Error(err))
 		return
@@ -178,8 +167,6 @@ func (e *workflowObserver) handleJobUpdate(ctx context.Context, jobContext *mode
 }
 
 func (e *workflowObserver) Status(ctx context.Context, jobID uuid.UUID) (*models.JobStatus, error) {
-	e.logger.Debug("getting workflow status", zap.Any("job_id", jobID))
-
 	// Get the job from the active jobs
 	jobContext, ok := e.activeJobs.Load(jobID)
 	if !ok {
@@ -196,8 +183,6 @@ func (e *workflowObserver) Status(ctx context.Context, jobID uuid.UUID) (*models
 }
 
 func (e *workflowObserver) State(ctx context.Context, jobID uuid.UUID) (*models.JobState, error) {
-	e.logger.Debug("getting workflow state", zap.Any("job_id", jobID))
-
 	// Get the job from the active jobs
 	jobContext, ok := e.activeJobs.Load(jobID)
 	if !ok {
@@ -218,8 +203,6 @@ func (e *workflowObserver) State(ctx context.Context, jobID uuid.UUID) (*models.
 }
 
 func (e *workflowObserver) Get(ctx context.Context, jobID uuid.UUID) (*models.Job, error) {
-	e.logger.Debug("getting workflow", zap.Any("job_id", jobID))
-
 	// Get the job from the active jobs
 	jobContext, ok := e.activeJobs.Load(jobID)
 	if !ok {
@@ -236,8 +219,6 @@ func (e *workflowObserver) Get(ctx context.Context, jobID uuid.UUID) (*models.Jo
 }
 
 func (e *workflowObserver) Cancel(ctx context.Context, jobID uuid.UUID) error {
-	e.logger.Debug("cancelling workflow", zap.Any("job_id", jobID))
-
 	// Get the job from the active jobs
 	jobContext, ok := e.activeJobs.Load(jobID)
 	if !ok {
@@ -255,8 +236,6 @@ func (e *workflowObserver) Cancel(ctx context.Context, jobID uuid.UUID) error {
 }
 
 func (e *workflowObserver) List(ctx context.Context, status models.JobStatus) ([]models.Job, error) {
-	e.logger.Debug("listing workflows", zap.Any("status", status))
-
 	// List the jobs from the active jobs
 	var jobs []models.Job
 	e.activeJobs.Range(func(key, value interface{}) bool {
@@ -276,8 +255,6 @@ func (e *workflowObserver) List(ctx context.Context, status models.JobStatus) ([
 }
 
 func (e *workflowObserver) Shutdown(ctx context.Context) error {
-	e.logger.Debug("shutting down workflow")
-
 	// Iterate over the active jobs and cancel them
 	e.activeJobs.Range(func(key, value interface{}) bool {
 		jobContext, ok := value.(*models.JobContext)
@@ -299,8 +276,6 @@ func (e *workflowObserver) Shutdown(ctx context.Context) error {
 }
 
 func (e *workflowObserver) History(ctx context.Context, limit, offset *int) ([]models.JobRecord, error) {
-	e.logger.Debug("getting workflow history", zap.Any("limit", limit), zap.Any("offset", offset))
-
 	// Get the history from the repository
 	jobRecords, err := e.repository.ListRecords(ctx, &e.workflowType, limit, offset)
 	if err != nil {

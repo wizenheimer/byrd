@@ -36,8 +36,6 @@ func NewDispatchExecutor(ws workspace.WorkspaceService, logger *logger.Logger, r
 }
 
 func (e *dispatchExecutor) Execute(executionContext context.Context, jobState models.JobState) (<-chan models.JobUpdate, <-chan models.JobError) {
-	e.logger.Info("Executing report job", zap.Any("job_state", jobState))
-
 	updates := make(chan models.JobUpdate, 1)
 	errors := make(chan models.JobError, 1)
 
@@ -157,16 +155,9 @@ func (e *dispatchExecutor) processBatch(ctx context.Context, workspaceBatch []uu
 				return
 			}
 
-			e.logger.Debug("page processing succeeded",
-				zap.Any("workspaceID", workspaceID),
-				zap.Duration("duration", duration))
-
 			select {
 			case completions <- workspaceIndex:
 			case <-timeoutCtx.Done():
-				e.logger.Debug("timeout context done",
-					zap.Any("workspaceID", workspaceID))
-
 			}
 		}(index, workspaceID)
 	}
@@ -174,7 +165,6 @@ func (e *dispatchExecutor) processBatch(ctx context.Context, workspaceBatch []uu
 	// Close completion channel when all work is done
 	go func() {
 		wg.Wait()
-		e.logger.Debug("all workers completed")
 		close(completions)
 		cancel() // Clean up timeout context
 	}()
@@ -188,7 +178,6 @@ func (e *dispatchExecutor) processWorkspace(ctx context.Context, workspaceID uui
 		return ctx.Err()
 	default:
 		// Process the workspace
-		e.logger.Debug("processing workspace", zap.Any("workspaceID", workspaceID))
 		competitors, _, err := e.ws.ListCompetitorsForWorkspace(ctx, workspaceID, nil, nil)
 		if err != nil {
 			return err
@@ -200,7 +189,6 @@ func (e *dispatchExecutor) processWorkspace(ctx context.Context, workspaceID uui
 				errs = append(errs, err)
 			}
 		}
-		e.logger.Debug("processed workspace", zap.Any("workspaceID", workspaceID))
 		if len(errs) > 0 {
 			err = fmt.Errorf("failed to process some competitors %v", errs)
 		}
@@ -214,12 +202,10 @@ func (e *dispatchExecutor) processCompetitor(ctx context.Context, workspaceID uu
 		return ctx.Err()
 	default:
 		// Process the competitor
-		e.logger.Debug("processing competitor", zap.Any("workspaceID", workspaceID), zap.Any("competitorID", competitorID))
 		err := e.ws.DispatchReportToWorkspaceMembers(ctx, workspaceID, competitorID)
 		if err != nil {
 			return err
 		}
-		e.logger.Debug("processed competitor", zap.Any("workspaceID", workspaceID), zap.Any("competitorID", competitorID))
 		return nil
 	}
 }

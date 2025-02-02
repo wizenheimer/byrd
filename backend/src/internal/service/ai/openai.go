@@ -39,8 +39,6 @@ func NewOpenAIService(apiKey string, logger *logger.Logger) (AIService, error) {
 	fieldRegistry := NewFieldRegistry()
 	builder := NewProfileBuilder(fieldRegistry)
 
-	logger.Debug("creating new openAI service", zap.Any("available_fields", fieldRegistry.ListAvailableFields()))
-
 	s := openAIService{
 		client:  client,
 		logger:  logger.WithFields(map[string]interface{}{"module": "ai_service"}),
@@ -55,8 +53,6 @@ func NewOpenAIService(apiKey string, logger *logger.Logger) (AIService, error) {
 }
 
 func (s *openAIService) SummarizeChanges(ctx context.Context, changeList []*models.DynamicChanges) ([]models.CategoryChange, error) {
-	s.logger.Debug("summarizing changes", zap.Any("change_list", changeList))
-
 	changes, err := models.MergeDynamicChanges(changeList)
 	if err != nil {
 		return nil, err
@@ -164,7 +160,7 @@ func (s *openAIService) SummarizeChanges(ctx context.Context, changeList []*mode
 			}
 
 			response.Changes = append(response.Changes, categoryChange)
-			s.logger.Debug("fallback summary", zap.String("category", category), zap.Strings("changes", stringList))
+			s.logger.Error("using fallback summary", zap.String("category", category))
 		}
 		mu.Unlock()
 	}
@@ -174,8 +170,6 @@ func (s *openAIService) SummarizeChanges(ctx context.Context, changeList []*mode
 
 // AnalyzeContentDifferences analyzes the content differences between two versions of a URL
 func (s *openAIService) AnalyzeContentDifferences(ctx context.Context, version1, version2 string, fields []string) (*models.DynamicChanges, error) {
-	s.logger.Debug("analyzing content differences", zap.Int("version1", len(version1)), zap.Int("version2", len(version2)), zap.Strings("requested_fields", fields))
-
 	profileRequest := ProfileRequest{
 		Name:        "competitor_updates",
 		Description: "Carefully compare these two versions of content, identify and surface changes",
@@ -187,8 +181,6 @@ func (s *openAIService) AnalyzeContentDifferences(ctx context.Context, version1,
 		return nil, err
 	}
 
-	s.logger.Debug("analyzing content differences", zap.String("version1", version1), zap.String("version2", version2), zap.Any("profile", profile.Fields), zap.Strings("requested_fields", fields))
-
 	chat, err := s.prepareTextCompletion(ctx, version1, version2, profile)
 	if err != nil {
 		return nil, err
@@ -199,8 +191,6 @@ func (s *openAIService) AnalyzeContentDifferences(ctx context.Context, version1,
 
 // AnalyzeVisualDifferences analyzes the visual differences between two screenshots
 func (s *openAIService) AnalyzeVisualDifferences(ctx context.Context, screenshot1, screenshot2 image.Image, fields []string) (*models.DynamicChanges, error) {
-	s.logger.Debug("analyzing visual differences", zap.Any("requested_fields", fields))
-
 	profileRequest := ProfileRequest{
 		Name:        "competitor_updates",
 		Description: "Carefully compare and contrast visual changes in the webpage",

@@ -20,8 +20,6 @@ type ScheduleHandler struct {
 }
 
 func NewScheduleHandler(schedulerService scheduler.SchedulerService, logger *logger.Logger) *ScheduleHandler {
-	logger.Debug("creating new schedule handler")
-
 	return &ScheduleHandler{
 		schedulerService: schedulerService,
 		logger: logger.WithFields(map[string]interface{}{
@@ -31,7 +29,6 @@ func NewScheduleHandler(schedulerService scheduler.SchedulerService, logger *log
 }
 
 func (h *ScheduleHandler) CreateSchedule(c *fiber.Ctx) error {
-	h.logger.Debug("creating new schedule")
 	var req models.WorkflowScheduleProps
 	if err := c.BodyParser(&req); err != nil {
 		return sendErrorResponse(c, h.logger, fiber.StatusBadRequest, "Invalid request body", err.Error())
@@ -52,7 +49,6 @@ func (h *ScheduleHandler) CreateSchedule(c *fiber.Ctx) error {
 }
 
 func (h *ScheduleHandler) GetSchedule(c *fiber.Ctx) error {
-	h.logger.Debug("getting schedule")
 	scheduleIDString := c.Params("scheduleID")
 	scheduleIDUUID, err := uuid.Parse(scheduleIDString)
 	if err != nil {
@@ -68,8 +64,6 @@ func (h *ScheduleHandler) GetSchedule(c *fiber.Ctx) error {
 }
 
 func (h *ScheduleHandler) UpdateSchedule(c *fiber.Ctx) error {
-	h.logger.Debug("updating schedule")
-
 	scheduleIDString := c.Params("scheduleID")
 	scheduleIDUUID, err := uuid.Parse(scheduleIDString)
 	if err != nil {
@@ -93,8 +87,6 @@ func (h *ScheduleHandler) UpdateSchedule(c *fiber.Ctx) error {
 }
 
 func (h *ScheduleHandler) DeleteSchedule(c *fiber.Ctx) error {
-	h.logger.Debug("deleting schedule")
-
 	scheduleIDString := c.Params("scheduleID")
 	scheduleIDUUID, err := uuid.Parse(scheduleIDString)
 	if err != nil {
@@ -111,8 +103,6 @@ func (h *ScheduleHandler) DeleteSchedule(c *fiber.Ctx) error {
 }
 
 func (h *ScheduleHandler) ListSchedules(c *fiber.Ctx) error {
-	h.logger.Debug("listing schedules")
-
 	pageNumber := max(1, c.QueryInt("_page", commons.DefaultPageNumber))
 	pageSize := max(10, c.QueryInt("_limit", commons.DefaultPageSize))
 

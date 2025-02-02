@@ -41,7 +41,7 @@ func (wh *WorkspaceHandler) ListUsersForWorkspace(c *fiber.Ctx) error {
 		userRole := models.RoleUser
 		roleFilter = &userRole
 	default:
-		wh.logger.Debug("Invalid role filter, defaulting to user")
+		// Note: This would result in all roles being returned
 		roleFilter = nil
 	}
 

@@ -20,7 +20,6 @@ type AIHandler struct {
 }
 
 func NewAIHandler(aiService ai.AIService, logger *logger.Logger) (*AIHandler, error) {
-	logger.Debug("creating new AI handler")
 	processor, err := utils.NewMarkdownProcessor()
 	if err != nil {
 		return nil, err
@@ -36,8 +35,6 @@ func NewAIHandler(aiService ai.AIService, logger *logger.Logger) (*AIHandler, er
 }
 
 func (h *AIHandler) AnalyzeContentDifferences(c *fiber.Ctx) error {
-	h.logger.Debug("analyzing content differences")
-
 	form, err := c.MultipartForm()
 	if err != nil {
 		return sendErrorResponse(c, h.logger, fiber.StatusBadRequest, "Invalid multipart form", err.Error())
@@ -119,8 +116,6 @@ func (h *AIHandler) AnalyzeContentDifferences(c *fiber.Ctx) error {
 }
 
 func (h *AIHandler) AnalyzeVisualDifferences(c *fiber.Ctx) error {
-	h.logger.Debug("analyzing visual differences")
-
 	form, err := c.MultipartForm()
 	if err != nil {
 		return sendErrorResponse(c, h.logger, fiber.StatusBadRequest, "Invalid multipart form", err.Error())
@@ -187,8 +182,6 @@ func (h *AIHandler) AnalyzeVisualDifferences(c *fiber.Ctx) error {
 }
 
 func (h *AIHandler) SummarizeContentDifferences(c *fiber.Ctx) error {
-	h.logger.Debug("analyzing content differences")
-
 	form, err := c.MultipartForm()
 	if err != nil {
 		return sendErrorResponse(c, h.logger, fiber.StatusBadRequest, "Invalid multipart form", err.Error())

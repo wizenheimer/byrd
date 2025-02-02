@@ -58,7 +58,6 @@ func NewSchedulerService(
 
 // Start starts the scheduler service
 func (s *schedulerService) Start(ctx context.Context, recovery bool) error {
-	s.logger.Info("starting the scheduler service")
 	err := s.scheduler.Start()
 	if err != nil {
 		return err
@@ -73,7 +72,6 @@ func (s *schedulerService) Start(ctx context.Context, recovery bool) error {
 
 // Gracefully stops the scheduler service gracefully
 func (s *schedulerService) Stop(ctx context.Context) error {
-	s.logger.Info("stopping the scheduler service")
 	err := s.scheduler.Stop()
 	if err != nil {
 		s.errorRecord.RecordError(ctx, fmt.Errorf("failed to stop scheduler %v", err.Error()))
@@ -84,11 +82,9 @@ func (s *schedulerService) Stop(ctx context.Context) error {
 func (s *schedulerService) triggerWorkflow(ctx context.Context, workflowType models.WorkflowType) func() {
 	return func() {
 		// Execute the workflow
-		jobID, err := s.workflowService.Submit(ctx, workflowType)
+		_, err := s.workflowService.Submit(ctx, workflowType)
 		if err != nil {
 			s.errorRecord.RecordError(ctx, fmt.Errorf("failed to submit workflow %v", err.Error()), zap.Any("workflowType", workflowType))
-		} else {
-			s.logger.Info("successfully submitted workflow", zap.Any("jobID", jobID))
 		}
 	}
 }
@@ -116,7 +112,6 @@ func (s *schedulerService) syncWorkflow(ctx context.Context, remoteScheduleID mo
 
 // Schedule schedules a new workflow
 func (s *schedulerService) Schedule(ctx context.Context, workflowProp models.WorkflowScheduleProps) (models.ScheduleID, error) {
-	s.logger.Info("scheduling a new workflow")
 	remoteScheduleID := models.NewScheduleID()
 
 	op := &CreateScheduleOperation{
@@ -135,8 +130,6 @@ func (s *schedulerService) Schedule(ctx context.Context, workflowProp models.Wor
 
 // Unschedule unschedules a workflow
 func (s *schedulerService) Unschedule(ctx context.Context, remoteScheduleID models.ScheduleID) error {
-	s.logger.Info("unscheduling a workflow")
-
 	op := &DeleteScheduleOperation{
 		svc:      s,
 		remoteID: remoteScheduleID,
@@ -153,8 +146,6 @@ func (s *schedulerService) Unschedule(ctx context.Context, remoteScheduleID mode
 
 // Reschedule reschedules a workflow
 func (s *schedulerService) Reschedule(ctx context.Context, remoteScheduleID models.ScheduleID, workflowProp models.WorkflowScheduleProps) (models.ScheduleID, error) {
-	s.logger.Info("rescheduling a workflow")
-
 	op := &UpdateScheduleOperation{
 		svc:          s,
 		remoteID:     remoteScheduleID,
@@ -171,7 +162,6 @@ func (s *schedulerService) Reschedule(ctx context.Context, remoteScheduleID mode
 
 // Get returns the schedule of a workflow
 func (s *schedulerService) Get(ctx context.Context, remoteScheduleID models.ScheduleID) (*models.WorkflowSchedule, error) {
-	s.logger.Info("getting the schedule of a workflow")
 	// Get schedule of a workflow from local state
 	v, ok := s.scheduledFuncs.Load(remoteScheduleID)
 	if !ok {
@@ -198,7 +188,6 @@ func (s *schedulerService) Get(ctx context.Context, remoteScheduleID models.Sche
 
 // List returns the list of scheduled workflows
 func (s *schedulerService) List(ctx context.Context, limit, offset *int, workflowType *models.WorkflowType) ([]models.WorkflowSchedule, error) {
-	s.logger.Info("listing the scheduled workflows")
 	// List the scheduled workflows
 	workflowSchedules, err := s.repository.ListScheduledWorkflows(ctx, limit, offset, workflowType)
 	if err != nil {
@@ -217,7 +206,6 @@ func (s *schedulerService) Recover(ctx context.Context) {
 	}
 
 	for _, workflow := range workflows {
-		s.logger.Info("recovering scheduled function", zap.Any("workflow", workflow))
 		scheduleID := workflow.ID
 		// Schedule options
 		opts := scheduler.ScheduleOptions{

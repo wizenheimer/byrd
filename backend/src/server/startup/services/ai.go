@@ -9,8 +9,6 @@ import (
 )
 
 func SetupAIService(cfg *config.Config, logger *logger.Logger) (ai.AIService, error) {
-	logger.Debug("setting up AI service", zap.Any("service_config", cfg.Services))
-
 	aiService, err := ai.NewOpenAIService(cfg.Services.OpenAIKey, logger)
 	if err != nil {
 		logger.Fatal("Failed to initialize AI service", zap.Error(err))

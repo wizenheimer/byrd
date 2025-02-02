@@ -164,16 +164,14 @@ func (re *reportExecutor) processBatch(ctx context.Context, workspaceBatch []uui
 				return
 			}
 
-			re.logger.Debug("page processing succeeded",
-				zap.Any("workspaceID", workspaceID),
-				zap.Duration("duration", duration))
-
 			select {
 			case completions <- workspaceIndex:
 			case <-timeoutCtx.Done():
-				re.logger.Debug("timeout context done",
-					zap.Any("workspaceID", workspaceID))
-
+				re.logger.Error("timeout exceeded for report executor",
+					zap.Duration("upperBound", re.runtimeConfig.UpperBound),
+					zap.Duration("duration", time.Since(start)),
+					zap.Any("workspaceID", workspaceID),
+					zap.Error(err))
 			}
 		}(index, workspaceID)
 	}
@@ -181,7 +179,6 @@ func (re *reportExecutor) processBatch(ctx context.Context, workspaceBatch []uui
 	// Close completion channel when all work is done
 	go func() {
 		wg.Wait()
-		re.logger.Debug("all workers completed")
 		close(completions)
 		cancel() // Clean up timeout context
 	}()
@@ -195,7 +192,6 @@ func (re *reportExecutor) processWorkspace(ctx context.Context, workspaceID uuid
 		return ctx.Err()
 	default:
 		// Process the workspace
-		re.logger.Debug("processing workspace", zap.Any("workspaceID", workspaceID))
 		competitors, _, err := re.workspaceService.ListCompetitorsForWorkspace(ctx, workspaceID, nil, nil)
 		if err != nil {
 			return err
@@ -210,7 +206,6 @@ func (re *reportExecutor) processWorkspace(ctx context.Context, workspaceID uuid
 		if len(errs) > 0 {
 			err = fmt.Errorf("failed to process some competitors, %v", errs)
 		}
-		re.logger.Debug("processed workspace", zap.Any("workspaceID", workspaceID))
 		return err
 	}
 }
@@ -221,12 +216,10 @@ func (re *reportExecutor) processCompetitor(ctx context.Context, workspaceID uui
 		return ctx.Err()
 	default:
 		// Process the competitor
-		re.logger.Debug("processing competitor", zap.Any("workspaceID", workspaceID), zap.Any("competitorID", competitorID))
-		report, err := re.workspaceService.CreateReport(ctx, workspaceID, competitorID)
+		_, err := re.workspaceService.CreateReport(ctx, workspaceID, competitorID)
 		if err != nil {
 			return err
 		}
-		re.logger.Debug("processed competitor", zap.Any("workspaceID", workspaceID), zap.Any("competitorID", competitorID), zap.Any("reportID", report.ID))
 		return nil
 	}
 }

@@ -9,7 +9,6 @@ import (
 	"github.com/wizenheimer/byrd/src/internal/service/ai"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"github.com/wizenheimer/byrd/src/pkg/utils"
-	"go.uber.org/zap"
 )
 
 type diffService struct {
@@ -32,7 +31,6 @@ func NewDiffService(aiService ai.AIService, logger *logger.Logger) (DiffService,
 }
 
 func (d *diffService) Compare(ctx context.Context, content1, content2 *models.ScreenshotContent, profileFields []string) (*models.DynamicChanges, error) {
-	d.logger.Debug("comparing content", zap.Any("profile_fields", profileFields))
 	markdownContent1, err := d.processor.Process(content1.Content)
 	if err != nil {
 		return nil, fmt.Errorf("failed to process markdown content 1: %w", err)

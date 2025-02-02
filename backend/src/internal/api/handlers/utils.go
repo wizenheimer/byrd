@@ -23,7 +23,7 @@ func sendDataResponse(c *fiber.Ctx, status int, message string, data any) error 
 }
 
 func sendErrorResponse(c *fiber.Ctx, logger *logger.Logger, status int, message string, details any) error {
-	logger.Debug(message, zap.Int("status", status), zap.Any("details", details))
+	logger.Error(message, zap.Any("details", details))
 	return commons.SendErrorResponse(c, status, message, details)
 }
 

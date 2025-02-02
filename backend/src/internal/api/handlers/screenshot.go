@@ -15,16 +15,15 @@ type ScreenshotHandler struct {
 
 // NewScreenshotHandler creates a new screenshot handler
 func NewScreenshotHandler(screenshotService screenshot.ScreenshotService, logger *logger.Logger) *ScreenshotHandler {
-	logger.Debug("creating new screenshot handler")
-
 	return &ScreenshotHandler{
 		screenshotService: screenshotService,
-		logger:            logger.WithFields(map[string]interface{}{"module": "screenshot_handler"}),
+		logger: logger.WithFields(map[string]any{
+			"module": "screenshot_handler",
+		}),
 	}
 }
 
 func (h *ScreenshotHandler) Retrieve(c *fiber.Ctx) error {
-	h.logger.Debug("retrieving screenshot")
 	type req struct {
 		Options  models.ScreenshotRequestOptions `json:"options"`
 		BackDate bool                            `json:"backDate" default:"false"`
@@ -54,7 +53,6 @@ func (h *ScreenshotHandler) Retrieve(c *fiber.Ctx) error {
 }
 
 func (h *ScreenshotHandler) Refresh(c *fiber.Ctx) error {
-	h.logger.Debug("refreshing screenshot")
 	type req struct {
 		Options  models.ScreenshotRequestOptions `json:"options"`
 		BackDate bool                            `json:"backDate" default:"false"`

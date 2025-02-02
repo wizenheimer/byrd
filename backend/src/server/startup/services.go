@@ -115,7 +115,6 @@ func SetupServices(
 
 func setupEmailClient(cfg *config.Config, logger *logger.Logger) (email.EmailClient, error) {
 	if cfg.Environment.EnvProfile == "development" {
-		logger.Debug("using local email client")
 		return email.NewLocalEmailClient(context.Background(), logger)
 	}
 

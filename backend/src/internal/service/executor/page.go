@@ -26,7 +26,6 @@ type pageExecutor struct {
 }
 
 func NewPageExecutor(pageService page.PageService, runtimeConfig models.JobExecutorConfig, logger *logger.Logger) (JobExecutor, error) {
-	logger.Debug("initializing page executor", zap.Any("runtimeConfig", runtimeConfig))
 	if logger == nil {
 		return nil, errors.New("logger is required")
 	}
@@ -41,7 +40,6 @@ func NewPageExecutor(pageService page.PageService, runtimeConfig models.JobExecu
 }
 
 func (pe *pageExecutor) Execute(executionContext context.Context, jobState models.JobState) (<-chan models.JobUpdate, <-chan models.JobError) {
-	pe.logger.Debug("executing page executor", zap.Any("jobState", jobState))
 	updates := make(chan models.JobUpdate, 1)
 	errors := make(chan models.JobError, 1)
 
@@ -119,9 +117,6 @@ func (pe *pageExecutor) Execute(executionContext context.Context, jobState model
 }
 
 func (pe *pageExecutor) processBatch(ctx context.Context, pageBatch []uuid.UUID, errors chan models.JobError) <-chan int {
-	pe.logger.Debug("processing page batch",
-		zap.Any("batch", pageBatch),
-		zap.Duration("upperBound", pe.runtimeConfig.UpperBound))
 
 	completions := make(chan int, len(pageBatch))
 
@@ -147,7 +142,7 @@ func (pe *pageExecutor) processBatch(ctx context.Context, pageBatch []uuid.UUID,
 			duration := time.Since(start)
 
 			if err != nil {
-				pe.logger.Debug("page processing failed",
+				pe.logger.Error("page processing failed",
 					zap.Any("pageID", pageID),
 					zap.Duration("duration", duration),
 					zap.Error(err))
@@ -158,15 +153,10 @@ func (pe *pageExecutor) processBatch(ctx context.Context, pageBatch []uuid.UUID,
 				}
 				return
 			}
-
-			pe.logger.Debug("page processing succeeded",
-				zap.Any("pageID", pageID),
-				zap.Duration("duration", duration))
-
 			select {
 			case completions <- pageIndex:
 			case <-timeoutCtx.Done():
-				pe.logger.Debug("completion send timed out",
+				pe.logger.Error("completion send timed out",
 					zap.Any("pageID", pageID))
 			}
 		}(index, pageID)
@@ -175,7 +165,6 @@ func (pe *pageExecutor) processBatch(ctx context.Context, pageBatch []uuid.UUID,
 	// Close completion channel when all work is done
 	go func() {
 		wg.Wait()
-		pe.logger.Debug("all workers completed")
 		close(completions)
 		cancel() // Clean up timeout context
 	}()
@@ -184,7 +173,6 @@ func (pe *pageExecutor) processBatch(ctx context.Context, pageBatch []uuid.UUID,
 }
 
 func (pe *pageExecutor) processPage(ctx context.Context, pageID uuid.UUID) error {
-	pe.logger.Debug("processing page", zap.Any("pageID", pageID))
 	select {
 	case <-ctx.Done():
 		return ctx.Err()

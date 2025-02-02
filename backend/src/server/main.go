@@ -2,6 +2,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 	"runtime/debug"
@@ -13,7 +14,6 @@ import (
 	"github.com/wizenheimer/byrd/src/internal/api/routes"
 	"github.com/wizenheimer/byrd/src/internal/config"
 	"github.com/wizenheimer/byrd/src/internal/recorder"
-	"github.com/wizenheimer/byrd/src/internal/transaction"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"github.com/wizenheimer/byrd/src/server/shutdown"
 	"github.com/wizenheimer/byrd/src/server/startup"
@@ -24,19 +24,20 @@ func main() {
 	// Load configuration
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatal("Failed to load configuration", zap.Error(err))
+		log.Fatal("failed to load configuration", zap.Error(err))
 		return
 	}
 
+	// Highlight is only started in non-development environments
 	if cfg.Environment.EnvProfile != "development" {
 		highlight.SetProjectID(cfg.Services.HightlightProjectID)
 		highlight.Start(
-			highlight.WithServiceName("byrd-backend"),
+			highlight.WithServiceName(cfg.ServiceName),
 			highlight.WithServiceVersion("git-sha"),
 		)
 		defer highlight.Stop()
 	} else {
-		log.Printf("Highlight not started for %s environment", cfg.Environment.EnvProfile)
+		log.Printf("highlight not started for %s environment", cfg.Environment.EnvProfile)
 	}
 
 	// Initialize Clerk with the secret key
@@ -46,12 +47,12 @@ func main() {
 	loggerConfig := logger.PrepareLoggerConfig(cfg)
 	logger, err := logger.NewLogger(loggerConfig)
 	if err != nil {
-		log.Fatalf("Failed to initialize logger: %v", err)
+		log.Fatalf("failed to initialize logger: %v", err)
 		return
 	}
 	defer func() {
 		if err := logger.Sync(); err != nil {
-			log.Fatalf("Failed to sync logger: %v", err)
+			log.Fatalf("failed to sync logger: %v", err)
 		}
 	}()
 
@@ -66,24 +67,16 @@ func main() {
 		}
 	}()
 
+	// ErrorRecorder is initialized with the logger and service name
+	// The ErrorRecorder is used to record errors in the application
 	errorRecorder := recorder.NewErrorRecorder(
 		logger,
 		cfg.Environment.EnvProfile == "development",
-		"byrd-backend",
+		cfg.ServiceName,
 	)
 
-	// Initialize database
-	sqlDb, err := startup.SetupDB(cfg)
-	if err != nil {
-		log.Fatalf("Failed to initialize database: %v", err)
-		return
-	}
-
-	// Initialize transaction manager
-	tm := transaction.NewTxManager(sqlDb, logger)
-
 	// Initialize handlers using the new modular initializer
-	handlers, rm, am, err := startup.Initialize(cfg, tm, logger, errorRecorder)
+	handlers, rm, am, err := startup.Initialize(cfg, logger, errorRecorder)
 	if err != nil {
 		logger.Fatal("Failed to initialize handlers", zap.Error(err))
 		return
@@ -95,12 +88,13 @@ func main() {
 		ErrorHandler: middleware.CustomErrorHandler,
 	})
 
+	// Initialize rate limiters
 	ratelimiters := middleware.NewRateLimiters(cfg, logger)
 
-	// Setup middleware
+	// Setup middleware with rate limiters
 	middleware.SetupMiddleware(cfg, app, ratelimiters)
 
-	// Setup routes
+	// Setup routes with handlers and rate limiters
 	routes.SetupRoutes(app, handlers, ratelimiters, am, rm)
 
 	// Start server in a goroutine
@@ -108,10 +102,7 @@ func main() {
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				logger.Error("Panic in server goroutine",
-					zap.Any("error", r),
-					zap.String("stack", string(debug.Stack())),
-				)
+				errorRecorder.RecordError(context.TODO(), r.(error), zap.String("stack", string(debug.Stack())))
 				serverError <- fiber.NewError(fiber.StatusInternalServerError, "server panic")
 			}
 		}()
@@ -123,6 +114,6 @@ func main() {
 	}()
 
 	// Setup shutdown handler
-	shutdownHandler := shutdown.NewShutdownHandler(app, sqlDb, cfg.Server.ShutdownTimeout, cfg.Server.ShutdownMaxAttempts, logger)
+	shutdownHandler := shutdown.NewShutdownHandler(app, cfg.Server.ShutdownTimeout, cfg.Server.ShutdownMaxAttempts, logger)
 	shutdownHandler.HandleGracefulShutdown()
 }

@@ -17,7 +17,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
-	"go.uber.org/zap"
 )
 
 // s3ScreenshotRepo is a storage repository that uses S3 as the backend
@@ -35,8 +34,6 @@ func NewS3ScreenshotRepo(baseEndpoint, accessKey, secretKey, bucket, region stri
 	if logger == nil {
 		return nil, fmt.Errorf("can't initialize S3, logger is required")
 	}
-
-	logger.Debug("creating new S3 storage", zap.Any("bucket", bucket))
 
 	cfg, err := config.LoadDefaultConfig(context.TODO(),
 		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accessKey, secretKey, "")),

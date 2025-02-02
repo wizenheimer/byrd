@@ -16,21 +16,29 @@ import (
 
 func Initialize(
 	cfg *config.Config,
-	tm *transaction.TxManager,
 	logger *logger.Logger,
 	errorRecorder *recorder.ErrorRecorder,
 ) (*routes.HandlerContainer, *middleware.ResourceMiddleware, *middleware.AccessMiddleware, error) {
 	// Initialize utilities
 	utils.InitializeValidator()
 
-	// Set up HTTP client
-	client, err := SetupScreenshotClient(cfg, logger)
+	// Initialize database
+	sqlDb, err := SetupDB(cfg)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	// Initialize transaction manager
+	tm := transaction.NewTxManager(sqlDb, logger)
+
+	// Set up screenshot client
+	screenshotClient, err := SetupScreenshotClient(cfg, logger)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
 	// Set up services
-	screenshotService, err := services.SetupScreenshotService(cfg, client, logger)
+	screenshotService, err := services.SetupScreenshotService(cfg, screenshotClient, logger)
 	if err != nil {
 		return nil, nil, nil, err
 	}

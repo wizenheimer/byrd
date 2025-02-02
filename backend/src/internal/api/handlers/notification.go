@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"strings"
 	"time"
 
@@ -54,7 +53,6 @@ type SectionedTemplateRequest struct {
 
 // SendNotification sends a notification to the user
 func (nh *NotificationHandler) SendNotification(c *fiber.Ctx) error {
-	nh.logger.Debug("sending notification")
 	userEmail := c.Query("email", "")
 	if userEmail == "" {
 		return sendErrorResponse(c, nh.logger, fiber.StatusBadRequest, "Email not provided", "Email not provided")
@@ -109,19 +107,18 @@ func (nh *NotificationHandler) SendNotification(c *fiber.Ctx) error {
 		}
 	}
 
-	go func() {
-		nh.logger.Debug("sending email", zap.String("email", userEmail))
-		email := models.Email{
-			To:           []string{userEmail},
-			EmailContent: emailHTML,
-			EmailSubject: "Test",
-			EmailFormat:  models.EmailFormatHTML,
-		}
-		// TODO: fix this
-		if err := nh.emailClient.Send(context.Background(), email); err != nil {
-			nh.logger.Error("Error sending email", zap.Error(err))
-		}
-	}()
+	email := models.Email{
+		To:           []string{userEmail},
+		EmailContent: emailHTML,
+		EmailSubject: "Test",
+		EmailFormat:  models.EmailFormatHTML,
+	}
+
+	// Note: This is a blocking call.
+	// The handler is a debug handler and is not used in production.
+	if err := nh.emailClient.Send(c.Context(), email); err != nil {
+		nh.logger.Error("Error sending email", zap.Error(err))
+	}
 
 	return sendDataResponse(c, fiber.StatusOK, "Email sent successfully", map[string]string{
 		"email": userEmail,

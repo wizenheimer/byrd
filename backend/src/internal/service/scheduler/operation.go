@@ -64,8 +64,6 @@ type CreateScheduleOperation struct {
 }
 
 func (op *CreateScheduleOperation) Execute(ctx context.Context) error {
-	logger := op.svc.logger
-	logger.Debug("creating a schedule", zap.Any("scheduleID", op.remoteID))
 	// Schedule in repository first
 	_, err := op.svc.repository.CreateScheduleWithID(ctx, op.remoteID, op.workflowProp)
 	if err != nil {
@@ -85,13 +83,11 @@ func (op *CreateScheduleOperation) Execute(ctx context.Context) error {
 
 	op.scheduledFunc = f
 	op.svc.scheduledFuncs.Store(op.remoteID, f)
-	logger.Debug("schedule created", zap.Any("scheduleID", op.remoteID))
 	return nil
 }
 
 func (op *CreateScheduleOperation) Rollback(ctx context.Context) error {
 	logger := op.svc.logger
-	logger.Debug("rolling back create operation", zap.Any("scheduleID", op.remoteID))
 	// Delete from scheduler if needed
 	if op.scheduledFunc != nil {
 		if err := op.svc.scheduler.Delete(op.scheduledFunc.ID); err != nil {
@@ -107,7 +103,6 @@ func (op *CreateScheduleOperation) Rollback(ctx context.Context) error {
 		return err
 	}
 
-	logger.Debug("rollback successful", zap.Any("scheduleID", op.remoteID))
 	return nil
 }
 
@@ -121,8 +116,6 @@ type UpdateScheduleOperation struct {
 }
 
 func (op *UpdateScheduleOperation) Execute(ctx context.Context) error {
-	logger := op.svc.logger
-	logger.Debug("updating a schedule", zap.Any("scheduleID", op.remoteID))
 	// Store old state for potential rollback
 	schedule, err := op.svc.repository.GetSchedule(ctx, op.remoteID)
 	if err != nil {
@@ -158,13 +151,11 @@ func (op *UpdateScheduleOperation) Execute(ctx context.Context) error {
 	}
 
 	op.svc.scheduledFuncs.Store(op.remoteID, f)
-	logger.Debug("schedule updated", zap.Any("scheduleID", op.remoteID))
 	return nil
 }
 
 func (op *UpdateScheduleOperation) Rollback(ctx context.Context) error {
 	logger := op.svc.logger
-	logger.Debug("rolling back update operation", zap.Any("scheduleID", op.remoteID))
 	// Restore old state in repository
 	if err := op.svc.repository.UpdateSchedule(ctx, op.remoteID, op.oldWorkflowProp); err != nil {
 		logger.Fatal("failed to rollback update operation", zap.Error(err))
@@ -184,7 +175,6 @@ func (op *UpdateScheduleOperation) Rollback(ctx context.Context) error {
 	}
 
 	op.svc.scheduledFuncs.Store(op.remoteID, f)
-	logger.Debug("rollback successful", zap.Any("scheduleID", op.remoteID))
 	return nil
 }
 
@@ -200,7 +190,6 @@ type DeleteScheduleOperation struct {
 func (op *DeleteScheduleOperation) Execute(ctx context.Context) error {
 	logger := op.svc.logger
 
-	logger.Debug("deleting a schedule", zap.Any("scheduleID", op.remoteID))
 	// Store old state for potential rollback
 	schedule, err := op.svc.repository.GetSchedule(ctx, op.remoteID)
 	if err != nil {
@@ -239,17 +228,15 @@ func (op *DeleteScheduleOperation) Execute(ctx context.Context) error {
 	op.svc.scheduledFuncs.Delete(op.remoteID)
 	op.wasDeleted = true
 
-	logger.Debug("schedule deleted", zap.Any("scheduleID", op.remoteID))
 	return nil
 }
 
 func (op *DeleteScheduleOperation) Rollback(ctx context.Context) error {
 	logger := op.svc.logger
 
-	logger.Debug("rolling back schedule deletion", zap.Any("scheduleID", op.remoteID))
 	if !op.wasDeleted {
 		// Nothing was deleted, no need to rollback
-		logger.Debug("nothing to rollback", zap.Any("scheduleID", op.remoteID))
+		logger.Debug("nothing to rollback for deletion operation, skipping rollback operation", zap.Any("scheduleID", op.remoteID))
 		return nil
 	}
 
@@ -274,6 +261,5 @@ func (op *DeleteScheduleOperation) Rollback(ctx context.Context) error {
 	// Restore local state
 	op.svc.scheduledFuncs.Store(op.remoteID, f)
 	op.wasDeleted = false
-	logger.Debug("rollback successful", zap.Any("scheduleID", op.remoteID))
 	return nil
 }

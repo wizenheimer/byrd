@@ -30,7 +30,6 @@ func NewTemplateLibrary(logger *logger.Logger) (TemplateLibrary, error) {
 
 // GetTemplate returns a template by name.
 func (tl *templateLibrary) GetTemplate(name TemplateName) (Template, error) {
-	tl.logger.Debug("getting template", zap.Any("name", name))
 	t, ok := tl.templates[name]
 	if !ok {
 		return nil, ErrTemplateNotFound
@@ -46,7 +45,6 @@ func (tl *templateLibrary) GetTemplate(name TemplateName) (Template, error) {
 
 // RegisterTemplate registers a template by name.
 func (tl *templateLibrary) RegisterTemplate(name TemplateName, t Template) error {
-	tl.logger.Debug("registering template", zap.Any("name", name))
 	if name == "" {
 		return ErrEmptyTemplateName
 	}

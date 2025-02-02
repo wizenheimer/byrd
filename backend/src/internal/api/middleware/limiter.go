@@ -41,8 +41,6 @@ func NewRateLimiters(cfg *config.Config, logger *logger.Logger) *RateLimiters {
 		},
 	})
 
-	rLogger.Debug("created global rate limiter", zap.Any("max_requests", cfg.Server.GlobalRequestsPerMinute))
-
 	wl := limiter.New(limiter.Config{
 		Max:        cfg.Server.WorkspaceCDRequestsPerMinute,
 		Expiration: 1 * time.Second,
@@ -56,8 +54,6 @@ func NewRateLimiters(cfg *config.Config, logger *logger.Logger) *RateLimiters {
 			})
 		},
 	})
-
-	rLogger.Debug("created workspace rate limiter", zap.Any("max_requests", cfg.Server.WorkspaceCDRequestsPerMinute))
 
 	cl := limiter.New(limiter.Config{
 		Max:        cfg.Server.CompetitorCDRequestsPerSecond,
@@ -73,8 +69,6 @@ func NewRateLimiters(cfg *config.Config, logger *logger.Logger) *RateLimiters {
 		},
 	})
 
-	rLogger.Debug("created competitor rate limiter", zap.Any("max_requests", cfg.Server.CompetitorCDRequestsPerSecond))
-
 	pl := limiter.New(limiter.Config{
 		Max:        cfg.Server.PageCDRequestsPerSecond,
 		Expiration: 1 * time.Second,
@@ -88,8 +82,6 @@ func NewRateLimiters(cfg *config.Config, logger *logger.Logger) *RateLimiters {
 			})
 		},
 	})
-
-	rLogger.Debug("created page rate limiter", zap.Any("max_requests", cfg.Server.PageCDRequestsPerSecond))
 
 	ul := limiter.New(limiter.Config{
 		Max:        cfg.Server.UserCDRequestsPerSecond,
@@ -105,12 +97,19 @@ func NewRateLimiters(cfg *config.Config, logger *logger.Logger) *RateLimiters {
 		},
 	})
 
-	rLogger.Debug("created user rate limiter", zap.Any("max_requests", cfg.Server.UserCDRequestsPerSecond))
+	rLogger.Info("rate limiters initialized",
+		zap.Any("global_rpm", cfg.Server.GlobalRequestsPerMinute),
+		zap.Any("workspace_rpm", cfg.Server.WorkspaceCDRequestsPerMinute),
+		zap.Any("competitor_rps", cfg.Server.CompetitorCDRequestsPerSecond),
+		zap.Any("page_rps", cfg.Server.PageCDRequestsPerSecond),
+		zap.Any("user_rps", cfg.Server.UserCDRequestsPerSecond),
+	)
 
 	return &RateLimiters{
 		// Global base limiter
 		GlobalLimiter: gl,
 
+		// Specific operation limiters
 		WorkspaceCDLimiter:  wl,
 		CompetitorCDLimiter: cl,
 		PageCDLimiter:       pl,

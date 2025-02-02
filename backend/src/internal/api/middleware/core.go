@@ -34,8 +34,6 @@ func SetupMiddleware(cfg *config.Config, app *fiber.App, rc *RateLimiters) {
 	// Handle Liveness
 	app.Use(healthcheck.New(healthcheck.Config{
 		LivenessProbe: func(c *fiber.Ctx) bool {
-			// TODO: Implement liveness probe
-			// highlight.RecordError(c.Context(), errors.New("some random error"), attribute.String("key", "value"))
 			return true
 		},
 		LivenessEndpoint: "/live",

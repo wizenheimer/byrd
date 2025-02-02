@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/wizenheimer/byrd/src/internal/api/middleware"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"go.uber.org/zap"
@@ -27,14 +26,13 @@ type ShutdownConfig struct {
 // ShutdownHandler encapsulates shutdown logic
 type ShutdownHandler struct {
 	app      *fiber.App
-	pool     *pgxpool.Pool
 	logger   *logger.Logger
 	config   ShutdownConfig
 	shutdown chan os.Signal
 }
 
 // NewShutdownHandler creates a new shutdown handler
-func NewShutdownHandler(app *fiber.App, pool *pgxpool.Pool, timeout time.Duration, maxAttempts int, logger *logger.Logger) *ShutdownHandler {
+func NewShutdownHandler(app *fiber.App, timeout time.Duration, maxAttempts int, logger *logger.Logger) *ShutdownHandler {
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, os.Interrupt, syscall.SIGTERM)
 
@@ -45,7 +43,6 @@ func NewShutdownHandler(app *fiber.App, pool *pgxpool.Pool, timeout time.Duratio
 
 	return &ShutdownHandler{
 		app:      app,
-		pool:     pool,
 		logger:   logger,
 		config:   config,
 		shutdown: shutdown,
@@ -117,7 +114,8 @@ func (h *ShutdownHandler) performCleanup(ctx context.Context) error {
 		}
 
 		// Close database connection pool
-		h.pool.Close()
+		// TODO: Fix this
+		// h.pool.Close()
 
 		cleanup <- nil
 	}()

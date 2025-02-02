@@ -6,7 +6,6 @@ import (
 	"github.com/resend/resend-go/v2"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
-	"go.uber.org/zap"
 )
 
 type resendClient struct {
@@ -44,12 +43,10 @@ func (rc *resendClient) Send(ctx context.Context, email models.Email) error {
 		params.Text = email.EmailContent
 	}
 
-	sent, err := rc.client.Emails.Send(params)
+	_, err := rc.client.Emails.Send(params)
 	if err != nil {
-		rc.logger.Error("failed to send email", zap.Error(err))
 		return err
 	}
 
-	rc.logger.Debug("email sent", zap.Any("sent", sent))
-	return err
+	return nil
 }

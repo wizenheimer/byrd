@@ -47,7 +47,7 @@ func (wh *WorkspaceHandler) ListCompetitorsForWorkspace(c *fiber.Ctx) error {
 		if includePages {
 			p, _, err = wh.workspaceService.ListPagesForCompetitor(ctx, workspaceID, competitor.ID, nil, nil)
 			if err != nil {
-				wh.logger.Debug("Could not list pages for competitor", zap.Error(err))
+				wh.logger.Error("Could not list pages for competitor", zap.Error(err), zap.Any("competitorID", competitor.ID))
 			}
 		}
 

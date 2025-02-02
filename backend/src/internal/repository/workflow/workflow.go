@@ -76,8 +76,6 @@ func (r *workflowRepo) getKey(jobID uuid.UUID, workflowType models.WorkflowType,
 }
 
 func (r *workflowRepo) GetState(ctx context.Context, jobID uuid.UUID, workflowType models.WorkflowType) (models.JobState, error) {
-	r.logger.Debug("getting state for job", zap.Any("jobID", jobID), zap.Any("workflowType", workflowType))
-
 	// We need to check all possible statuses since we don't know the current status
 	for _, status := range []models.JobStatus{
 		models.JobStatusRunning,
@@ -107,11 +105,6 @@ func (r *workflowRepo) GetState(ctx context.Context, jobID uuid.UUID, workflowTy
 }
 
 func (r *workflowRepo) SetState(ctx context.Context, jobID uuid.UUID, workflowType models.WorkflowType, jobState models.JobState) error {
-	r.logger.Debug("setting state for job",
-		zap.Any("jobID", jobID),
-		zap.Any("workflowType", workflowType),
-		zap.Any("status", jobState.Status))
-
 	// Delete old status key if it exists
 	oldState, err := r.GetState(ctx, jobID, workflowType)
 	if err == nil && oldState.Status != jobState.Status {
@@ -136,9 +129,6 @@ func (r *workflowRepo) SetState(ctx context.Context, jobID uuid.UUID, workflowTy
 }
 
 func (r *workflowRepo) ListActiveJobs(ctx context.Context, workflowType models.WorkflowType) ([]models.Job, error) {
-	r.logger.Debug("listing active jobs",
-		zap.Any("workflowType", workflowType))
-
 	pattern := fmt.Sprintf(keyPattern, workflowType, models.JobStatusRunning)
 	keys, err := r.client.Keys(ctx, pattern).Result()
 	if err != nil {
@@ -187,10 +177,6 @@ func (r *workflowRepo) ListActiveJobs(ctx context.Context, workflowType models.W
 }
 
 func (r *workflowRepo) StartJob(ctx context.Context, jobID uuid.UUID, workflowType models.WorkflowType) error {
-	r.logger.Debug("starting job",
-		zap.Any("jobID", jobID),
-		zap.Any("workflowType", workflowType))
-
 	// Set the state of the job to running in checkpoint repository
 	if err := r.SetState(ctx, jobID, workflowType, *models.NewJobState()); err != nil {
 		return fmt.Errorf("failed to set job state: %w", err)
@@ -215,10 +201,6 @@ func (r *workflowRepo) StartJob(ctx context.Context, jobID uuid.UUID, workflowTy
 }
 
 func (r *workflowRepo) CompleteJob(ctx context.Context, jobID uuid.UUID, jobContext *models.JobState, workflowType models.WorkflowType) error {
-	r.logger.Debug("completing job",
-		zap.Any("jobID", jobID),
-		zap.Any("workflowType", workflowType))
-
 	// Set the state of the job to completed in checkpoint repository
 	if jobContext == nil {
 		jobContext = models.NewJobState()
@@ -255,10 +237,6 @@ func (r *workflowRepo) CompleteJob(ctx context.Context, jobID uuid.UUID, jobCont
 }
 
 func (r *workflowRepo) CancelJob(ctx context.Context, jobID uuid.UUID, jobContext *models.JobState, workflowType models.WorkflowType) error {
-	r.logger.Debug("cancelling job",
-		zap.Any("jobID", jobID),
-		zap.Any("workflowType", workflowType))
-
 	// Set the state of the job to aborted in checkpoint repository
 	if jobContext == nil {
 		jobContext = models.NewJobState()

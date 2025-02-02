@@ -38,7 +38,6 @@ func NewPageService(pageRepo page.PageRepository, pageHistoryService history.Pag
 }
 
 func (ps *pageService) CreatePage(ctx context.Context, competitorID uuid.UUID, pages []models.PageProps) ([]models.Page, error) {
-	ps.logger.Debug("creating pages", zap.Any("competitorID", competitorID), zap.Any("pages", pages))
 	if len(pages) > maxPageBatchSize {
 		return nil, errors.New("non-fatal: batch size exceeds the maximum limit")
 	}
@@ -91,13 +90,10 @@ func (ps *pageService) backdateRefresh(pages []models.Page) {
 			defer cancel()
 
 			screenshotRequestOptions := models.GetScreenshotRequestOptions(page.URL, page.CaptureProfile)
-			ps.logger.Debug("requestOptions", zap.Any("screenshotRequestOptions", screenshotRequestOptions))
-			ir, hr, err := ps.screenshotService.Refresh(ctx, screenshotRequestOptions, true)
+			ir, _, err := ps.screenshotService.Refresh(ctx, screenshotRequestOptions, true)
 
 			if err != nil {
 				ps.logger.Error("failed to refresh page", zap.Any("pageID", page.ID), zap.Error(err))
-			} else {
-				ps.logger.Debug("refreshed page", zap.Any("pageID", page.ID), zap.Any("imagePath", ir.StoragePath), zap.Any("contentPath", hr.StoragePath))
 			}
 
 			if ir == nil {
@@ -125,25 +121,20 @@ func (ps *pageService) backdateRefresh(pages []models.Page) {
 				ir.StoragePath,
 			); err != nil {
 				ps.logger.Error("failed to create page history", zap.Any("pageID", page.ID), zap.Error(err))
-			} else {
-				ps.logger.Debug("created page history", zap.Any("pageID", page.ID))
 			}
 		}(page)
 	}
 }
 
 func (ps *pageService) GetPage(ctx context.Context, competitorID uuid.UUID, pageID uuid.UUID) (*models.Page, error) {
-	ps.logger.Debug("getting page", zap.Any("competitorID", competitorID), zap.Any("pageID", pageID))
 	return ps.pageRepo.GetCompetitorPageByID(ctx, competitorID, pageID)
 }
 
 func (ps *pageService) ListPageHistory(ctx context.Context, pageID uuid.UUID, limit, offset *int) ([]models.PageHistory, bool, error) {
-	ps.logger.Debug("listing page history", zap.Any("pageID", pageID), zap.Any("limit", limit), zap.Any("offset", offset))
 	return ps.pageHistoryService.ListPageHistory(ctx, pageID, limit, offset)
 }
 
 func (ps *pageService) UpdatePage(ctx context.Context, competitorID uuid.UUID, pageID uuid.UUID, page models.PageProps) (*models.Page, error) {
-	ps.logger.Debug("updating page", zap.Any("competitorID", competitorID), zap.Any("pageID", pageID), zap.Any("page", page))
 	captureProfileRequiresUpdate := page.CaptureProfile != nil
 	diffProfileRequiresUpdate := len(page.DiffProfile) > 0
 	urlRequiresUpdate := page.URL != ""
@@ -192,12 +183,10 @@ func (ps *pageService) UpdatePage(ctx context.Context, competitorID uuid.UUID, p
 }
 
 func (ps *pageService) ListCompetitorPages(ctx context.Context, competitorID uuid.UUID, limit, offset *int) ([]models.Page, bool, error) {
-	ps.logger.Debug("listing competitor pages", zap.Any("competitorID", competitorID), zap.Any("limit", limit), zap.Any("offset", offset))
 	return ps.pageRepo.GetCompetitorPages(ctx, competitorID, limit, offset)
 }
 
 func (ps *pageService) ListActivePages(ctx context.Context, batchSize int, lastPageID *uuid.UUID) (<-chan []uuid.UUID, <-chan error) {
-	ps.logger.Debug("listing active pages", zap.Any("batchSize", batchSize), zap.Any("lastPageID", lastPageID))
 	pagesChan := make(chan []uuid.UUID)
 	errorsChan := make(chan error)
 
@@ -222,7 +211,6 @@ func (ps *pageService) ListActivePages(ctx context.Context, batchSize int, lastP
 }
 
 func (ps *pageService) RefreshPage(ctx context.Context, pageID uuid.UUID) error {
-	ps.logger.Debug("refreshing page", zap.Any("pageID", pageID))
 	urlContext, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
@@ -251,7 +239,6 @@ func (ps *pageService) RefreshPage(ctx context.Context, pageID uuid.UUID) error 
 }
 
 func (ps *pageService) RemovePage(ctx context.Context, competitorIDs []uuid.UUID, pageIDs []uuid.UUID) error {
-	ps.logger.Debug("removing page", zap.Any("competitorIDs", competitorIDs), zap.Any("pageIDs", pageIDs))
 	if len(pageIDs) > maxPageBatchSize {
 		return errors.New("non-fatal: page batch size exceeds the maximum limit")
 	}
@@ -284,7 +271,6 @@ func (ps *pageService) RemovePage(ctx context.Context, competitorIDs []uuid.UUID
 }
 
 func (ps *pageService) PageExists(ctx context.Context, competitorID, pageID uuid.UUID) (bool, error) {
-	ps.logger.Debug("checking if page exists", zap.Any("competitorID", competitorID), zap.Any("pageID", pageID))
 	page, err := ps.pageRepo.GetCompetitorPageByID(ctx, competitorID, pageID)
 	if err != nil {
 		return false, err
@@ -293,13 +279,10 @@ func (ps *pageService) PageExists(ctx context.Context, competitorID, pageID uuid
 }
 
 func (ps *pageService) GetLatestPageHistory(ctx context.Context, pageID []uuid.UUID) ([]models.PageHistory, error) {
-	ps.logger.Debug("getting latest page history", zap.Any("pageIDs", pageID))
-
 	return ps.pageHistoryService.GetLatestPageHistory(ctx, pageID)
 }
 
 func (ps *pageService) CountActivePagesForCompetitors(ctx context.Context, competitorIDs []uuid.UUID) (int, error) {
-	ps.logger.Debug("counting active pages for competitors", zap.Any("competitorIDs", competitorIDs))
 	pageCountMap, err := ps.pageRepo.GetActivePageCountsByCompetitors(ctx, competitorIDs)
 	if err != nil {
 		return 0, err
