@@ -4,17 +4,18 @@ package workspace
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
+	"github.com/wizenheimer/byrd/src/internal/email"
 	"github.com/wizenheimer/byrd/src/internal/email/template"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/internal/recorder"
 	"github.com/wizenheimer/byrd/src/internal/repository/workspace"
 	"github.com/wizenheimer/byrd/src/internal/service/competitor"
-	"github.com/wizenheimer/byrd/src/internal/service/notification"
 	"github.com/wizenheimer/byrd/src/internal/service/user"
 	"github.com/wizenheimer/byrd/src/internal/transaction"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
@@ -25,7 +26,7 @@ type workspaceService struct {
 	workspaceRepo     workspace.WorkspaceRepository
 	competitorService competitor.CompetitorService
 	library           template.TemplateLibrary
-	emailChannel      chan models.Email
+	emailClient       email.EmailClient
 	userService       user.UserService
 	logger            *logger.Logger
 	errorRecord       *recorder.ErrorRecorder
@@ -36,22 +37,16 @@ func NewWorkspaceService(
 	workspaceRepo workspace.WorkspaceRepository,
 	competitorService competitor.CompetitorService,
 	userService user.UserService,
-	notificationService notification.NotificationService,
 	library template.TemplateLibrary,
 	tm *transaction.TxManager,
 	logger *logger.Logger,
 	errorRecord *recorder.ErrorRecorder,
 ) (WorkspaceService, error) {
-	emailChannel, err := notificationService.GetEmailChannel(context.TODO(), 1, 50)
-	if err != nil {
-		return nil, err
-	}
 
 	ws := workspaceService{
 		workspaceRepo:     workspaceRepo,
 		competitorService: competitorService,
 		userService:       userService,
-		emailChannel:      emailChannel,
 		library:           library,
 		logger: logger.WithFields(map[string]any{
 			"module": "workspace_service",
@@ -323,20 +318,22 @@ func (ws *workspaceService) AddUsersToWorkspace(ctx context.Context, workspaceMe
 		// TODO: Send Email to the users acknowledging the invitation to the workspace
 		emailTemplate, err := ws.library.GetTemplate(template.WorkspaceInvitePendingTemplate)
 		if err != nil {
-			ws.logger.Error("couldn't get email template", zap.Error(err))
+			ws.logger.Error("couldn't get email template", zap.Error(err), zap.Any("template", template.WorkspaceInvitePendingTemplate))
 			return
 		}
-
 		emailHTML, err := emailTemplate.RenderHTML()
 		if err != nil {
+			ws.logger.Error("couldn't template convert to html", zap.Error(err), zap.Any("template", template.WorkspaceInvitePendingTemplate))
 			return
 		}
-		ws.SendEmail(ctx, models.Email{
+		email := models.Email{
 			To:           workspaceUsersEmail,
 			EmailFormat:  models.EmailFormatHTML,
 			EmailContent: emailHTML,
 			EmailSubject: "You've been invited to Byrd",
-		})
+		}
+		// TODO: fix the cancelation of the email sending
+		ws.sendEmail(email)
 	}()
 
 	return workspaceUsers, nil
@@ -428,20 +425,21 @@ func (ws *workspaceService) JoinWorkspace(ctx context.Context, invitedMember *cl
 	go func() {
 		emailTemplate, err := ws.library.GetTemplate(template.WorkspaceInviteAcceptedTemplate)
 		if err != nil {
-			ws.logger.Error("couldn't get email template", zap.Error(err))
+			ws.logger.Error("couldn't get email template", zap.Error(err), zap.Any("template", template.WorkspaceInviteAcceptedTemplate))
 			return
 		}
 		emailHTML, err := emailTemplate.RenderHTML()
 		if err != nil {
-			ws.logger.Error("couldn't template convert to html", zap.Error(err))
+			ws.logger.Error("couldn't template convert to html", zap.Error(err), zap.Any("template", template.WorkspaceInviteAcceptedTemplate))
 			return
 		}
-		ws.SendEmail(ctx, models.Email{
+		email := models.Email{
 			To:           []string{userEmail},
 			EmailFormat:  models.EmailFormatHTML,
 			EmailContent: emailHTML,
 			EmailSubject: "And You're In! Own Your Competitor's Next Move As They Make It",
-		})
+		}
+		ws.sendEmail(email)
 	}()
 
 	return nil
@@ -710,8 +708,14 @@ func (ws *workspaceService) ListActiveWorkspaces(ctx context.Context, batchSize 
 	return workspaceChan, errorChan
 }
 
-func (ws *workspaceService) SendEmail(ctx context.Context, email models.Email) {
-	ws.emailChannel <- email
+func (ws *workspaceService) sendEmail(email models.Email) {
+	// Create a context with 30 second timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel() // Important to avoid context leak
+
+	if err := ws.emailClient.Send(ctx, email); err != nil {
+		ws.errorRecord.RecordError(ctx, err, zap.Any("subscriberEmails", email.To), zap.Any("emailSubject", email.EmailSubject))
+	}
 }
 
 // CanCreateWorkspace checks if the user can create a workspace

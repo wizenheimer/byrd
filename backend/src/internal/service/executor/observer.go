@@ -10,7 +10,6 @@ import (
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/internal/recorder"
 	"github.com/wizenheimer/byrd/src/internal/repository/workflow"
-	"github.com/wizenheimer/byrd/src/internal/service/notification"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"go.uber.org/zap"
 )
@@ -27,12 +26,6 @@ type workflowObserver struct {
 	// errorRecord represents the error recorder for the workflow
 	errorRecord *recorder.ErrorRecorder
 
-	// alertChannel represents the alert channel for the workflow
-	alertChannel chan models.Alert
-
-	// eventChannel represents the event channel for the workflow
-	eventChannel chan models.Event
-
 	// jobExecutor represents the job executor for the workflow
 	// this would be used to execute the jobs in the workflow in a background
 	jobExecutor JobExecutor
@@ -47,27 +40,14 @@ type workflowObserver struct {
 func NewWorkflowObserver(
 	workflowType models.WorkflowType,
 	repository workflow.WorkflowRepository,
-	notificationService notification.NotificationService,
 	jobExecutor JobExecutor,
 	logger *logger.Logger,
 	errorRecord *recorder.ErrorRecorder,
 ) (WorkflowObserver, error) {
 
-	alertChannel, err := notificationService.GetAlertChannel(context.TODO(), 1, 25)
-	if err != nil {
-		return nil, err
-	}
-
-	eventChannel, err := notificationService.GetEventChannel(context.TODO(), 1, 25)
-	if err != nil {
-		return nil, err
-	}
-
 	workflowObserver := &workflowObserver{
 		workflowType: workflowType,
 		repository:   repository,
-		alertChannel: alertChannel,
-		eventChannel: eventChannel,
 		jobExecutor:  jobExecutor,
 		errorRecord:  errorRecord,
 		logger: logger.WithFields(
@@ -85,7 +65,7 @@ func (e *workflowObserver) Recover(ctx context.Context) error {
 	// List the workflows from the repository
 	jobs, err := e.repository.ListActiveJobs(ctx, e.workflowType)
 	if err != nil {
-		e.logger.Error("failed to list workflows", zap.Error(err))
+		e.errorRecord.RecordError(ctx, err, zap.Any("workflow_type", e.workflowType))
 		return err
 	}
 
@@ -110,7 +90,7 @@ func (e *workflowObserver) Submit(ctx context.Context) (uuid.UUID, error) {
 
 	// Start the job in the repository
 	if err := e.repository.StartJob(ctx, job.JobID, e.workflowType); err != nil {
-		e.logger.Error("failed to persist job status", zap.Error(err))
+		e.errorRecord.RecordError(ctx, err, zap.Any("workflowType", e.workflowType))
 		return uuid.Nil, err
 	}
 
@@ -124,8 +104,6 @@ func (e *workflowObserver) Submit(ctx context.Context) (uuid.UUID, error) {
 }
 
 func (e *workflowObserver) executeJob(executionContext context.Context, jobContext *models.JobContext) {
-	e.logger.Debug("executing job", zap.Any("job_id", jobContext.JobID))
-
 	// Execute the job
 	jobUpdateCh, jobErrorCh := e.jobExecutor.Execute(executionContext, jobContext.JobState)
 
@@ -173,27 +151,19 @@ func (e *workflowObserver) handleJobCompletion(ctx context.Context, jobContext *
 
 	// Refresh remote state
 	if err := e.repository.CompleteJob(ctx, jobContext.JobID, &jobContext.JobState, e.workflowType); err != nil {
-		e.logger.Error("failed to persist job completion", zap.Error(err))
+		e.errorRecord.RecordError(ctx, err, zap.Any("JobID", jobContext.JobID))
 		return
 	}
 
 	// Refresh local state
 	e.activeJobs.Delete(jobContext.JobID)
-	// TODO: inject alert client
+
+	e.logger.Debug("job completed", zap.Any("job_id", jobContext.JobID))
 }
 
 func (e *workflowObserver) handleJobError(jobContext *models.JobContext, jobError *models.JobError) {
-	e.logger.Debug("handling job error", zap.Error(jobError.Error))
 	jobContext.IncrementFailed(1)
-
-	// Sync the job error with the job context
-	jobErrorEvent := models.NewJobErrorEvent(jobContext, jobError)
-
-	// Send the event
-	go func() {
-		e.eventChannel <- jobErrorEvent
-	}()
-
+	e.logger.Error("encountered error during job execution", zap.Any("jobID", jobContext.JobID), zap.Error(jobError.Error), zap.Any("jobCheckpoint", jobContext.Checkpoint))
 }
 
 func (e *workflowObserver) handleJobUpdate(ctx context.Context, jobContext *models.JobContext, jobUpdate models.JobUpdate) {

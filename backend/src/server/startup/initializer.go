@@ -51,6 +51,12 @@ func Initialize(
 		return nil, nil, nil, err
 	}
 
+	// Setup email client
+	emailClient, err := setupEmailClient(cfg, logger)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
 	// Set up repositories
 	repos, err := SetupRepositories(tm, redisClient, logger)
 	if err != nil {
@@ -64,7 +70,7 @@ func Initialize(
 	}
 
 	// Set up all services
-	services, err := SetupServices(cfg, repos, aiService, diffService, screenshotService, templateLibrary, tm, logger, errorRecorder)
+	services, err := SetupServices(cfg, repos, aiService, diffService, screenshotService, templateLibrary, emailClient, tm, logger, errorRecorder)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -80,8 +86,8 @@ func Initialize(
 		services.Workspace,
 		services.Workflow,
 		services.Scheduler,
-		services.NotificationService,
 		templateLibrary,
+		emailClient,
 		tm,
 		logger,
 	)

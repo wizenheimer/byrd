@@ -11,7 +11,6 @@ import (
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/internal/recorder"
 	"github.com/wizenheimer/byrd/src/internal/repository/user"
-	"github.com/wizenheimer/byrd/src/internal/service/notification"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"github.com/wizenheimer/byrd/src/pkg/utils"
 	"go.uber.org/zap"
@@ -20,21 +19,20 @@ import (
 type userService struct {
 	userRepository  user.UserRepository
 	templateLibrary template.TemplateLibrary
-	emailChannel    chan models.Email
 	logger          *logger.Logger
 	errorRecord     *recorder.ErrorRecorder
 }
 
-func NewUserService(notificationService notification.NotificationService, userRepository user.UserRepository, templateLibrary template.TemplateLibrary, logger *logger.Logger, errorRecord *recorder.ErrorRecorder) (UserService, error) {
-	emailChannel, err := notificationService.GetEmailChannel(context.TODO(), 1, 25)
-	if err != nil {
-		return nil, err
-	}
+func NewUserService(
+	userRepository user.UserRepository,
+	templateLibrary template.TemplateLibrary,
+	logger *logger.Logger,
+	errorRecord *recorder.ErrorRecorder,
+) (UserService, error) {
 
 	us := userService{
 		userRepository:  userRepository,
 		templateLibrary: templateLibrary,
-		emailChannel:    emailChannel,
 		errorRecord:     errorRecord,
 		logger:          logger.WithFields(map[string]interface{}{"module": "user_service"}),
 	}
@@ -239,8 +237,4 @@ func (us *userService) ClerkUserExists(ctx context.Context, clerk *clerk.User) (
 	}
 
 	return us.userRepository.ClerkUserExists(ctx, clerk.ID, email)
-}
-
-func (us *userService) SendEmail(ctx context.Context, email models.Email) {
-	us.logger.Debug("sending email", zap.Any("email", email))
 }

@@ -6,33 +6,28 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/wizenheimer/byrd/src/internal/email"
 	"github.com/wizenheimer/byrd/src/internal/email/template"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
-	"github.com/wizenheimer/byrd/src/internal/service/notification"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"go.uber.org/zap"
 )
 
 type NotificationHandler struct {
-	logger       *logger.Logger
-	emailChannel chan models.Email
-	library      template.TemplateLibrary
+	logger      *logger.Logger
+	emailClient email.EmailClient
+	library     template.TemplateLibrary
 }
 
 func NewNotificationHandler(
 	logger *logger.Logger,
-	notification notification.NotificationService,
+	emailClient email.EmailClient,
 	library template.TemplateLibrary,
 ) (*NotificationHandler, error) {
-	emailChannel, err := notification.GetEmailChannel(context.TODO(), 1, 10)
-	if err != nil {
-		logger.Error("Couldn't get email channel", zap.Error(err))
-		return nil, err
-	}
 	return &NotificationHandler{
-		logger:       logger,
-		emailChannel: emailChannel,
-		library:      library,
+		logger:      logger,
+		emailClient: emailClient,
+		library:     library,
 	}, nil
 }
 
@@ -122,8 +117,10 @@ func (nh *NotificationHandler) SendNotification(c *fiber.Ctx) error {
 			EmailSubject: "Test",
 			EmailFormat:  models.EmailFormatHTML,
 		}
-		nh.emailChannel <- email
-		nh.logger.Debug("email sent", zap.String("email", userEmail))
+		// TODO: fix this
+		if err := nh.emailClient.Send(context.Background(), email); err != nil {
+			nh.logger.Error("Error sending email", zap.Error(err))
+		}
 	}()
 
 	return sendDataResponse(c, fiber.StatusOK, "Email sent successfully", map[string]string{

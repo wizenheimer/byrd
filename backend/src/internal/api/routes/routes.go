@@ -6,9 +6,9 @@ import (
 	"github.com/wizenheimer/byrd/src/internal/api/handlers"
 	"github.com/wizenheimer/byrd/src/internal/api/middleware"
 	"github.com/wizenheimer/byrd/src/internal/config"
+	"github.com/wizenheimer/byrd/src/internal/email"
 	"github.com/wizenheimer/byrd/src/internal/email/template"
 	"github.com/wizenheimer/byrd/src/internal/service/ai"
-	"github.com/wizenheimer/byrd/src/internal/service/notification"
 	"github.com/wizenheimer/byrd/src/internal/service/scheduler"
 	"github.com/wizenheimer/byrd/src/internal/service/screenshot"
 	"github.com/wizenheimer/byrd/src/internal/service/user"
@@ -16,7 +16,6 @@ import (
 	"github.com/wizenheimer/byrd/src/internal/service/workspace"
 	"github.com/wizenheimer/byrd/src/internal/transaction"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
-	"go.uber.org/zap"
 )
 
 type HandlerContainer struct {
@@ -36,19 +35,23 @@ func NewHandlerContainer(
 	workspaceService workspace.WorkspaceService,
 	workflowService workflow.WorkflowService,
 	schedulerService scheduler.SchedulerService,
-	notificationService notification.NotificationService,
 	library template.TemplateLibrary,
+	emailClient email.EmailClient,
 	tx *transaction.TxManager,
 	logger *logger.Logger,
 ) (*HandlerContainer, error) {
-	notificationHandler, err := handlers.NewNotificationHandler(logger, notificationService, library)
-	if err != nil {
-		logger.Error("Couldn't create notification handler", zap.Error(err))
-		return nil, err
-	}
 	ah, err := handlers.NewAIHandler(
 		aiService,
 		logger,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	nh, err := handlers.NewNotificationHandler(
+		logger,
+		emailClient,
+		library,
 	)
 	if err != nil {
 		return nil, err
@@ -84,8 +87,7 @@ func NewHandlerContainer(
 			schedulerService,
 			logger,
 		),
-		// Handlers for notification management
-		NotificationHandler: notificationHandler,
+		NotificationHandler: nh,
 	}
 	return &hc, nil
 }

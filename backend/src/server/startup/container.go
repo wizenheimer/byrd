@@ -3,9 +3,9 @@ package startup
 
 import (
 	"github.com/wizenheimer/byrd/src/internal/api/routes"
+	"github.com/wizenheimer/byrd/src/internal/email"
 	"github.com/wizenheimer/byrd/src/internal/email/template"
 	"github.com/wizenheimer/byrd/src/internal/service/ai"
-	"github.com/wizenheimer/byrd/src/internal/service/notification"
 	"github.com/wizenheimer/byrd/src/internal/service/scheduler"
 	"github.com/wizenheimer/byrd/src/internal/service/screenshot"
 	"github.com/wizenheimer/byrd/src/internal/service/user"
@@ -22,8 +22,8 @@ func SetupHandlerContainer(
 	workspaceService workspace.WorkspaceService,
 	workflowService workflow.WorkflowService,
 	schedulerService scheduler.SchedulerService,
-	notificationService notification.NotificationService,
 	library template.TemplateLibrary,
+	emailClient email.EmailClient,
 	tm *transaction.TxManager,
 	logger *logger.Logger,
 ) (*routes.HandlerContainer, error) {
@@ -34,8 +34,8 @@ func SetupHandlerContainer(
 		workspaceService,
 		workflowService,
 		schedulerService,
-		notificationService,
 		library,
+		emailClient,
 		tm,
 		logger,
 	)

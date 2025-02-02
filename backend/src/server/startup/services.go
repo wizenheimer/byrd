@@ -5,11 +5,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/wizenheimer/byrd/src/internal/alert"
 	"github.com/wizenheimer/byrd/src/internal/config"
 	"github.com/wizenheimer/byrd/src/internal/email"
 	"github.com/wizenheimer/byrd/src/internal/email/template"
-	"github.com/wizenheimer/byrd/src/internal/event"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/internal/recorder"
 	"github.com/wizenheimer/byrd/src/internal/repository/schedule"
@@ -20,7 +18,6 @@ import (
 	"github.com/wizenheimer/byrd/src/internal/service/diff"
 	"github.com/wizenheimer/byrd/src/internal/service/executor"
 	"github.com/wizenheimer/byrd/src/internal/service/history"
-	"github.com/wizenheimer/byrd/src/internal/service/notification"
 	"github.com/wizenheimer/byrd/src/internal/service/page"
 	"github.com/wizenheimer/byrd/src/internal/service/report"
 	scheduler_svc "github.com/wizenheimer/byrd/src/internal/service/scheduler"
@@ -34,15 +31,14 @@ import (
 )
 
 type Services struct {
-	History             history.PageHistoryService
-	Page                page.PageService
-	Competitor          competitor.CompetitorService
-	User                user.UserService
-	Workspace           workspace.WorkspaceService
-	Workflow            workflow.WorkflowService
-	Scheduler           scheduler_svc.SchedulerService
-	NotificationService notification.NotificationService
-	TokenManager        *utils.TokenManager
+	History      history.PageHistoryService
+	Page         page.PageService
+	Competitor   competitor.CompetitorService
+	User         user.UserService
+	Workspace    workspace.WorkspaceService
+	Workflow     workflow.WorkflowService
+	Scheduler    scheduler_svc.SchedulerService
+	TokenManager *utils.TokenManager
 }
 
 func SetupServices(
@@ -52,6 +48,7 @@ func SetupServices(
 	diffService diff.DiffService,
 	screenshotService screenshot.ScreenshotService,
 	templateLibrary template.TemplateLibrary,
+	emailClient email.EmailClient,
 	tm *transaction.TxManager,
 	logger *logger.Logger,
 	errorRecorder *recorder.ErrorRecorder,
@@ -59,24 +56,7 @@ func SetupServices(
 	historyService := history.NewPageHistoryService(repos.History, logger)
 	pageService := page.NewPageService(repos.Page, historyService, diffService, screenshotService, logger)
 
-	alertClient, err := setupAlertClient(cfg, logger)
-	if err != nil {
-		return nil, err
-	}
-
-	emailClient, err := setupEmailClient(cfg, logger)
-	if err != nil {
-		return nil, err
-	}
-
-	eventClient, err := setupEventClient(cfg, logger)
-	if err != nil {
-		return nil, err
-	}
-
-	notificationService := notification.NewNotificationService(alertClient, eventClient, emailClient, logger)
-
-	reportService, err := report.NewReportService(aiService, notificationService, templateLibrary, repos.Report, logger)
+	reportService, err := report.NewReportService(aiService, emailClient, templateLibrary, repos.Report, logger, errorRecorder)
 	if err != nil {
 		return nil, err
 	}
@@ -85,12 +65,12 @@ func SetupServices(
 
 	tokenManager := utils.NewTokenManager(cfg.Services.ManagementAPIKey, cfg.Services.ManagementAPIRefreshInterval)
 
-	userService, err := user.NewUserService(notificationService, repos.User, templateLibrary, logger, errorRecorder)
+	userService, err := user.NewUserService(repos.User, templateLibrary, logger, errorRecorder)
 	if err != nil {
 		return nil, err
 	}
 
-	workspaceService, err := workspace.NewWorkspaceService(repos.Workspace, competitorService, userService, notificationService, templateLibrary, tm, logger, errorRecorder)
+	workspaceService, err := workspace.NewWorkspaceService(repos.Workspace, competitorService, userService, templateLibrary, tm, logger, errorRecorder)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +78,6 @@ func SetupServices(
 	workflowService, err := setupWorkflowService(
 		cfg,
 		repos.Workflow,
-		notificationService,
 		pageService,
 		workspaceService,
 		logger,
@@ -111,7 +90,6 @@ func SetupServices(
 	schedulerSvc, err := setupSchedulerService(
 		repos.Schedule,
 		workflowService,
-		notificationService,
 		logger,
 		errorRecorder,
 	)
@@ -124,15 +102,14 @@ func SetupServices(
 	}
 
 	return &Services{
-		History:             historyService,
-		Page:                pageService,
-		Competitor:          competitorService,
-		User:                userService,
-		Workspace:           workspaceService,
-		Workflow:            workflowService,
-		NotificationService: notificationService,
-		Scheduler:           schedulerSvc,
-		TokenManager:        tokenManager,
+		History:      historyService,
+		Page:         pageService,
+		Competitor:   competitorService,
+		User:         userService,
+		Workspace:    workspaceService,
+		Workflow:     workflowService,
+		Scheduler:    schedulerSvc,
+		TokenManager: tokenManager,
 	}, nil
 }
 
@@ -145,30 +122,9 @@ func setupEmailClient(cfg *config.Config, logger *logger.Logger) (email.EmailCli
 	return email.NewResendClient(context.Background(), cfg.Services.ResendAPIKey, cfg.Services.ResendNotificationEmail, logger)
 }
 
-func setupAlertClient(cfg *config.Config, logger *logger.Logger) (alert.AlertClient, error) {
-	clientConfig := models.DefaultSlackConfig()
-	clientConfig.Token = cfg.Workflow.SlackAlertToken
-	clientConfig.ChannelID = cfg.Workflow.SlackWorkflowChannelId
-
-	if cfg.Environment.EnvProfile == "development" {
-		logger.Debug("using local workflow alert client")
-		return alert.NewLocalWorkflowClient(clientConfig, logger), nil
-	}
-
-	return alert.NewSlackAlertClient(clientConfig, logger)
-}
-
-func setupEventClient(cfg *config.Config, logger *logger.Logger) (event.EventClient, error) {
-	if cfg.Environment.EnvProfile == "development" {
-		return event.NewLocalEventClient(logger), nil
-	}
-	return event.NewPostHogEventClient(cfg.Services.PostHogAPIKey, logger)
-}
-
 func setupWorkflowService(
 	cfg *config.Config,
 	workflowRepo workflow_repo.WorkflowRepository,
-	notificationService notification.NotificationService,
 	pageService page.PageService,
 	workspaceService workspace.WorkspaceService,
 	logger *logger.Logger,
@@ -188,7 +144,6 @@ func setupWorkflowService(
 	screenshotWorkflowObserver, err := executor.NewWorkflowObserver(
 		models.ScreenshotWorkflowType,
 		workflowRepo,
-		notificationService,
 		screenshotTaskExecutor,
 		logger,
 		errorRecorder,
@@ -211,7 +166,6 @@ func setupWorkflowService(
 	reportWorkflowObserver, err := executor.NewWorkflowObserver(
 		models.ReportWorkflowType,
 		workflowRepo,
-		notificationService,
 		reportTaskExecutor,
 		logger,
 		errorRecorder,
@@ -228,7 +182,6 @@ func setupWorkflowService(
 	dispatchWorkflowObserver, err := executor.NewWorkflowObserver(
 		models.DispatchWorkflowType,
 		workflowRepo,
-		notificationService,
 		dispatchTaskExecutor,
 		logger,
 		errorRecorder,
@@ -264,7 +217,6 @@ func setupWorkflowService(
 func setupSchedulerService(
 	scheduleRepo schedule.ScheduleRepository,
 	workflowService workflow.WorkflowService,
-	notificationService notification.NotificationService,
 	logger *logger.Logger,
 	errorRecorder *recorder.ErrorRecorder,
 ) (scheduler_svc.SchedulerService, error) {
@@ -272,7 +224,6 @@ func setupSchedulerService(
 		scheduleRepo,
 		scheduler.NewScheduler(logger),
 		workflowService,
-		notificationService,
 		logger,
 		errorRecorder,
 	)

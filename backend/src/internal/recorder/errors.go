@@ -3,13 +3,14 @@ package recorder
 
 import (
 	"context"
-	"fmt"
 	"runtime"
+	"time"
 
 	"github.com/highlight/highlight/sdk/highlight-go"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 // ErrorRecorder handles error recording based on environment
@@ -28,9 +29,8 @@ func NewErrorRecorder(logger *logger.Logger, isDev bool, serviceName string) *Er
 	}
 }
 
-// RecordError records an error either to logs in development or Highlight in production
-// attributes are optional and can be provided as key-value pairs
-func (er *ErrorRecorder) RecordError(ctx context.Context, err error, attributes ...any) {
+// RecordError records an error with zap fields
+func (er *ErrorRecorder) RecordError(ctx context.Context, err error, fields ...zap.Field) {
 	if err == nil {
 		return
 	}
@@ -38,44 +38,58 @@ func (er *ErrorRecorder) RecordError(ctx context.Context, err error, attributes 
 	// Get the caller information
 	_, file, line, _ := runtime.Caller(1)
 
+	// Add default fields
+	fields = append(fields,
+		zap.Error(err),
+		zap.String("file", file),
+		zap.Int("line", line),
+		zap.String("service", er.serviceName),
+	)
+
 	if er.isDev {
-		// In development, log the error with details
-		fields := []zap.Field{
-			zap.Error(err),
-			zap.String("file", file),
-			zap.Int("line", line),
-			zap.String("service", er.serviceName),
-		}
-
-		// Convert attributes to zap fields
-		for i := 0; i < len(attributes); i += 2 {
-			if i+1 < len(attributes) {
-				key, ok := attributes[i].(string)
-				if ok {
-					fields = append(fields, zap.Any(key, attributes[i+1]))
-				}
-			}
-		}
-
+		// In development, just use zap logging directly
 		er.logger.Error("Error occurred", fields...)
 	} else {
-		// In production, send to Highlight
-		attrs := []attribute.KeyValue{
-			attribute.String("file", file),
-			attribute.Int("line", line),
-			attribute.String("service", er.serviceName),
-		}
-
-		// Convert provided attributes to Highlight attributes
-		for i := 0; i < len(attributes); i += 2 {
-			if i+1 < len(attributes) {
-				key, ok := attributes[i].(string)
-				if ok {
-					attrs = append(attrs, attribute.String(key, fmt.Sprint(attributes[i+1])))
-				}
-			}
-		}
-
+		// In production, convert zap fields to Highlight attributes
+		attrs := zapFieldsToAttributes(fields)
 		highlight.RecordError(ctx, err, attrs...)
 	}
+}
+
+// zapFieldsToAttributes converts zap fields to OpenTelemetry attributes
+func zapFieldsToAttributes(fields []zap.Field) []attribute.KeyValue {
+	encoder := zapcore.NewMapObjectEncoder()
+	attrs := make([]attribute.KeyValue, 0, len(fields))
+
+	for _, field := range fields {
+		// Special handling for Error type
+		if field.Type == zapcore.ErrorType {
+			if field.Interface != nil {
+				attrs = append(attrs, attribute.String(field.Key, field.Interface.(error).Error()))
+			}
+			continue
+		}
+
+		// Add the field to our encoder
+		field.AddTo(encoder)
+
+		// Convert based on the field type
+		switch field.Type {
+		case zapcore.StringType:
+			attrs = append(attrs, attribute.String(field.Key, field.String))
+		case zapcore.Int64Type, zapcore.Int32Type, zapcore.Int16Type, zapcore.Int8Type:
+			attrs = append(attrs, attribute.Int64(field.Key, field.Integer))
+		case zapcore.Float64Type, zapcore.Float32Type:
+			attrs = append(attrs, attribute.Float64(field.Key, field.Interface.(float64)))
+		case zapcore.BoolType:
+			attrs = append(attrs, attribute.Bool(field.Key, field.Integer == 1))
+		case zapcore.DurationType:
+			attrs = append(attrs, attribute.Int64(field.Key, int64(field.Interface.(time.Duration))))
+		default:
+			// For complex types, convert to string representation
+			attrs = append(attrs, attribute.String(field.Key, encoder.Fields[field.Key].(string)))
+		}
+	}
+
+	return attrs
 }

@@ -7,11 +7,12 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/wizenheimer/byrd/src/internal/email"
 	"github.com/wizenheimer/byrd/src/internal/email/template"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
+	"github.com/wizenheimer/byrd/src/internal/recorder"
 	"github.com/wizenheimer/byrd/src/internal/repository/report"
 	"github.com/wizenheimer/byrd/src/internal/service/ai"
-	"github.com/wizenheimer/byrd/src/internal/service/notification"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"go.uber.org/zap"
 )
@@ -30,22 +31,30 @@ type reportService struct {
 	library template.TemplateLibrary
 
 	// emailChannel
-	emailChannel chan models.Email
+	emailClient email.EmailClient
+
+	// errorRecorder
+	errorRecorder *recorder.ErrorRecorder
 }
 
 // NewReportService creates a new report service.
-func NewReportService(aiService ai.AIService, notificationService notification.NotificationService, library template.TemplateLibrary, repo report.ReportRepository, logger *logger.Logger) (ReportService, error) {
-	emailChannel, err := notificationService.GetEmailChannel(context.TODO(), 1, 25)
-	if err != nil {
-		logger.Error("failed to get email channel", zap.Error(err))
-		return nil, err
-	}
+func NewReportService(
+	aiService ai.AIService,
+	emailClient email.EmailClient,
+	library template.TemplateLibrary,
+	repo report.ReportRepository,
+	logger *logger.Logger,
+	errorRecorder *recorder.ErrorRecorder,
+) (ReportService, error) {
 	rs := reportService{
-		logger:       logger.WithFields(map[string]interface{}{"service": "report"}),
-		aiService:    aiService,
-		emailChannel: emailChannel,
-		library:      library,
-		repo:         repo,
+		logger: logger.WithFields(map[string]any{
+			"service": "report",
+		}),
+		aiService:     aiService,
+		emailClient:   emailClient,
+		errorRecorder: errorRecorder,
+		library:       library,
+		repo:          repo,
 	}
 	return &rs, nil
 }
@@ -99,12 +108,17 @@ func (s *reportService) Create(ctx context.Context, workspaceID, competitorID uu
 
 	changes, err := s.aiService.SummarizeChanges(ctx, changeList)
 	if err != nil {
+
 		return nil, err
 	}
 
 	report := models.NewReport(workspaceID, competitorID, changes)
+	if err := s.repo.Set(ctx, report); err != nil {
+		s.errorRecorder.RecordError(ctx, err, zap.Any("competitorID", competitorID), zap.Any("workspaceID", workspaceID))
+		return report, err
+	}
 
-	return report, s.repo.Set(ctx, report)
+	return report, nil
 }
 
 // Dispatch send the report to it's subscribers.
@@ -166,9 +180,17 @@ func (s *reportService) Dispatch(ctx context.Context, workspaceID, competitorID 
 		EmailFormat:  models.EmailFormatHTML,
 	}
 
-	go func() {
-		s.emailChannel <- email
-	}()
+	go s.sendEmail(email)
 
 	return nil
+}
+
+func (s *reportService) sendEmail(email models.Email) {
+	// Create a context with 30 second timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel() // Important to avoid context leak
+
+	if err := s.emailClient.Send(ctx, email); err != nil {
+		s.errorRecorder.RecordError(ctx, err, zap.Any("subscriberEmails", email.To), zap.Any("emailSubject", email.EmailSubject))
+	}
 }
