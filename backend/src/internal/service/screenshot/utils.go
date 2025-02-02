@@ -75,6 +75,10 @@ func getScreenshotMetadata(backDate bool) (*models.ScreenshotMetadata, error) {
 }
 
 func (s *screenshotService) getScreenshot(resp *http.Response) (*image.Image, error) {
+	if resp == nil {
+		return nil, errors.New("received nil response")
+	}
+
 	imageContentTypes := []string{
 		"image/png",
 	}
@@ -93,6 +97,9 @@ func (s *screenshotService) getScreenshot(resp *http.Response) (*image.Image, er
 }
 
 func (s *screenshotService) getContent(resp *http.Response) (*string, error) {
+  if resp == nil {
+    return nil, errors.New("received nil response")
+  }
 	renderedURL := resp.Header.Get("X-ScreenshotOne-Content-URL")
 	if renderedURL == "" {
 		return nil, errors.New("no content URL found in headers, cannot proceed with rendering")

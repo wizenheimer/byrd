@@ -78,6 +78,7 @@ help:
 	@echo "  make test          - Run tests"
 	@echo "  make lint          - Run linter"
 	@echo "  make format        - Format code"
+	@echo "  make lint-nil      - Run nilaway"
 	@echo "$(GREEN)Database Commands:$(RESET)"
 	@echo "  make db-status-dev  - Check development database connection"
 	@echo "  make db-status-prod - Check production database connection"
@@ -364,6 +365,14 @@ test:
 lint:
 	@echo "$(BLUE)== Running Linter ==$(RESET)"
 	golangci-lint run
+
+.PHONY: lint-nilaway
+lint-nil:
+	@echo "Running nilaway..."
+	@$(eval GOPATH=$(shell go env GOPATH))
+	@$(eval PATH := $(GOPATH)/bin:$(PATH))
+	@nilaway ./... || (echo "Nilaway check failed"; exit 1)
+	@echo "Nilaway check passed"
 
 .PHONY: format
 format:

@@ -2,6 +2,7 @@
 package competitor
 
 import (
+	"errors"
 	"io"
 	"net/http"
 	"strings"
@@ -141,6 +142,9 @@ func (f *CompanyNameFinder) fetchPage(url string) PageInfo {
 	resp, err := f.client.Get(url)
 	if err != nil {
 		return PageInfo{URL: url, Error: err}
+	}
+	if resp == nil {
+		return PageInfo{URL: url, Error: errors.New("received nil response")}
 	}
 	defer resp.Body.Close()
 

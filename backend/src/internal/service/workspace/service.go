@@ -87,15 +87,14 @@ func (ws *workspaceService) CreateWorkspace(ctx context.Context, workspaceOwner 
 		if err != nil {
 			return err
 		}
-		if workspace == nil {
-			return errors.New("failed to create workspace")
-		}
 		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
-
+	if workspace == nil {
+		return nil, errors.New("failed to create workspace")
+	}
 	// Step 4: Check if the user creation request is valid
 	// If not, truncate the list to the maximum allowed limit
 	pageLimit, err := workspace.GetMaxPages()

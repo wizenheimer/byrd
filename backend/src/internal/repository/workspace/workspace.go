@@ -664,7 +664,7 @@ func (r *workspaceRepo) ListActiveWorkspaces(ctx context.Context, batchSize int,
 	// Collect results
 	workspaceIDs := make([]uuid.UUID, 0)
 	for rows.Next() {
-		var workspaceID uuid.UUID
+		workspaceID := uuid.UUID{}
 		if err := rows.Scan(&workspaceID); err != nil {
 			return models.ActiveWorkspaceBatch{}, fmt.Errorf("failed to scan workspace ID: %w", err)
 		}

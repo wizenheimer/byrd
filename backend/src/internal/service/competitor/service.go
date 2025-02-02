@@ -132,6 +132,10 @@ func (cs *competitorService) BatchCreateCompetitorForWorkspace(ctx context.Conte
 			cs.logger.Error("failed to create competitor for workspace", zap.Error(err), zap.Any("workspaceID", workspaceID), zap.Any("pageURL", page.URL))
 			continue
 		}
+		if competitor == nil {
+			cs.logger.Error("failed to create competitor for workspace", zap.Any("workspaceID", workspaceID), zap.Any("pageURL", page.URL))
+			continue
+		}
 
 		competitors = append(competitors, *competitor)
 	}

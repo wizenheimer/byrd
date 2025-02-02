@@ -109,6 +109,13 @@ func (c *HTTPClient) Do(req *http.Request) (*http.Response, error) {
 				return nil, fmt.Errorf("max retries reached: %w", err)
 			}
 			continue
+		} else if resp == nil {
+			c.logger.Error("received nil response", zap.Any("attempt", attempt), zap.Any("maxRetries", c.maxRetries), zap.Any("url", req.URL))
+			// No response
+			if attempt == c.maxRetries {
+				return nil, errors.New("max retries reached, received nil response")
+			}
+			continue
 		}
 
 		// Check if we should retry based on status code

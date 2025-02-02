@@ -1,4 +1,3 @@
-// ./src/internal/transaction/manager.go
 // ./src/internal/repository/transaction/manager.go
 package transaction
 
@@ -6,6 +5,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -19,6 +20,7 @@ var (
 	ErrTxNotFound      = errors.New("transaction not found in context")
 	ErrTxAlreadyExists = errors.New("transaction already exists in context")
 	ErrInvalidTxOpts   = errors.New("invalid transaction options")
+	ErrShuttingDown    = errors.New("transaction manager is shutting down")
 )
 
 // Key for storing transaction in context
@@ -44,38 +46,52 @@ var DefaultTxOptions = TxOptions{
 	MaxRetries:                  3,
 }
 
+var ReadOnlyTxOptions = TxOptions{
+	IsoLevel:                    pgx.Serializable,
+	Access:                      pgx.ReadOnly,
+	RetryOnSerializationFailure: true,
+	MaxRetries:                  3,
+}
+
 // TxManager handles database transactions
 type TxManager struct {
-	pool   *pgxpool.Pool
-	logger *logger.Logger
+	pool         *pgxpool.Pool
+	logger       *logger.Logger
+	activeCount  int64
+	activeMutex  sync.RWMutex
+	isShutdown   bool
+	shutdownOnce sync.Once
 }
 
 // NewTxManager creates a new transaction manager
 func NewTxManager(pool *pgxpool.Pool, logger *logger.Logger) *TxManager {
-	tm := TxManager{
+	tm := &TxManager{
 		pool: pool,
 		logger: logger.WithFields(map[string]any{
 			"module": "transaction_manager",
 		}),
 	}
-	return &tm
+	return tm
 }
 
 // GetTx retrieves an existing transaction from context
 // Returns the transaction and true if found, nil and false otherwise
 func GetTx(ctx context.Context) (pgx.Tx, bool) {
+	if ctx == nil {
+		return nil, false
+	}
 	tx, ok := ctx.Value(txKey{}).(pgx.Tx)
 	return tx, ok
 }
 
 // MustGetTx retrieves an existing transaction from context
 // Panics if no transaction is found
-func MustGetTx(ctx context.Context) pgx.Tx {
+func MustGetTx(ctx context.Context) (pgx.Tx, error) {
 	tx, ok := GetTx(ctx)
 	if !ok {
-		panic(ErrTxNotFound)
+		return nil, ErrTxNotFound
 	}
-	return tx
+	return tx, nil
 }
 
 // GetPool returns the underlying connection pool
@@ -95,19 +111,96 @@ func (tm *TxManager) GetQuerier(ctx context.Context) interface {
 	return tm.pool
 }
 
+// trackTransaction safely increments or decrements the active transaction count
+func (tm *TxManager) trackTransaction(increment bool) {
+	tm.activeMutex.Lock()
+	defer tm.activeMutex.Unlock()
+
+	if increment {
+		tm.activeCount++
+	} else {
+		if tm.activeCount > 0 { // Prevent going negative
+			tm.activeCount--
+		} else {
+			tm.logger.Warn("attempted to decrement transaction count below zero")
+		}
+	}
+}
+
+// GetActiveTransactionCount returns the current number of active transactions
+func (tm *TxManager) GetActiveTransactionCount() int64 {
+	tm.activeMutex.RLock()
+	defer tm.activeMutex.RUnlock()
+	return tm.activeCount
+}
+
+// isShuttingDown checks if the manager is in shutdown mode
+func (tm *TxManager) isShuttingDown() bool {
+	tm.activeMutex.RLock()
+	defer tm.activeMutex.RUnlock()
+	return tm.isShutdown
+}
+
+// Shutdown gracefully shuts down the transaction manager
+func (tm *TxManager) Shutdown(ctx context.Context) error {
+	var shutdownErr error
+
+	tm.shutdownOnce.Do(func() {
+		tm.activeMutex.Lock()
+		tm.isShutdown = true
+		tm.activeMutex.Unlock()
+
+		// Log shutdown initiation
+		tm.logger.Info("initiating transaction manager shutdown",
+			zap.Int64("active_transactions", tm.activeCount))
+
+		// Wait for active transactions to complete with timeout
+		deadline := time.After(120 * time.Second)
+		ticker := time.NewTicker(100 * time.Millisecond)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				shutdownErr = fmt.Errorf("shutdown context cancelled: %w", ctx.Err())
+				return
+			case <-deadline:
+				// Close the connection pool forcefully, to avoid deadlock
+				tm.pool.Close()
+				shutdownErr = fmt.Errorf("shutdown timed out with %d active transactions", tm.GetActiveTransactionCount())
+				return
+			case <-ticker.C:
+				if tm.GetActiveTransactionCount() == 0 {
+					// Close the connection pool
+					tm.pool.Close()
+					tm.logger.Info("transaction manager shutdown completed")
+					return
+				}
+			}
+		}
+	})
+
+	return shutdownErr
+}
+
 // RunInTx runs the given function in a transaction
-// If a transaction already exists in the context, it will be reused
 func (tm *TxManager) RunInTx(ctx context.Context, opts *TxOptions, fn func(context.Context) error) error {
-	// Use default options if none provided
+	if tm.isShuttingDown() {
+		return ErrShuttingDown
+	}
+
 	if opts == nil {
 		opts = &DefaultTxOptions
 	}
 
 	// Check if we already have a transaction
 	if _, exists := GetTx(ctx); exists {
-		// Reuse existing transaction
-		return fn(ctx)
+		return fn(ctx) // Reuse existing transaction
 	}
+
+	// Track this transaction
+	tm.trackTransaction(true)
+	defer tm.trackTransaction(false) // Ensure we always untrack, even on panic
 
 	// Initialize retry counter
 	retries := 0
@@ -128,9 +221,8 @@ func (tm *TxManager) RunInTx(ctx context.Context, opts *TxOptions, fn func(conte
 	}
 }
 
-// runSingleTx executes a single transaction attempt
+// runSingleTx executes a single transaction attempt with improved panic handling
 func (tm *TxManager) runSingleTx(ctx context.Context, opts *TxOptions, fn func(context.Context) error) error {
-	// Start new transaction
 	tx, err := tm.pool.BeginTx(ctx, pgx.TxOptions{
 		IsoLevel:   opts.IsoLevel,
 		AccessMode: opts.Access,
@@ -139,35 +231,49 @@ func (tm *TxManager) runSingleTx(ctx context.Context, opts *TxOptions, fn func(c
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
 
-	// Add transaction to context
 	ctxWithTx := context.WithValue(ctx, txKey{}, tx)
 
-	// Handle panic and rollback
+	// Improved panic handling
+	var panicked bool
+	var panicValue interface{}
+
 	defer func() {
 		if p := recover(); p != nil {
-			err := tx.Rollback(ctx)
-			if err != nil {
-				tm.logger.Error("failed to rollback transaction", zap.Error(err))
-				panic(fmt.Errorf("error rolling back transaction: %v (original panic: %v)", err, p))
+			panicked = true
+			panicValue = p
+
+			// Attempt rollback but don't panic if it fails
+			if rbErr := tx.Rollback(ctx); rbErr != nil {
+				tm.logger.Error("failed to rollback transaction after panic",
+					zap.Error(rbErr),
+					zap.Any("original_panic", p))
 			}
-			panic(p) // re-throw panic after rollback
 		}
 	}()
 
 	// Run the function
 	err = fn(ctxWithTx)
+
+	// Handle normal execution path
 	if err != nil {
 		if rbErr := tx.Rollback(ctx); rbErr != nil {
-			tm.logger.Error("failed to rollback transaction", zap.Error(rbErr))
+			tm.logger.Error("failed to rollback transaction",
+				zap.Error(rbErr),
+				zap.Error(err))
 			return fmt.Errorf("error rolling back transaction: %v (original error: %w)", rbErr, err)
 		}
 		return err
 	}
 
-	// Commit transaction
+	// Commit the transaction
 	if err := tx.Commit(ctx); err != nil {
 		tm.logger.Error("failed to commit transaction", zap.Error(err))
 		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	// Re-panic if we recovered from a panic earlier
+	if panicked {
+		panic(panicValue)
 	}
 
 	return nil
@@ -175,8 +281,7 @@ func (tm *TxManager) runSingleTx(ctx context.Context, opts *TxOptions, fn func(c
 
 // RunInTxReadOnly is a convenience method for running read-only transactions
 func (tm *TxManager) RunInTxReadOnly(ctx context.Context, fn func(context.Context) error) error {
-	opts := DefaultTxOptions
-	opts.Access = pgx.ReadOnly
+	opts := ReadOnlyTxOptions
 	return tm.RunInTx(ctx, &opts, fn)
 }
 
@@ -191,8 +296,11 @@ func isSerializationFailure(err error) bool {
 }
 
 // WithTx creates a new transaction and adds it to the context
-// This is useful when you need more control over the transaction lifecycle
 func (tm *TxManager) WithTx(ctx context.Context, opts *TxOptions) (context.Context, pgx.Tx, error) {
+	if tm.isShuttingDown() {
+		return nil, nil, ErrShuttingDown
+	}
+
 	if opts == nil {
 		opts = &DefaultTxOptions
 	}
@@ -203,12 +311,16 @@ func (tm *TxManager) WithTx(ctx context.Context, opts *TxOptions) (context.Conte
 		return nil, nil, ErrTxAlreadyExists
 	}
 
+	// Track this transaction with deferred cleanup on error
+	tm.trackTransaction(true)
+
 	// Start new transaction
 	tx, err := tm.pool.BeginTx(ctx, pgx.TxOptions{
 		IsoLevel:   opts.IsoLevel,
 		AccessMode: opts.Access,
 	})
 	if err != nil {
+		tm.trackTransaction(false) // Ensure count is decremented on error
 		return nil, nil, fmt.Errorf("failed to begin transaction: %w", err)
 	}
 
