@@ -70,7 +70,7 @@ func SetupServices(
 		return nil, err
 	}
 
-	workspaceService, err := workspace.NewWorkspaceService(repos.Workspace, competitorService, userService, templateLibrary, tm, logger, errorRecorder)
+	workspaceService, err := workspace.NewWorkspaceService(repos.Workspace, competitorService, userService, templateLibrary, tm, emailClient, logger, errorRecorder)
 	if err != nil {
 		return nil, err
 	}

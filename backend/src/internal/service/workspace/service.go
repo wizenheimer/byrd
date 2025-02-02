@@ -39,6 +39,7 @@ func NewWorkspaceService(
 	userService user.UserService,
 	library template.TemplateLibrary,
 	tm *transaction.TxManager,
+	emailClient email.EmailClient,
 	logger *logger.Logger,
 	errorRecord *recorder.ErrorRecorder,
 ) (WorkspaceService, error) {
@@ -51,6 +52,7 @@ func NewWorkspaceService(
 		logger: logger.WithFields(map[string]any{
 			"module": "workspace_service",
 		}),
+		emailClient: emailClient,
 		errorRecord: errorRecord,
 		tm:          tm,
 	}

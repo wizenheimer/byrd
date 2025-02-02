@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"runtime/debug"
+	"time"
 
 	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/gofiber/fiber/v2"
@@ -36,8 +37,6 @@ func main() {
 			highlight.WithServiceVersion("git-sha"),
 		)
 		defer highlight.Stop()
-	} else {
-		log.Printf("highlight not started for %s environment", cfg.Environment.EnvProfile)
 	}
 
 	// Initialize Clerk with the secret key
@@ -86,6 +85,8 @@ func main() {
 	app := fiber.New(fiber.Config{
 		IdleTimeout:  cfg.Server.IdleTimeout,
 		ErrorHandler: middleware.CustomErrorHandler,
+		ReadTimeout:  30 * time.Second,
+		WriteTimeout: 30 * time.Second,
 	})
 
 	// Initialize rate limiters
