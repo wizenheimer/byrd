@@ -14,11 +14,11 @@ const Hero = () => {
 					text: "Beta",
 				}}
 				primaryButton={{
-					label: "Get Started",
+					label: "Get started",
 					href: "/create",
 				}}
 				secondaryButton={{
-					label: "Contact Sales",
+					label: "Talk to a human",
 					href: "https://cal.com/nayann/byrd",
 				}}
 			/>

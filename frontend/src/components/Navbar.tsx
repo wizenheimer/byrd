@@ -280,7 +280,7 @@ const Navbar = ({ isSimpleVersion = true }: NavbarProps) => {
 						</a>
 						<Link href={"/create"}>
 							<Button className="bg-black text-white hover:bg-black/90">
-								Get Started
+								Get started
 							</Button>
 						</Link>
 					</div>
@@ -336,7 +336,7 @@ const Navbar = ({ isSimpleVersion = true }: NavbarProps) => {
 
 							<div className="flex items-center gap-4">
 								<Button className="hidden bg-black text-white hover:bg-black/90 md:block">
-									Get Started
+									Get started
 								</Button>
 								<Sheet
 									open={isMobileMenuOpen}
@@ -368,7 +368,7 @@ const Navbar = ({ isSimpleVersion = true }: NavbarProps) => {
 										<MobileMenu />
 										<div className="mt-8">
 											<Button className="w-full bg-black text-white hover:bg-black/90">
-												Get Started
+												Get started
 											</Button>
 										</div>
 									</SheetContent>

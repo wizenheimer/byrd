@@ -3,7 +3,7 @@
 import LoadingStep from "@/app/(onboarding)/components/steps/LoadingStep";
 import { UserButton, useUser } from "@clerk/nextjs";
 import { motion } from "framer-motion";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, ExternalLink, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { BaseLayout } from "../components/layouts/BaseLayout";
@@ -18,6 +18,14 @@ export default function WaitlistScreen() {
 		}
 	}, [isLoaded, isSignedIn, router]);
 
+	const handleSkipWaitlist = () => {
+		window.location.href = "https://cal.com/nayann/byrd";
+	};
+
+	const handleCreateWorkspace = () => {
+		router.push("/create");
+	};
+
 	if (!isLoaded || !isSignedIn) {
 		return <LoadingStep />;
 	}
@@ -26,7 +34,29 @@ export default function WaitlistScreen() {
 		<BaseLayout
 			header={
 				<div className="flex items-center space-x-4">
-					<UserButton />
+					<UserButton
+						appearance={{
+							elements: {
+								// This removes the default menu items
+								userButtonPopoverActionButton: "hidden",
+								userButtonPopoverActionButtonText: "hidden",
+								userButtonPopoverFooter: "hidden",
+							},
+						}}
+					>
+						<UserButton.MenuItems>
+							<UserButton.Action
+								label="Create workspace"
+								labelIcon={<Plus className="w-4 h-4" />}
+								onClick={handleCreateWorkspace}
+							/>
+							<UserButton.Action
+								label="Skip waitlist"
+								labelIcon={<ExternalLink className="w-4 h-4" />}
+								onClick={handleSkipWaitlist}
+							/>
+						</UserButton.MenuItems>
+					</UserButton>
 				</div>
 			}
 		>

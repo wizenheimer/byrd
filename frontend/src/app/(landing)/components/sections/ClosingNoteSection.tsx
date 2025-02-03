@@ -10,11 +10,11 @@ const ClosingNoteSection = () => {
 				}}
 				description="Your competitors are everywhere. So are we."
 				primaryButton={{
-					label: "Get Started",
+					label: "Get started",
 					href: "/create",
 				}}
 				secondaryButton={{
-					label: "Contact Sales",
+					label: "Talk to a human",
 					href: "https://cal.com/nayann/byrd",
 				}}
 			/>
