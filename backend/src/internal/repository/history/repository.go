@@ -12,6 +12,7 @@ import (
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/internal/transaction"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
+	"go.uber.org/zap"
 )
 
 type historyRepo struct {
@@ -178,7 +179,7 @@ func (r *historyRepo) BatchRemovePageHistory(ctx context.Context, pageIDs []uuid
 	}
 
 	if result.RowsAffected() == 0 {
-		return fmt.Errorf("no page history found")
+		r.logger.Warn("no page history found to remove", zap.Any("pageIDs", pageIDs))
 	}
 
 	return nil

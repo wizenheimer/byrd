@@ -13,6 +13,7 @@ import (
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/internal/transaction"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
+	"go.uber.org/zap"
 )
 
 type competitorRepo struct {
@@ -298,7 +299,7 @@ func (r *competitorRepo) RemoveAllCompetitorsForWorkspace(ctx context.Context, w
 	}
 
 	if result.RowsAffected() == 0 {
-		return errors.New("no competitors found")
+		r.logger.Warn("no competitors found to remove", zap.Any("workspaceID", workspaceID))
 	}
 
 	return nil
