@@ -13,6 +13,7 @@ import type {
 
 // biome-ignore lint/complexity/noStaticOnlyClass:
 export class Pages {
+  // add pages to a competitor
   static async add(
     workspaceId: string,
     competitorId: string,
@@ -40,6 +41,7 @@ export class Pages {
     return data.data;
   }
 
+  // list all pages for a competitor
   static async list(
     workspaceId: string,
     competitorId: string,
@@ -57,6 +59,7 @@ export class Pages {
     return data.data;
   }
 
+  // get a page by id
   static async get(
     workspaceId: string,
     competitorId: string,
@@ -70,7 +73,8 @@ export class Pages {
     return data.data;
   }
 
-  static async getHistory(
+  // list page history
+  static async listHistory(
     workspaceId: string,
     competitorId: string,
     pageId: string,
@@ -88,6 +92,7 @@ export class Pages {
     return data.data;
   }
 
+  // update a page by id
   static async update(
     workspaceId: string,
     competitorId: string,
@@ -103,6 +108,7 @@ export class Pages {
     return data.data;
   }
 
+  // remove a page from a competitor
   static async delete(
     workspaceId: string,
     competitorId: string,

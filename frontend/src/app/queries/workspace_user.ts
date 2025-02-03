@@ -12,6 +12,7 @@ import type { WorkspaceRole } from "../types/workspace_user";
 
 // biome-ignore lint/complexity/noStaticOnlyClass:
 export class WorkspaceUsers {
+  // list all users in a workspace
   static async list(
     workspaceId: string,
     params: WorkspaceUsersQueryParams,
@@ -27,6 +28,7 @@ export class WorkspaceUsers {
     return data.data;
   }
 
+  // invite users to a workspace
   static async invite(
     workspaceId: string,
     emails: string[],
@@ -41,6 +43,7 @@ export class WorkspaceUsers {
     return data.data;
   }
 
+  // update member role in a workspace
   static async updateRole(
     workspaceId: string,
     userId: string,
@@ -56,6 +59,7 @@ export class WorkspaceUsers {
     return data.data;
   }
 
+  // remove a member from a workspace
   static async remove(
     workspaceId: string,
     userId: string,

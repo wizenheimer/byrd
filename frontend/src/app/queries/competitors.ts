@@ -5,28 +5,30 @@ import type {
   CreateCompetitorResponse,
   DeleteCompetitorResponse,
   GetCompetitorResponse,
-  PaginationParams,
+  PaginationParamsWithPageOptions,
   UpdateCompetitorResponse,
 } from "../types/api";
 
 // biome-ignore lint/complexity/noStaticOnlyClass:
 export class Competitors {
+  // list all competitors in a workspace
   static async list(
     workspaceId: string,
-    params: PaginationParams & { includePages?: boolean },
+    params: PaginationParamsWithPageOptions,
     token: string
   ): Promise<CompetitorsApiResponse["data"]> {
-    const { _page = 1, _limit = 10, includePages = false } = params;
+    const { _page = 1, _limit = 10, include_pages = false } = params;
     const { data } = await axios.get<CompetitorsApiResponse>(
       `${process.env.BACKEND_ORIGIN}/api/public/v1/workspace/${workspaceId}/competitors`,
       {
-        params: { _page, _limit, includePages },
+        params: { _page, _limit, include_pages },
         headers: { Authorization: `Bearer ${token}` },
       }
     );
     return data.data;
   }
 
+  // get a competitor by id
   static async get(
     workspaceId: string,
     competitorId: string,
@@ -36,26 +38,30 @@ export class Competitors {
     const { data } = await axios.get<GetCompetitorResponse>(
       `${process.env.BACKEND_ORIGIN}/api/public/v1/workspace/${workspaceId}/competitors/${competitorId}`,
       {
-        params: { includePages },
+        params: { include_pages: includePages },
         headers: { Authorization: `Bearer ${token}` },
       }
     );
     return data.data;
   }
 
+  // create a new competitor for a workspace
   static async create(
     workspaceId: string,
-    competitor: CreateCompetitorRequest,
+    pages: CreateCompetitorRequest,
     token: string
   ): Promise<CreateCompetitorResponse["data"]> {
     const { data } = await axios.post<CreateCompetitorResponse>(
       `${process.env.BACKEND_ORIGIN}/api/public/v1/workspace/${workspaceId}/competitors`,
-      [competitor],
-      { headers: { Authorization: `Bearer ${token}` } }
+      pages,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
     );
     return data.data;
   }
 
+  // update a competitor by id
   static async update(
     workspaceId: string,
     competitorId: string,
@@ -69,11 +75,14 @@ export class Competitors {
     const { data } = await axios.put<UpdateCompetitorResponse>(
       `${process.env.BACKEND_ORIGIN}/api/public/v1/workspace/${workspaceId}/competitors/${competitorId}`,
       { name },
-      { headers: { Authorization: `Bearer ${token}` } }
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
     );
     return data.data;
   }
 
+  // delete a competitor by id
   static async delete(
     workspaceId: string,
     competitorId: string,
