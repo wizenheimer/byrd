@@ -109,6 +109,8 @@ help:
 	@echo "  make mock-private       - Start private endpoints mock server"
 	@echo "  make mock-public        - Start public endpoints mock server"
 	@echo "  make stop-mock-servers  - Stop all mock servers"
+	@echo "$(GREEN)Environment:$(RESET)"
+	@echo "  make pre-prod           - Start pre-production environment"
 
 .PHONY: init
 init:
@@ -388,6 +390,13 @@ mock-private:
 mock-public:
 	@echo "$(BLUE)== Starting Public Endpoints Mock Server ==$(RESET)"
 	cd ./test/mocks/mockingbyrd && bun run dev
+
+.PHONY:  pre-prod
+pre-prod:
+	@echo "Running nilaway..."
+	@$(eval GOPATH=$(shell go env GOPATH))
+	@$(eval PATH := $(GOPATH)/bin:$(PATH))
+	@air -c .air.toml
 
 .PHONY:  stop-mock-servers
 stop-mock-servers:

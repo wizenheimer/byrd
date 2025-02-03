@@ -90,7 +90,7 @@ func main() {
 	})
 
 	// Initialize rate limiters
-	ratelimiters := middleware.NewRateLimiters(cfg, logger)
+	ratelimiters := middleware.NewRateLimiters(cfg)
 
 	// Initialize logging middleware
 	logSkipPaths := []string{"/health", "/metrics"}
@@ -105,6 +105,8 @@ func main() {
 
 	// Setup routes with handlers and rate limiters
 	routes.SetupRoutes(app, handlers, ratelimiters, am, rm)
+
+	logger.Info("server started", zap.Any("port", cfg.Server.Port))
 
 	// Start server in a goroutine
 	serverError := make(chan error, 1)

@@ -6,8 +6,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/wizenheimer/byrd/src/internal/config"
-	"github.com/wizenheimer/byrd/src/pkg/logger"
-	"go.uber.org/zap"
 )
 
 type RateLimiters struct {
@@ -20,12 +18,7 @@ type RateLimiters struct {
 	UserCDLimiter       fiber.Handler
 }
 
-func NewRateLimiters(cfg *config.Config, logger *logger.Logger) *RateLimiters {
-	rLogger := logger.WithFields(
-		map[string]interface{}{
-			"module": "rate_limiters",
-		},
-	)
+func NewRateLimiters(cfg *config.Config) *RateLimiters {
 
 	gl := limiter.New(limiter.Config{
 		Max:        cfg.Server.GlobalRequestsPerMinute,
@@ -96,14 +89,6 @@ func NewRateLimiters(cfg *config.Config, logger *logger.Logger) *RateLimiters {
 			})
 		},
 	})
-
-	rLogger.Info("rate limiters initialized",
-		zap.Any("global_rpm", cfg.Server.GlobalRequestsPerMinute),
-		zap.Any("workspace_rpm", cfg.Server.WorkspaceCDRequestsPerMinute),
-		zap.Any("competitor_rps", cfg.Server.CompetitorCDRequestsPerSecond),
-		zap.Any("page_rps", cfg.Server.PageCDRequestsPerSecond),
-		zap.Any("user_rps", cfg.Server.UserCDRequestsPerSecond),
-	)
 
 	return &RateLimiters{
 		// Global base limiter
