@@ -10,10 +10,6 @@ import (
 )
 
 func SetupRedis(cfg *config.Config, logger *logger.Logger) (*redis.Client, error) {
-	if cfg.Workflow.RedisAddr == "" {
-		logger.Warn("Redis URL is empty")
-	}
-
 	var opts *redis.Options
 	var err error
 	if cfg.Workflow.RedisURL != "" {
