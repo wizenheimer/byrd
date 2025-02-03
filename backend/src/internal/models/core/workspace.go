@@ -73,9 +73,9 @@ func (w Workspace) GetMaxCompetitors() (int, error) {
 	plan := w.WorkspacePlan
 	switch plan {
 	case WorkspaceTrial: // same as starter but capped
-		return 3, nil
+		return 5, nil
 	case WorkspaceStarter: // smaller teams (seed stage startups) - upto 5 competitors
-		return 3, nil
+		return 5, nil
 	case WorkspaceScaler: // medium teams (early stage startups) - upto 10 competitors
 		return 10, nil
 	case WorkspaceEnterprise: // larger teams (growth stage startups) - upto 20 competitors

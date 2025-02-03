@@ -116,6 +116,132 @@
 											],
 											"cookie": [],
 											"body": "{\n    \"message\": \"Created workspace successfully\",\n    \"data\": {\n        \"id\": \"537f01e9-9336-4e77-990f-3b8e839cce0c\",\n        \"name\": \"Nayan's Workspace\",\n        \"slug\": \"nayans-workspace-24f2bba1-5f88-4de6-aaed-a4621a083d82\",\n        \"billing_email\": \"byrdhq.dev@gmail.com\",\n        \"workspace_status\": \"active\",\n        \"created_at\": \"2025-01-20T07:12:40.325315Z\",\n        \"updated_at\": \"2025-01-20T07:12:40.325315Z\"\n    }\n}"
+										},
+										{
+											"name": "Create a new workspace",
+											"originalRequest": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"competitors\": [\n        \"https://www.stripe.com\",\n        \"https://www.airbnb.com\",\n        \"https://www.dropbox.com\",\n        \"https://www.instacart.com\",\n        \"https://www.gumroad.com\",\n        \"https://www.plaid.com\",\n        \"https://www.segment.com\"\n    ],\n    \"team\": [\n        \"xnayankumar@gmail.com\",\n        \"x4rc3us@gmail.com\",\n        \"byrdhq.dev@gmail.com\"\n    ],\n    \"profiles\": [\n        \"product\"\n    ],\n    \"features\": [\n        \"page\"\n    ]\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{origin}}/api/public/v1/workspace",
+													"host": [
+														"{{origin}}"
+													],
+													"path": [
+														"api",
+														"public",
+														"v1",
+														"workspace"
+													]
+												}
+											},
+											"status": "Created",
+											"code": 201,
+											"_postman_previewlanguage": "json",
+											"header": [
+												{
+													"key": "Date",
+													"value": "Mon, 03 Feb 2025 12:09:50 GMT"
+												},
+												{
+													"key": "Content-Type",
+													"value": "application/json"
+												},
+												{
+													"key": "Content-Length",
+													"value": "366"
+												},
+												{
+													"key": "Vary",
+													"value": "Origin"
+												},
+												{
+													"key": "X-Ratelimit-Limit",
+													"value": "100"
+												},
+												{
+													"key": "X-Ratelimit-Remaining",
+													"value": "99"
+												},
+												{
+													"key": "X-Ratelimit-Reset",
+													"value": "60"
+												}
+											],
+											"cookie": [],
+											"body": "{\n    \"message\": \"Created workspace successfully\",\n    \"data\": {\n        \"id\": \"82e66f8e-0981-4cee-8e79-45cd58425edd\",\n        \"name\": \"Nayan's Workspace\",\n        \"slug\": \"nayans-workspace-5f4a6ff1-716a-430b-9694-2c0972115e10\",\n        \"billing_email\": \"xnayankumar@gmail.com\",\n        \"workspace_status\": \"active\",\n        \"workspace_plan\": \"trial\",\n        \"created_at\": \"2025-02-03T12:09:43.620548Z\",\n        \"updated_at\": \"2025-02-03T12:09:43.620548Z\"\n    }\n}"
+										},
+										{
+											"name": "Create a new workspace",
+											"originalRequest": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"competitors\": [\n        \"https://www.stripe.com\",\n        \"https://www.airbnb.com\",\n        \"https://www.dropbox.com\",\n        \"https://www.instacart.com\",\n        \"https://www.gumroad.com\",\n        \"https://www.plaid.com\",\n        \"https://www.segment.com\"\n    ],\n    \"team\": [\n        \"xnayankumar@gmail.com\",\n        \"x4rc3us@gmail.com\",\n        \"byrdhq.dev@gmail.com\"\n    ],\n    \"profiles\": [\n        \"product\"\n    ],\n    \"features\": [\n        \"page\"\n    ]\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{origin}}/api/public/v1/workspace",
+													"host": [
+														"{{origin}}"
+													],
+													"path": [
+														"api",
+														"public",
+														"v1",
+														"workspace"
+													]
+												}
+											},
+											"status": "Created",
+											"code": 201,
+											"_postman_previewlanguage": "json",
+											"header": [
+												{
+													"key": "Date",
+													"value": "Mon, 03 Feb 2025 12:21:29 GMT"
+												},
+												{
+													"key": "Content-Type",
+													"value": "application/json"
+												},
+												{
+													"key": "Content-Length",
+													"value": "366"
+												},
+												{
+													"key": "Vary",
+													"value": "Origin"
+												},
+												{
+													"key": "X-Ratelimit-Limit",
+													"value": "100"
+												},
+												{
+													"key": "X-Ratelimit-Remaining",
+													"value": "99"
+												},
+												{
+													"key": "X-Ratelimit-Reset",
+													"value": "60"
+												}
+											],
+											"cookie": [],
+											"body": "{\n    \"message\": \"Created workspace successfully\",\n    \"data\": {\n        \"id\": \"1ab38fcf-ae8c-47c2-9770-46a7c2a73dc5\",\n        \"name\": \"Nayan's Workspace\",\n        \"slug\": \"nayans-workspace-3886aa3f-23cd-41e2-9324-015eeca886ee\",\n        \"billing_email\": \"xnayankumar@gmail.com\",\n        \"workspace_status\": \"active\",\n        \"workspace_plan\": \"trial\",\n        \"created_at\": \"2025-02-03T12:21:24.198953Z\",\n        \"updated_at\": \"2025-02-03T12:21:24.198953Z\"\n    }\n}"
 										}
 									]
 								},
@@ -126,15 +252,10 @@
 											"listen": "test",
 											"script": {
 												"exec": [
-													"const helper = pm.require('byrd-client');",
-													"helper.setWorkspaceId(pm.response);"
+													""
 												],
 												"type": "text/javascript",
-												"packages": {
-													"byrd-client": {
-														"id": "0194b886-b523-7d08-8739-1598ea10e093"
-													}
-												}
+												"packages": {}
 											}
 										},
 										{
@@ -164,7 +285,7 @@
 											],
 											"query": [
 												{
-													"key": "membershipStatus",
+													"key": "membership_status",
 													"value": "pending",
 													"disabled": true
 												}
@@ -247,6 +368,67 @@
 											],
 											"cookie": [],
 											"body": "{\n    \"message\": \"Listed workspaces successfully\",\n    \"data\": [\n        {\n            \"id\": \"0f6c1bde-6b0d-4095-b813-4df733cdbbd4\",\n            \"name\": \"Nayan's Workspace\",\n            \"slug\": \"nayans-workspace-45f0102a-c3a2-4c46-b95a-544e85f40c1e\",\n            \"billing_email\": \"byrdhq.dev@gmail.com\",\n            \"workspace_status\": \"active\",\n            \"created_at\": \"2025-01-22T17:15:10.976361Z\",\n            \"updated_at\": \"2025-01-22T17:15:10.976361Z\"\n        }\n    ]\n}"
+										},
+										{
+											"name": "List workspaces for a user",
+											"originalRequest": {
+												"method": "GET",
+												"header": [],
+												"url": {
+													"raw": "{{origin}}/api/public/v1/workspace",
+													"host": [
+														"{{origin}}"
+													],
+													"path": [
+														"api",
+														"public",
+														"v1",
+														"workspace"
+													],
+													"query": [
+														{
+															"key": "membership_status",
+															"value": "pending",
+															"disabled": true
+														}
+													]
+												}
+											},
+											"status": "OK",
+											"code": 200,
+											"_postman_previewlanguage": "json",
+											"header": [
+												{
+													"key": "Date",
+													"value": "Mon, 03 Feb 2025 12:10:07 GMT"
+												},
+												{
+													"key": "Content-Type",
+													"value": "application/json"
+												},
+												{
+													"key": "Content-Length",
+													"value": "412"
+												},
+												{
+													"key": "Vary",
+													"value": "Origin"
+												},
+												{
+													"key": "X-Ratelimit-Limit",
+													"value": "100"
+												},
+												{
+													"key": "X-Ratelimit-Remaining",
+													"value": "98"
+												},
+												{
+													"key": "X-Ratelimit-Reset",
+													"value": "23"
+												}
+											],
+											"cookie": [],
+											"body": "{\n    \"message\": \"Listed workspaces successfully\",\n    \"data\": {\n        \"membership_status\": \"active\",\n        \"workspaces\": [\n            {\n                \"id\": \"82e66f8e-0981-4cee-8e79-45cd58425edd\",\n                \"name\": \"Nayan's Workspace\",\n                \"slug\": \"nayans-workspace-5f4a6ff1-716a-430b-9694-2c0972115e10\",\n                \"billing_email\": \"xnayankumar@gmail.com\",\n                \"workspace_status\": \"active\",\n                \"workspace_plan\": \"trial\",\n                \"created_at\": \"2025-02-03T12:09:43.620548Z\",\n                \"updated_at\": \"2025-02-03T12:09:43.620548Z\"\n            }\n        ]\n    }\n}"
 										}
 									]
 								},
@@ -258,7 +440,7 @@
 											"script": {
 												"exec": [
 													"const helper = pm.require('byrd-client');",
-													"helper.debugVariableFromRequest('workspaceID');"
+													"helper.debugVariableFromRequest('workspace_id');"
 												],
 												"type": "text/javascript",
 												"packages": {
@@ -273,7 +455,7 @@
 										"method": "GET",
 										"header": [],
 										"url": {
-											"raw": "{{origin}}/api/public/v1/workspace/{{workspaceID}}",
+											"raw": "{{origin}}/api/public/v1/workspace/{{workspace_id}}",
 											"host": [
 												"{{origin}}"
 											],
@@ -282,7 +464,7 @@
 												"public",
 												"v1",
 												"workspace",
-												"{{workspaceID}}"
+												"{{workspace_id}}"
 											]
 										}
 									},
@@ -364,6 +546,61 @@
 											],
 											"cookie": [],
 											"body": "{\n    \"message\": \"Fetched workspace successfully\",\n    \"data\": {\n        \"id\": \"0f6c1bde-6b0d-4095-b813-4df733cdbbd4\",\n        \"name\": \"Nayan's Workspace\",\n        \"slug\": \"nayans-workspace-45f0102a-c3a2-4c46-b95a-544e85f40c1e\",\n        \"billing_email\": \"byrdhq.dev@gmail.com\",\n        \"workspace_status\": \"active\",\n        \"created_at\": \"2025-01-22T17:15:10.976361Z\",\n        \"updated_at\": \"2025-01-22T17:15:10.976361Z\"\n    }\n}"
+										},
+										{
+											"name": "Get a workspace by ID",
+											"originalRequest": {
+												"method": "GET",
+												"header": [],
+												"url": {
+													"raw": "{{origin}}/api/public/v1/workspace/{{workspace_id}}",
+													"host": [
+														"{{origin}}"
+													],
+													"path": [
+														"api",
+														"public",
+														"v1",
+														"workspace",
+														"{{workspace_id}}"
+													]
+												}
+											},
+											"status": "OK",
+											"code": 200,
+											"_postman_previewlanguage": "json",
+											"header": [
+												{
+													"key": "Date",
+													"value": "Mon, 03 Feb 2025 12:10:32 GMT"
+												},
+												{
+													"key": "Content-Type",
+													"value": "application/json"
+												},
+												{
+													"key": "Content-Length",
+													"value": "366"
+												},
+												{
+													"key": "Vary",
+													"value": "Origin"
+												},
+												{
+													"key": "X-Ratelimit-Limit",
+													"value": "100"
+												},
+												{
+													"key": "X-Ratelimit-Remaining",
+													"value": "99"
+												},
+												{
+													"key": "X-Ratelimit-Reset",
+													"value": "60"
+												}
+											],
+											"cookie": [],
+											"body": "{\n    \"message\": \"Fetched workspace successfully\",\n    \"data\": {\n        \"id\": \"82e66f8e-0981-4cee-8e79-45cd58425edd\",\n        \"name\": \"Nayan's Workspace\",\n        \"slug\": \"nayans-workspace-5f4a6ff1-716a-430b-9694-2c0972115e10\",\n        \"billing_email\": \"xnayankumar@gmail.com\",\n        \"workspace_status\": \"active\",\n        \"workspace_plan\": \"trial\",\n        \"created_at\": \"2025-02-03T12:09:43.620548Z\",\n        \"updated_at\": \"2025-02-03T12:09:43.620548Z\"\n    }\n}"
 										}
 									]
 								},
@@ -375,7 +612,7 @@
 											"script": {
 												"exec": [
 													"const helper = pm.require('byrd-client');",
-													"helper.debugVariableFromRequest('workspaceID');"
+													"helper.debugVariableFromRequest('workspace_id');"
 												],
 												"type": "text/javascript",
 												"packages": {
@@ -399,7 +636,7 @@
 											}
 										},
 										"url": {
-											"raw": "{{origin}}/api/public/v1/workspace/{{workspaceID}}",
+											"raw": "{{origin}}/api/public/v1/workspace/{{workspace_id}}",
 											"host": [
 												"{{origin}}"
 											],
@@ -408,7 +645,7 @@
 												"public",
 												"v1",
 												"workspace",
-												"{{workspaceID}}"
+												"{{workspace_id}}"
 											]
 										}
 									},
@@ -508,6 +745,70 @@
 											],
 											"cookie": [],
 											"body": "{\n    \"message\": \"Updated workspace successfully\",\n    \"data\": {\n        \"billingEmail\": \"billing@byrdhq.com\",\n        \"name\": \"Byrd's Workspace\",\n        \"workspaceId\": \"0f6c1bde-6b0d-4095-b813-4df733cdbbd4\"\n    }\n}"
+										},
+										{
+											"name": "Update a workspace by ID",
+											"originalRequest": {
+												"method": "PUT",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    //\"billing_email\": \"billing@byrdhq.com\"\n    \"name\": \"Byrd's Workspace\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{origin}}/api/public/v1/workspace/{{workspace_id}}",
+													"host": [
+														"{{origin}}"
+													],
+													"path": [
+														"api",
+														"public",
+														"v1",
+														"workspace",
+														"{{workspace_id}}"
+													]
+												}
+											},
+											"status": "OK",
+											"code": 200,
+											"_postman_previewlanguage": "json",
+											"header": [
+												{
+													"key": "Date",
+													"value": "Mon, 03 Feb 2025 12:10:43 GMT"
+												},
+												{
+													"key": "Content-Type",
+													"value": "application/json"
+												},
+												{
+													"key": "Content-Length",
+													"value": "107"
+												},
+												{
+													"key": "Vary",
+													"value": "Origin"
+												},
+												{
+													"key": "X-Ratelimit-Limit",
+													"value": "100"
+												},
+												{
+													"key": "X-Ratelimit-Remaining",
+													"value": "98"
+												},
+												{
+													"key": "X-Ratelimit-Reset",
+													"value": "48"
+												}
+											],
+											"cookie": [],
+											"body": "{\n    \"message\": \"Updated workspace successfully\",\n    \"data\": {\n        \"workspace_id\": \"82e66f8e-0981-4cee-8e79-45cd58425edd\"\n    }\n}"
 										}
 									]
 								},
@@ -519,7 +820,7 @@
 											"script": {
 												"exec": [
 													"const helper = pm.require('byrd-client');",
-													"helper.debugVariableFromRequest('workspaceID');"
+													"helper.debugVariableFromRequest('workspace_id');"
 												],
 												"type": "text/javascript",
 												"packages": {
@@ -534,7 +835,7 @@
 										"method": "DELETE",
 										"header": [],
 										"url": {
-											"raw": "{{origin}}/api/public/v1/workspace/{{workspaceID}}",
+											"raw": "{{origin}}/api/public/v1/workspace/{{workspace_id}}",
 											"host": [
 												"{{origin}}"
 											],
@@ -543,7 +844,7 @@
 												"public",
 												"v1",
 												"workspace",
-												"{{workspaceID}}"
+												"{{workspace_id}}"
 											]
 										}
 									},
@@ -625,6 +926,61 @@
 											],
 											"cookie": [],
 											"body": "{\n    \"message\": \"Deleted workspace successfully\",\n    \"data\": {\n        \"status\": \"inactive\",\n        \"workspaceId\": \"c9af24cc-faea-4763-ae61-69247b0780b1\"\n    }\n}"
+										},
+										{
+											"name": "Delete a workspace by ID",
+											"originalRequest": {
+												"method": "DELETE",
+												"header": [],
+												"url": {
+													"raw": "{{origin}}/api/public/v1/workspace/{{workspace_id}}",
+													"host": [
+														"{{origin}}"
+													],
+													"path": [
+														"api",
+														"public",
+														"v1",
+														"workspace",
+														"{{workspace_id}}"
+													]
+												}
+											},
+											"status": "OK",
+											"code": 200,
+											"_postman_previewlanguage": "json",
+											"header": [
+												{
+													"key": "Date",
+													"value": "Mon, 03 Feb 2025 12:11:07 GMT"
+												},
+												{
+													"key": "Content-Type",
+													"value": "application/json"
+												},
+												{
+													"key": "Content-Length",
+													"value": "137"
+												},
+												{
+													"key": "Vary",
+													"value": "Origin"
+												},
+												{
+													"key": "X-Ratelimit-Limit",
+													"value": "100"
+												},
+												{
+													"key": "X-Ratelimit-Remaining",
+													"value": "99"
+												},
+												{
+													"key": "X-Ratelimit-Reset",
+													"value": "60"
+												}
+											],
+											"cookie": [],
+											"body": "{\n    \"message\": \"Deleted workspace successfully\",\n    \"data\": {\n        \"workspace_id\": \"82e66f8e-0981-4cee-8e79-45cd58425edd\",\n        \"workspace_status\": \"inactive\"\n    }\n}"
 										}
 									]
 								}
@@ -676,7 +1032,7 @@
 										"method": "POST",
 										"header": [],
 										"url": {
-											"raw": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/join",
+											"raw": "{{origin}}/api/public/v1/workspace/{{workspace_id}}/join",
 											"host": [
 												"{{origin}}"
 											],
@@ -685,7 +1041,7 @@
 												"public",
 												"v1",
 												"workspace",
-												"{{workspaceID}}",
+												"{{workspace_id}}",
 												"join"
 											]
 										}
@@ -779,7 +1135,7 @@
 										"method": "POST",
 										"header": [],
 										"url": {
-											"raw": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/exit",
+											"raw": "{{origin}}/api/public/v1/workspace/{{workspace_id}}/exit",
 											"host": [
 												"{{origin}}"
 											],
@@ -788,15 +1144,8 @@
 												"public",
 												"v1",
 												"workspace",
-												"{{workspaceID}}",
+												"{{workspace_id}}",
 												"exit"
-											],
-											"query": [
-												{
-													"key": null,
-													"value": "fcd8ef85-2317-41b2-aaad-6bfb779dad2b",
-													"disabled": true
-												}
 											]
 										}
 									},
@@ -978,7 +1327,7 @@
 											"script": {
 												"exec": [
 													"const helper = pm.require('byrd-client');",
-													"helper.debugVariableFromRequest('workspaceID');"
+													"helper.debugVariableFromRequest('workspace_id');"
 												],
 												"type": "text/javascript",
 												"packages": {
@@ -993,7 +1342,7 @@
 										"method": "GET",
 										"header": [],
 										"url": {
-											"raw": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/users?_page=1&_limit=10",
+											"raw": "{{origin}}/api/public/v1/workspace/{{workspace_id}}/users?_page=1&_limit=10",
 											"host": [
 												"{{origin}}"
 											],
@@ -1002,7 +1351,7 @@
 												"public",
 												"v1",
 												"workspace",
-												"{{workspaceID}}",
+												"{{workspace_id}}",
 												"users"
 											],
 											"query": [
@@ -1077,6 +1426,77 @@
 											],
 											"cookie": [],
 											"body": "{\n    \"message\": \"Listed workspace users successfully\",\n    \"data\": {\n        \"hasMore\": false,\n        \"users\": [\n            {\n                \"user_id\": \"073afb3f-a8e3-4801-8131-27c88d320bc5\",\n                \"workspace_id\": \"c853255b-10d2-4896-b22e-1d7ae696adf8\",\n                \"name\": \"\",\n                \"email\": \"xnayankumar@gmail.com\",\n                \"workspace_role\": \"user\",\n                \"membership_status\": \"pending\"\n            },\n            {\n                \"user_id\": \"483fcb07-e575-4a78-9b42-8155893a628b\",\n                \"workspace_id\": \"c853255b-10d2-4896-b22e-1d7ae696adf8\",\n                \"name\": \"\",\n                \"email\": \"x4rc3us@gmail.com\",\n                \"workspace_role\": \"user\",\n                \"membership_status\": \"pending\"\n            },\n            {\n                \"user_id\": \"ebdbea32-05e4-49d3-a1a0-3db4f6f16e18\",\n                \"workspace_id\": \"c853255b-10d2-4896-b22e-1d7ae696adf8\",\n                \"name\": \"Byrdhq Dev\",\n                \"email\": \"byrdhq.dev@gmail.com\",\n                \"workspace_role\": \"admin\",\n                \"membership_status\": \"active\"\n            }\n        ]\n    }\n}"
+										},
+										{
+											"name": "List users for a workspace",
+											"originalRequest": {
+												"method": "GET",
+												"header": [],
+												"url": {
+													"raw": "{{origin}}/api/public/v1/workspace/{{workspace_id}}/users?_page=1&_limit=10",
+													"host": [
+														"{{origin}}"
+													],
+													"path": [
+														"api",
+														"public",
+														"v1",
+														"workspace",
+														"{{workspace_id}}",
+														"users"
+													],
+													"query": [
+														{
+															"key": "role",
+															"value": "admin",
+															"disabled": true
+														},
+														{
+															"key": "_page",
+															"value": "1"
+														},
+														{
+															"key": "_limit",
+															"value": "10"
+														}
+													]
+												}
+											},
+											"status": "OK",
+											"code": 200,
+											"_postman_previewlanguage": "json",
+											"header": [
+												{
+													"key": "Date",
+													"value": "Mon, 03 Feb 2025 12:13:55 GMT"
+												},
+												{
+													"key": "Content-Type",
+													"value": "application/json"
+												},
+												{
+													"key": "Content-Length",
+													"value": "704"
+												},
+												{
+													"key": "Vary",
+													"value": "Origin"
+												},
+												{
+													"key": "X-Ratelimit-Limit",
+													"value": "100"
+												},
+												{
+													"key": "X-Ratelimit-Remaining",
+													"value": "98"
+												},
+												{
+													"key": "X-Ratelimit-Reset",
+													"value": "39"
+												}
+											],
+											"cookie": [],
+											"body": "{\n    \"message\": \"Listed workspace users successfully\",\n    \"data\": {\n        \"has_more\": false,\n        \"users\": [\n            {\n                \"user_id\": \"82c41d48-6749-4898-9c44-8b717548da4c\",\n                \"workspace_id\": \"9b0ee4a1-1b92-400b-b3a9-2842151c8554\",\n                \"name\": \"\",\n                \"email\": \"x4rc3us@gmail.com\",\n                \"workspace_role\": \"user\",\n                \"membership_status\": \"pending\"\n            },\n            {\n                \"user_id\": \"c5188731-69a2-447e-a6d7-aa3944496cad\",\n                \"workspace_id\": \"9b0ee4a1-1b92-400b-b3a9-2842151c8554\",\n                \"name\": \"Byrdhq Dev\",\n                \"email\": \"byrdhq.dev@gmail.com\",\n                \"workspace_role\": \"user\",\n                \"membership_status\": \"pending\"\n            },\n            {\n                \"user_id\": \"9c3138f1-600c-4f3d-a825-b2c6754f2c5f\",\n                \"workspace_id\": \"9b0ee4a1-1b92-400b-b3a9-2842151c8554\",\n                \"name\": \"Xnayankumar\",\n                \"email\": \"xnayankumar@gmail.com\",\n                \"workspace_role\": \"admin\",\n                \"membership_status\": \"active\"\n            }\n        ]\n    }\n}"
 										}
 									]
 								},
@@ -1103,7 +1523,7 @@
 											"script": {
 												"exec": [
 													"const helper = pm.require('byrd-client');",
-													"helper.debugVariableFromRequest('workspaceID');"
+													"helper.debugVariableFromRequest('workspace_id');"
 												],
 												"type": "text/javascript",
 												"packages": {
@@ -1119,7 +1539,7 @@
 										"header": [],
 										"body": {
 											"mode": "raw",
-											"raw": "{\n    \"emails\": [\n        \"po@test.com\"\n    ]\n}",
+											"raw": "{\n    \"emails\": [\n        \"test@test.com\"\n    ]\n}",
 											"options": {
 												"raw": {
 													"language": "json"
@@ -1127,7 +1547,7 @@
 											}
 										},
 										"url": {
-											"raw": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/users",
+											"raw": "{{origin}}/api/public/v1/workspace/{{workspace_id}}/users",
 											"host": [
 												"{{origin}}"
 											],
@@ -1136,7 +1556,7 @@
 												"public",
 												"v1",
 												"workspace",
-												"{{workspaceID}}",
+												"{{workspace_id}}",
 												"users"
 											]
 										}
@@ -1239,6 +1659,71 @@
 											],
 											"cookie": [],
 											"body": "{\n    \"message\": \"Invited users to workspace successfully\",\n    \"data\": [\n        {\n            \"user_id\": \"ec5868bc-f941-4352-b605-f58eaadd3920\",\n            \"workspace_id\": \"32474bdc-9367-4ddc-aff8-a6880f410f3e\",\n            \"name\": \"\",\n            \"email\": \"test@test.com\",\n            \"workspace_role\": \"user\",\n            \"membership_status\": \"pending\"\n        }\n    ]\n}"
+										},
+										{
+											"name": "Add user to a workspace",
+											"originalRequest": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"emails\": [\n        \"test@test.com\"\n    ]\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{origin}}/api/public/v1/workspace/{{workspace_id}}/users",
+													"host": [
+														"{{origin}}"
+													],
+													"path": [
+														"api",
+														"public",
+														"v1",
+														"workspace",
+														"{{workspace_id}}",
+														"users"
+													]
+												}
+											},
+											"status": "Created",
+											"code": 201,
+											"_postman_previewlanguage": "json",
+											"header": [
+												{
+													"key": "Date",
+													"value": "Mon, 03 Feb 2025 12:14:19 GMT"
+												},
+												{
+													"key": "Content-Type",
+													"value": "application/json"
+												},
+												{
+													"key": "Content-Length",
+													"value": "255"
+												},
+												{
+													"key": "Vary",
+													"value": "Origin"
+												},
+												{
+													"key": "X-Ratelimit-Limit",
+													"value": "100"
+												},
+												{
+													"key": "X-Ratelimit-Remaining",
+													"value": "96"
+												},
+												{
+													"key": "X-Ratelimit-Reset",
+													"value": "16"
+												}
+											],
+											"cookie": [],
+											"body": "{\n    \"message\": \"Invited users to workspace successfully\",\n    \"data\": [\n        {\n            \"user_id\": \"0be530bd-030b-4ef7-862e-40375fb769ca\",\n            \"workspace_id\": \"9b0ee4a1-1b92-400b-b3a9-2842151c8554\",\n            \"name\": \"\",\n            \"email\": \"test@test.com\",\n            \"workspace_role\": \"user\",\n            \"membership_status\": \"pending\"\n        }\n    ]\n}"
 										}
 									]
 								},
@@ -1250,9 +1735,9 @@
 											"script": {
 												"exec": [
 													"const helper = pm.require('byrd-client');",
-													"helper.debugVariableFromRequest('userID');",
+													"helper.debugVariableFromRequest('user_id');",
 													"",
-													"helper.debugVariableFromRequest('workspaceID');"
+													"helper.debugVariableFromRequest('workspace_id');"
 												],
 												"type": "text/javascript",
 												"packages": {
@@ -1276,7 +1761,7 @@
 											}
 										},
 										"url": {
-											"raw": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/users/{{userID}}",
+											"raw": "{{origin}}/api/public/v1/workspace/{{workspace_id}}/users/{{user_id}}",
 											"host": [
 												"{{origin}}"
 											],
@@ -1285,9 +1770,9 @@
 												"public",
 												"v1",
 												"workspace",
-												"{{workspaceID}}",
+												"{{workspace_id}}",
 												"users",
-												"{{userID}}"
+												"{{user_id}}"
 											]
 										}
 									},
@@ -1391,6 +1876,72 @@
 											],
 											"cookie": [],
 											"body": "{\n    \"message\": \"Updated user role in workspace successfully\",\n    \"data\": {\n        \"role\": \"admin\"\n    }\n}"
+										},
+										{
+											"name": "Update user role in a workspace",
+											"originalRequest": {
+												"method": "PUT",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"role\": \"admin\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{origin}}/api/public/v1/workspace/{{workspace_id}}/users/{{user_id}}",
+													"host": [
+														"{{origin}}"
+													],
+													"path": [
+														"api",
+														"public",
+														"v1",
+														"workspace",
+														"{{workspace_id}}",
+														"users",
+														"{{user_id}}"
+													]
+												}
+											},
+											"status": "OK",
+											"code": 200,
+											"_postman_previewlanguage": "json",
+											"header": [
+												{
+													"key": "Date",
+													"value": "Mon, 03 Feb 2025 12:14:50 GMT"
+												},
+												{
+													"key": "Content-Type",
+													"value": "application/json"
+												},
+												{
+													"key": "Content-Length",
+													"value": "81"
+												},
+												{
+													"key": "Vary",
+													"value": "Origin"
+												},
+												{
+													"key": "X-Ratelimit-Limit",
+													"value": "100"
+												},
+												{
+													"key": "X-Ratelimit-Remaining",
+													"value": "99"
+												},
+												{
+													"key": "X-Ratelimit-Reset",
+													"value": "60"
+												}
+											],
+											"cookie": [],
+											"body": "{\n    \"message\": \"Updated user role in workspace successfully\",\n    \"data\": {\n        \"role\": \"admin\"\n    }\n}"
 										}
 									]
 								},
@@ -1402,8 +1953,8 @@
 											"script": {
 												"exec": [
 													"const helper = pm.require('byrd-client');",
-													"helper.debugVariableFromRequest('userID');",
-													"helper.debugVariableFromRequest('workspaceID');"
+													"helper.debugVariableFromRequest('user_id');",
+													"helper.debugVariableFromRequest('workspace_id');"
 												],
 												"type": "text/javascript",
 												"packages": {
@@ -1418,7 +1969,7 @@
 										"method": "DELETE",
 										"header": [],
 										"url": {
-											"raw": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/users/{{userID}}",
+											"raw": "{{origin}}/api/public/v1/workspace/{{workspace_id}}/users/{{user_id}}",
 											"host": [
 												"{{origin}}"
 											],
@@ -1427,9 +1978,9 @@
 												"public",
 												"v1",
 												"workspace",
-												"{{workspaceID}}",
+												"{{workspace_id}}",
 												"users",
-												"{{userID}}"
+												"{{user_id}}"
 											]
 										}
 									},
@@ -1515,6 +2066,63 @@
 											],
 											"cookie": [],
 											"body": "{\n    \"message\": \"Removed user from workspace successfully\",\n    \"data\": {\n        \"userId\": \"ec5868bc-f941-4352-b605-f58eaadd3920\",\n        \"workspaceId\": \"32474bdc-9367-4ddc-aff8-a6880f410f3e\"\n    }\n}"
+										},
+										{
+											"name": "Remove a user from a workspace",
+											"originalRequest": {
+												"method": "DELETE",
+												"header": [],
+												"url": {
+													"raw": "{{origin}}/api/public/v1/workspace/{{workspace_id}}/users/{{user_id}}",
+													"host": [
+														"{{origin}}"
+													],
+													"path": [
+														"api",
+														"public",
+														"v1",
+														"workspace",
+														"{{workspace_id}}",
+														"users",
+														"{{user_id}}"
+													]
+												}
+											},
+											"status": "OK",
+											"code": 200,
+											"_postman_previewlanguage": "json",
+											"header": [
+												{
+													"key": "Date",
+													"value": "Mon, 03 Feb 2025 12:15:04 GMT"
+												},
+												{
+													"key": "Content-Type",
+													"value": "application/json"
+												},
+												{
+													"key": "Content-Length",
+													"value": "166"
+												},
+												{
+													"key": "Vary",
+													"value": "Origin"
+												},
+												{
+													"key": "X-Ratelimit-Limit",
+													"value": "100"
+												},
+												{
+													"key": "X-Ratelimit-Remaining",
+													"value": "98"
+												},
+												{
+													"key": "X-Ratelimit-Reset",
+													"value": "46"
+												}
+											],
+											"cookie": [],
+											"body": "{\n    \"message\": \"Removed user from workspace successfully\",\n    \"data\": {\n        \"user_id\": \"0be530bd-030b-4ef7-862e-40375fb769ca\",\n        \"workspace_id\": \"9b0ee4a1-1b92-400b-b3a9-2842151c8554\"\n    }\n}"
 										}
 									]
 								}
@@ -1573,7 +2181,7 @@
 											"script": {
 												"exec": [
 													"const helper = pm.require('byrd-client');",
-													"helper.debugVariableFromRequest('workspaceID');"
+													"helper.debugVariableFromRequest('workspace_id');"
 												],
 												"type": "text/javascript",
 												"packages": {
@@ -1603,7 +2211,7 @@
 										"method": "GET",
 										"header": [],
 										"url": {
-											"raw": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/competitors?_page=1&_limit=1&includePages=true",
+											"raw": "{{origin}}/api/public/v1/workspace/{{workspace_id}}/competitors?_page=1&_limit=1&include_pages=true",
 											"host": [
 												"{{origin}}"
 											],
@@ -1612,7 +2220,7 @@
 												"public",
 												"v1",
 												"workspace",
-												"{{workspaceID}}",
+												"{{workspace_id}}",
 												"competitors"
 											],
 											"query": [
@@ -1625,7 +2233,7 @@
 													"value": "1"
 												},
 												{
-													"key": "includePages",
+													"key": "include_pages",
 													"value": "true"
 												}
 											]
@@ -1681,6 +2289,76 @@
 											],
 											"cookie": [],
 											"body": "{\n    \"message\": \"Listed workspace competitors successfully\",\n    \"data\": {\n        \"competitors\": [\n            {\n                \"competitor\": {\n                    \"id\": \"501a6753-dbbf-4a24-a399-7bee685da5d0\",\n                    \"workspace_id\": \"c853255b-10d2-4896-b22e-1d7ae696adf8\",\n                    \"name\": \"Common Room\",\n                    \"status\": \"active\",\n                    \"created_at\": \"2025-01-20T22:09:55.980131Z\",\n                    \"updated_at\": \"2025-01-20T22:09:55.980131Z\"\n                },\n                \"pages\": []\n            },\n            {\n                \"competitor\": {\n                    \"id\": \"3015064c-426f-475c-9f8f-5009f6b17c39\",\n                    \"workspace_id\": \"c853255b-10d2-4896-b22e-1d7ae696adf8\",\n                    \"name\": \"Common Room\",\n                    \"status\": \"active\",\n                    \"created_at\": \"2025-01-20T22:09:55.50939Z\",\n                    \"updated_at\": \"2025-01-20T22:09:55.50939Z\"\n                },\n                \"pages\": []\n            },\n            {\n                \"competitor\": {\n                    \"id\": \"bd730a92-ef14-4c5c-88d8-e8f8bdcf595c\",\n                    \"workspace_id\": \"c853255b-10d2-4896-b22e-1d7ae696adf8\",\n                    \"name\": \"Common Room\",\n                    \"status\": \"active\",\n                    \"created_at\": \"2025-01-20T22:09:54.634652Z\",\n                    \"updated_at\": \"2025-01-20T22:09:54.634652Z\"\n                },\n                \"pages\": []\n            },\n            {\n                \"competitor\": {\n                    \"id\": \"488586b0-279c-4e71-b774-8fdb6dbbfa22\",\n                    \"workspace_id\": \"c853255b-10d2-4896-b22e-1d7ae696adf8\",\n                    \"name\": \"Common Room\",\n                    \"status\": \"active\",\n                    \"created_at\": \"2025-01-20T22:09:54.325102Z\",\n                    \"updated_at\": \"2025-01-20T22:09:54.325102Z\"\n                },\n                \"pages\": []\n            },\n            {\n                \"competitor\": {\n                    \"id\": \"045922a3-0b8b-4db6-be8d-2944a5b15cf5\",\n                    \"workspace_id\": \"c853255b-10d2-4896-b22e-1d7ae696adf8\",\n                    \"name\": \"Common Room\",\n                    \"status\": \"active\",\n                    \"created_at\": \"2025-01-20T22:09:53.838271Z\",\n                    \"updated_at\": \"2025-01-20T22:09:53.838271Z\"\n                },\n                \"pages\": []\n            }\n        ],\n        \"hasMore\": false\n    }\n}"
+										},
+										{
+											"name": "List competitors for a workspace",
+											"originalRequest": {
+												"method": "GET",
+												"header": [],
+												"url": {
+													"raw": "{{origin}}/api/public/v1/workspace/{{workspace_id}}/competitors?_page=1&_limit=1&include_pages=true",
+													"host": [
+														"{{origin}}"
+													],
+													"path": [
+														"api",
+														"public",
+														"v1",
+														"workspace",
+														"{{workspace_id}}",
+														"competitors"
+													],
+													"query": [
+														{
+															"key": "_page",
+															"value": "1"
+														},
+														{
+															"key": "_limit",
+															"value": "1"
+														},
+														{
+															"key": "include_pages",
+															"value": "true"
+														}
+													]
+												}
+											},
+											"status": "OK",
+											"code": 200,
+											"_postman_previewlanguage": "json",
+											"header": [
+												{
+													"key": "Date",
+													"value": "Mon, 03 Feb 2025 12:21:45 GMT"
+												},
+												{
+													"key": "Content-Type",
+													"value": "application/json"
+												},
+												{
+													"key": "Content-Length",
+													"value": "4434"
+												},
+												{
+													"key": "Vary",
+													"value": "Origin"
+												},
+												{
+													"key": "X-Ratelimit-Limit",
+													"value": "100"
+												},
+												{
+													"key": "X-Ratelimit-Remaining",
+													"value": "97"
+												},
+												{
+													"key": "X-Ratelimit-Reset",
+													"value": "27"
+												}
+											],
+											"cookie": [],
+											"body": "{\n    \"message\": \"Listed workspace competitors successfully\",\n    \"data\": {\n        \"competitors\": [\n            {\n                \"competitor\": {\n                    \"id\": \"7ed09031-3928-4fd6-a5f7-ec54c40c7494\",\n                    \"workspace_id\": \"1ab38fcf-ae8c-47c2-9770-46a7c2a73dc5\",\n                    \"name\": \"Gumroad\",\n                    \"status\": \"active\",\n                    \"created_at\": \"2025-02-03T12:21:29.661021Z\",\n                    \"updated_at\": \"2025-02-03T12:21:29.661021Z\"\n                },\n                \"pages\": [\n                    {\n                        \"id\": \"f081ae39-21c6-4d99-8060-d05c0e92e9f9\",\n                        \"competitor_id\": \"7ed09031-3928-4fd6-a5f7-ec54c40c7494\",\n                        \"url\": \"https://www.gumroad.com\",\n                        \"title\": \"Gumroad\",\n                        \"capture_profile\": {\n                            \"capture_beyond_viewport\": true,\n                            \"full_page\": true,\n                            \"full_page_algorithm\": \"default\",\n                            \"block_ads\": true,\n                            \"block_cookie_banners\": true,\n                            \"block_banners_by_heuristics\": true,\n                            \"block_trackers\": true,\n                            \"block_chats\": true,\n                            \"dark_mode\": false,\n                            \"reduced_motion\": true,\n                            \"delay\": 0,\n                            \"wait_until\": [\n                                \"networkidle2\",\n                                \"networkidle0\"\n                            ]\n                        },\n                        \"diff_profile\": [\n                            \"product\"\n                        ],\n                        \"status\": \"active\",\n                        \"created_at\": \"2025-02-03T12:21:29.661021Z\",\n                        \"updated_at\": \"2025-02-03T12:21:29.661021Z\"\n                    }\n                ]\n            },\n            {\n                \"competitor\": {\n                    \"id\": \"ba2dae4c-ce42-4363-96a1-3aee9101588a\",\n                    \"workspace_id\": \"1ab38fcf-ae8c-47c2-9770-46a7c2a73dc5\",\n                    \"name\": \"Instacart\",\n                    \"status\": \"active\",\n                    \"created_at\": \"2025-02-03T12:21:28.264529Z\",\n                    \"updated_at\": \"2025-02-03T12:21:28.264529Z\"\n                },\n                \"pages\": [\n                    {\n                        \"id\": \"f7d25426-4c5a-4d20-8c4a-8433c4767ce1\",\n                        \"competitor_id\": \"ba2dae4c-ce42-4363-96a1-3aee9101588a\",\n                        \"url\": \"https://www.instacart.com\",\n                        \"title\": \"Instacart | Grocery Delivery or Pickup from Local Stores Near You\",\n                        \"capture_profile\": {\n                            \"capture_beyond_viewport\": true,\n                            \"full_page\": true,\n                            \"full_page_algorithm\": \"default\",\n                            \"block_ads\": true,\n                            \"block_cookie_banners\": true,\n                            \"block_banners_by_heuristics\": true,\n                            \"block_trackers\": true,\n                            \"block_chats\": true,\n                            \"dark_mode\": false,\n                            \"reduced_motion\": true,\n                            \"delay\": 0,\n                            \"wait_until\": [\n                                \"networkidle2\",\n                                \"networkidle0\"\n                            ]\n                        },\n                        \"diff_profile\": [\n                            \"product\"\n                        ],\n                        \"status\": \"active\",\n                        \"created_at\": \"2025-02-03T12:21:28.264529Z\",\n                        \"updated_at\": \"2025-02-03T12:21:28.264529Z\"\n                    }\n                ]\n            },\n            {\n                \"competitor\": {\n                    \"id\": \"b9f6d149-6ca6-431d-ada9-f286e6fc19ef\",\n                    \"workspace_id\": \"1ab38fcf-ae8c-47c2-9770-46a7c2a73dc5\",\n                    \"name\": \"DROPBOX\",\n                    \"status\": \"active\",\n                    \"created_at\": \"2025-02-03T12:21:27.226568Z\",\n                    \"updated_at\": \"2025-02-03T12:21:27.226568Z\"\n                },\n                \"pages\": [\n                    {\n                        \"id\": \"3b18981d-639a-46ff-b8da-c7006860c0a9\",\n                        \"competitor_id\": \"b9f6d149-6ca6-431d-ada9-f286e6fc19ef\",\n                        \"url\": \"https://www.dropbox.com\",\n                        \"title\": \"Dropbox.com\",\n                        \"capture_profile\": {\n                            \"capture_beyond_viewport\": true,\n                            \"full_page\": true,\n                            \"full_page_algorithm\": \"default\",\n                            \"block_ads\": true,\n                            \"block_cookie_banners\": true,\n                            \"block_banners_by_heuristics\": true,\n                            \"block_trackers\": true,\n                            \"block_chats\": true,\n                            \"dark_mode\": false,\n                            \"reduced_motion\": true,\n                            \"delay\": 0,\n                            \"wait_until\": [\n                                \"networkidle2\",\n                                \"networkidle0\"\n                            ]\n                        },\n                        \"diff_profile\": [\n                            \"product\"\n                        ],\n                        \"status\": \"active\",\n                        \"created_at\": \"2025-02-03T12:21:27.226568Z\",\n                        \"updated_at\": \"2025-02-03T12:21:27.226568Z\"\n                    }\n                ]\n            },\n            {\n                \"competitor\": {\n                    \"id\": \"b5c8e199-677e-40d1-9453-e51d9eb53b5a\",\n                    \"workspace_id\": \"1ab38fcf-ae8c-47c2-9770-46a7c2a73dc5\",\n                    \"name\": \"Airbnb\",\n                    \"status\": \"active\",\n                    \"created_at\": \"2025-02-03T12:21:26.351957Z\",\n                    \"updated_at\": \"2025-02-03T12:21:26.351957Z\"\n                },\n                \"pages\": [\n                    {\n                        \"id\": \"ef5f227c-27d6-4530-9f0b-5843782234c5\",\n                        \"competitor_id\": \"b5c8e199-677e-40d1-9453-e51d9eb53b5a\",\n                        \"url\": \"https://www.airbnb.com\",\n                        \"title\": \"Airbnb | Holiday rentals, cabins, beach houses & more\",\n                        \"capture_profile\": {\n                            \"capture_beyond_viewport\": true,\n                            \"full_page\": true,\n                            \"full_page_algorithm\": \"default\",\n                            \"block_ads\": true,\n                            \"block_cookie_banners\": true,\n                            \"block_banners_by_heuristics\": true,\n                            \"block_trackers\": true,\n                            \"block_chats\": true,\n                            \"dark_mode\": false,\n                            \"reduced_motion\": true,\n                            \"delay\": 0,\n                            \"wait_until\": [\n                                \"networkidle2\",\n                                \"networkidle0\"\n                            ]\n                        },\n                        \"diff_profile\": [\n                            \"product\"\n                        ],\n                        \"status\": \"active\",\n                        \"created_at\": \"2025-02-03T12:21:26.351957Z\",\n                        \"updated_at\": \"2025-02-03T12:21:26.351957Z\"\n                    }\n                ]\n            },\n            {\n                \"competitor\": {\n                    \"id\": \"3fd2e711-f95b-466c-a557-1a13ba0f9cb2\",\n                    \"workspace_id\": \"1ab38fcf-ae8c-47c2-9770-46a7c2a73dc5\",\n                    \"name\": \"STRIPE\",\n                    \"status\": \"active\",\n                    \"created_at\": \"2025-02-03T12:21:25.269651Z\",\n                    \"updated_at\": \"2025-02-03T12:21:25.269651Z\"\n                },\n                \"pages\": [\n                    {\n                        \"id\": \"9f8c1183-1282-4089-8be2-82e560ec1d62\",\n                        \"competitor_id\": \"3fd2e711-f95b-466c-a557-1a13ba0f9cb2\",\n                        \"url\": \"https://www.stripe.com\",\n                        \"title\": \"Stripe logo\",\n                        \"capture_profile\": {\n                            \"capture_beyond_viewport\": true,\n                            \"full_page\": true,\n                            \"full_page_algorithm\": \"default\",\n                            \"block_ads\": true,\n                            \"block_cookie_banners\": true,\n                            \"block_banners_by_heuristics\": true,\n                            \"block_trackers\": true,\n                            \"block_chats\": true,\n                            \"dark_mode\": false,\n                            \"reduced_motion\": true,\n                            \"delay\": 0,\n                            \"wait_until\": [\n                                \"networkidle2\",\n                                \"networkidle0\"\n                            ]\n                        },\n                        \"diff_profile\": [\n                            \"product\"\n                        ],\n                        \"status\": \"active\",\n                        \"created_at\": \"2025-02-03T12:21:25.269651Z\",\n                        \"updated_at\": \"2025-02-03T12:21:25.269651Z\"\n                    }\n                ]\n            }\n        ],\n        \"has_more\": false\n    }\n}"
 										}
 									]
 								},
@@ -1692,7 +2370,7 @@
 											"script": {
 												"exec": [
 													"const helper = pm.require('byrd-client');",
-													"helper.debugVariableFromRequest('workspaceID');"
+													"helper.debugVariableFromRequest('workspace_id');"
 												],
 												"type": "text/javascript",
 												"packages": {
@@ -1731,7 +2409,7 @@
 											}
 										},
 										"url": {
-											"raw": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/competitors",
+											"raw": "{{origin}}/api/public/v1/workspace/{{workspace_id}}/competitors",
 											"host": [
 												"{{origin}}"
 											],
@@ -1740,7 +2418,7 @@
 												"public",
 												"v1",
 												"workspace",
-												"{{workspaceID}}",
+												"{{workspace_id}}",
 												"competitors"
 											]
 										}
@@ -1794,6 +2472,71 @@
 											],
 											"cookie": [],
 											"body": "{\n    \"message\": \"Created competitor successfully\",\n    \"data\": {\n        \"id\": \"72b47f02-1bc5-4714-95a5-491ba49cc160\",\n        \"workspace_id\": \"c853255b-10d2-4896-b22e-1d7ae696adf8\",\n        \"name\": \"SCARF\",\n        \"status\": \"active\",\n        \"created_at\": \"2025-01-20T22:26:06.170239Z\",\n        \"updated_at\": \"2025-01-20T22:26:06.170239Z\"\n    }\n}"
+										},
+										{
+											"name": "Create competitor for a workspace",
+											"originalRequest": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "[\n    {\n        \"url\": \"https://about.scarf.sh/\"\n    }\n]",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{origin}}/api/public/v1/workspace/{{workspace_id}}/competitors",
+													"host": [
+														"{{origin}}"
+													],
+													"path": [
+														"api",
+														"public",
+														"v1",
+														"workspace",
+														"{{workspace_id}}",
+														"competitors"
+													]
+												}
+											},
+											"status": "Internal Server Error",
+											"code": 500,
+											"_postman_previewlanguage": "json",
+											"header": [
+												{
+													"key": "Date",
+													"value": "Mon, 03 Feb 2025 12:21:35 GMT"
+												},
+												{
+													"key": "Content-Type",
+													"value": "application/json"
+												},
+												{
+													"key": "Content-Length",
+													"value": "81"
+												},
+												{
+													"key": "Vary",
+													"value": "Origin"
+												},
+												{
+													"key": "X-Ratelimit-Limit",
+													"value": "100"
+												},
+												{
+													"key": "X-Ratelimit-Remaining",
+													"value": "98"
+												},
+												{
+													"key": "X-Ratelimit-Reset",
+													"value": "38"
+												}
+											],
+											"cookie": [],
+											"body": "{\n    \"error\": \"Could not create competitor\",\n    \"details\": \"user cannot create competitor\"\n}"
 										}
 									]
 								},
@@ -1805,8 +2548,8 @@
 											"script": {
 												"exec": [
 													"const helper = pm.require('byrd-client');",
-													"helper.debugVariableFromRequest('workspaceID');",
-													"helper.debugVariableFromRequest('competitorID');"
+													"helper.debugVariableFromRequest('workspace_id');",
+													"helper.debugVariableFromRequest('competitor_id');"
 												],
 												"type": "text/javascript",
 												"packages": {
@@ -1821,7 +2564,7 @@
 										"method": "GET",
 										"header": [],
 										"url": {
-											"raw": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/competitors/{{competitorID}}?includePages=true",
+											"raw": "{{origin}}/api/public/v1/workspace/{{workspace_id}}/competitors/{{competitor_id}}?include_pages=true",
 											"host": [
 												"{{origin}}"
 											],
@@ -1830,13 +2573,13 @@
 												"public",
 												"v1",
 												"workspace",
-												"{{workspaceID}}",
+												"{{workspace_id}}",
 												"competitors",
-												"{{competitorID}}"
+												"{{competitor_id}}"
 											],
 											"query": [
 												{
-													"key": "includePages",
+													"key": "include_pages",
 													"value": "true"
 												}
 											]
@@ -1936,6 +2679,69 @@
 											],
 											"cookie": [],
 											"body": "{\n    \"message\": \"Retrieved competitor successfully\",\n    \"data\": {\n        \"competitor\": {\n            \"id\": \"f14e7249-25cd-4453-9f0d-f2d61c5acb90\",\n            \"workspace_id\": \"32474bdc-9367-4ddc-aff8-a6880f410f3e\",\n            \"name\": \"SCARF\",\n            \"status\": \"active\",\n            \"created_at\": \"2025-01-22T18:52:15.263339Z\",\n            \"updated_at\": \"2025-01-22T18:52:15.263339Z\"\n        },\n        \"pages\": [\n            {\n                \"id\": \"f8539ae4-1a10-4eb6-b003-04b2ca188d0b\",\n                \"competitor_id\": \"f14e7249-25cd-4453-9f0d-f2d61c5acb90\",\n                \"url\": \"https://about.scarf.sh/\",\n                \"capture_profile\": {\n                    \"url\": \"https://about.scarf.sh/\",\n                    \"capture_beyond_viewport\": true,\n                    \"full_page\": true,\n                    \"full_page_algorithm\": \"default\",\n                    \"format\": \"png\",\n                    \"image_quality\": 80,\n                    \"block_ads\": true,\n                    \"block_cookie_banners\": true,\n                    \"block_banners_by_heuristics\": true,\n                    \"block_trackers\": true,\n                    \"block_chats\": true,\n                    \"dark_mode\": false,\n                    \"reduced_motion\": true,\n                    \"delay\": 0,\n                    \"timeout\": 60,\n                    \"navigation_timeout\": 30,\n                    \"wait_until\": [\n                        \"networkidle2\",\n                        \"networkidle0\"\n                    ],\n                    \"metadata_image_size\": true,\n                    \"metadata_page_title\": true,\n                    \"metadata_content\": true,\n                    \"metadata_http_response_status_code\": true\n                },\n                \"diff_profile\": [\n                    \"branding\",\n                    \"customers\",\n                    \"integration\",\n                    \"product\",\n                    \"pricing\",\n                    \"partnerships\",\n                    \"messaging\"\n                ],\n                \"status\": \"active\",\n                \"created_at\": \"2025-01-22T18:52:15.263339Z\",\n                \"updated_at\": \"2025-01-22T18:52:15.263339Z\"\n            }\n        ]\n    }\n}"
+										},
+										{
+											"name": "Get Competitor by ID",
+											"originalRequest": {
+												"method": "GET",
+												"header": [],
+												"url": {
+													"raw": "{{origin}}/api/public/v1/workspace/{{workspace_id}}/competitors/{{competitor_id}}?include_pages=true",
+													"host": [
+														"{{origin}}"
+													],
+													"path": [
+														"api",
+														"public",
+														"v1",
+														"workspace",
+														"{{workspace_id}}",
+														"competitors",
+														"{{competitor_id}}"
+													],
+													"query": [
+														{
+															"key": "include_pages",
+															"value": "true"
+														}
+													]
+												}
+											},
+											"status": "OK",
+											"code": 200,
+											"_postman_previewlanguage": "json",
+											"header": [
+												{
+													"key": "Date",
+													"value": "Mon, 03 Feb 2025 12:22:10 GMT"
+												},
+												{
+													"key": "Content-Type",
+													"value": "application/json"
+												},
+												{
+													"key": "Content-Length",
+													"value": "902"
+												},
+												{
+													"key": "Vary",
+													"value": "Origin"
+												},
+												{
+													"key": "X-Ratelimit-Limit",
+													"value": "100"
+												},
+												{
+													"key": "X-Ratelimit-Remaining",
+													"value": "95"
+												},
+												{
+													"key": "X-Ratelimit-Reset",
+													"value": "2"
+												}
+											],
+											"cookie": [],
+											"body": "{\n    \"message\": \"Retrieved competitor successfully\",\n    \"data\": {\n        \"competitor\": {\n            \"id\": \"7ed09031-3928-4fd6-a5f7-ec54c40c7494\",\n            \"workspace_id\": \"1ab38fcf-ae8c-47c2-9770-46a7c2a73dc5\",\n            \"name\": \"Screenstory\",\n            \"status\": \"active\",\n            \"created_at\": \"2025-02-03T12:21:29.661021Z\",\n            \"updated_at\": \"2025-02-03T12:22:05.998751Z\"\n        },\n        \"pages\": [\n            {\n                \"id\": \"f081ae39-21c6-4d99-8060-d05c0e92e9f9\",\n                \"competitor_id\": \"7ed09031-3928-4fd6-a5f7-ec54c40c7494\",\n                \"url\": \"https://www.gumroad.com\",\n                \"title\": \"Gumroad\",\n                \"capture_profile\": {\n                    \"capture_beyond_viewport\": true,\n                    \"full_page\": true,\n                    \"full_page_algorithm\": \"default\",\n                    \"block_ads\": true,\n                    \"block_cookie_banners\": true,\n                    \"block_banners_by_heuristics\": true,\n                    \"block_trackers\": true,\n                    \"block_chats\": true,\n                    \"dark_mode\": false,\n                    \"reduced_motion\": true,\n                    \"delay\": 0,\n                    \"wait_until\": [\n                        \"networkidle2\",\n                        \"networkidle0\"\n                    ]\n                },\n                \"diff_profile\": [\n                    \"product\"\n                ],\n                \"status\": \"active\",\n                \"created_at\": \"2025-02-03T12:21:29.661021Z\",\n                \"updated_at\": \"2025-02-03T12:21:29.661021Z\"\n            }\n        ]\n    }\n}"
 										}
 									]
 								},
@@ -1947,8 +2753,8 @@
 											"script": {
 												"exec": [
 													"const helper = pm.require('byrd-client');",
-													"helper.debugVariableFromRequest('workspaceID');",
-													"helper.debugVariableFromRequest('competitorID');"
+													"helper.debugVariableFromRequest('workspace_id');",
+													"helper.debugVariableFromRequest('competitor_id');"
 												],
 												"type": "text/javascript",
 												"packages": {
@@ -1972,7 +2778,7 @@
 											}
 										},
 										"url": {
-											"raw": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/competitors/{{competitorID}}",
+											"raw": "{{origin}}/api/public/v1/workspace/{{workspace_id}}/competitors/{{competitor_id}}?include_pages=true",
 											"host": [
 												"{{origin}}"
 											],
@@ -1981,15 +2787,14 @@
 												"public",
 												"v1",
 												"workspace",
-												"{{workspaceID}}",
+												"{{workspace_id}}",
 												"competitors",
-												"{{competitorID}}"
+												"{{competitor_id}}"
 											],
 											"query": [
 												{
-													"key": "includePages",
-													"value": "true",
-													"disabled": true
+													"key": "include_pages",
+													"value": "true"
 												}
 											]
 										}
@@ -2108,6 +2913,78 @@
 											],
 											"cookie": [],
 											"body": "{\n    \"message\": \"Updated competitor successfully\",\n    \"data\": {\n        \"id\": \"f14e7249-25cd-4453-9f0d-f2d61c5acb90\",\n        \"workspace_id\": \"32474bdc-9367-4ddc-aff8-a6880f410f3e\",\n        \"name\": \"beta\",\n        \"status\": \"active\",\n        \"created_at\": \"2025-01-22T18:52:15.263339Z\",\n        \"updated_at\": \"2025-01-22T18:57:32.002544Z\"\n    }\n}"
+										},
+										{
+											"name": "Update Competitor by ID",
+											"originalRequest": {
+												"method": "PUT",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"name\": \"Screenstory\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{origin}}/api/public/v1/workspace/{{workspace_id}}/competitors/{{competitor_id}}?include_pages=true",
+													"host": [
+														"{{origin}}"
+													],
+													"path": [
+														"api",
+														"public",
+														"v1",
+														"workspace",
+														"{{workspace_id}}",
+														"competitors",
+														"{{competitor_id}}"
+													],
+													"query": [
+														{
+															"key": "include_pages",
+															"value": "true"
+														}
+													]
+												}
+											},
+											"status": "OK",
+											"code": 200,
+											"_postman_previewlanguage": "json",
+											"header": [
+												{
+													"key": "Date",
+													"value": "Mon, 03 Feb 2025 12:22:05 GMT"
+												},
+												{
+													"key": "Content-Type",
+													"value": "application/json"
+												},
+												{
+													"key": "Content-Length",
+													"value": "277"
+												},
+												{
+													"key": "Vary",
+													"value": "Origin"
+												},
+												{
+													"key": "X-Ratelimit-Limit",
+													"value": "100"
+												},
+												{
+													"key": "X-Ratelimit-Remaining",
+													"value": "96"
+												},
+												{
+													"key": "X-Ratelimit-Reset",
+													"value": "8"
+												}
+											],
+											"cookie": [],
+											"body": "{\n    \"message\": \"Updated competitor successfully\",\n    \"data\": {\n        \"id\": \"7ed09031-3928-4fd6-a5f7-ec54c40c7494\",\n        \"workspace_id\": \"1ab38fcf-ae8c-47c2-9770-46a7c2a73dc5\",\n        \"name\": \"Screenstory\",\n        \"status\": \"active\",\n        \"created_at\": \"2025-02-03T12:21:29.661021Z\",\n        \"updated_at\": \"2025-02-03T12:22:05.998751Z\"\n    }\n}"
 										}
 									]
 								},
@@ -2119,8 +2996,8 @@
 											"script": {
 												"exec": [
 													"const helper = pm.require('byrd-client');",
-													"helper.debugVariableFromRequest('workspaceID');",
-													"helper.debugVariableFromRequest('competitorID');"
+													"helper.debugVariableFromRequest('workspace_id');",
+													"helper.debugVariableFromRequest('competitor_id');"
 												],
 												"type": "text/javascript",
 												"packages": {
@@ -2135,7 +3012,7 @@
 										"method": "DELETE",
 										"header": [],
 										"url": {
-											"raw": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/competitors/{{competitorID}}",
+											"raw": "{{origin}}/api/public/v1/workspace/{{workspace_id}}/competitors/{{competitor_id}}",
 											"host": [
 												"{{origin}}"
 											],
@@ -2144,9 +3021,9 @@
 												"public",
 												"v1",
 												"workspace",
-												"{{workspaceID}}",
+												"{{workspace_id}}",
 												"competitors",
-												"{{competitorID}}"
+												"{{competitor_id}}"
 											]
 										}
 									},
@@ -2207,8 +3084,8 @@
 											"script": {
 												"exec": [
 													"const helper = pm.require('byrd-client');",
-													"helper.debugVariableFromRequest('workspaceID');",
-													"helper.debugVariableFromRequest('competitorID');"
+													"helper.debugVariableFromRequest('workspace_id');",
+													"helper.debugVariableFromRequest('competitor_id');"
 												],
 												"type": "text/javascript",
 												"packages": {
@@ -2223,7 +3100,7 @@
 										"method": "GET",
 										"header": [],
 										"url": {
-											"raw": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/competitors/{{competitorID}}/reports",
+											"raw": "{{origin}}/api/public/v1/workspace/{{workspace_id}}/competitors/{{competitor_id}}/reports",
 											"host": [
 												"{{origin}}"
 											],
@@ -2232,9 +3109,9 @@
 												"public",
 												"v1",
 												"workspace",
-												"{{workspaceID}}",
+												"{{workspace_id}}",
 												"competitors",
-												"{{competitorID}}",
+												"{{competitor_id}}",
 												"reports"
 											]
 										}
@@ -2333,6 +3210,64 @@
 											],
 											"cookie": [],
 											"body": "{\n    \"message\": \"Retrieved competitor successfully\",\n    \"data\": {\n        \"competitor\": {\n            \"id\": \"f14e7249-25cd-4453-9f0d-f2d61c5acb90\",\n            \"workspace_id\": \"32474bdc-9367-4ddc-aff8-a6880f410f3e\",\n            \"name\": \"SCARF\",\n            \"status\": \"active\",\n            \"created_at\": \"2025-01-22T18:52:15.263339Z\",\n            \"updated_at\": \"2025-01-22T18:52:15.263339Z\"\n        },\n        \"pages\": [\n            {\n                \"id\": \"f8539ae4-1a10-4eb6-b003-04b2ca188d0b\",\n                \"competitor_id\": \"f14e7249-25cd-4453-9f0d-f2d61c5acb90\",\n                \"url\": \"https://about.scarf.sh/\",\n                \"capture_profile\": {\n                    \"url\": \"https://about.scarf.sh/\",\n                    \"capture_beyond_viewport\": true,\n                    \"full_page\": true,\n                    \"full_page_algorithm\": \"default\",\n                    \"format\": \"png\",\n                    \"image_quality\": 80,\n                    \"block_ads\": true,\n                    \"block_cookie_banners\": true,\n                    \"block_banners_by_heuristics\": true,\n                    \"block_trackers\": true,\n                    \"block_chats\": true,\n                    \"dark_mode\": false,\n                    \"reduced_motion\": true,\n                    \"delay\": 0,\n                    \"timeout\": 60,\n                    \"navigation_timeout\": 30,\n                    \"wait_until\": [\n                        \"networkidle2\",\n                        \"networkidle0\"\n                    ],\n                    \"metadata_image_size\": true,\n                    \"metadata_page_title\": true,\n                    \"metadata_content\": true,\n                    \"metadata_http_response_status_code\": true\n                },\n                \"diff_profile\": [\n                    \"branding\",\n                    \"customers\",\n                    \"integration\",\n                    \"product\",\n                    \"pricing\",\n                    \"partnerships\",\n                    \"messaging\"\n                ],\n                \"status\": \"active\",\n                \"created_at\": \"2025-01-22T18:52:15.263339Z\",\n                \"updated_at\": \"2025-01-22T18:52:15.263339Z\"\n            }\n        ]\n    }\n}"
+										},
+										{
+											"name": "List Reports for Competitor",
+											"originalRequest": {
+												"method": "GET",
+												"header": [],
+												"url": {
+													"raw": "{{origin}}/api/public/v1/workspace/{{workspace_id}}/competitors/{{competitor_id}}/reports",
+													"host": [
+														"{{origin}}"
+													],
+													"path": [
+														"api",
+														"public",
+														"v1",
+														"workspace",
+														"{{workspace_id}}",
+														"competitors",
+														"{{competitor_id}}",
+														"reports"
+													]
+												}
+											},
+											"status": "OK",
+											"code": 200,
+											"_postman_previewlanguage": "json",
+											"header": [
+												{
+													"key": "Date",
+													"value": "Mon, 03 Feb 2025 12:22:17 GMT"
+												},
+												{
+													"key": "Content-Type",
+													"value": "application/json"
+												},
+												{
+													"key": "Content-Length",
+													"value": "85"
+												},
+												{
+													"key": "Vary",
+													"value": "Origin"
+												},
+												{
+													"key": "X-Ratelimit-Limit",
+													"value": "100"
+												},
+												{
+													"key": "X-Ratelimit-Remaining",
+													"value": "99"
+												},
+												{
+													"key": "X-Ratelimit-Reset",
+													"value": "60"
+												}
+											],
+											"cookie": [],
+											"body": "{\n    \"message\": \"Retrieved reports successfully\",\n    \"data\": {\n        \"has_more\": false,\n        \"reports\": null\n    }\n}"
 										}
 									]
 								},
@@ -2344,8 +3279,8 @@
 											"script": {
 												"exec": [
 													"const helper = pm.require('byrd-client');",
-													"helper.debugVariableFromRequest('workspaceID');",
-													"helper.debugVariableFromRequest('competitorID');"
+													"helper.debugVariableFromRequest('workspace_id');",
+													"helper.debugVariableFromRequest('competitor_id');"
 												],
 												"type": "text/javascript",
 												"packages": {
@@ -2360,7 +3295,7 @@
 										"method": "POST",
 										"header": [],
 										"url": {
-											"raw": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/competitors/{{competitorID}}/reports",
+											"raw": "{{origin}}/api/public/v1/workspace/{{workspace_id}}/competitors/{{competitor_id}}/reports",
 											"host": [
 												"{{origin}}"
 											],
@@ -2369,9 +3304,9 @@
 												"public",
 												"v1",
 												"workspace",
-												"{{workspaceID}}",
+												"{{workspace_id}}",
 												"competitors",
-												"{{competitorID}}",
+												"{{competitor_id}}",
 												"reports"
 											]
 										}
@@ -2470,6 +3405,64 @@
 											],
 											"cookie": [],
 											"body": "{\n    \"message\": \"Retrieved competitor successfully\",\n    \"data\": {\n        \"competitor\": {\n            \"id\": \"f14e7249-25cd-4453-9f0d-f2d61c5acb90\",\n            \"workspace_id\": \"32474bdc-9367-4ddc-aff8-a6880f410f3e\",\n            \"name\": \"SCARF\",\n            \"status\": \"active\",\n            \"created_at\": \"2025-01-22T18:52:15.263339Z\",\n            \"updated_at\": \"2025-01-22T18:52:15.263339Z\"\n        },\n        \"pages\": [\n            {\n                \"id\": \"f8539ae4-1a10-4eb6-b003-04b2ca188d0b\",\n                \"competitor_id\": \"f14e7249-25cd-4453-9f0d-f2d61c5acb90\",\n                \"url\": \"https://about.scarf.sh/\",\n                \"capture_profile\": {\n                    \"url\": \"https://about.scarf.sh/\",\n                    \"capture_beyond_viewport\": true,\n                    \"full_page\": true,\n                    \"full_page_algorithm\": \"default\",\n                    \"format\": \"png\",\n                    \"image_quality\": 80,\n                    \"block_ads\": true,\n                    \"block_cookie_banners\": true,\n                    \"block_banners_by_heuristics\": true,\n                    \"block_trackers\": true,\n                    \"block_chats\": true,\n                    \"dark_mode\": false,\n                    \"reduced_motion\": true,\n                    \"delay\": 0,\n                    \"timeout\": 60,\n                    \"navigation_timeout\": 30,\n                    \"wait_until\": [\n                        \"networkidle2\",\n                        \"networkidle0\"\n                    ],\n                    \"metadata_image_size\": true,\n                    \"metadata_page_title\": true,\n                    \"metadata_content\": true,\n                    \"metadata_http_response_status_code\": true\n                },\n                \"diff_profile\": [\n                    \"branding\",\n                    \"customers\",\n                    \"integration\",\n                    \"product\",\n                    \"pricing\",\n                    \"partnerships\",\n                    \"messaging\"\n                ],\n                \"status\": \"active\",\n                \"created_at\": \"2025-01-22T18:52:15.263339Z\",\n                \"updated_at\": \"2025-01-22T18:52:15.263339Z\"\n            }\n        ]\n    }\n}"
+										},
+										{
+											"name": "Create Report for Competitor",
+											"originalRequest": {
+												"method": "POST",
+												"header": [],
+												"url": {
+													"raw": "{{origin}}/api/public/v1/workspace/{{workspace_id}}/competitors/{{competitor_id}}/reports",
+													"host": [
+														"{{origin}}"
+													],
+													"path": [
+														"api",
+														"public",
+														"v1",
+														"workspace",
+														"{{workspace_id}}",
+														"competitors",
+														"{{competitor_id}}",
+														"reports"
+													]
+												}
+											},
+											"status": "Created",
+											"code": 201,
+											"_postman_previewlanguage": "json",
+											"header": [
+												{
+													"key": "Date",
+													"value": "Mon, 03 Feb 2025 12:22:24 GMT"
+												},
+												{
+													"key": "Content-Type",
+													"value": "application/json"
+												},
+												{
+													"key": "Content-Length",
+													"value": "332"
+												},
+												{
+													"key": "Vary",
+													"value": "Origin"
+												},
+												{
+													"key": "X-Ratelimit-Limit",
+													"value": "100"
+												},
+												{
+													"key": "X-Ratelimit-Remaining",
+													"value": "98"
+												},
+												{
+													"key": "X-Ratelimit-Reset",
+													"value": "54"
+												}
+											],
+											"cookie": [],
+											"body": "{\n    \"message\": \"Created report successfully\",\n    \"data\": {\n        \"id\": \"f734275b-9d25-4f1d-82c9-480e3b7acf28\",\n        \"workspace_id\": \"1ab38fcf-ae8c-47c2-9770-46a7c2a73dc5\",\n        \"competitor_id\": \"7ed09031-3928-4fd6-a5f7-ec54c40c7494\",\n        \"changes\": [\n            {\n                \"category\": \"Product\",\n                \"summary\": \"The Product remains constant\",\n                \"changes\": []\n            }\n        ],\n        \"time\": \"2025-02-03T12:22:24.933869263Z\"\n    }\n}"
 										}
 									]
 								},
@@ -2481,8 +3474,8 @@
 											"script": {
 												"exec": [
 													"const helper = pm.require('byrd-client');",
-													"helper.debugVariableFromRequest('workspaceID');",
-													"helper.debugVariableFromRequest('competitorID');"
+													"helper.debugVariableFromRequest('workspace_id');",
+													"helper.debugVariableFromRequest('competitor_id');"
 												],
 												"type": "text/javascript",
 												"packages": {
@@ -2506,7 +3499,7 @@
 											}
 										},
 										"url": {
-											"raw": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/competitors/{{competitorID}}/reports/dispatch",
+											"raw": "{{origin}}/api/public/v1/workspace/{{workspace_id}}/competitors/{{competitor_id}}/reports/dispatch",
 											"host": [
 												"{{origin}}"
 											],
@@ -2515,9 +3508,9 @@
 												"public",
 												"v1",
 												"workspace",
-												"{{workspaceID}}",
+												"{{workspace_id}}",
 												"competitors",
-												"{{competitorID}}",
+												"{{competitor_id}}",
 												"reports",
 												"dispatch"
 											]
@@ -2689,8 +3682,8 @@
 											"script": {
 												"exec": [
 													"const helper = pm.require('byrd-client');",
-													"helper.debugVariableFromRequest('workspaceID');",
-													"helper.debugVariableFromRequest('competitorID');"
+													"helper.debugVariableFromRequest('workspace_id');",
+													"helper.debugVariableFromRequest('competitor_id');"
 												],
 												"type": "text/javascript",
 												"packages": {
@@ -2705,7 +3698,7 @@
 										"method": "GET",
 										"header": [],
 										"url": {
-											"raw": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/competitors/{{competitorID}}/pages?_page=1&_limit=1",
+											"raw": "{{origin}}/api/public/v1/workspace/{{workspace_id}}/competitors/{{competitor_id}}/pages?_page=1&_limit=1",
 											"host": [
 												"{{origin}}"
 											],
@@ -2714,9 +3707,9 @@
 												"public",
 												"v1",
 												"workspace",
-												"{{workspaceID}}",
+												"{{workspace_id}}",
 												"competitors",
-												"{{competitorID}}",
+												"{{competitor_id}}",
 												"pages"
 											],
 											"query": [
@@ -2782,6 +3775,74 @@
 											],
 											"cookie": [],
 											"body": "{\n    \"message\": \"Listed page for competitor successfully\",\n    \"data\": {\n        \"hasMore\": false,\n        \"pages\": [\n            {\n                \"id\": \"80885953-6bbf-4afa-9de6-2f62aad6a5fc\",\n                \"competitor_id\": \"7bf66a9e-abd9-4ddf-a0dd-8b22e97c145f\",\n                \"url\": \"https://about.scarf.sh/\",\n                \"capture_profile\": {\n                    \"url\": \"https://about.scarf.sh/\",\n                    \"capture_beyond_viewport\": true,\n                    \"full_page\": true,\n                    \"full_page_algorithm\": \"default\",\n                    \"format\": \"png\",\n                    \"image_quality\": 80,\n                    \"block_ads\": true,\n                    \"block_cookie_banners\": true,\n                    \"block_banners_by_heuristics\": true,\n                    \"block_trackers\": true,\n                    \"block_chats\": true,\n                    \"dark_mode\": false,\n                    \"reduced_motion\": true,\n                    \"delay\": 0,\n                    \"timeout\": 60,\n                    \"navigation_timeout\": 30,\n                    \"wait_until\": [\n                        \"networkidle2\",\n                        \"networkidle0\"\n                    ],\n                    \"metadata_image_size\": true,\n                    \"metadata_page_title\": true,\n                    \"metadata_content\": true,\n                    \"metadata_http_response_status_code\": true\n                },\n                \"diff_profile\": [\n                    \"branding\",\n                    \"customers\",\n                    \"integration\",\n                    \"product\",\n                    \"pricing\",\n                    \"partnerships\",\n                    \"messaging\"\n                ],\n                \"status\": \"active\",\n                \"created_at\": \"2025-01-20T22:33:20.995838Z\",\n                \"updated_at\": \"2025-01-20T22:33:20.995838Z\"\n            }\n        ]\n    }\n}"
+										},
+										{
+											"name": "List pages for a competitor",
+											"originalRequest": {
+												"method": "GET",
+												"header": [],
+												"url": {
+													"raw": "{{origin}}/api/public/v1/workspace/{{workspace_id}}/competitors/{{competitor_id}}/pages?_page=1&_limit=1",
+													"host": [
+														"{{origin}}"
+													],
+													"path": [
+														"api",
+														"public",
+														"v1",
+														"workspace",
+														"{{workspace_id}}",
+														"competitors",
+														"{{competitor_id}}",
+														"pages"
+													],
+													"query": [
+														{
+															"key": "_page",
+															"value": "1"
+														},
+														{
+															"key": "_limit",
+															"value": "1"
+														}
+													]
+												}
+											},
+											"status": "Created",
+											"code": 201,
+											"_postman_previewlanguage": "json",
+											"header": [
+												{
+													"key": "Date",
+													"value": "Mon, 03 Feb 2025 12:22:36 GMT"
+												},
+												{
+													"key": "Content-Type",
+													"value": "application/json"
+												},
+												{
+													"key": "Content-Length",
+													"value": "687"
+												},
+												{
+													"key": "Vary",
+													"value": "Origin"
+												},
+												{
+													"key": "X-Ratelimit-Limit",
+													"value": "100"
+												},
+												{
+													"key": "X-Ratelimit-Remaining",
+													"value": "97"
+												},
+												{
+													"key": "X-Ratelimit-Reset",
+													"value": "42"
+												}
+											],
+											"cookie": [],
+											"body": "{\n    \"message\": \"Listed page for competitor successfully\",\n    \"data\": {\n        \"has_more\": false,\n        \"pages\": [\n            {\n                \"id\": \"f081ae39-21c6-4d99-8060-d05c0e92e9f9\",\n                \"competitor_id\": \"7ed09031-3928-4fd6-a5f7-ec54c40c7494\",\n                \"url\": \"https://www.gumroad.com\",\n                \"title\": \"Gumroad\",\n                \"capture_profile\": {\n                    \"capture_beyond_viewport\": true,\n                    \"full_page\": true,\n                    \"full_page_algorithm\": \"default\",\n                    \"block_ads\": true,\n                    \"block_cookie_banners\": true,\n                    \"block_banners_by_heuristics\": true,\n                    \"block_trackers\": true,\n                    \"block_chats\": true,\n                    \"dark_mode\": false,\n                    \"reduced_motion\": true,\n                    \"delay\": 0,\n                    \"wait_until\": [\n                        \"networkidle2\",\n                        \"networkidle0\"\n                    ]\n                },\n                \"diff_profile\": [\n                    \"product\"\n                ],\n                \"status\": \"active\",\n                \"created_at\": \"2025-02-03T12:21:29.661021Z\",\n                \"updated_at\": \"2025-02-03T12:21:29.661021Z\"\n            }\n        ]\n    }\n}"
 										}
 									]
 								},
@@ -2808,8 +3869,8 @@
 											"script": {
 												"exec": [
 													"const helper = pm.require('byrd-client');",
-													"helper.debugVariableFromRequest('workspaceID');",
-													"helper.debugVariableFromRequest('competitorID');"
+													"helper.debugVariableFromRequest('workspace_id');",
+													"helper.debugVariableFromRequest('competitor_id');"
 												],
 												"type": "text/javascript",
 												"packages": {
@@ -2833,7 +3894,7 @@
 											}
 										},
 										"url": {
-											"raw": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/competitors/{{competitorID}}/pages",
+											"raw": "{{origin}}/api/public/v1/workspace/{{workspace_id}}/competitors/{{competitor_id}}/pages",
 											"host": [
 												"{{origin}}"
 											],
@@ -2842,9 +3903,9 @@
 												"public",
 												"v1",
 												"workspace",
-												"{{workspaceID}}",
+												"{{workspace_id}}",
 												"competitors",
-												"{{competitorID}}",
+												"{{competitor_id}}",
 												"pages"
 											]
 										}
@@ -2900,6 +3961,73 @@
 											],
 											"cookie": [],
 											"body": "{\n    \"message\": \"Added page to competitor successfully\",\n    \"data\": [\n        {\n            \"id\": \"1f48faa6-0f02-4519-a4e8-65cecac0969b\",\n            \"competitor_id\": \"7bf66a9e-abd9-4ddf-a0dd-8b22e97c145f\",\n            \"url\": \"https://www.commonroom.io/customers/\",\n            \"capture_profile\": {\n                \"url\": \"https://www.commonroom.io/customers/\",\n                \"capture_beyond_viewport\": true,\n                \"full_page\": true,\n                \"full_page_algorithm\": \"default\",\n                \"format\": \"png\",\n                \"image_quality\": 80,\n                \"block_ads\": true,\n                \"block_cookie_banners\": true,\n                \"block_banners_by_heuristics\": true,\n                \"block_trackers\": true,\n                \"block_chats\": true,\n                \"dark_mode\": false,\n                \"reduced_motion\": true,\n                \"delay\": 0,\n                \"timeout\": 60,\n                \"navigation_timeout\": 30,\n                \"wait_until\": [\n                    \"networkidle2\",\n                    \"networkidle0\"\n                ],\n                \"metadata_image_size\": true,\n                \"metadata_page_title\": true,\n                \"metadata_content\": true,\n                \"metadata_http_response_status_code\": true\n            },\n            \"diff_profile\": [\n                \"branding\",\n                \"customers\",\n                \"integration\",\n                \"product\",\n                \"pricing\",\n                \"partnerships\",\n                \"messaging\"\n            ],\n            \"status\": \"active\",\n            \"created_at\": \"2025-01-20T22:37:03.689298Z\",\n            \"updated_at\": \"2025-01-20T22:37:03.689298Z\"\n        }\n    ]\n}"
+										},
+										{
+											"name": "Add page to a competitor",
+											"originalRequest": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "[\n    {\n        \"url\": \"https://www.commonroom.io/customers/\"\n    }\n]",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{origin}}/api/public/v1/workspace/{{workspace_id}}/competitors/{{competitor_id}}/pages",
+													"host": [
+														"{{origin}}"
+													],
+													"path": [
+														"api",
+														"public",
+														"v1",
+														"workspace",
+														"{{workspace_id}}",
+														"competitors",
+														"{{competitor_id}}",
+														"pages"
+													]
+												}
+											},
+											"status": "Created",
+											"code": 201,
+											"_postman_previewlanguage": "json",
+											"header": [
+												{
+													"key": "Date",
+													"value": "Mon, 03 Feb 2025 12:22:42 GMT"
+												},
+												{
+													"key": "Content-Type",
+													"value": "application/json"
+												},
+												{
+													"key": "Content-Length",
+													"value": "759"
+												},
+												{
+													"key": "Vary",
+													"value": "Origin"
+												},
+												{
+													"key": "X-Ratelimit-Limit",
+													"value": "100"
+												},
+												{
+													"key": "X-Ratelimit-Remaining",
+													"value": "96"
+												},
+												{
+													"key": "X-Ratelimit-Reset",
+													"value": "36"
+												}
+											],
+											"cookie": [],
+											"body": "{\n    \"message\": \"Added page to competitor successfully\",\n    \"data\": [\n        {\n            \"id\": \"4a51c14e-8c69-45d7-b4f8-9585ceb6d354\",\n            \"competitor_id\": \"7ed09031-3928-4fd6-a5f7-ec54c40c7494\",\n            \"url\": \"https://www.commonroom.io/customers/\",\n            \"title\": \"Customers | Common Room\",\n            \"capture_profile\": {\n                \"capture_beyond_viewport\": true,\n                \"full_page\": true,\n                \"full_page_algorithm\": \"default\",\n                \"block_ads\": true,\n                \"block_cookie_banners\": true,\n                \"block_banners_by_heuristics\": true,\n                \"block_trackers\": true,\n                \"block_chats\": true,\n                \"dark_mode\": false,\n                \"reduced_motion\": true,\n                \"delay\": 0,\n                \"wait_until\": [\n                    \"networkidle2\",\n                    \"networkidle0\"\n                ]\n            },\n            \"diff_profile\": [\n                \"branding\",\n                \"customers\",\n                \"integration\",\n                \"product\",\n                \"pricing\",\n                \"partnerships\",\n                \"messaging\"\n            ],\n            \"status\": \"active\",\n            \"created_at\": \"2025-02-03T12:22:43.64932Z\",\n            \"updated_at\": \"2025-02-03T12:22:43.64932Z\"\n        }\n    ]\n}"
 										}
 									]
 								},
@@ -2911,9 +4039,9 @@
 											"script": {
 												"exec": [
 													"const helper = pm.require('byrd-client');",
-													"helper.debugVariableFromRequest('workspaceID');",
-													"helper.debugVariableFromRequest('competitorID');",
-													"helper.debugVariableFromRequest('pageID');"
+													"helper.debugVariableFromRequest('workspace_id');",
+													"helper.debugVariableFromRequest('competitor_id');",
+													"helper.debugVariableFromRequest('page_id');"
 												],
 												"type": "text/javascript",
 												"packages": {
@@ -2937,7 +4065,7 @@
 											}
 										},
 										"url": {
-											"raw": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/competitors/{{competitorID}}/pages/{{pageID}}",
+											"raw": "{{origin}}/api/public/v1/workspace/{{workspace_id}}/competitors/{{competitor_id}}/pages/{{page_id}}",
 											"host": [
 												"{{origin}}"
 											],
@@ -2946,11 +4074,11 @@
 												"public",
 												"v1",
 												"workspace",
-												"{{workspaceID}}",
+												"{{workspace_id}}",
 												"competitors",
-												"{{competitorID}}",
+												"{{competitor_id}}",
 												"pages",
-												"{{pageID}}"
+												"{{page_id}}"
 											]
 										}
 									},
@@ -3058,6 +4186,74 @@
 											],
 											"cookie": [],
 											"body": "{\n    \"message\": \"Updated page in competitor successfully\",\n    \"data\": {\n        \"id\": \"f8539ae4-1a10-4eb6-b003-04b2ca188d0b\",\n        \"competitor_id\": \"f14e7249-25cd-4453-9f0d-f2d61c5acb90\",\n        \"url\": \"https://www.google.com\",\n        \"capture_profile\": {\n            \"url\": \"https://www.google.com\",\n            \"capture_beyond_viewport\": true,\n            \"full_page\": true,\n            \"full_page_algorithm\": \"default\",\n            \"format\": \"png\",\n            \"image_quality\": 80,\n            \"block_ads\": true,\n            \"block_cookie_banners\": true,\n            \"block_banners_by_heuristics\": true,\n            \"block_trackers\": true,\n            \"block_chats\": true,\n            \"dark_mode\": false,\n            \"reduced_motion\": true,\n            \"delay\": 0,\n            \"timeout\": 60,\n            \"navigation_timeout\": 30,\n            \"wait_until\": [\n                \"networkidle2\",\n                \"networkidle0\"\n            ],\n            \"metadata_image_size\": true,\n            \"metadata_page_title\": true,\n            \"metadata_content\": true,\n            \"metadata_http_response_status_code\": true\n        },\n        \"diff_profile\": [\n            \"branding\",\n            \"customers\",\n            \"integration\",\n            \"product\",\n            \"pricing\",\n            \"partnerships\",\n            \"messaging\"\n        ],\n        \"status\": \"active\",\n        \"created_at\": \"2025-01-22T18:52:15.263339Z\",\n        \"updated_at\": \"2025-01-22T19:08:46.020358Z\"\n    }\n}"
+										},
+										{
+											"name": "Update page in a competitor",
+											"originalRequest": {
+												"method": "PUT",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"url\": \"https://www.screenstory.io/#product-features\",\n    \"capture_profile\": {\n        \"capture_beyond_viewport\": false,\n        \"full_page\": false\n    },\n    \"diff_profile\": [\n        \"product\",\n        \"branding\"\n    ]\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{origin}}/api/public/v1/workspace/{{workspace_id}}/competitors/{{competitor_id}}/pages/{{page_id}}",
+													"host": [
+														"{{origin}}"
+													],
+													"path": [
+														"api",
+														"public",
+														"v1",
+														"workspace",
+														"{{workspace_id}}",
+														"competitors",
+														"{{competitor_id}}",
+														"pages",
+														"{{page_id}}"
+													]
+												}
+											},
+											"status": "OK",
+											"code": 200,
+											"_postman_previewlanguage": "json",
+											"header": [
+												{
+													"key": "Date",
+													"value": "Mon, 03 Feb 2025 12:22:49 GMT"
+												},
+												{
+													"key": "Content-Type",
+													"value": "application/json"
+												},
+												{
+													"key": "Content-Length",
+													"value": "757"
+												},
+												{
+													"key": "Vary",
+													"value": "Origin"
+												},
+												{
+													"key": "X-Ratelimit-Limit",
+													"value": "100"
+												},
+												{
+													"key": "X-Ratelimit-Remaining",
+													"value": "95"
+												},
+												{
+													"key": "X-Ratelimit-Reset",
+													"value": "29"
+												}
+											],
+											"cookie": [],
+											"body": "{\n    \"message\": \"Updated page in competitor successfully\",\n    \"data\": {\n        \"id\": \"4a51c14e-8c69-45d7-b4f8-9585ceb6d354\",\n        \"competitor_id\": \"7ed09031-3928-4fd6-a5f7-ec54c40c7494\",\n        \"url\": \"https://www.screenstory.io/#product-features\",\n        \"title\": \"Best Mac Screen Recorder Tool | Capture and Record Screens with ScreenStory\",\n        \"capture_profile\": {\n            \"capture_beyond_viewport\": false,\n            \"full_page\": false,\n            \"full_page_algorithm\": \"default\",\n            \"block_ads\": true,\n            \"block_cookie_banners\": true,\n            \"block_banners_by_heuristics\": true,\n            \"block_trackers\": true,\n            \"block_chats\": true,\n            \"dark_mode\": false,\n            \"reduced_motion\": true,\n            \"delay\": 0,\n            \"wait_until\": [\n                \"networkidle2\",\n                \"networkidle0\"\n            ]\n        },\n        \"diff_profile\": [\n            \"product\",\n            \"branding\"\n        ],\n        \"status\": \"active\",\n        \"created_at\": \"2025-02-03T12:22:43.64932Z\",\n        \"updated_at\": \"2025-02-03T12:22:50.3925Z\"\n    }\n}"
 										}
 									]
 								},
@@ -3069,9 +4265,9 @@
 											"script": {
 												"exec": [
 													"const helper = pm.require('byrd-client');",
-													"helper.debugVariableFromRequest('workspaceID');",
-													"helper.debugVariableFromRequest('competitorID');",
-													"helper.debugVariableFromRequest('pageID');"
+													"helper.debugVariableFromRequest('workspace_id');",
+													"helper.debugVariableFromRequest('competitor_id');",
+													"helper.debugVariableFromRequest('page_id');"
 												],
 												"type": "text/javascript",
 												"packages": {
@@ -3086,7 +4282,7 @@
 										"method": "GET",
 										"header": [],
 										"url": {
-											"raw": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/competitors/{{competitorID}}/pages/{{pageID}}",
+											"raw": "{{origin}}/api/public/v1/workspace/{{workspace_id}}/competitors/{{competitor_id}}/pages/{{page_id}}",
 											"host": [
 												"{{origin}}"
 											],
@@ -3095,11 +4291,11 @@
 												"public",
 												"v1",
 												"workspace",
-												"{{workspaceID}}",
+												"{{workspace_id}}",
 												"competitors",
-												"{{competitorID}}",
+												"{{competitor_id}}",
 												"pages",
-												"{{pageID}}"
+												"{{page_id}}"
 											]
 										}
 									},
@@ -3198,6 +4394,65 @@
 											],
 											"cookie": [],
 											"body": "{\n    \"message\": \"Fetched page for competitor successfully\",\n    \"data\": {\n        \"id\": \"f8539ae4-1a10-4eb6-b003-04b2ca188d0b\",\n        \"competitor_id\": \"f14e7249-25cd-4453-9f0d-f2d61c5acb90\",\n        \"url\": \"https://about.scarf.sh/\",\n        \"capture_profile\": {\n            \"url\": \"https://about.scarf.sh/\",\n            \"capture_beyond_viewport\": true,\n            \"full_page\": true,\n            \"full_page_algorithm\": \"default\",\n            \"format\": \"png\",\n            \"image_quality\": 80,\n            \"block_ads\": true,\n            \"block_cookie_banners\": true,\n            \"block_banners_by_heuristics\": true,\n            \"block_trackers\": true,\n            \"block_chats\": true,\n            \"dark_mode\": false,\n            \"reduced_motion\": true,\n            \"delay\": 0,\n            \"timeout\": 60,\n            \"navigation_timeout\": 30,\n            \"wait_until\": [\n                \"networkidle2\",\n                \"networkidle0\"\n            ],\n            \"metadata_image_size\": true,\n            \"metadata_page_title\": true,\n            \"metadata_content\": true,\n            \"metadata_http_response_status_code\": true\n        },\n        \"diff_profile\": [\n            \"branding\",\n            \"customers\",\n            \"integration\",\n            \"product\",\n            \"pricing\",\n            \"partnerships\",\n            \"messaging\"\n        ],\n        \"status\": \"active\",\n        \"created_at\": \"2025-01-22T18:52:15.263339Z\",\n        \"updated_at\": \"2025-01-22T18:52:15.263339Z\"\n    }\n}"
+										},
+										{
+											"name": "Get Page by ID",
+											"originalRequest": {
+												"method": "GET",
+												"header": [],
+												"url": {
+													"raw": "{{origin}}/api/public/v1/workspace/{{workspace_id}}/competitors/{{competitor_id}}/pages/{{page_id}}",
+													"host": [
+														"{{origin}}"
+													],
+													"path": [
+														"api",
+														"public",
+														"v1",
+														"workspace",
+														"{{workspace_id}}",
+														"competitors",
+														"{{competitor_id}}",
+														"pages",
+														"{{page_id}}"
+													]
+												}
+											},
+											"status": "OK",
+											"code": 200,
+											"_postman_previewlanguage": "json",
+											"header": [
+												{
+													"key": "Date",
+													"value": "Mon, 03 Feb 2025 12:22:56 GMT"
+												},
+												{
+													"key": "Content-Type",
+													"value": "application/json"
+												},
+												{
+													"key": "Content-Length",
+													"value": "758"
+												},
+												{
+													"key": "Vary",
+													"value": "Origin"
+												},
+												{
+													"key": "X-Ratelimit-Limit",
+													"value": "100"
+												},
+												{
+													"key": "X-Ratelimit-Remaining",
+													"value": "94"
+												},
+												{
+													"key": "X-Ratelimit-Reset",
+													"value": "22"
+												}
+											],
+											"cookie": [],
+											"body": "{\n    \"message\": \"Fetched page for competitor successfully\",\n    \"data\": {\n        \"id\": \"4a51c14e-8c69-45d7-b4f8-9585ceb6d354\",\n        \"competitor_id\": \"7ed09031-3928-4fd6-a5f7-ec54c40c7494\",\n        \"url\": \"https://www.screenstory.io/#product-features\",\n        \"title\": \"Best Mac Screen Recorder Tool | Capture and Record Screens with ScreenStory\",\n        \"capture_profile\": {\n            \"capture_beyond_viewport\": false,\n            \"full_page\": false,\n            \"full_page_algorithm\": \"default\",\n            \"block_ads\": true,\n            \"block_cookie_banners\": true,\n            \"block_banners_by_heuristics\": true,\n            \"block_trackers\": true,\n            \"block_chats\": true,\n            \"dark_mode\": false,\n            \"reduced_motion\": true,\n            \"delay\": 0,\n            \"wait_until\": [\n                \"networkidle2\",\n                \"networkidle0\"\n            ]\n        },\n        \"diff_profile\": [\n            \"product\",\n            \"branding\"\n        ],\n        \"status\": \"active\",\n        \"created_at\": \"2025-02-03T12:22:43.64932Z\",\n        \"updated_at\": \"2025-02-03T12:22:50.3925Z\"\n    }\n}"
 										}
 									]
 								},
@@ -3209,9 +4464,9 @@
 											"script": {
 												"exec": [
 													"const helper = pm.require('byrd-client');",
-													"helper.debugVariableFromRequest('workspaceID');",
-													"helper.debugVariableFromRequest('competitorID');",
-													"helper.debugVariableFromRequest('pageID');"
+													"helper.debugVariableFromRequest('workspace_id');",
+													"helper.debugVariableFromRequest('competitor_id');",
+													"helper.debugVariableFromRequest('page_id');"
 												],
 												"type": "text/javascript",
 												"packages": {
@@ -3226,7 +4481,7 @@
 										"method": "DELETE",
 										"header": [],
 										"url": {
-											"raw": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/competitors/{{competitorID}}/pages/{{pageID}}",
+											"raw": "{{origin}}/api/public/v1/workspace/{{workspace_id}}/competitors/{{competitor_id}}/pages/{{page_id}}",
 											"host": [
 												"{{origin}}"
 											],
@@ -3235,11 +4490,11 @@
 												"public",
 												"v1",
 												"workspace",
-												"{{workspaceID}}",
+												"{{workspace_id}}",
 												"competitors",
-												"{{competitorID}}",
+												"{{competitor_id}}",
 												"pages",
-												"{{pageID}}"
+												"{{page_id}}"
 											]
 										}
 									},
@@ -3345,9 +4600,9 @@
 											"script": {
 												"exec": [
 													"const helper = pm.require('byrd-client');",
-													"helper.debugVariableFromRequest('workspaceID');",
-													"helper.debugVariableFromRequest('competitorID');",
-													"helper.debugVariableFromRequest('pageID');"
+													"helper.debugVariableFromRequest('workspace_id');",
+													"helper.debugVariableFromRequest('competitor_id');",
+													"helper.debugVariableFromRequest('page_id');"
 												],
 												"type": "text/javascript",
 												"packages": {
@@ -3362,7 +4617,7 @@
 										"method": "GET",
 										"header": [],
 										"url": {
-											"raw": "{{origin}}/api/public/v1/workspace/{{workspaceID}}/competitors/{{competitorID}}/pages/{{pageID}}/history",
+											"raw": "{{origin}}/api/public/v1/workspace/{{workspace_id}}/competitors/{{competitor_id}}/pages/{{page_id}}/history",
 											"host": [
 												"{{origin}}"
 											],
@@ -3371,11 +4626,11 @@
 												"public",
 												"v1",
 												"workspace",
-												"{{workspaceID}}",
+												"{{workspace_id}}",
 												"competitors",
-												"{{competitorID}}",
+												"{{competitor_id}}",
 												"pages",
-												"{{pageID}}",
+												"{{page_id}}",
 												"history"
 											]
 										}
@@ -3424,6 +4679,66 @@
 											],
 											"cookie": [],
 											"body": "{\n    \"message\": \"Listed page history successfully\",\n    \"data\": {\n        \"hasMore\": false,\n        \"history\": []\n    }\n}"
+										},
+										{
+											"name": "List page history",
+											"originalRequest": {
+												"method": "GET",
+												"header": [],
+												"url": {
+													"raw": "{{origin}}/api/public/v1/workspace/{{workspace_id}}/competitors/{{competitor_id}}/pages/{{page_id}}/history",
+													"host": [
+														"{{origin}}"
+													],
+													"path": [
+														"api",
+														"public",
+														"v1",
+														"workspace",
+														"{{workspace_id}}",
+														"competitors",
+														"{{competitor_id}}",
+														"pages",
+														"{{page_id}}",
+														"history"
+													]
+												}
+											},
+											"status": "OK",
+											"code": 200,
+											"_postman_previewlanguage": "json",
+											"header": [
+												{
+													"key": "Date",
+													"value": "Mon, 03 Feb 2025 12:23:03 GMT"
+												},
+												{
+													"key": "Content-Type",
+													"value": "application/json"
+												},
+												{
+													"key": "Content-Length",
+													"value": "85"
+												},
+												{
+													"key": "Vary",
+													"value": "Origin"
+												},
+												{
+													"key": "X-Ratelimit-Limit",
+													"value": "100"
+												},
+												{
+													"key": "X-Ratelimit-Remaining",
+													"value": "93"
+												},
+												{
+													"key": "X-Ratelimit-Reset",
+													"value": "15"
+												}
+											],
+											"cookie": [],
+											"body": "{\n    \"message\": \"Listed page history successfully\",\n    \"data\": {\n        \"has_more\": false,\n        \"history\": []\n    }\n}"
 										}
 									]
 								}
@@ -3471,65 +4786,6 @@
 				{
 					"name": "User Routes",
 					"item": [
-						{
-							"name": "Delete Account",
-							"request": {
-								"method": "DELETE",
-								"header": [],
-								"url": {
-									"raw": "{{origin}}/api/public/v1/users",
-									"host": [
-										"{{origin}}"
-									],
-									"path": [
-										"api",
-										"public",
-										"v1",
-										"users"
-									]
-								}
-							},
-							"response": [
-								{
-									"name": "Delete Account",
-									"originalRequest": {
-										"method": "DELETE",
-										"header": [],
-										"url": {
-											"raw": "{{origin}}/api/public/v1/users",
-											"host": [
-												"{{origin}}"
-											],
-											"path": [
-												"api",
-												"public",
-												"v1",
-												"users"
-											]
-										}
-									},
-									"status": "OK",
-									"code": 200,
-									"_postman_previewlanguage": "json",
-									"header": [
-										{
-											"key": "Date",
-											"value": "Mon, 20 Jan 2025 22:38:46 GMT"
-										},
-										{
-											"key": "Content-Type",
-											"value": "application/json"
-										},
-										{
-											"key": "Content-Length",
-											"value": "39"
-										}
-									],
-									"cookie": [],
-									"body": "{\n    \"message\": \"User deleted successfully\"\n}"
-								}
-							]
-						},
 						{
 							"name": "Get Account",
 							"request": {
@@ -3590,6 +4846,119 @@
 									],
 									"cookie": [],
 									"body": "{\n    \"message\": \"User retrieved successfully\",\n    \"data\": {\n        \"id\": \"0844638a-7d20-4fd0-90bd-bf3ee20d8513\",\n        \"clerk_id\": \"user_2rAC4xgrgT1JdlEvKKrcJAUUEdJ\",\n        \"email\": \"xnayankumar@gmail.com\",\n        \"name\": \"Xnayankumar\",\n        \"status\": \"pending\",\n        \"created_at\": \"2025-01-30T15:21:51.242492Z\",\n        \"updated_at\": \"2025-01-30T18:30:04.447635Z\"\n    }\n}"
+								},
+								{
+									"name": "Get Account",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{origin}}/api/public/v1/users",
+											"host": [
+												"{{origin}}"
+											],
+											"path": [
+												"api",
+												"public",
+												"v1",
+												"users"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Mon, 03 Feb 2025 12:24:05 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "297"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin"
+										},
+										{
+											"key": "X-Ratelimit-Limit",
+											"value": "100"
+										},
+										{
+											"key": "X-Ratelimit-Remaining",
+											"value": "99"
+										},
+										{
+											"key": "X-Ratelimit-Reset",
+											"value": "60"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"User retrieved successfully\",\n    \"data\": {\n        \"id\": \"9c3138f1-600c-4f3d-a825-b2c6754f2c5f\",\n        \"clerk_id\": \"user_2rAC4xgrgT1JdlEvKKrcJAUUEdJ\",\n        \"email\": \"xnayankumar@gmail.com\",\n        \"name\": \"Xnayankumar\",\n        \"status\": \"active\",\n        \"created_at\": \"2025-02-03T12:09:43.598105Z\",\n        \"updated_at\": \"2025-02-03T12:21:24.182413Z\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Delete Account",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{origin}}/api/public/v1/users",
+									"host": [
+										"{{origin}}"
+									],
+									"path": [
+										"api",
+										"public",
+										"v1",
+										"users"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Delete Account",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{origin}}/api/public/v1/users",
+											"host": [
+												"{{origin}}"
+											],
+											"path": [
+												"api",
+												"public",
+												"v1",
+												"users"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Mon, 20 Jan 2025 22:38:46 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "39"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"User deleted successfully\"\n}"
 								}
 							]
 						},
@@ -3852,7 +5221,7 @@
 								"method": "POST",
 								"header": [],
 								"url": {
-									"raw": "{{origin}}/api/private/v1/workflow/{{workflowType}}/job",
+									"raw": "{{origin}}/api/private/v1/workflow/{{workflow_type}}/job",
 									"host": [
 										"{{origin}}"
 									],
@@ -3861,7 +5230,7 @@
 										"private",
 										"v1",
 										"workflow",
-										"{{workflowType}}",
+										"{{workflow_type}}",
 										"job"
 									]
 								}
@@ -3922,7 +5291,7 @@
 									}
 								],
 								"url": {
-									"raw": "{{origin}}/api/private/v1/workflow/history?workflowType=report",
+									"raw": "{{origin}}/api/private/v1/workflow/history?workflow_type=report",
 									"host": [
 										"{{origin}}"
 									],
@@ -3935,7 +5304,7 @@
 									],
 									"query": [
 										{
-											"key": "workflowType",
+											"key": "workflow_type",
 											"value": "report"
 										}
 									]
@@ -4001,7 +5370,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{origin}}/api/private/v1/workflow/{{workflowType}}/job/{{jobID}}",
+									"raw": "{{origin}}/api/private/v1/workflow/{{workflow_type}}/job/{{job_id}}",
 									"host": [
 										"{{origin}}"
 									],
@@ -4010,9 +5379,9 @@
 										"private",
 										"v1",
 										"workflow",
-										"{{workflowType}}",
+										"{{workflow_type}}",
 										"job",
-										"{{jobID}}"
+										"{{job_id}}"
 									]
 								}
 							},
@@ -4066,7 +5435,7 @@
 								"method": "DELETE",
 								"header": [],
 								"url": {
-									"raw": "{{origin}}/api/private/v1/workflow/{{workflowType}}/job/{{jobID}}",
+									"raw": "{{origin}}/api/private/v1/workflow/{{workflow_type}}/job/{{job_id}}",
 									"host": [
 										"{{origin}}"
 									],
@@ -4075,9 +5444,9 @@
 										"private",
 										"v1",
 										"workflow",
-										"{{workflowType}}",
+										"{{workflow_type}}",
 										"job",
-										"{{jobID}}"
+										"{{job_id}}"
 									]
 								}
 							},
@@ -4089,7 +5458,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{origin}}/api/private/v1/workflow/checkpoint?jobStatus=running&workflowType={{workflowType}}",
+									"raw": "{{origin}}/api/private/v1/workflow/checkpoint?job_status=running&workflow_type={{workflow_type}}",
 									"host": [
 										"{{origin}}"
 									],
@@ -4102,12 +5471,12 @@
 									],
 									"query": [
 										{
-											"key": "jobStatus",
+											"key": "job_status",
 											"value": "running"
 										},
 										{
-											"key": "workflowType",
-											"value": "{{workflowType}}"
+											"key": "workflow_type",
+											"value": "{{workflow_type}}"
 										}
 									]
 								}
@@ -4243,12 +5612,12 @@
 									"mode": "formdata",
 									"formdata": [
 										{
-											"key": "version1",
+											"key": "version_1",
 											"type": "file",
 											"src": "/Users/wizenheimer/Code/byrd/backend/src/test/fixtures/1.html"
 										},
 										{
-											"key": "version2",
+											"key": "version_2",
 											"type": "file",
 											"src": "/Users/wizenheimer/Code/byrd/backend/src/test/fixtures/2.html"
 										},
@@ -4369,12 +5738,12 @@
 									"mode": "formdata",
 									"formdata": [
 										{
-											"key": "version1",
+											"key": "version_1",
 											"type": "file",
 											"src": "/Users/wizenheimer/Code/byrd/backend/src/test/fixtures/1.html"
 										},
 										{
-											"key": "version2",
+											"key": "version_2",
 											"type": "file",
 											"src": "/Users/wizenheimer/Code/byrd/backend/src/test/fixtures/2.html"
 										},
@@ -4476,7 +5845,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{origin}}/api/private/v1/schedule/?pageNumber=1&pageSize=10",
+									"raw": "{{origin}}/api/private/v1/schedule/?_page=1&_limit=10",
 									"host": [
 										"{{origin}}"
 									],
@@ -4489,11 +5858,11 @@
 									],
 									"query": [
 										{
-											"key": "pageNumber",
+											"key": "_page",
 											"value": "1"
 										},
 										{
-											"key": "pageSize",
+											"key": "_limit",
 											"value": "10"
 										}
 									]
@@ -4665,7 +6034,7 @@
 									}
 								},
 								"url": {
-									"raw": "{{origin}}/api/private/v1/schedule/{{scheduleID}}",
+									"raw": "{{origin}}/api/private/v1/schedule/{{schedule_id}}",
 									"host": [
 										"{{origin}}"
 									],
@@ -4674,7 +6043,7 @@
 										"private",
 										"v1",
 										"schedule",
-										"{{scheduleID}}"
+										"{{schedule_id}}"
 									]
 								}
 							},
@@ -4744,7 +6113,7 @@
 									}
 								},
 								"url": {
-									"raw": "{{origin}}/api/private/v1/schedule/{{scheduleID}}",
+									"raw": "{{origin}}/api/private/v1/schedule/{{schedule_id}}",
 									"host": [
 										"{{origin}}"
 									],
@@ -4753,7 +6122,7 @@
 										"private",
 										"v1",
 										"schedule",
-										"{{scheduleID}}"
+										"{{schedule_id}}"
 									]
 								}
 							},
@@ -4823,7 +6192,7 @@
 									}
 								},
 								"url": {
-									"raw": "{{origin}}/api/private/v1/schedule/{{scheduleID}}",
+									"raw": "{{origin}}/api/private/v1/schedule/{{schedule_id}}",
 									"host": [
 										"{{origin}}"
 									],
@@ -4832,7 +6201,7 @@
 										"private",
 										"v1",
 										"schedule",
-										"{{scheduleID}}"
+										"{{schedule_id}}"
 									]
 								}
 							},
@@ -5071,19 +6440,19 @@
 	],
 	"variable": [
 		{
-			"key": "workspaceID",
+			"key": "workspace_id",
 			"value": "1"
 		},
 		{
-			"key": "userID",
+			"key": "user_id",
 			"value": "2"
 		},
 		{
-			"key": "competitorID",
+			"key": "competitor_id",
 			"value": "1"
 		},
 		{
-			"key": "pageID",
+			"key": "page_id",
 			"value": "1"
 		},
 		{
@@ -5091,19 +6460,19 @@
 			"value": "http://localhost:8080"
 		},
 		{
-			"key": "workflowType",
+			"key": "workflow_type",
 			"value": "workflowType"
 		},
 		{
-			"key": "taskID",
+			"key": "task_id",
 			"value": "taskID"
 		},
 		{
-			"key": "jobID",
+			"key": "job_id",
 			"value": "jobID"
 		},
 		{
-			"key": "scheduleID",
+			"key": "schedule_id",
 			"value": "f40b25e0-4caf-4b3d-972c-0b96a2076b57"
 		}
 	]

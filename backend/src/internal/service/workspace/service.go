@@ -99,12 +99,12 @@ func (ws *workspaceService) CreateWorkspace(ctx context.Context, workspaceOwner 
 	}
 	// Step 4: Check if the user creation request is valid
 	// If not, truncate the list to the maximum allowed limit
-	pageLimit, err := workspace.GetMaxPages()
+	creationLimit, err := workspace.GetMaxCompetitors()
 	if err != nil {
 		return nil, err
 	}
-	if len(pages) > pageLimit {
-		pages = pages[:pageLimit]
+	if len(pages) > creationLimit {
+		pages = pages[:creationLimit]
 	}
 
 	// Step 5: Add competitors to the workspace

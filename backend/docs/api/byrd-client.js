@@ -1,6 +1,7 @@
-// auth-helper.js
+// byrd-client.js
 
 const helper = {
+  // Added userIndex parameter with default value of 0
   setAuthToken: async function (request, userIndex = 0, tokenUrl) {
     try {
       const url = tokenUrl || 'http://localhost:4000/tokens';
@@ -41,7 +42,7 @@ const helper = {
         jsonData.data.competitors[0].competitor) {
 
         const competitorId = jsonData.data.competitors[0].competitor.id;
-        pm.collectionVariables.set("competitorID", competitorId);
+        pm.collectionVariables.set("competitor_id", competitorId);
         console.log(`Competitor ID set to: ${competitorId}`);
         return true;
       } else {
@@ -58,7 +59,7 @@ const helper = {
       const jsonData = response.json();
       if (jsonData.data && jsonData.data.id) {
         const competitorId = jsonData.data.id;
-        pm.collectionVariables.set("competitorID", competitorId);
+        pm.collectionVariables.set("competitor_id", competitorId);
         console.log(`Competitor ID set to: ${competitorId}`);
         return true;
       } else {
@@ -78,7 +79,7 @@ const helper = {
         jsonData.data.workspaces.length > 0) {
 
         const workspaceId = jsonData.data.workspaces[0].id;
-        pm.collectionVariables.set("workspaceID", workspaceId);
+        pm.collectionVariables.set("workspace_id", workspaceId);
         console.log(`Workspace ID set to: ${workspaceId}`);
         return true;
       } else {
@@ -95,7 +96,7 @@ const helper = {
       const jsonData = response.json();
       if (jsonData.data && jsonData.data.id) {
         const workspaceId = jsonData.data.id;
-        pm.collectionVariables.set("workspaceID", workspaceId);
+        pm.collectionVariables.set("workspace_id", workspaceId);
         console.log(`Workspace ID set to: ${workspaceId}`);
         return true;
       } else {
@@ -157,7 +158,7 @@ const helper = {
   },
   setUserID: function (userID) {
     if (userID) {
-      pm.variables.set('userID', userID);
+      pm.variables.set('user_id', userID);
       console.log('Set userID variable:', userID);
       return true;
     }
@@ -171,8 +172,8 @@ const helper = {
         const userId = jsonData.data[0].user_id;
 
         // Set as both environment and collection variable for flexibility
-        pm.environment.set('userID', userId);
-        pm.collectionVariables.set('userID', userId);
+        pm.environment.set('user_id', userId);
+        pm.collectionVariables.set('user_id', userId);
 
         console.log(`User ID set successfully: ${userId}`);
         return true;
@@ -204,7 +205,7 @@ Resolved Value: ${collectionValue || envValue || 'not available'}
         jsonData.data.pages.length > 0) {
 
         const pageId = jsonData.data.pages[0].id;
-        pm.collectionVariables.set("pageID", pageId);
+        pm.collectionVariables.set("page_id", pageId);
         console.log(`Page ID set from list to: ${pageId}`);
         return true;
       } else {
@@ -224,7 +225,7 @@ Resolved Value: ${collectionValue || envValue || 'not available'}
         jsonData.data.length > 0) {
 
         const pageId = jsonData.data[0].id;
-        pm.collectionVariables.set("pageID", pageId);
+        pm.collectionVariables.set("page_id", pageId);
         console.log(`Page ID set from create to: ${pageId}`);
         return true;
       } else {
@@ -267,7 +268,7 @@ Resolved Value: ${collectionValue || envValue || 'not available'}
   },
   // Get the current job ID
   getJobId: function () {
-    const jobId = pm.collectionVariables.get("jobID");
+    const jobId = pm.collectionVariables.get("job_id");
     if (!jobId) {
       console.warn('No job ID found in collection variables');
     }
@@ -278,7 +279,7 @@ Resolved Value: ${collectionValue || envValue || 'not available'}
       const jsonData = response.json();
       if (jsonData.data && jsonData.data.jobID) {
         const jobId = jsonData.data.jobID;
-        pm.collectionVariables.set("jobID", jobId);
+        pm.collectionVariables.set("job_id", jobId);
         console.log(`Job ID set to: ${jobId}`);
         return true;
       } else {
@@ -295,7 +296,7 @@ Resolved Value: ${collectionValue || envValue || 'not available'}
       const jsonData = response.json();
       if (jsonData.data && jsonData.data.scheduleID) {
         const scheduleId = jsonData.data.scheduleID;
-        pm.collectionVariables.set("scheduleID", scheduleId);
+        pm.collectionVariables.set("schedule_id", scheduleId);
         console.log(`Schedule ID set to: ${scheduleId}`);
         return true;
       } else {
