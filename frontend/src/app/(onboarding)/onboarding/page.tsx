@@ -28,7 +28,12 @@ export default function OnboardingComplete() {
 	const { isLoaded, isSignedIn, user } = useUser();
 	const { getToken } = useAuth();
 	const router = useRouter();
-	const onboardingState = useOnboardingStore();
+	const step = useOnboardingStore.use.currentStep();
+	const competitors = useOnboardingStore.use.competitors();
+	const profiles = useOnboardingStore.use.profiles();
+	const features = useOnboardingStore.use.features();
+	const team = useOnboardingStore.use.team();
+	const resetState = useOnboardingStore.use.reset();
 	const persistAttemptedRef = useRef(false);
 	const retryCountRef = useRef(0);
 	const { toast } = useToast();
@@ -42,7 +47,7 @@ export default function OnboardingComplete() {
 			if (!isLoaded) return;
 
 			if (!isSignedIn) {
-				onboardingState.reset();
+				resetState();
 				router.push("/");
 				return;
 			}
@@ -54,11 +59,11 @@ export default function OnboardingComplete() {
 			const attemptPersist = async () => {
 				try {
 					const stateData: OnboardingState = {
-						currentStep: onboardingState.currentStep,
-						competitors: onboardingState.competitors,
-						profiles: onboardingState.profiles,
-						features: onboardingState.features,
-						team: onboardingState.team,
+						currentStep: step,
+						competitors: competitors,
+						profiles: profiles,
+						features: features,
+						team: team,
 					};
 
 					const token = await getToken();
@@ -70,7 +75,7 @@ export default function OnboardingComplete() {
 					const result = await persistOnboardingData(onboardingData, token);
 
 					if (result.success) {
-						onboardingState.reset();
+						resetState();
 						router.push("/waitlist");
 						return true;
 					}
@@ -91,6 +96,10 @@ export default function OnboardingComplete() {
 				retryCountRef.current += 1;
 				if (retryCountRef.current < 3) {
 					await new Promise((resolve) => setTimeout(resolve, 1000));
+				} else {
+					// Reset onboarding state if all retries failed
+					// This will prevent the user from being stuck in the onboarding flow
+					resetState();
 				}
 			}
 
@@ -103,7 +112,6 @@ export default function OnboardingComplete() {
 					<ToastAction
 						altText="Try Again"
 						onClick={() => {
-							onboardingState.reset();
 							router.push("/");
 						}}
 					>
@@ -114,7 +122,20 @@ export default function OnboardingComplete() {
 		};
 
 		persistData();
-	}, [isLoaded, isSignedIn, user, getToken, onboardingState, router, toast]);
+	}, [
+		isLoaded,
+		isSignedIn,
+		user,
+		getToken,
+		router,
+		toast,
+		resetState,
+		step,
+		competitors,
+		profiles,
+		features,
+		team,
+	]);
 
 	return (
 		<LoadingStep

@@ -4,10 +4,13 @@ import LoadingStep from "@/app/(onboarding)/components/steps/LoadingStep";
 import { FEATURE_CARD, STEPS, STEP_INFO } from "@/app/constants/onboarding";
 import { useOnboardingStore } from "@/app/store/onboarding";
 import { Button } from "@/components/ui/button";
+import { ToastAction } from "@/components/ui/toast";
+import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@clerk/nextjs";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useEffect, useRef } from "react";
 import AuthStep from "../components/steps/AuthStep";
 import CompetitorStep from "../components/steps/CompetitorStep";
 import FeatureStep from "../components/steps/FeaturesStep";
@@ -18,7 +21,33 @@ const MultiStepOnboarding = () => {
 	const { isLoaded, isSignedIn } = useUser();
 	const currentStep = useOnboardingStore.use.currentStep();
 	const setCurrentStep = useOnboardingStore.use.setCurrentStep();
+	const resetState = useOnboardingStore.use.reset();
 	const router = useRouter();
+	const { toast } = useToast();
+	const hasShownToast = useRef(false);
+
+	useEffect(() => {
+		// Only show toast once when component mounts and there's saved progress
+		if (!hasShownToast.current && currentStep > STEPS.COMPETITOR) {
+			toast({
+				title: "Welcome back!",
+				description: "You can pick up right where you left off.",
+				duration: 5000,
+				action: (
+					<ToastAction
+						altText="Start over"
+						onClick={() => {
+							resetState();
+							router.push("/");
+						}}
+					>
+						Start over
+					</ToastAction>
+				),
+			});
+			hasShownToast.current = true;
+		}
+	}, [currentStep, toast, resetState, router]);
 
 	// If still loading auth state or already signed in, show loading
 	if (!isLoaded) {
@@ -28,6 +57,9 @@ const MultiStepOnboarding = () => {
 	// Handle next step
 	const handleNext = () => {
 		if (currentStep < STEPS.AUTH) {
+			if (currentStep === STEPS.COMPETITOR) {
+				hasShownToast.current = true;
+			}
 			setCurrentStep(currentStep + 1);
 		}
 	};
