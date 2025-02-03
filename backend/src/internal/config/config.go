@@ -131,8 +131,13 @@ type WorkflowConfig struct {
 }
 
 func Load() (*Config, error) {
-	// Load environment variables from a .env file.
-	if err := LoadEnv(); err != nil {
+	// Load environment variables from a .env file
+	envProfile := GetEnv("ENV_PROFILE", "development", utils.StrParser)
+	// LoadEnv is a function that loads environment variables from a .env file
+	// It returns an error only if both
+	// - The file is not found
+	// - The environment profile is not "production"
+	if err := LoadEnv(); err != nil && envProfile != "production" {
 		return nil, err
 	}
 
