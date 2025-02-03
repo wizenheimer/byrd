@@ -11,28 +11,23 @@ import type {
   WorkspaceUpdateResponse,
 } from "../types/api";
 
-// Workspace Management
 // biome-ignore lint/complexity/noStaticOnlyClass:
 export class Workspace {
   static async create(
     request: WorkspaceCreationRequest,
-    token: string,
-    origin: string
+    token: string
   ): Promise<WorkspaceCreationResponse["data"]> {
     const { data } = await axios.post<WorkspaceCreationResponse>(
-      `${origin}/api/public/v1/workspace`,
+      `${process.env.BACKEND_ORIGIN}/api/public/v1/workspace`,
       request,
       { headers: { Authorization: `Bearer ${token}` } }
     );
     return data.data;
   }
 
-  static async list(
-    token: string,
-    origin: string
-  ): Promise<WorkspaceListResponse["data"]> {
+  static async list(token: string): Promise<WorkspaceListResponse["data"]> {
     const { data } = await axios.get<WorkspaceListResponse>(
-      `${origin}/api/public/v1/workspace`,
+      `${process.env.BACKEND_ORIGIN}/api/public/v1/workspace`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
     return data.data;
@@ -40,11 +35,10 @@ export class Workspace {
 
   static async get(
     id: string,
-    token: string,
-    origin: string
+    token: string
   ): Promise<WorkspaceGetResponse["data"]> {
     const { data } = await axios.get<WorkspaceGetResponse>(
-      `${origin}/api/public/v1/workspace/${id}`,
+      `${process.env.BACKEND_ORIGIN}/api/public/v1/workspace/${id}`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
     return data.data;
@@ -53,11 +47,10 @@ export class Workspace {
   static async update(
     workspaceId: string,
     request: WorkspaceUpdateRequest,
-    token: string,
-    origin: string
+    token: string
   ): Promise<WorkspaceUpdateResponse["data"]> {
     const { data } = await axios.put<WorkspaceUpdateResponse>(
-      `${origin}/api/public/v1/workspace/${workspaceId}`,
+      `${process.env.BACKEND_ORIGIN}/api/public/v1/workspace/${workspaceId}`,
       request,
       { headers: { Authorization: `Bearer ${token}` } }
     );
@@ -66,11 +59,10 @@ export class Workspace {
 
   static async join(
     workspaceId: string,
-    token: string,
-    origin: string
+    token: string
   ): Promise<WorkspaceJoinResponse["data"]> {
     const { data } = await axios.post<WorkspaceJoinResponse>(
-      `${origin}/api/public/v1/workspace/${workspaceId}/join`,
+      `${process.env.BACKEND_ORIGIN}/api/public/v1/workspace/${workspaceId}/join`,
       {},
       { headers: { Authorization: `Bearer ${token}` } }
     );
@@ -79,11 +71,10 @@ export class Workspace {
 
   static async exit(
     workspaceId: string,
-    token: string,
-    origin: string
+    token: string
   ): Promise<WorkspaceExitResponse["data"]> {
     const { data } = await axios.post<WorkspaceExitResponse>(
-      `${origin}/api/public/v1/workspace/${workspaceId}/exit`,
+      `${process.env.BACKEND_ORIGIN}/api/public/v1/workspace/${workspaceId}/exit`,
       {},
       { headers: { Authorization: `Bearer ${token}` } }
     );
@@ -92,11 +83,10 @@ export class Workspace {
 
   static async delete(
     workspaceId: string,
-    token: string,
-    origin: string
+    token: string
   ): Promise<WorkspaceDeleteResponse["data"]> {
     const { data } = await axios.delete<WorkspaceDeleteResponse>(
-      `${origin}/api/public/v1/workspace/${workspaceId}`,
+      `${process.env.BACKEND_ORIGIN}/api/public/v1/workspace/${workspaceId}`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
     return data.data;
