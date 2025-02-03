@@ -9,7 +9,11 @@ import type {
 import type { PageHistory } from "./page_history";
 import type { User } from "./user";
 import type { Workspace } from "./workspace";
-import type { WorkspaceRole, WorkspaceUser } from "./workspace_user";
+import type {
+  MembershipStatus,
+  WorkspaceRole,
+  WorkspaceUser,
+} from "./workspace_user";
 
 // Common Constants
 export const DEFAULT_PAGE_NUMBER = 1;
@@ -42,14 +46,17 @@ export interface PaginationParams {
   // _page and _limit are used by reactquery to handle pagination
   _page?: number;
   _limit?: number;
-  includePages?: boolean;
+}
+
+export interface PaginationParamsWithPageOptions extends PaginationParams {
+  include_pages?: boolean;
 }
 
 export interface PaginatedResponse<T> {
   /** Whether there are more items */
   has_more: boolean;
   /** Total number of items */
-  total: number;
+  // total: number;
   /** Items for the current page */
   items: T[];
 }
@@ -67,8 +74,13 @@ export interface WorkspaceUpdateRequest {
   name?: string;
 }
 
+interface WorkspaceListData {
+  workspaces: Workspace[];
+  membership_status: MembershipStatus;
+}
+
 export interface WorkspaceCreationResponse extends ApiResponse<Workspace> {}
-export interface WorkspaceListResponse extends ApiResponse<Workspace[]> {}
+export interface WorkspaceListResponse extends ApiResponse<WorkspaceListData> {}
 export interface WorkspaceGetResponse extends ApiResponse<Workspace> {}
 export interface WorkspaceUpdateResponse
   extends ApiResponse<{
@@ -89,7 +101,7 @@ export interface WorkspaceExitResponse
 
 export interface WorkspaceDeleteResponse
   extends ApiResponse<{
-    status: string;
+    workspace_status: string;
     workspace_id: string;
   }> {}
 
@@ -100,9 +112,7 @@ export interface CompetitorsListResponse {
 
 export type CompetitorsApiResponse = ApiResponse<CompetitorsListResponse>;
 
-export interface CreateCompetitorRequest {
-  url: string;
-}
+export type CreateCompetitorRequest = CreatePageRequest[];
 
 export interface CreateCompetitorResponse extends ApiResponse<Competitor> {}
 export interface GetCompetitorResponse
@@ -177,6 +187,9 @@ export type WorkspaceUsersResponse = ApiResponse<
 >;
 
 export type AddUsersToWorkspaceResponse = ApiResponse<WorkspaceUser[]>;
+
+export interface CreateOrUpdateUserResponse extends ApiResponse<User> {}
+
 export type UpdateWorkspaceUserRoleResponse = ApiResponse<{
   role: WorkspaceRole;
 }>;
@@ -190,3 +203,18 @@ export interface RemoveUserResponse
 export interface ListPagesQueryParams extends PaginationParams {
   include_pages?: boolean;
 }
+
+export interface ListReportsResponse
+  extends ApiResponse<{
+    reports: Report[];
+    has_more: boolean;
+  }> {}
+
+export interface CreateReportResponse extends ApiResponse<Report> {}
+
+export interface DispatchReportRequest {
+  /** List of email addresses to send the report to */
+  emails: string[];
+}
+
+export interface DispatchReportResponse extends ApiResponse<void> {}
