@@ -38,7 +38,7 @@ func (wh *WorkspaceHandler) ListCompetitorsForWorkspace(c *fiber.Ctx) error {
 		return sendErrorResponse(c, wh.logger, fiber.StatusInternalServerError, "Could not list workspace competitors", err.Error())
 	}
 
-	includePages := c.Query("includePages", "false") == "true"
+	includePages := c.Query("include_pages", "false") == "true"
 
 	// Iterate through the competitors and list out the pages for each competitor if includePages is true
 	for _, competitor := range competitors {
@@ -57,7 +57,7 @@ func (wh *WorkspaceHandler) ListCompetitorsForWorkspace(c *fiber.Ctx) error {
 
 	return sendDataResponse(c, fiber.StatusOK, "Listed workspace competitors successfully", map[string]any{
 		"competitors": competitorResponse,
-		"hasMore":     hasMore,
+		"has_more":    hasMore,
 	})
 }
 
@@ -116,7 +116,7 @@ func (wh *WorkspaceHandler) GetCompetitorForWorkspace(c *fiber.Ctx) error {
 		return sendErrorResponse(c, wh.logger, fiber.StatusInternalServerError, "Could not retrieve competitor", err.Error())
 	}
 
-	includePages := c.Query("includePages", "false") == "true"
+	includePages := c.Query("include_pages", "false") == "true"
 	var pages []models.Page
 	if includePages {
 		pages, _, err = wh.workspaceService.ListPagesForCompetitor(ctx, workspaceID, competitorID, nil, nil)
@@ -125,7 +125,10 @@ func (wh *WorkspaceHandler) GetCompetitorForWorkspace(c *fiber.Ctx) error {
 		}
 	}
 
-	return sendDataResponse(c, fiber.StatusOK, "Retrieved competitor successfully", api.NewCompetitorResponse(competitor, pages))
+	// prepare the response
+	competitorWithPages := api.NewCompetitorResponse(competitor, pages)
+
+	return sendDataResponse(c, fiber.StatusOK, "Retrieved competitor successfully", competitorWithPages)
 }
 
 func (wh *WorkspaceHandler) UpdateCompetitorForWorkspace(c *fiber.Ctx) error {
@@ -206,8 +209,8 @@ func (wh *WorkspaceHandler) ListReportsForCompetitor(c *fiber.Ctx) error {
 	}
 
 	return sendDataResponse(c, fiber.StatusOK, "Retrieved reports successfully", map[string]any{
-		"reports": reports,
-		"hasMore": hasMore,
+		"reports":  reports,
+		"has_more": hasMore,
 	})
 }
 

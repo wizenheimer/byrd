@@ -83,7 +83,7 @@ func (wh *WorkspaceHandler) ListWorkspacesForUser(c *fiber.Ctx) error {
 		return sendErrorResponse(c, wh.logger, fiber.StatusUnauthorized, "User is not authorized to list the workspace", err.Error())
 	}
 
-	membershipStatusString := strings.ToLower(c.Query("membershipStatus", "active"))
+	membershipStatusString := strings.ToLower(c.Query("membership_status", "active"))
 	var membershipStatus models.MembershipStatus
 	switch membershipStatusString {
 	case "active":
@@ -100,8 +100,8 @@ func (wh *WorkspaceHandler) ListWorkspacesForUser(c *fiber.Ctx) error {
 		return sendErrorResponse(c, wh.logger, fiber.StatusInternalServerError, "Workspace couldn't be listed for the user", err.Error())
 	}
 	return sendDataResponse(c, fiber.StatusOK, "Listed workspaces successfully", map[string]any{
-		"workspaces":       workspaces,
-		"membershipStatus": membershipStatus,
+		"workspaces":        workspaces,
+		"membership_status": membershipStatus,
 	})
 }
 
@@ -144,7 +144,7 @@ func (wh *WorkspaceHandler) UpdateWorkspaceByID(c *fiber.Ctx) error {
 
 	return sendDataResponse(c, fiber.StatusOK, "Updated workspace successfully",
 		map[string]any{
-			"workspaceId": workspaceID,
+			"workspace_id": workspaceID,
 		})
 }
 
@@ -162,8 +162,8 @@ func (wh *WorkspaceHandler) DeleteWorkspaceByID(c *fiber.Ctx) error {
 	}
 
 	return sendDataResponse(c, fiber.StatusOK, "Deleted workspace successfully", map[string]any{
-		"workspaceId": workspaceID,
-		"status":      status,
+		"workspace_id":     workspaceID,
+		"workspace_status": status,
 	})
 }
 
@@ -185,7 +185,7 @@ func (wh *WorkspaceHandler) JoinWorkspaceByID(c *fiber.Ctx) error {
 	}
 
 	return sendDataResponse(c, fiber.StatusOK, "Joined workspace successfully", map[string]any{
-		"workspaceId": workspaceID,
+		"workspace_id": workspaceID,
 	})
 }
 
@@ -207,6 +207,6 @@ func (wh *WorkspaceHandler) ExitWorkspaceByID(c *fiber.Ctx) error {
 	}
 
 	return sendDataResponse(c, fiber.StatusOK, "Exited workspace successfully", map[string]any{
-		"workspaceId": workspaceID,
+		"workspace_id": workspaceID,
 	})
 }

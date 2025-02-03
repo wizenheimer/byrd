@@ -41,8 +41,8 @@ func (wh *WorkspaceHandler) ListPagesForCompetitor(c *fiber.Ctx) error {
 	}
 
 	return sendDataResponse(c, fiber.StatusCreated, "Listed page for competitor successfully", map[string]any{
-		"pages":   pages,
-		"hasMore": hasMore,
+		"pages":    pages,
+		"has_more": hasMore,
 	})
 }
 
@@ -198,7 +198,7 @@ func (wh *WorkspaceHandler) ListPageHistory(c *fiber.Ctx) error {
 	}
 
 	return sendDataResponse(c, fiber.StatusOK, "Listed page history successfully", map[string]any{
-		"history": history,
-		"hasMore": hasMore,
+		"history":  history,
+		"has_more": hasMore,
 	})
 }

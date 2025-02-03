@@ -44,7 +44,7 @@ func (h *ScheduleHandler) CreateSchedule(c *fiber.Ctx) error {
 	}
 
 	return sendDataResponse(c, http.StatusOK, "Successfully created schedule", map[string]any{
-		"scheduleID": scheduleID.String(),
+		"schedule_id": scheduleID.String(),
 	})
 }
 
@@ -82,7 +82,7 @@ func (h *ScheduleHandler) UpdateSchedule(c *fiber.Ctx) error {
 	}
 
 	return sendDataResponse(c, http.StatusOK, "Successfully updated schedule", map[string]any{
-		"scheduleID": updatedScheduleID.String(),
+		"schedule_id": updatedScheduleID.String(),
 	})
 }
 
@@ -114,7 +114,7 @@ func (h *ScheduleHandler) ListSchedules(c *fiber.Ctx) error {
 	limits := pagination.GetLimit()
 	offsets := pagination.GetOffset()
 
-	workflowTypeString := c.Query("workflowType", "screenshot")
+	workflowTypeString := c.Query("workflow_type", "screenshot")
 	wf, err := models.ParseWorkflowType(workflowTypeString)
 	if err != nil {
 		return sendErrorResponse(c, h.logger, fiber.StatusBadRequest, "Invalid workflow type", err.Error())

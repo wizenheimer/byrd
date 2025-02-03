@@ -52,8 +52,8 @@ func (wh *WorkspaceHandler) ListUsersForWorkspace(c *fiber.Ctx) error {
 	}
 
 	return sendDataResponse(c, fiber.StatusOK, "Listed workspace users successfully", map[string]any{
-		"users":   users,
-		"hasMore": hasMore,
+		"users":    users,
+		"has_more": hasMore,
 	})
 }
 
@@ -81,12 +81,12 @@ func (wh *WorkspaceHandler) InviteUsersToWorkspace(c *fiber.Ctx) error {
 
 	ctx := c.Context()
 
-	responses, err := wh.workspaceService.AddUsersToWorkspace(ctx, clerkUser, workspaceID, users.Emails)
+	workspaceUsers, err := wh.workspaceService.AddUsersToWorkspace(ctx, clerkUser, workspaceID, users.Emails)
 	if err != nil {
 		return sendErrorResponse(c, wh.logger, fiber.StatusInternalServerError, "Could not invite users to workspace", err.Error())
 	}
 
-	return sendDataResponse(c, fiber.StatusCreated, "Invited users to workspace successfully", responses)
+	return sendDataResponse(c, fiber.StatusCreated, "Invited users to workspace successfully", workspaceUsers)
 }
 
 // UpdateUserRoleInWorkspace updates user role in a workspace
@@ -139,7 +139,7 @@ func (wh *WorkspaceHandler) RemoveUserFromWorkspace(c *fiber.Ctx) error {
 	}
 
 	return sendDataResponse(c, fiber.StatusOK, "Removed user from workspace successfully", map[string]any{
-		"userId":      userID,
-		"workspaceId": workspaceID,
+		"user_id":      userID,
+		"workspace_id": workspaceID,
 	})
 }

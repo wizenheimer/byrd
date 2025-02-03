@@ -47,8 +47,8 @@ func (h *AIHandler) AnalyzeContentDifferences(c *fiber.Ctx) error {
 	// Validate files
 	if len(version1Files) == 0 || len(version2Files) == 0 {
 		return sendErrorResponse(c, h.logger, fiber.StatusBadRequest, "Both versions are required", map[string]interface{}{
-			"version1": len(version1Files),
-			"version2": len(version2Files),
+			"version_1": len(version1Files),
+			"version_2": len(version2Files),
 		})
 	}
 
@@ -128,8 +128,8 @@ func (h *AIHandler) AnalyzeVisualDifferences(c *fiber.Ctx) error {
 	// Validate files
 	if len(screenshots1) == 0 || len(screenshots2) == 0 {
 		return sendErrorResponse(c, h.logger, fiber.StatusBadRequest, "Both screenshots are required", map[string]interface{}{
-			"screenshots1 exists": len(screenshots1) == 0,
-			"screenshots2 exists": len(screenshots2) == 0,
+			"screenshots_1_exists": len(screenshots1) == 0,
+			"screenshots_2_exists": len(screenshots2) == 0,
 		})
 	}
 
@@ -194,8 +194,8 @@ func (h *AIHandler) SummarizeContentDifferences(c *fiber.Ctx) error {
 	// Validate files
 	if len(version1Files) == 0 || len(version2Files) == 0 {
 		return sendErrorResponse(c, h.logger, fiber.StatusBadRequest, "Both versions are required", map[string]interface{}{
-			"version1": len(version1Files),
-			"version2": len(version2Files),
+			"version_1": len(version1Files),
+			"version_2": len(version2Files),
 		})
 	}
 

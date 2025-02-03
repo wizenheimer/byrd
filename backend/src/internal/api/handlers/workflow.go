@@ -94,13 +94,13 @@ func (wh *WorkflowHandler) StopWorkflow(c *fiber.Ctx) error {
 }
 
 func (wh *WorkflowHandler) ListCheckpoint(c *fiber.Ctx) error {
-	jobStatusString := c.Query("jobStatus")
+	jobStatusString := c.Query("job_status")
 	workflowStatus, err := models.ParseJobStatus(jobStatusString)
 	if err != nil {
 		workflowStatus = models.JobStatusRunning
 	}
 
-	workflowTypeString := c.Query("workflowType")
+	workflowTypeString := c.Query("workflow_type")
 	workflowType, err := models.ParseWorkflowType(workflowTypeString)
 	if err != nil {
 		workflowType = models.ScreenshotWorkflowType
@@ -130,7 +130,7 @@ func (wh *WorkflowHandler) ListHistory(c *fiber.Ctx) error {
 	limits := pagination.GetLimit()
 	offsets := pagination.GetOffset()
 
-	workflowTypeString := c.Query("workflowType", "screenshot")
+	workflowTypeString := c.Query("workflow_type", "screenshot")
 	wf, err := models.ParseWorkflowType(workflowTypeString)
 	if err != nil {
 		return sendErrorResponse(c, wh.logger, fiber.StatusBadRequest, "Invalid workflow type", err.Error())
