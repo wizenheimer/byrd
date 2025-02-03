@@ -88,7 +88,7 @@ func (h *ShutdownHandler) HandleGracefulShutdown() {
 
 	// Ensure logs are flushed before exiting
 	if err := h.logger.Sync(); err != nil {
-		log.Printf("Failed to sync logger: %v", err)
+		log.Printf("failed to sync logger: %v", err)
 	}
 }
 

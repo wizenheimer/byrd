@@ -2,6 +2,7 @@
 package config
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/wizenheimer/byrd/src/pkg/utils"
@@ -182,7 +183,7 @@ func LoadEnvironmentConfig() EnvironmentConfig {
 func LoadServerConfig() ServerConfig {
 	return ServerConfig{
 		// Port is set to the value of the SERVER_PORT environment variable, or "8080" if the variable is not set.
-		Port: GetEnv("SERVER_PORT", "8080", utils.StrParser),
+		Port: fmt.Sprintf(":%s", GetEnv("PORT", "10000", utils.StrParser)),
 
 		// RequestsPerMinute is set to the value of the REQUESTS_PER_MINUTE environment variable, or 100 if the variable is not set.
 		GlobalRequestsPerMinute: GetEnv("GLOBAL_REQUESTS_PER_MINUTE", 100, utils.IntParser),
