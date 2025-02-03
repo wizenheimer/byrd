@@ -1,138 +1,170 @@
 import type { Competitor, CompetitorWithPages } from "./competitor";
 import type {
-  DiffProfileType,
+  CaptureProfile,
+  ProfileType,
+  Page,
   PageProps,
   PageStatus,
-  ScreenshotRequestOptions,
 } from "./competitor_page";
 import type { PageHistory } from "./page_history";
 import type { User } from "./user";
 import type { Workspace } from "./workspace";
 import type { WorkspaceRole, WorkspaceUser } from "./workspace_user";
 
-// Request type for workspace creation
-export interface WorkspaceCreationRequest {
-  /** List of competitor URLs to track */
-  competitors: string[];
+// Common Constants
+export const DEFAULT_PAGE_NUMBER = 1;
+export const DEFAULT_PAGE_SIZE = 10;
 
-  /** List of user emails for the team */
-  team: string[];
-
-  /** List of profile strings to track */
-  profiles: string[];
-
-  /** List of feature strings to track */
-  features: string[];
+// Common Response Types
+export interface ErrorResponse {
+  /** Error message describing what went wrong */
+  error: string;
+  /** Optional error details (only included in development mode or with X-Debug header) */
+  details?: unknown;
 }
 
-// API response type for workspace creation
-export interface WorkspaceCreationResponse {
+export interface DataResponse<T> {
+  /** Success or informational message */
   message: string;
-  data: Workspace;
+  /** Response data */
+  data?: T;
 }
 
-// API response type for listing workspaces
-export interface WorkspaceListResponse {
-  message: string;
-  data: Workspace[];
-}
-
-export interface WorkspaceGetResponse {
-  message: string;
-  data: Workspace;
-}
-
-// Update request type matching WorkspaceProps from backend
-export interface WorkspaceUpdateRequest {
-  /** Name of the workspace */
-  name?: string;
-
-  /** Email address for billing information */
-  billing_email?: string;
-}
-
-// Response data structure for workspace update
-export interface WorkspaceUpdateData {
-  /** Name of the workspace */
-  name: string;
-
-  /** Email address for billing information */
-  billingEmail: string;
-
-  /** ID of the updated workspace */
-  workspaceId: string;
-}
-
-// API response type for workspace update
-export interface WorkspaceUpdateResponse {
-  message: string;
-  data: WorkspaceUpdateData;
-}
-
-// Response data structure for joining a workspace
-export interface WorkspaceJoinData {
-  /** ID of the workspace that was joined */
-  workspaceId: string;
-}
-
-// API response type for joining a workspace
-export interface WorkspaceJoinResponse {
-  message: string;
-  data: WorkspaceJoinData;
-}
-
-// Response data structure for exiting a workspace
-export interface WorkspaceExitData {
-  /** ID of the workspace that was exited */
-  workspaceId: string;
-}
-
-// API response type for exiting a workspace
-export interface WorkspaceExitResponse {
-  message: string;
-  data: WorkspaceExitData;
-}
-
-// Response data structure for deleting a workspace
-export interface WorkspaceDeleteData {
-  /** Status of the workspace after deletion */
-  status: string;
-
-  /** ID of the workspace that was deleted */
-  workspaceId: string;
-}
-
-// API response type for deleting a workspace
-export interface WorkspaceDeleteResponse {
-  message: string;
-  data: WorkspaceDeleteData;
-}
-
-// API response interfaces
 export interface ApiResponse<T> {
+  /** Response message */
   message: string;
+  /** Response data */
   data: T;
 }
 
-// Paginated response interface
-export interface PaginatedResponse<T> {
-  hasMore: boolean;
-  users: T[];
-}
-
-// Combined type for workspace users list response
-export type WorkspaceUsersResponse = ApiResponse<
-  PaginatedResponse<WorkspaceUser>
->;
-
-// Query parameters interface for listing users
-export interface WorkspaceUsersQueryParams {
+// Pagination Types
+export interface PaginationParams {
+  // _page and _limit are used by reactquery to handle pagination
   _page?: number;
   _limit?: number;
+  includePages?: boolean;
+}
+
+export interface PaginatedResponse<T> {
+  /** Whether there are more items */
+  has_more: boolean;
+  /** Total number of items */
+  total: number;
+  /** Items for the current page */
+  items: T[];
+}
+
+// API Request/Response Types
+export interface WorkspaceCreationRequest {
+  competitors: string[];
+  profiles: ProfileType[];
+  features: string[];
+  team: string[];
+}
+
+export interface WorkspaceUpdateRequest {
+  billing_email?: string;
+  name?: string;
+}
+
+export interface WorkspaceCreationResponse extends ApiResponse<Workspace> {}
+export interface WorkspaceListResponse extends ApiResponse<Workspace[]> {}
+export interface WorkspaceGetResponse extends ApiResponse<Workspace> {}
+export interface WorkspaceUpdateResponse
+  extends ApiResponse<{
+    name: string;
+    billing_email: string;
+    workspace_id: string;
+  }> {}
+
+export interface WorkspaceJoinResponse
+  extends ApiResponse<{
+    workspace_id: string;
+  }> {}
+
+export interface WorkspaceExitResponse
+  extends ApiResponse<{
+    workspace_id: string;
+  }> {}
+
+export interface WorkspaceDeleteResponse
+  extends ApiResponse<{
+    status: string;
+    workspace_id: string;
+  }> {}
+
+export interface CompetitorsListResponse {
+  competitors: CompetitorWithPages[];
+  has_more: boolean;
+}
+
+export type CompetitorsApiResponse = ApiResponse<CompetitorsListResponse>;
+
+export interface CreateCompetitorRequest {
+  url: string;
+}
+
+export interface CreateCompetitorResponse extends ApiResponse<Competitor> {}
+export interface GetCompetitorResponse
+  extends ApiResponse<CompetitorWithPages> {}
+export interface UpdateCompetitorResponse extends ApiResponse<Competitor> {}
+
+export type CreatePageRequest = PageProps;
+
+export interface AddPagesResponse
+  extends ApiResponse<
+    Array<{
+      id: string;
+      competitor_id: string;
+      url: string;
+      capture_profile: CaptureProfile;
+      diff_profile: ProfileType[];
+      status: PageStatus;
+      created_at: string;
+      updated_at: string;
+    }>
+  > {}
+
+export interface ListPagesResponse
+  extends ApiResponse<{
+    pages: Array<{
+      id: string;
+      competitor_id: string;
+      url: string;
+      capture_profile: CaptureProfile;
+      diff_profile: ProfileType[];
+      status: PageStatus;
+      created_at: string;
+      updated_at: string;
+    }>;
+    has_more: boolean;
+  }> {}
+
+export type GetPageResponse = ApiResponse<Page>;
+export type UpdatePageResponse = ApiResponse<Page>;
+
+export interface ListPageHistoryResponse
+  extends ApiResponse<{
+    history: PageHistory[];
+    has_more: boolean;
+  }> {}
+
+export interface GetUserResponse extends ApiResponse<User> {}
+export interface DeleteUserResponse extends ApiResponse<void> {}
+export interface DeleteCompetitorResponse extends ApiResponse<void> {}
+export interface DeletePageResponse extends ApiResponse<void> {}
+
+export interface UpdatePageRequest {
+  url?: string;
+  capture_profile?: Partial<CaptureProfile>;
+  diff_profile?: ProfileType[];
+  status?: PageStatus;
+}
+
+export interface WorkspaceUsersQueryParams extends PaginationParams {
   role?: WorkspaceRole;
 }
 
-// Request types
 export interface AddUsersToWorkspaceRequest {
   emails: string[];
 }
@@ -140,152 +172,21 @@ export interface AddUsersToWorkspaceRequest {
 export interface UpdateWorkspaceUserRoleRequest {
   role: WorkspaceRole;
 }
+export type WorkspaceUsersResponse = ApiResponse<
+  PaginatedResponse<WorkspaceUser>
+>;
 
 export type AddUsersToWorkspaceResponse = ApiResponse<WorkspaceUser[]>;
-
-// Response data types
-interface UpdateRoleResponseData {
+export type UpdateWorkspaceUserRoleResponse = ApiResponse<{
   role: WorkspaceRole;
-}
+}>;
 
-export type UpdateWorkspaceUserRoleResponse =
-  ApiResponse<UpdateRoleResponseData>;
+export interface RemoveUserResponse
+  extends ApiResponse<{
+    user_id: string;
+    workspace_id: string;
+  }> {}
 
-// Response type for delete operation
-interface RemoveUserResponseData {
-  userId: string;
-  workspaceId: string;
-}
-
-export interface RemoveUserResponse {
-  message: string;
-  data: RemoveUserResponseData;
-}
-
-// Competitors List Response interface
-export interface CompetitorsListResponse {
-  competitors: CompetitorWithPages[];
-  hasMore: boolean;
-}
-
-// Full API Response type for the competitors endpoint
-export type CompetitorsApiResponse = ApiResponse<CompetitorsListResponse>;
-
-// Helper type for pagination parameters
-export interface PaginationParams {
-  _page?: number;
-  _limit?: number;
-  includePages?: boolean;
-}
-
-export interface CreateCompetitorRequest {
-  url: string;
-}
-
-export interface CreateCompetitorResponse {
-  message: string;
-  data: Competitor;
-}
-
-export type CreatePageRequest = PageProps;
-
-export interface GetCompetitorResponse {
-  message: string;
-  data: CompetitorWithPages;
-}
-
-export interface UpdateCompetitorResponse {
-  message: string;
-  data: Competitor;
-}
-
-export interface AddPagesResponse {
-  message: string;
-  data: Array<{
-    id: string;
-    competitor_id: string;
-    url: string;
-    capture_profile: ScreenshotRequestOptions;
-    diff_profile: DiffProfileType[];
-    status: "active" | "inactive";
-    created_at: string;
-    updated_at: string;
-  }>;
-}
-
-export interface ListPagesResponse {
-  message: string;
-  data: {
-    pages: Array<{
-      id: string;
-      competitor_id: string;
-      url: string;
-      capture_profile: ScreenshotRequestOptions;
-      diff_profile: DiffProfileType[];
-      status: "active" | "inactive";
-      created_at: string;
-      updated_at: string;
-    }>;
-    hasMore: boolean;
-  };
-}
-
-export interface GetPageResponse {
-  message: string;
-  data: {
-    id: string;
-    competitor_id: string;
-    url: string;
-    capture_profile: ScreenshotRequestOptions;
-    diff_profile: DiffProfileType[];
-    status: "active" | "inactive";
-    created_at: string;
-    updated_at: string;
-  };
-}
-
-export interface ListPageHistoryResponse {
-  message: string;
-  data: {
-    history: PageHistory[];
-    hasMore: boolean;
-  };
-}
-
-export interface UpdatePageResponse {
-  message: string;
-  data: {
-    id: string;
-    competitor_id: string;
-    url: string;
-    capture_profile: ScreenshotRequestOptions;
-    diff_profile: DiffProfileType[];
-    status: "active" | "inactive";
-    created_at: string;
-    updated_at: string;
-  };
-}
-
-export interface GetUserResponse {
-  message: string;
-  data: User;
-}
-
-export interface DeleteUserResponse {
-  message: string;
-}
-
-export interface DeleteCompetitorResponse {
-  message: string;
-}
-
-export interface DeletePageResponse {
-  message: string;
-}
-
-export interface UpdatePageRequest {
-  url?: string;
-  capture_profile?: Partial<ScreenshotRequestOptions>;
-  diff_profile?: DiffProfileType[];
-  status?: PageStatus;
+export interface ListPagesQueryParams extends PaginationParams {
+  include_pages?: boolean;
 }

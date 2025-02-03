@@ -1,20 +1,23 @@
 import type { Page } from "./competitor_page";
 
-// Competitor Status type
 export type CompetitorStatus = "active" | "inactive";
 
-// Competitor interface
 export interface Competitor {
-	id: string;
-	workspace_id: string;
-	name: string;
-	status: CompetitorStatus;
-	created_at: string;
-	updated_at: string;
+  /** Competitor's unique identifier */
+  id: string;
+  /** Workspace's unique identifier */
+  workspace_id: string;
+  /** Competitor's name */
+  name: string;
+  /** Competitor's status */
+  status: CompetitorStatus;
+  /** Time the competitor was created */
+  created_at: string;
+  /** Time the competitor was last updated */
+  updated_at: string;
 }
 
-// CompetitorWithPages interface
 export interface CompetitorWithPages {
-	competitor: Competitor;
-	pages: Page[];
+  competitor: Competitor;
+  pages: Page[];
 }

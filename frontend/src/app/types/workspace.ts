@@ -1,38 +1,28 @@
-// Basic workspace properties
-export interface WorkspaceProps {
-	/** Name of the workspace */
-	name: string;
+export type WorkspaceStatus = "active" | "inactive";
+export type WorkspacePlan = "trial" | "starter" | "scaler" | "enterprise";
 
-	/** Email address for billing information */
-	billingEmail: string;
-}
-
-// Workspace status enum matching backend constants
-export enum WorkspaceStatus {
-	ACTIVE = "active",
-	INACTIVE = "inactive",
-}
-
-// Full workspace model matching the backend structure
 export interface Workspace {
-	/** Unique identifier of the workspace */
-	id: string;
+  /** Unique identifier of the workspace */
+  id: string;
+  /** Name of the workspace */
+  name: string;
+  /** Unique slug identifier */
+  slug: string;
+  /** Email address for billing information */
+  billing_email: string;
+  /** Current status of the workspace */
+  workspace_status: WorkspaceStatus;
+  /** Current plan of the workspace */
+  workspace_plan: WorkspacePlan;
+  /** Timestamp of creation */
+  created_at: string;
+  /** Timestamp of last update */
+  updated_at: string;
+}
 
-	/** Name of the workspace */
-	name: string;
-
-	/** Unique slug identifier */
-	slug: string;
-
-	/** Email address for billing information */
-	billing_email: string;
-
-	/** Current status of the workspace */
-	workspace_status: WorkspaceStatus;
-
-	/** Timestamp of creation */
-	created_at: string;
-
-	/** Timestamp of last update */
-	updated_at: string;
+export interface WorkspaceProps {
+  /** Name of the workspace */
+  name?: string;
+  /** Email address for billing information */
+  billing_email?: string;
 }

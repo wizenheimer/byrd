@@ -1,28 +1,24 @@
-// Role types
 export type WorkspaceRole = "admin" | "user";
-
-// Membership status types
 export type MembershipStatus = "pending" | "active" | "inactive";
 
-// Base workspace user interface
 export interface WorkspaceUser {
-	user_id: string;
-	workspace_id: string;
-	name: string;
-	email: string;
-	workspace_role: WorkspaceRole;
-	membership_status: MembershipStatus;
+  /** User's unique identifier */
+  user_id: string;
+  /** Workspace's unique identifier */
+  workspace_id: string;
+  /** User's name */
+  name: string;
+  /** User's email */
+  email: string;
+  /** Role of the user in the workspace */
+  workspace_role: WorkspaceRole;
+  /** Status of the user's membership in the workspace */
+  membership_status: MembershipStatus;
 }
 
-// Partial workspace user interface (for updates)
-export interface PartialWorkspaceUser {
-	user_id: string;
-	workspace_role: WorkspaceRole;
-	membership_status: MembershipStatus;
-}
-
-// Props for creating a new workspace user
 export interface WorkspaceUserProps {
-	email: string;
-	workspace_role: WorkspaceRole;
+  /** Email address of the user to create */
+  email: string;
+  /** Role of the user in the workspace */
+  workspace_role: WorkspaceRole;
 }
