@@ -16,7 +16,7 @@ import TeamStep from "../components/steps/TeamStep";
 
 const MultiStepOnboarding = () => {
 	const { isLoaded, isSignedIn } = useUser();
-	const currentStep = useOnboardingStore.use.currentStep(); //useCurrentStep();
+	const currentStep = useOnboardingStore.use.currentStep();
 	const setCurrentStep = useOnboardingStore.use.setCurrentStep();
 	const router = useRouter();
 

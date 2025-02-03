@@ -2,6 +2,7 @@
 
 import { INITIAL_PROFILES } from "@/app/constants/onboarding";
 import { useOnboardingStore } from "@/app/store/onboarding";
+import { ProfileType } from "@/app/types/competitor_page";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
@@ -14,7 +15,7 @@ export default function ProfileStep({ onNext }: ProfilesStepProps) {
   const profiles = useOnboardingStore.use.profiles();
   const setProfiles = useOnboardingStore.use.setProfiles();
 
-  const toggleProfiles = (key: string) => {
+  const toggleProfiles = (key: ProfileType) => {
     const updatedProfiles = profiles.includes(key)
       ? profiles.filter((profileKey) => profileKey !== key)
       : [...profiles, key];

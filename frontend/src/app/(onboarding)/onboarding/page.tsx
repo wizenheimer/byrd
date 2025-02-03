@@ -9,6 +9,8 @@ import {
   type OnboardingState,
   useOnboardingStore,
 } from "@/app/store/onboarding";
+import { ToastAction } from "@/components/ui/toast";
+import { useToast } from "@/hooks/use-toast";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
@@ -28,9 +30,10 @@ export default function OnboardingComplete() {
   const router = useRouter();
   const onboardingState = useOnboardingStore();
   const persistAttemptedRef = useRef(false);
+  const retryCountRef = useRef(0);
+  const { toast } = useToast();
 
   useEffect(() => {
-    // If we've already attempted to persist, don't try again
     if (persistAttemptedRef.current) {
       return;
     }
@@ -46,41 +49,66 @@ export default function OnboardingComplete() {
 
       if (!user) return;
 
-      try {
-        // Mark that we've attempted persistence
-        persistAttemptedRef.current = true;
+      persistAttemptedRef.current = true;
 
-        const stateData: OnboardingState = {
-          currentStep: onboardingState.currentStep,
-          competitors: onboardingState.competitors,
-          profiles: onboardingState.profiles,
-          features: onboardingState.features,
-          team: onboardingState.team,
-        };
+      const attemptPersist = async () => {
+        try {
+          const stateData: OnboardingState = {
+            currentStep: onboardingState.currentStep,
+            competitors: onboardingState.competitors,
+            profiles: onboardingState.profiles,
+            features: onboardingState.features,
+            team: onboardingState.team,
+          };
 
-        const token = await getToken();
-        if (!token) {
-          throw new Error("Failed to retrieve authentication token");
-        }
+          const token = await getToken();
+          if (!token) {
+            throw new Error("Failed to retrieve authentication token");
+          }
 
-        const onboardingData = transformOnboardingData(stateData);
-        const result = await persistOnboardingData(onboardingData, token);
+          const onboardingData = transformOnboardingData(stateData);
+          const result = await persistOnboardingData(onboardingData, token);
 
-        if (result.success) {
-          onboardingState.reset();
-          router.push("/waitlist");
-        } else {
+          if (result.success) {
+            onboardingState.reset();
+            router.push("/waitlist");
+            return true;
+          }
           throw new Error("Failed to persist onboarding data");
+        } catch (error) {
+          console.error(`Persistence attempt ${retryCountRef.current + 1} failed:`, error);
+          return false;
         }
-      } catch (error) {
-        console.error("Error persisting onboarding data:", error);
-        // Reset the attempt flag on error so user can try again
-        persistAttemptedRef.current = false;
+      };
+
+      while (retryCountRef.current < 3) {
+        const success = await attemptPersist();
+        if (success) return;
+
+        retryCountRef.current += 1;
+        if (retryCountRef.current < 3) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
       }
+
+      // All retries failed
+      persistAttemptedRef.current = false;
+      toast({
+        title: "Uh oh! Something went wrong.",
+        description: "We couldn't get you onboarded.",
+        action: (
+          <ToastAction altText="Try Again" onClick={() => {
+            onboardingState.reset();
+            router.push("/");
+          }}>
+            Go to Homepage
+          </ToastAction>
+        ),
+      });
     };
 
     persistData();
-  }, [isLoaded, isSignedIn, user, getToken, onboardingState, router]);
+  }, [isLoaded, isSignedIn, user, getToken, onboardingState, router, toast]);
 
   return (
     <LoadingStep
