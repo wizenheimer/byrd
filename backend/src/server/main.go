@@ -92,8 +92,16 @@ func main() {
 	// Initialize rate limiters
 	ratelimiters := middleware.NewRateLimiters(cfg, logger)
 
+	// Initialize logging middleware
+	logSkipPaths := []string{"/health", "/metrics"}
+	lm, err := middleware.NewLoggingMiddleware(logger, logSkipPaths)
+	if err != nil {
+		logger.Fatal("Failed to initialize logging middleware", zap.Error(err))
+		return
+	}
+
 	// Setup middleware with rate limiters
-	middleware.SetupMiddleware(cfg, app, ratelimiters)
+	middleware.SetupMiddleware(cfg, app, ratelimiters, lm)
 
 	// Setup routes with handlers and rate limiters
 	routes.SetupRoutes(app, handlers, ratelimiters, am, rm)

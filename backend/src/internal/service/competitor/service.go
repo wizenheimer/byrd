@@ -89,11 +89,7 @@ func (cs *competitorService) CreateCompetitorForWorkspace(ctx context.Context, w
 }
 
 func (cs *competitorService) BatchCreateCompetitorForWorkspace(ctx context.Context, workspaceID uuid.UUID, pages []models.PageProps) ([]models.Competitor, error) {
-	if len(pages) == 0 {
-		return nil, errors.New("non-fatal: pages unspecified for creating competitors")
-	}
-
-	var competitors []models.Competitor
+	competitors := make([]models.Competitor, 0)
 	for _, page := range pages {
 		// Figure out competitor's name using the url
 		competitorName := cs.nameFinder.FindCompanyName([]string{
@@ -143,12 +139,20 @@ func (cs *competitorService) BatchCreateCompetitorForWorkspace(ctx context.Conte
 	totalPages := len(pages)
 	totalCompetitors := len(competitors)
 
-	if totalCompetitors == 0 {
-		return competitors, errors.New("failed to create competitors")
-	}
+	// If the total number of competitors created is not equal
+	// to the total number of pages, log an error
+	if totalCompetitors != totalPages {
+		// If no competitors are created, log a message
+		var msg string
+		if totalPages == 0 {
+			msg = "no competitors created for workspace"
+		} else {
+			msg = "failed to create all competitors for workspace"
+		}
 
-	if totalPages > totalCompetitors {
-		return competitors, errors.New("non-fatal: failed to create some competitors")
+		// Log the error
+		cs.logger.Error(msg, zap.Any("workspaceID", workspaceID), zap.Any("totalPages", totalPages), zap.Any("totalCompetitors", totalCompetitors))
+		return competitors, nil
 	}
 
 	return competitors, nil
@@ -156,9 +160,9 @@ func (cs *competitorService) BatchCreateCompetitorForWorkspace(ctx context.Conte
 
 func (cs *competitorService) GetCompetitorForWorkspace(ctx context.Context, workspaceID uuid.UUID, competitorIDs []uuid.UUID) ([]models.Competitor, error) {
 	if len(competitorIDs) == 0 {
-		return nil, errors.New("non-fatal: no competitorIDs provided")
+		return nil, errors.New("no competitorIDs provided")
 	} else if len(competitorIDs) > maxCompetitorBatchSize {
-		return nil, errors.New("non-fatal: too many competitorIDs provided")
+		return nil, errors.New("too many competitorIDs provided")
 	}
 	return cs.competitorRepository.BatchGetCompetitorsForWorkspace(
 		ctx,
@@ -187,7 +191,7 @@ func (cs *competitorService) UpdateCompetitorForWorkspace(ctx context.Context, w
 
 func (cs *competitorService) RemoveCompetitorForWorkspace(ctx context.Context, workspaceID uuid.UUID, competitorIDs []uuid.UUID) error {
 	if len(competitorIDs) > maxCompetitorBatchSize {
-		return errors.New("non-fatal: too many competitorIDs provided")
+		return errors.New("too many competitorIDs provided")
 	}
 
 	if competitorIDs == nil {

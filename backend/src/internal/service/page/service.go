@@ -39,11 +39,11 @@ func NewPageService(pageRepo page.PageRepository, pageHistoryService history.Pag
 
 func (ps *pageService) CreatePage(ctx context.Context, competitorID uuid.UUID, pages []models.PageProps) ([]models.Page, error) {
 	if len(pages) > maxPageBatchSize {
-		return nil, errors.New("non-fatal: batch size exceeds the maximum limit")
+		return nil, errors.New("batch size exceeds the maximum limit")
 	}
 
 	if len(pages) == 0 {
-		return nil, errors.New("non-fatal: pages unspecified for creating competitors")
+		return nil, errors.New("pages unspecified for creating competitors")
 	}
 	var createdPages []models.Page
 	var err error
@@ -75,7 +75,7 @@ func (ps *pageService) CreatePage(ctx context.Context, competitorID uuid.UUID, p
 	}
 
 	if len(createdPages) != len(pages) {
-		return createdPages, errors.New("non-fatal: failed to create all pages")
+		return createdPages, errors.New("failed to create all pages")
 	}
 
 	ps.backdateRefresh(createdPages)
@@ -240,10 +240,10 @@ func (ps *pageService) RefreshPage(ctx context.Context, pageID uuid.UUID) error 
 
 func (ps *pageService) RemovePage(ctx context.Context, competitorIDs []uuid.UUID, pageIDs []uuid.UUID) error {
 	if len(pageIDs) > maxPageBatchSize {
-		return errors.New("non-fatal: page batch size exceeds the maximum limit")
+		return errors.New("page batch size exceeds the maximum limit")
 	}
 	if competitorIDs == nil {
-		return errors.New("non-fatal: competitorIDs unspecified for removing pages")
+		return errors.New("competitorIDs unspecified for removing pages")
 	}
 
 	if len(competitorIDs) > 1 {
@@ -254,7 +254,7 @@ func (ps *pageService) RemovePage(ctx context.Context, competitorIDs []uuid.UUID
 			return ps.pageRepo.BatchDeleteAllCompetitorPages(ctx, competitorIDs)
 		}
 
-		return errors.New("non-fatal: pageIDs ambiguous for removing pages")
+		return errors.New("pageIDs ambiguous for removing pages")
 	}
 
 	// Perform single delete if only one competitorID is provided

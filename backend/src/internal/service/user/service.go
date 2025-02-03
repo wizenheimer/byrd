@@ -42,7 +42,7 @@ func NewUserService(
 // GetOrCreateWorkspaceOwner gets or creates a single user.
 func (us *userService) GetOrCreateUser(ctx context.Context, clerk *clerk.User) (*models.User, error) {
 	if clerk == nil {
-		return nil, errors.New("non-fatal: clerk user is nil")
+		return nil, errors.New("clerk user is nil")
 	}
 
 	clerkEmail, err := utils.GetClerkUserEmail(clerk)
@@ -65,7 +65,7 @@ func (us *userService) GetOrCreateUser(ctx context.Context, clerk *clerk.User) (
 // It returns an error if the users could not be created.
 func (us *userService) BatchGetOrCreateUsers(ctx context.Context, emails []string) ([]models.User, error) {
 	if len(emails) > maxUserBatchSize {
-		return nil, errors.New("non-fatal: user batch size exceeds the maximum limit")
+		return nil, errors.New("user batch size exceeds the maximum limit")
 	}
 
 	emails = utils.CleanEmailList(emails, nil)
@@ -97,7 +97,7 @@ func (us *userService) BatchGetOrCreateUsers(ctx context.Context, emails []strin
 // This is used to get the user details.
 func (us *userService) ListUsersByUserIDs(ctx context.Context, userIDs []uuid.UUID) ([]models.User, error) {
 	if len(userIDs) == 0 {
-		return nil, errors.New("non-fatal: no userIDs provided")
+		return nil, errors.New("no userIDs provided")
 	}
 
 	var users []models.User
@@ -127,7 +127,7 @@ func (us *userService) ListUsersByUserIDs(ctx context.Context, userIDs []uuid.UU
 // This is used to get the clerk user details.
 func (us *userService) GetUserByClerkCredentials(ctx context.Context, clerk *clerk.User) (*models.User, error) {
 	if clerk == nil {
-		return nil, errors.New("non-fatal: clerk user is nil")
+		return nil, errors.New("clerk user is nil")
 	}
 
 	userEmail, err := utils.GetClerkUserEmail(clerk)
@@ -149,7 +149,7 @@ func (us *userService) GetUserByClerkCredentials(ctx context.Context, clerk *cle
 // And updates the user's email and name if they have changed.
 func (us *userService) SyncUser(ctx context.Context, clerk *clerk.User) error {
 	if clerk == nil {
-		return errors.New("non-fatal: clerk user is nil")
+		return errors.New("clerk user is nil")
 	}
 
 	clerkEmail, err := utils.GetClerkUserEmail(clerk)
@@ -169,7 +169,7 @@ func (us *userService) SyncUser(ctx context.Context, clerk *clerk.User) error {
 // It returns an error if the user could not be activated.
 func (us *userService) ActivateUser(ctx context.Context, userID uuid.UUID, clerkUser *clerk.User) error {
 	if clerkUser == nil {
-		return errors.New("non-fatal: clerk user is nil")
+		return errors.New("clerk user is nil")
 	}
 
 	userEmail, err := utils.GetClerkUserEmail(clerkUser)
@@ -191,7 +191,7 @@ func (us *userService) ActivateUser(ctx context.Context, userID uuid.UUID, clerk
 // This is the only user-facing and handler-owned method.
 func (us *userService) DeleteUser(ctx context.Context, clerk *clerk.User) error {
 	if clerk == nil {
-		return errors.New("non-fatal: clerk user is nil")
+		return errors.New("clerk user is nil")
 	}
 
 	clerkEmail, err := utils.GetClerkUserEmail(clerk)
@@ -217,7 +217,7 @@ func (us *userService) UserExistsByUserID(ctx context.Context, userID uuid.UUID)
 // It returns true if the user exists, otherwise it returns false.
 func (us *userService) ClerkUserExists(ctx context.Context, clerk *clerk.User) (bool, error) {
 	if clerk == nil {
-		return false, errors.New("non-fatal: clerk user is nil")
+		return false, errors.New("clerk user is nil")
 	}
 
 	email, err := utils.GetClerkUserEmail(clerk)
