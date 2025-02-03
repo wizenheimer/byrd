@@ -37,7 +37,7 @@ export default function RootLayout({
           urlBlocklist: [],
         }}
       />
-      <ClerkProvider afterSignOutUrl={"/"}>
+      <ClerkProvider afterSignOutUrl={"/"} dynamic>
         <html lang="en">
           <body
             className={`${geistSans.variable} ${geistMono.variable} antialiased`}

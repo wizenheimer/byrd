@@ -24,7 +24,6 @@ export class Workspace {
       request,
       { headers: { Authorization: `Bearer ${token}` } }
     );
-    console.log(token);
     return data.data;
   }
 

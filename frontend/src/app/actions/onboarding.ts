@@ -13,8 +13,6 @@ export async function persistOnboardingData(
   data: OnboardingData,
   token: string
 ): Promise<{ success: boolean; workspaceId: string }> {
-  console.log("Persisting onboarding data", data);
-
   try {
     const origin = process.env.BACKEND_ORIGIN;
     if (!origin) {

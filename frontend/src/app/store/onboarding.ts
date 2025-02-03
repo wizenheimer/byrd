@@ -44,14 +44,15 @@ const useOnboardingStoreBase = create<OnboardingStore>()(
           set((state) => ({ ...state, currentStep: step })),
 
         setCompetitors: (competitors) =>
-          set((state) => ({ ...state, competitors })),
+          set((state) => ({ ...state, competitors: competitors })),
 
-        setProfiles: (profile) =>
-          set((state) => ({ ...state, profiles: profile })),
+        setProfiles: (profiles) =>
+          set((state) => ({ ...state, profiles: profiles })),
 
-        setFeatures: (features) => set((state) => ({ ...state, features })),
+        setFeatures: (features) =>
+          set((state) => ({ ...state, features: features })),
 
-        setTeam: (team) => set((state) => ({ ...state, team })),
+        setTeam: (team) => set((state) => ({ ...state, team: team })),
 
         reset: () => set(initialState),
       }),
