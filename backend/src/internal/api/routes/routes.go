@@ -5,7 +5,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/wizenheimer/byrd/src/internal/api/handlers"
 	"github.com/wizenheimer/byrd/src/internal/api/middleware"
-	"github.com/wizenheimer/byrd/src/internal/config"
 	"github.com/wizenheimer/byrd/src/internal/email"
 	"github.com/wizenheimer/byrd/src/internal/email/template"
 	"github.com/wizenheimer/byrd/src/internal/service/ai"
@@ -104,9 +103,7 @@ func SetupRoutes(
 
 	setupPublicRoutes(app, handlers, l, m, r)
 
-	if config.IsDevelopment() {
-		setupPrivateRoutes(app, handlers, m)
-	}
+	setupPrivateRoutes(app, handlers, m)
 }
 
 // setupPublicRoutes configures all public API endpoints

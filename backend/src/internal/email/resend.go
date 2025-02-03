@@ -2,6 +2,7 @@ package email
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/resend/resend-go/v2"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
@@ -29,7 +30,7 @@ func NewResendClient(ctx context.Context, resendKey, notificationEmail string, l
 
 func (rc *resendClient) Send(ctx context.Context, email models.Email) error {
 	params := &resend.SendEmailRequest{
-		From:    rc.notificationEmail,
+		From:    fmt.Sprintf("Team Byrd <%s>", rc.notificationEmail),
 		To:      email.To,
 		Subject: email.EmailSubject,
 	}

@@ -3,6 +3,7 @@ package recorder
 
 import (
 	"context"
+	"fmt"
 	"runtime"
 	"time"
 
@@ -57,37 +58,76 @@ func (er *ErrorRecorder) RecordError(ctx context.Context, err error, fields ...z
 }
 
 // zapFieldsToAttributes converts zap fields to OpenTelemetry attributes
+// zapFieldsToAttributes converts zap fields to OpenTelemetry attributes
 func zapFieldsToAttributes(fields []zap.Field) []attribute.KeyValue {
 	encoder := zapcore.NewMapObjectEncoder()
 	attrs := make([]attribute.KeyValue, 0, len(fields))
 
 	for _, field := range fields {
-		// Special handling for Error type
-		if field.Type == zapcore.ErrorType {
-			if field.Interface != nil {
-				attrs = append(attrs, attribute.String(field.Key, field.Interface.(error).Error()))
+		// First add to encoder to handle complex types
+		field.AddTo(encoder)
+
+		// Try to get the value from encoder first
+		if encodedVal, ok := encoder.Fields[field.Key]; ok {
+			// Handle the encoded value based on its type
+			switch v := encodedVal.(type) {
+			case string:
+				attrs = append(attrs, attribute.String(field.Key, v))
+			case int:
+				attrs = append(attrs, attribute.String(field.Key, fmt.Sprintf("%v", v)))
+			case int64:
+				attrs = append(attrs, attribute.Int64(field.Key, v))
+			case float64:
+				attrs = append(attrs, attribute.Float64(field.Key, v))
+			case bool:
+				attrs = append(attrs, attribute.Bool(field.Key, v))
+			case []interface{}:
+				// Convert slice to string representation
+				attrs = append(attrs, attribute.String(field.Key, fmt.Sprintf("%v", v)))
+			case map[string]interface{}:
+				// Convert map to string representation
+				attrs = append(attrs, attribute.String(field.Key, fmt.Sprintf("%v", v)))
+			case time.Time:
+				attrs = append(attrs, attribute.String(field.Key, v.Format(time.RFC3339)))
+			case time.Duration:
+				attrs = append(attrs, attribute.Int64(field.Key, int64(v)))
+			default:
+				// Fallback to string representation for unknown types
+				attrs = append(attrs, attribute.String(field.Key, fmt.Sprintf("%v", v)))
 			}
 			continue
 		}
 
-		// Add the field to our encoder
-		field.AddTo(encoder)
-
-		// Convert based on the field type
+		// Handle special cases and native zap types
 		switch field.Type {
+		case zapcore.ErrorType:
+			if field.Interface != nil {
+				if err, ok := field.Interface.(error); ok {
+					attrs = append(attrs, attribute.String(field.Key, err.Error()))
+				} else {
+					attrs = append(attrs, attribute.String(field.Key, fmt.Sprintf("%v", field.Interface)))
+				}
+			}
 		case zapcore.StringType:
 			attrs = append(attrs, attribute.String(field.Key, field.String))
 		case zapcore.Int64Type, zapcore.Int32Type, zapcore.Int16Type, zapcore.Int8Type:
 			attrs = append(attrs, attribute.Int64(field.Key, field.Integer))
-		case zapcore.Float64Type, zapcore.Float32Type:
-			attrs = append(attrs, attribute.Float64(field.Key, field.Interface.(float64)))
 		case zapcore.BoolType:
 			attrs = append(attrs, attribute.Bool(field.Key, field.Integer == 1))
 		case zapcore.DurationType:
-			attrs = append(attrs, attribute.Int64(field.Key, int64(field.Interface.(time.Duration))))
+			if dur, ok := field.Interface.(time.Duration); ok {
+				attrs = append(attrs, attribute.Int64(field.Key, int64(dur)))
+			}
+		case zapcore.TimeType:
+			if t, ok := field.Interface.(time.Time); ok {
+				attrs = append(attrs, attribute.String(field.Key, t.Format(time.RFC3339)))
+			}
+		case zapcore.NamespaceType:
+			// Skip namespace fields as they're just structural
+			continue
 		default:
-			// For complex types, convert to string representation
-			attrs = append(attrs, attribute.String(field.Key, encoder.Fields[field.Key].(string)))
+			// For any other types, use string representation
+			attrs = append(attrs, attribute.String(field.Key, fmt.Sprintf("%v", field.Interface)))
 		}
 	}
 

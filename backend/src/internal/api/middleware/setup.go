@@ -27,10 +27,10 @@ func SetupMiddleware(cfg *config.Config, app *fiber.App, rc *RateLimiters, lm *L
 	app.Use(rc.GlobalLimiter)
 	// CORS
 	app.Use(cors.New(cors.Config{
-		AllowOrigins:     cfg.Server.CorsAllowedOrigins,
+		AllowOrigins:     cfg.Server.CorsAllowedOrigins, // Comma separated list of allowed origins
 		AllowHeaders:     "Origin, Content-Type, Accept, Authorization",
 		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",
-		AllowCredentials: true,
+		AllowCredentials: cfg.Server.CorsAllowedOrigins != "*", // Allow credentials only if not wildcard
 	}))
 	// Handle Liveness
 	app.Use(healthcheck.New(healthcheck.Config{

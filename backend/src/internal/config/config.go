@@ -106,12 +106,8 @@ type ServicesConfig struct {
 }
 
 type WorkflowConfig struct {
-	// SlackAlertToken is the token for the Slack alert
-	SlackAlertToken string
-	// SlackWorkflowChannelId is the channel ID for the workflow updates
-	SlackWorkflowChannelId string
-	// SlackBackendChannelId is the channel ID for the backend updates
-	SlackBackendChannelId string
+	// RedisURL is the URL of the Redis server
+	RedisURL string
 	// RedisAddr is the address of the Redis server
 	RedisAddr string
 	// RedisPassword is the password for the Redis server
@@ -283,12 +279,8 @@ func LoadServicesConfig() ServicesConfig {
 func LoadWorkflowConfig() WorkflowConfig {
 	// Load workflow configuration.
 	return WorkflowConfig{
-		// SlackAlertToken is set to the value of the SLACK_ALERT_TOKEN environment variable, or "" if the variable is not set.
-		SlackAlertToken: GetEnv("SLACK_ALERT_TOKEN", "", utils.StrParser),
-		// SlackWorkflowChannelId is set to the value of the SLACK_WORKFLOW_CHANNEL_ID environment variable, or "" if the variable is not set.
-		SlackWorkflowChannelId: GetEnv("SLACK_WORKFLOW_CHANNEL_ID", "", utils.StrParser),
-		// SlackBackendChannelId is set to the value of the SLACK_BACKEND_CHANNEL_ID environment variable, or "" if the variable is not set.
-		SlackBackendChannelId: GetEnv("SLACK_BACKEND_CHANNEL_ID", "", utils.StrParser),
+		// RedisURL is set to the value of the REDIS_URL environment variable, or "" if the variable is not set.
+		RedisURL: GetEnv("REDIS_URL", "", utils.StrParser),
 		// RedisAddr is set to the value of the REDIS_ADDR environment variable, or "" if the variable is not set.
 		RedisAddr: GetEnv("REDIS_ADDR", "", utils.StrParser),
 		// RedisPassword is set to the value of the REDIS_PASSWORD environment variable, or "" if the variable is not set.
