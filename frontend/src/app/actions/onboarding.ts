@@ -1,10 +1,11 @@
 "use server";
 
 import { Workspace } from "../queries/workspace";
+import { ProfileType } from "../types/competitor_page";
 
 export interface OnboardingData {
   competitors: string[]; // urls
-  profiles: string[]; // profile names
+  profiles: ProfileType[]; // profile names
   features: string[]; // feature names
   team: string[]; // emails
 }
@@ -27,8 +28,7 @@ export async function persistOnboardingData(
         profiles: data.profiles,
         features: data.features,
       },
-      token,
-      origin
+      token
     );
 
     return {

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { HighlightInit } from '@highlight-run/next/client'
 import localFont from "next/font/local";
 import "./globals.css";
+import { Toaster } from "@/components/ui/toaster"
 import { ClerkProvider } from "@clerk/nextjs";
 
 const geistSans = localFont({
@@ -42,7 +43,10 @@ export default function RootLayout({
           <body
             className={`${geistSans.variable} ${geistMono.variable} antialiased`}
           >
-            {children}
+            <main>
+              {children}
+            </main>
+            <Toaster />
           </body>
         </html>
       </ClerkProvider>

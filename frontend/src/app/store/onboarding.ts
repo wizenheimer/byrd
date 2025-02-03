@@ -4,11 +4,12 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { devtools } from "zustand/middleware";
 import { INITIAL_PROFILES } from "../constants/onboarding";
+import { ProfileType } from "../types/competitor_page";
 
 export interface OnboardingState {
   currentStep: number;
   competitors: string[]; // competitor urls
-  profiles: string[]; // profile names
+  profiles: ProfileType[]; // profile names
   features: string[]; // feature names
   team: string[]; // team emails
 }
@@ -16,7 +17,7 @@ export interface OnboardingState {
 export interface OnboardingActions {
   setCurrentStep: (step: number) => void;
   setCompetitors: (competitors: string[]) => void;
-  setProfiles: (profiles: string[]) => void;
+  setProfiles: (profiles: ProfileType[]) => void;
   setFeatures: (features: string[]) => void;
   setTeam: (team: string[]) => void;
   reset: () => void;
