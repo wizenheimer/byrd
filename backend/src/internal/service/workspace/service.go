@@ -656,16 +656,26 @@ func (ws *workspaceService) ListActiveWorkspaces(ctx context.Context, batchSize 
 		defer close(workspaceChan)
 		defer close(errorChan)
 
+		currentLastID := lastWorkspaceID
 		hasMore := true
+
 		for hasMore {
-			activeWorkspaces, err := ws.workspaceRepo.ListActiveWorkspaces(ctx, batchSize, lastWorkspaceID)
+			activeWorkspaces, err := ws.workspaceRepo.ListActiveWorkspaces(ctx, batchSize, currentLastID)
 			if err != nil {
 				errorChan <- err
 				return
 			}
 
-			hasMore = activeWorkspaces.HasMore
+			if len(activeWorkspaces.WorkspaceIDs) == 0 {
+				// No more workspaces to process
+				return
+			}
+
 			workspaceChan <- activeWorkspaces.WorkspaceIDs
+
+			// Update cursor for next iteration
+			currentLastID = activeWorkspaces.LastSeen
+			hasMore = activeWorkspaces.HasMore
 		}
 	}()
 

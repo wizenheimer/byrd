@@ -644,8 +644,8 @@ func (r *workspaceRepo) ListActiveWorkspaces(ctx context.Context, batchSize int,
 		args = append(args, *lastWorkspaceID)
 	}
 
-	// Ensure deterministic ordering using created_at
-	query += ` ORDER BY created_at ASC`
+	// Order by ID for consistent pagination
+	query += ` ORDER BY id ASC`
 
 	// Add limit
 	query += fmt.Sprintf(" LIMIT $%d", len(args)+1)
