@@ -4,6 +4,7 @@ package page
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -232,32 +233,70 @@ func (ps *pageService) ListActivePages(ctx context.Context, batchSize int, lastP
 	return pagesChan, errorsChan
 }
 
+// RefreshPage with the given pageID using best effort strategy
 func (ps *pageService) RefreshPage(ctx context.Context, pageID uuid.UUID) error {
-	urlContext, cancel := context.WithTimeout(ctx, 30*time.Second)
+	urlContext, cancel := context.WithTimeout(ctx, 180*time.Second)
 	defer cancel()
 
 	page, err := ps.pageRepo.GetPageByPageID(ctx, pageID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get page: %w", err)
 	}
 
 	screenshotOptions := models.GetScreenshotRequestOptions(page.URL, page.CaptureProfile)
+
+	// Handle current screenshot refresh with fallback
+	var currentPath string
+	var currentHTMLContent *models.ScreenshotContent
 	currentImgResp, currentHTMLContentResp, err := ps.screenshotService.Refresh(urlContext, screenshotOptions, false)
 	if err != nil {
-		return err
+		ps.logger.Error("failed to refresh screenshot", zap.Error(err), zap.Any("pageID", pageID))
+		currentPath = ""
+		currentHTMLContent = &models.ScreenshotContent{}
+	} else {
+		currentPath = currentImgResp.StoragePath
+		currentHTMLContent = currentHTMLContentResp
 	}
 
+	// Handle previous screenshot retrieval with fallback
+	var previousPath string
+	var previousHTMLContent *models.ScreenshotContent
 	prevImgResp, previousHtmlContentResp, err := ps.screenshotService.Retrieve(ctx, screenshotOptions, false)
 	if err != nil {
-		return err
+		ps.logger.Error("failed to retrieve previous screenshot", zap.Error(err), zap.Any("pageID", pageID))
+		previousPath = ""
+		previousHTMLContent = &models.ScreenshotContent{}
+	} else {
+		previousPath = prevImgResp.StoragePath
+		previousHTMLContent = previousHtmlContentResp
 	}
 
-	diff, err := ps.diffService.Compare(ctx, previousHtmlContentResp, currentHTMLContentResp, page.DiffProfile)
-	if err != nil {
-		return err
+	var diff *models.DynamicChanges
+	// Only perform diff if both paths are non-empty
+	if currentPath != "" && previousPath != "" {
+		diffResult, err := ps.diffService.Compare(ctx, previousHTMLContent, currentHTMLContent, page.DiffProfile)
+		if err != nil {
+			ps.logger.Error("failed to compare contents", zap.Error(err), zap.Any("pageID", pageID))
+			diff, err = models.NewEmptyDynamicChanges(page.DiffProfile)
+			if err != nil {
+				diff = &models.DynamicChanges{}
+			}
+		} else {
+			diff = diffResult
+		}
+	} else {
+		ps.logger.Warn("skipping diff due to missing screenshots",
+			zap.Any("pageID", pageID),
+			zap.String("currentPath", currentPath),
+			zap.String("previousPath", previousPath))
+		diff, err = models.NewEmptyDynamicChanges(page.DiffProfile)
+		if err != nil {
+			diff = &models.DynamicChanges{}
+		}
 	}
 
-	return ps.pageHistoryService.CreatePageHistory(ctx, pageID, diff, prevImgResp.StoragePath, currentImgResp.StoragePath)
+	// Create history with best effort approach
+	return ps.pageHistoryService.CreatePageHistory(ctx, pageID, diff, previousPath, currentPath)
 }
 
 func (ps *pageService) RemovePage(ctx context.Context, competitorIDs []uuid.UUID, pageIDs []uuid.UUID) error {
