@@ -194,16 +194,38 @@ func (ps *pageService) ListActivePages(ctx context.Context, batchSize int, lastP
 		defer close(pagesChan)
 		defer close(errorsChan)
 
-		hasMore := true
-		for hasMore {
-			activePages, err := ps.pageRepo.GetActivePages(ctx, batchSize, lastPageID)
-			if err != nil {
-				errorsChan <- err
+		currentPageID := lastPageID
+		for {
+			select {
+			case <-ctx.Done():
 				return
-			}
+			default:
+				activePages, err := ps.pageRepo.GetActivePages(ctx, batchSize, currentPageID)
+				if err != nil {
+					errorsChan <- err
+					return
+				}
 
-			hasMore = activePages.HasMore
-			pagesChan <- activePages.PageIDs
+				if len(activePages.PageIDs) == 0 {
+					// No more pages to process
+					return
+				}
+
+				// Send the current batch
+				select {
+				case pagesChan <- activePages.PageIDs:
+				case <-ctx.Done():
+					return
+				}
+
+				if !activePages.HasMore {
+					// No more pages after this batch
+					return
+				}
+
+				// Update cursor for next iteration
+				currentPageID = activePages.LastSeen
+			}
 		}
 	}()
 

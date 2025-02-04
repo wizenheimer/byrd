@@ -528,39 +528,34 @@ func (r *pageRepo) BatchDeleteAllCompetitorPages(ctx context.Context, competitor
 	return nil
 }
 
+// In repository/page/repository.go
 func (r *pageRepo) GetActivePages(ctx context.Context, batchSize int, lastPageID *uuid.UUID) (models.ActivePageBatch, error) {
 	if batchSize <= 0 {
 		return models.ActivePageBatch{}, errors.New("invalid batch size")
 	}
 
-	// Build base query
 	query := `
-		SELECT id
-		FROM pages
-		WHERE status = $1`
+        SELECT id
+        FROM pages
+        WHERE status = $1`
 	args := []interface{}{models.PageStatusActive}
 
-	// Add cursor-based pagination using lastPageID
 	if lastPageID != nil {
-		query += ` AND id > $2` // Using > to get next batch after the last seen ID
+		query += ` AND id > $2`
 		args = append(args, *lastPageID)
 	}
 
-	// Ensure deterministic ordering
-	query += ` ORDER BY created_at ASC`
-
-	// Add limit
+	// Order by ID for consistent pagination
+	query += ` ORDER BY id ASC`
 	query += fmt.Sprintf(" LIMIT $%d", len(args)+1)
 	args = append(args, batchSize+1) // Request one extra to determine if there are more pages
 
-	// Execute query
 	rows, err := r.getQuerier(ctx).Query(ctx, query, args...)
 	if err != nil {
 		return models.ActivePageBatch{}, fmt.Errorf("failed to query active pages: %w", err)
 	}
 	defer rows.Close()
 
-	// Collect results
 	pageIDs := make([]uuid.UUID, 0)
 	for rows.Next() {
 		pageID := uuid.UUID{}
@@ -580,7 +575,6 @@ func (r *pageRepo) GetActivePages(ctx context.Context, batchSize int, lastPageID
 		pageIDs = pageIDs[:batchSize] // Remove the extra item we requested
 	}
 
-	// Set the last seen ID
 	var lastSeen *uuid.UUID
 	if len(pageIDs) > 0 {
 		lastSeen = &pageIDs[len(pageIDs)-1]

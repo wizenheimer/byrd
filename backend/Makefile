@@ -393,7 +393,7 @@ mock-public:
 
 .PHONY:  pre-prod
 pre-prod:
-	@echo "Running nilaway..."
+	@echo "Running pre production environment..."
 	@$(eval GOPATH=$(shell go env GOPATH))
 	@$(eval PATH := $(GOPATH)/bin:$(PATH))
 	@air -c .air.toml
