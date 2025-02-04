@@ -50,7 +50,7 @@ var (
 		ClosingText: "Secure by design - no password needed.",
 		Footer: Footer{
 			ContactMessage: "Need help? We've got your back:",
-			ContactEmail:   "hey@byrd.com",
+			ContactEmail:   "hey@byrdhq.com",
 		},
 		GeneratedAt: time.Now(),
 	}
@@ -76,7 +76,7 @@ var (
 		},
 		Footer: Footer{
 			ContactMessage: "Need help? We've got your back:",
-			ContactEmail:   "hey@byrd.com",
+			ContactEmail:   "hey@byrdhq.com",
 		},
 		GeneratedAt: time.Now(),
 	}
