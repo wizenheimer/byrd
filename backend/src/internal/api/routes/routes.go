@@ -140,14 +140,14 @@ func setupPublicRoutes(
 func setupUserRoutes(
 	router fiber.Router,
 	l *middleware.RateLimiters,
-	handler *handlers.UserHandler,
+	uh *handlers.UserHandler,
 ) {
 	// Delete the current user account
-	router.Delete("/users", l.UserCDLimiter, handler.DeleteCurrentUser)
+	router.Delete("/users", l.UserCDLimiter, uh.DeleteCurrentUser)
 	// Get the current user account
-	router.Get("/users", handler.GetCurrentUser)
-	// Create or update a user account
-	router.Post("/users", l.UserCDLimiter, handler.CreateOrUpdateUser)
+	router.Get("/users", uh.GetCurrentUser)
+	// List all workspaces for a user
+	router.Get("/users/workspace", uh.ListWorkspacesForUser)
 }
 
 // setupWorkspaceRoutes configures workspace and related resource management routes
@@ -161,10 +161,6 @@ func setupWorkspaceRoutes(
 	router.Post("/workspace",
 		l.WorkspaceCDLimiter,
 		workspaceHandler.CreateWorkspaceForUser)
-
-	// List all workspaces for a user
-	router.Get("/workspace",
-		workspaceHandler.ListWorkspacesForUser)
 
 	// Get a workspace by ID
 	router.Get("/workspace/:workspaceID",
