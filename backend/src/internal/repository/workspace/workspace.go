@@ -307,18 +307,44 @@ func (r *workspaceRepo) PromoteRandomUserToAdmin(ctx context.Context, workspaceI
 	return nil
 }
 
-func (r *workspaceRepo) GetWorkspacesForUserID(ctx context.Context, userID uuid.UUID, membershipStatus models.MembershipStatus) ([]models.Workspace, error) {
-	rows, err := r.getQuerier(ctx).Query(ctx, `
+func (r *workspaceRepo) ListWorkspacesForUser(ctx context.Context, userID uuid.UUID, membershipStatus *models.MembershipStatus, limit, offset *int) ([]models.Workspace, bool, error) {
+	query := `
         SELECT w.id, w.name, w.slug, w.billing_email, w.workspace_status, w.workspace_plan, w.created_at, w.updated_at
         FROM workspaces w
         INNER JOIN workspace_users wu ON w.id = wu.workspace_id
         WHERE wu.user_id = $1
-        AND wu.membership_status = $2
-        AND w.workspace_status != $3`,
-		userID, membershipStatus, models.WorkspaceInactive,
-	)
+        AND w.workspace_status != $2`
+
+	args := []interface{}{userID, models.WorkspaceInactive}
+	paramCount := 2
+
+	// Add membership status filter if provided
+	if membershipStatus != nil {
+		paramCount++
+		query += fmt.Sprintf(" AND wu.membership_status = $%d", paramCount)
+		args = append(args, *membershipStatus)
+	}
+
+	// Add ORDER BY clause before pagination
+	query += " ORDER BY w.created_at DESC"
+
+	// Add LIMIT+1 if provided to check for hasMore
+	if limit != nil {
+		paramCount++
+		query += fmt.Sprintf(" LIMIT $%d", paramCount)
+		args = append(args, *limit+1) // Fetch one extra item
+	}
+
+	// Add OFFSET if provided
+	if offset != nil {
+		paramCount++
+		query += fmt.Sprintf(" OFFSET $%d", paramCount)
+		args = append(args, *offset)
+	}
+
+	rows, err := r.getQuerier(ctx).Query(ctx, query, args...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get workspaces for user: %w", err)
+		return nil, false, fmt.Errorf("failed to get workspaces for user: %w", err)
 	}
 	defer rows.Close()
 
@@ -336,12 +362,19 @@ func (r *workspaceRepo) GetWorkspacesForUserID(ctx context.Context, userID uuid.
 			&workspace.UpdatedAt,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("failed to scan workspace: %w", err)
+			return nil, false, fmt.Errorf("failed to scan workspace: %w", err)
 		}
 		workspaces = append(workspaces, workspace)
 	}
 
-	return workspaces, rows.Err()
+	hasMore := false
+	if limit != nil && len(workspaces) > *limit {
+		// Remove the extra item we fetched
+		hasMore = true
+		workspaces = workspaces[:*limit]
+	}
+
+	return workspaces, hasMore, rows.Err()
 }
 
 func (r *workspaceRepo) BatchAddUsersToWorkspace(ctx context.Context, workspaceID uuid.UUID, userIDs []uuid.UUID) ([]models.PartialWorkspaceUser, error) {

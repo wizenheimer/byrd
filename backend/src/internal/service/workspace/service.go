@@ -137,18 +137,18 @@ func (ws *workspaceService) CreateWorkspace(ctx context.Context, workspaceOwner 
 	return workspace, nil
 }
 
-func (ws *workspaceService) ListUserWorkspaces(ctx context.Context, workspaceMember *clerk.User, membershipStatus models.MembershipStatus) ([]models.Workspace, error) {
+func (ws *workspaceService) ListWorkspacesForUser(ctx context.Context, workspaceMember *clerk.User, membershipStatus *models.MembershipStatus, limit, offset *int) ([]models.Workspace, bool, error) {
 	user, err := ws.userService.GetUserByClerkCredentials(ctx, workspaceMember)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
-	workspaces, err := ws.workspaceRepo.GetWorkspacesForUserID(ctx, user.ID, membershipStatus)
+	workspaces, hasMore, err := ws.workspaceRepo.ListWorkspacesForUser(ctx, user.ID, membershipStatus, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
-	return workspaces, nil
+	return workspaces, hasMore, nil
 }
 
 func (ws *workspaceService) GetWorkspace(ctx context.Context, workspaceID uuid.UUID) (*models.Workspace, error) {
