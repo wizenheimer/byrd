@@ -17,6 +17,8 @@ import (
 	"go.uber.org/zap"
 )
 
+const MaxReportQueryLimit = 25
+
 type reportService struct {
 	// logger is the logger used by the service.
 	logger *logger.Logger
@@ -61,21 +63,63 @@ func NewReportService(
 
 // Get returns the report with the given ID.
 func (s *reportService) Get(ctx context.Context, reportID uuid.UUID) (*models.Report, error) {
-	return s.repo.Get(ctx, reportID)
+	report, err := s.repo.Get(ctx, reportID)
+	if err != nil {
+		return nil, err
+	}
+
+	if report == nil {
+		return nil, fmt.Errorf("report with ID %s not found", reportID)
+	}
+
+	return report, nil
 }
 
 // GetLatest returns the latest report for the given workspace and competitor
 func (s *reportService) GetLatest(ctx context.Context, workspaceID, competitorID uuid.UUID) (*models.Report, error) {
-	return s.repo.GetLatest(ctx, workspaceID, competitorID)
+	report, err := s.repo.GetLatest(ctx, workspaceID, competitorID)
+	if err != nil {
+		return nil, err
+	}
+
+	if report == nil {
+		return nil, fmt.Errorf("report not found for workspace %s and competitor %s", workspaceID, competitorID)
+	}
+
+	return report, nil
+}
+
+// GetContent returns the content of the report with the given ID.
+func (s *reportService) GetContent(ctx context.Context, reportURI string) (string, error) {
+	reportContent, err := s.repo.GetReportContent(ctx, reportURI)
+	if err != nil {
+		return "", err
+	}
+
+	return reportContent, nil
 }
 
 // List returns a list of reports for the given workspace and competitor
 func (s *reportService) List(ctx context.Context, workspaceID, competitorID uuid.UUID, limit, offset *int) ([]models.Report, bool, error) {
+	// Check if limit and offset are valid
+	if limit != nil {
+		if *limit < 0 {
+			return nil, false, errors.New("limit cannot be negative")
+		} else if *limit > MaxReportQueryLimit {
+			return nil, false, fmt.Errorf("limit cannot exceed %d", MaxReportQueryLimit)
+		}
+	}
+
+	if offset != nil && *offset < 0 {
+		return nil, false, errors.New("offset cannot be negative")
+	}
+
+	// List reports from the repository
 	return s.repo.List(ctx, workspaceID, competitorID, limit, offset)
 }
 
 // Create creates a new report for the given workspace and competitor
-func (s *reportService) Create(ctx context.Context, workspaceID, competitorID uuid.UUID, history []models.PageHistory) (*models.Report, error) {
+func (s *reportService) Create(ctx context.Context, workspaceID, competitorID uuid.UUID, competitorName string, history []models.PageHistory) (*models.Report, error) {
 	// Calculate the period boundaries
 	// Check for reports in the last week
 	oneWeekAgo := time.Now().UTC().AddDate(0, 0, -7)
@@ -101,10 +145,14 @@ func (s *reportService) Create(ctx context.Context, workspaceID, competitorID uu
 		return nil, err
 	}
 
-	report := models.NewReport(workspaceID, competitorID, changes)
-	if err := s.repo.Set(ctx, report); err != nil {
-		s.errorRecorder.RecordError(ctx, err, zap.Any("competitorID", competitorID), zap.Any("workspaceID", workspaceID))
-		return report, err
+	reportContent, err := s.renderHTML(competitorName, changes)
+	if err != nil {
+		return nil, err
+	}
+
+	report, err := s.repo.Set(ctx, workspaceID, competitorID, changes, reportContent)
+	if err != nil {
+		return nil, err
 	}
 
 	return report, nil
@@ -117,28 +165,56 @@ func (s *reportService) Dispatch(ctx context.Context, workspaceID, competitorID 
 		return err
 	}
 
-	tmp, err := s.library.GetTemplate(template.WeeklyRoundupTemplate)
+	reportContent, err := s.GetContent(ctx, report.URI)
 	if err != nil {
 		return err
+	}
+
+	email := models.Email{
+		To:           subscriberEmails,
+		EmailSubject: "Weekly Roundup for " + competitorName,
+		EmailContent: reportContent,
+		EmailFormat:  models.EmailFormatHTML,
+	}
+
+	go s.sendEmail(email)
+
+	return nil
+}
+
+func (s *reportService) sendEmail(email models.Email) {
+	// Create a context with 30 second timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel() // Important to avoid context leak
+
+	if err := s.emailClient.Send(ctx, email); err != nil {
+		s.errorRecorder.RecordError(ctx, err, zap.Any("subscriberEmails", email.To), zap.Any("emailSubject", email.EmailSubject))
+	}
+}
+
+func (s *reportService) renderHTML(competitorName string, changes []models.CategoryChange) (string, error) {
+	tmp, err := s.library.GetTemplate(template.WeeklyRoundupTemplate)
+	if err != nil {
+		return "", err
 	}
 
 	// ERROR: template.SectionedTemplate is not a typecompilerNotAType
 	sectionedTemplate, ok := tmp.(*template.SectionedTemplate)
 	if !ok {
-		return errors.New("failed to assert template to SectionedTemplate")
+		return "", errors.New("failed to assert template to SectionedTemplate")
 	}
 
 	// Override template with report data
 	sectionedTemplate.Competitor = competitorName
 	sectionedTemplate.GeneratedAt = time.Now()
-	sectionedTemplate.FromDate = report.Time.AddDate(0, 0, -7) // Assuming weekly report
-	sectionedTemplate.ToDate = report.Time
+	sectionedTemplate.FromDate = time.Now().AddDate(0, 0, -7) // Assuming weekly report
+	sectionedTemplate.ToDate = time.Now()
 
 	// Create sections map
 	sectionedTemplate.Sections = make(map[string]template.Section)
 
 	// Map each CategoryChange to a Section
-	for _, change := range report.Changes {
+	for _, change := range changes {
 		bullets := make([]template.BulletPoint, len(change.Changes))
 
 		// Convert changes to bullet points
@@ -159,27 +235,8 @@ func (s *reportService) Dispatch(ctx context.Context, workspaceID, competitorID 
 	// Render the template
 	htmlContent, err := sectionedTemplate.RenderHTML()
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	email := models.Email{
-		To:           subscriberEmails,
-		EmailSubject: "Weekly Roundup for " + competitorName,
-		EmailContent: htmlContent,
-		EmailFormat:  models.EmailFormatHTML,
-	}
-
-	go s.sendEmail(email)
-
-	return nil
-}
-
-func (s *reportService) sendEmail(email models.Email) {
-	// Create a context with 30 second timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel() // Important to avoid context leak
-
-	if err := s.emailClient.Send(ctx, email); err != nil {
-		s.errorRecorder.RecordError(ctx, err, zap.Any("subscriberEmails", email.To), zap.Any("emailSubject", email.EmailSubject))
-	}
+	return htmlContent, nil
 }

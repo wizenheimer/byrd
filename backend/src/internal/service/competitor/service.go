@@ -388,7 +388,7 @@ func (cs *competitorService) CreateReport(ctx context.Context, workspaceID uuid.
 	}
 
 	// Create a new report
-	report, err := cs.reportService.Create(ctx, workspaceID, competitorID, pageHistories)
+	report, err := cs.reportService.Create(ctx, workspaceID, competitorID, competitor[0].Name, pageHistories)
 	if err != nil {
 		return nil, err
 	}

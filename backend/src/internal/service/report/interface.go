@@ -15,11 +15,14 @@ type ReportService interface {
 	// GetLatest returns the latest report for the given workspace and competitor
 	GetLatest(ctx context.Context, workspaceID, competitorID uuid.UUID) (*models.Report, error)
 
+	// GetContent returns the content of the report using the given report model
+	GetContent(ctx context.Context, reportURI string) (string, error)
+
 	// List returns a list of reports for the given workspace and competitor
 	List(ctx context.Context, workspaceID, competitorID uuid.UUID, limit, offset *int) ([]models.Report, bool, error)
 
 	// Create creates a new report for the given workspace and competitor
-	Create(ctx context.Context, workspaceID, competitorID uuid.UUID, history []models.PageHistory) (*models.Report, error)
+	Create(ctx context.Context, workspaceID, competitorID uuid.UUID, competitorName string, history []models.PageHistory) (*models.Report, error)
 
 	// Dispatch send the report to it's subscribers.
 	Dispatch(ctx context.Context, workspaceID, competitorID uuid.UUID, competitorName string, subscriberEmails []string) error
