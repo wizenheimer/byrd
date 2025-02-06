@@ -11,7 +11,7 @@ import (
 // ReportRepository is the interface that provides report operations
 type ReportRepository interface {
 	// Set creates a new report
-	Set(ctx context.Context, report *models.Report) error
+	Set(ctx context.Context, workspaceID, competitorID uuid.UUID, changes []models.CategoryChange, reportContent string) (*models.Report, error)
 
 	// Get returns the report with the given ID.
 	Get(ctx context.Context, reportID uuid.UUID) (*models.Report, error)
@@ -24,4 +24,7 @@ type ReportRepository interface {
 
 	// GetForPeriod returns a report for the given workspace, competitor and time period
 	GetForPeriod(ctx context.Context, workspaceID, competitorID uuid.UUID, since time.Time) (*models.Report, bool, error)
+
+	// GetReportContent returns the content of the report
+	GetReportContent(ctx context.Context, reportURI string) (string, error)
 }

@@ -4,8 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -16,6 +22,8 @@ import (
 
 type reportRespository struct {
 	logger *logger.Logger
+	client *s3.Client
+	bucket string
 	tm     *transaction.TxManager
 }
 
@@ -28,25 +36,55 @@ func (r *reportRespository) getQuerier(ctx context.Context) interface {
 }
 
 // NewReportRepository creates a new report repository
-func NewReportRepository(tm *transaction.TxManager, logger *logger.Logger) ReportRepository {
-	return &reportRespository{
-		logger: logger.WithFields(map[string]interface{}{"repository": "report"}),
+func NewReportRepository(ctx context.Context, tm *transaction.TxManager, accessKey, secretKey, bucket, accountID string, logger *logger.Logger) (ReportRepository, error) {
+	if logger == nil {
+		return nil, fmt.Errorf("can't initialize r2, logger is required")
+	}
+
+	cfg, err := config.LoadDefaultConfig(context.TODO(),
+		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accessKey, secretKey, "")),
+		config.WithRegion("auto"),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load AWS config: %w", err)
+	}
+
+	client := s3.NewFromConfig(cfg, func(o *s3.Options) {
+		o.BaseEndpoint = aws.String(fmt.Sprintf("https://%s.r2.cloudflarestorage.com", accountID))
+	})
+
+	repo := reportRespository{
+		logger: logger.WithFields(map[string]any{
+			"repository": "report",
+		}),
+		client: client,
+		bucket: bucket,
 		tm:     tm,
 	}
+
+	return &repo, err
 }
 
 // Set creates a new report
-func (r *reportRespository) Set(ctx context.Context, report *models.Report) error {
+// Set creates a new report
+func (r *reportRespository) Set(ctx context.Context, workspaceID, competitorID uuid.UUID, changes []models.CategoryChange, reportContent string) (*models.Report, error) {
+	reportURI, err := r.store(ctx, reportContent)
+	if err != nil {
+		return nil, fmt.Errorf("failed to store report: %w", err)
+	}
+
+	report := models.NewReport(workspaceID, competitorID, changes, reportURI)
+
 	querier := r.getQuerier(ctx)
 
 	const insertSQL = `
-        INSERT INTO reports (id, workspace_id, competitor_id, changes, time)
-        VALUES ($1, $2, $3, $4, $5)
+        INSERT INTO reports (id, workspace_id, competitor_id, changes, uri, time)
+        VALUES ($1, $2, $3, $4, $5, $6)
     `
 
 	changesJSON, err := json.Marshal(report.Changes)
 	if err != nil {
-		return fmt.Errorf("failed to marshal changes: %w", err)
+		return nil, fmt.Errorf("failed to marshal changes: %w", err)
 	}
 
 	_, err = querier.Exec(ctx, insertSQL,
@@ -54,13 +92,14 @@ func (r *reportRespository) Set(ctx context.Context, report *models.Report) erro
 		report.WorkspaceID,
 		report.CompetitorID,
 		changesJSON,
+		report.URI,
 		report.Time,
 	)
 	if err != nil {
-		return fmt.Errorf("failed to insert report: %w", err)
+		return nil, fmt.Errorf("failed to insert report: %w", err)
 	}
 
-	return nil
+	return report, nil
 }
 
 // Get returns the report with the given ID
@@ -68,7 +107,7 @@ func (r *reportRespository) Get(ctx context.Context, reportID uuid.UUID) (*model
 	querier := r.getQuerier(ctx)
 
 	const getSQL = `
-        SELECT id, workspace_id, competitor_id, changes, time
+        SELECT id, workspace_id, competitor_id, changes, uri, time
         FROM reports
         WHERE id = $1
     `
@@ -81,6 +120,7 @@ func (r *reportRespository) Get(ctx context.Context, reportID uuid.UUID) (*model
 		&report.WorkspaceID,
 		&report.CompetitorID,
 		&changesJSON,
+		&report.URI,
 		&report.Time,
 	)
 	if err != nil {
@@ -99,7 +139,6 @@ func (r *reportRespository) Get(ctx context.Context, reportID uuid.UUID) (*model
 }
 
 // List returns a list of reports for the given workspace and competitor
-// List returns a list of reports for the given workspace and competitor
 func (r *reportRespository) List(ctx context.Context, workspaceID, competitorID uuid.UUID, limit, offset *int) ([]models.Report, bool, error) {
 	querier := r.getQuerier(ctx)
 
@@ -113,7 +152,7 @@ func (r *reportRespository) List(ctx context.Context, workspaceID, competitorID 
 	}
 
 	query := `
-        SELECT id, workspace_id, competitor_id, changes, time
+        SELECT id, workspace_id, competitor_id, changes, uri, time
         FROM reports
         WHERE workspace_id = $1 AND competitor_id = $2
         ORDER BY time DESC
@@ -144,6 +183,7 @@ func (r *reportRespository) List(ctx context.Context, workspaceID, competitorID 
 			&report.WorkspaceID,
 			&report.CompetitorID,
 			&changesJSON,
+			&report.URI,
 			&report.Time,
 		)
 		if err != nil {
@@ -172,7 +212,7 @@ func (r *reportRespository) GetLatest(ctx context.Context, workspaceID, competit
 	querier := r.getQuerier(ctx)
 
 	const getLatestSQL = `
-        SELECT id, workspace_id, competitor_id, changes, time
+        SELECT id, workspace_id, competitor_id, changes, uri, time
         FROM reports
         WHERE workspace_id = $1 AND competitor_id = $2
         ORDER BY time DESC
@@ -181,12 +221,12 @@ func (r *reportRespository) GetLatest(ctx context.Context, workspaceID, competit
 
 	report := &models.Report{}
 	var changesJSON []byte
-
 	err := querier.QueryRow(ctx, getLatestSQL, workspaceID, competitorID).Scan(
 		&report.ID,
 		&report.WorkspaceID,
 		&report.CompetitorID,
 		&changesJSON,
+		&report.URI,
 		&report.Time,
 	)
 	if err != nil {
@@ -208,7 +248,7 @@ func (r *reportRespository) GetForPeriod(ctx context.Context, workspaceID, compe
 	querier := r.getQuerier(ctx)
 
 	const getSQL = `
-        SELECT id, workspace_id, competitor_id, changes, time
+        SELECT id, workspace_id, competitor_id, changes, uri, time
         FROM reports
         WHERE workspace_id = $1
         AND competitor_id = $2
@@ -225,6 +265,7 @@ func (r *reportRespository) GetForPeriod(ctx context.Context, workspaceID, compe
 		&report.WorkspaceID,
 		&report.CompetitorID,
 		&changesJSON,
+		&report.URI,
 		&report.Time,
 	)
 	if err != nil {
@@ -240,4 +281,42 @@ func (r *reportRespository) GetForPeriod(ctx context.Context, workspaceID, compe
 	}
 
 	return report, true, nil
+}
+
+func (r *reportRespository) GetReportContent(ctx context.Context, reportURI string) (string, error) {
+	return r.retrieve(ctx, reportURI)
+}
+
+func (r *reportRespository) store(ctx context.Context, reportContent string) (string, error) {
+	reportURI := fmt.Sprintf("report/%s", uuid.NewString())
+
+	_, err := r.client.PutObject(ctx, &s3.PutObjectInput{
+		Bucket:      aws.String(r.bucket),
+		Key:         aws.String(reportURI),
+		Body:        strings.NewReader(reportContent),
+		ContentType: aws.String("text/plain"),
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to upload report: %w", err)
+	}
+
+	return reportURI, nil
+}
+
+func (r *reportRespository) retrieve(ctx context.Context, reportURI string) (string, error) {
+	output, err := r.client.GetObject(ctx, &s3.GetObjectInput{
+		Bucket: aws.String(r.bucket),
+		Key:    aws.String(reportURI),
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to get object: %w", err)
+	}
+	defer output.Body.Close()
+
+	content, err := io.ReadAll(output.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to read object body: %w", err)
+	}
+
+	return string(content), nil
 }
