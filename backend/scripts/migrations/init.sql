@@ -101,13 +101,14 @@ CREATE TABLE job_records (
 );
 -- reports table with JSON column
 CREATE TABLE reports (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  workspace_id UUID NOT NULL,
-  competitor_id UUID NOT NULL,
-  changes JSONB NOT NULL,
-  time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE,
-  FOREIGN KEY (competitor_id) REFERENCES competitors(id) ON DELETE CASCADE
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    workspace_id UUID NOT NULL,
+    competitor_id UUID NOT NULL,
+    changes JSONB NOT NULL,
+    uri TEXT NOT NULL,
+    time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE,
+    FOREIGN KEY (competitor_id) REFERENCES competitors(id) ON DELETE CASCADE
 );
 -- Create indexes for better query performance
 -- Indexes for workspaces
