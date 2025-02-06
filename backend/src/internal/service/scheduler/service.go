@@ -7,12 +7,14 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/robfig/cron/v3"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/internal/recorder"
 	"github.com/wizenheimer/byrd/src/internal/repository/schedule"
 	"github.com/wizenheimer/byrd/src/internal/scheduler"
 	"github.com/wizenheimer/byrd/src/internal/service/workflow"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
+	"github.com/wizenheimer/byrd/src/pkg/utils"
 	"go.uber.org/zap"
 )
 
@@ -34,6 +36,9 @@ type schedulerService struct {
 
 	// errorRecord is the error recorder for the scheduler service
 	errorRecord *recorder.ErrorRecorder
+
+	// parser is the cron parser
+	parser cron.Parser
 }
 
 // NewSchedulerService creates a new scheduler service
@@ -44,6 +49,8 @@ func NewSchedulerService(
 	logger *logger.Logger,
 	errorRecord *recorder.ErrorRecorder,
 ) (SchedulerService, error) {
+	parser := utils.NewScheduleParser()
+
 	s := schedulerService{
 		repository: repository,
 		logger: logger.WithFields(map[string]any{
@@ -52,6 +59,7 @@ func NewSchedulerService(
 		errorRecord:     errorRecord,
 		scheduler:       scheduler,
 		workflowService: workflowService,
+		parser:          parser,
 	}
 	return &s, nil
 }
@@ -112,6 +120,12 @@ func (s *schedulerService) syncWorkflow(ctx context.Context, remoteScheduleID mo
 
 // Schedule schedules a new workflow
 func (s *schedulerService) Schedule(ctx context.Context, workflowProp models.WorkflowScheduleProps) (models.ScheduleID, error) {
+	// Add validation to the workflowProp
+	_, err := s.parser.Parse(workflowProp.Spec)
+	if err != nil {
+		return models.NilScheduleID(), err
+	}
+
 	remoteScheduleID := models.NewScheduleID()
 
 	op := &CreateScheduleOperation{

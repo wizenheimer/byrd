@@ -200,6 +200,11 @@ func (op *DeleteScheduleOperation) Execute(ctx context.Context) error {
 		Spec:         schedule.Spec,
 	}
 
+	// Delete from repository first
+	if err := op.svc.repository.DeleteSchedule(ctx, op.remoteID); err != nil {
+		return err
+	}
+
 	value, ok := op.svc.scheduledFuncs.Load(op.remoteID)
 	if !ok {
 		return errors.New("scheduled function not found")
@@ -207,11 +212,6 @@ func (op *DeleteScheduleOperation) Execute(ctx context.Context) error {
 	op.oldFunc, ok = value.(*models.ScheduledFunc)
 	if !ok {
 		return errors.New("failed to cast scheduled function")
-	}
-
-	// Delete from repository first
-	if err := op.svc.repository.DeleteSchedule(ctx, op.remoteID); err != nil {
-		return err
 	}
 
 	// Delete from scheduler

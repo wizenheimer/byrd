@@ -9,6 +9,7 @@ import (
 	"github.com/robfig/cron/v3"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
+	"github.com/wizenheimer/byrd/src/pkg/utils"
 	"go.uber.org/zap"
 )
 
@@ -24,8 +25,7 @@ type scheduler struct {
 // NewScheduler creates a new instance of the scheduler
 func NewScheduler(logger *logger.Logger) Scheduler {
 	cronLogger := NewCronLogger(logger)
-	parser := cron.NewParser(
-		cron.Second | cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow | cron.Descriptor)
+	parser := utils.NewScheduleParser()
 
 	return &scheduler{
 		// Initialize the cron instance with custom parser and logger
