@@ -125,8 +125,16 @@ func (uh *UserHandler) ListWorkspacesForUser(c *fiber.Ctx) error {
 	if err != nil {
 		return sendErrorResponse(c, uh.logger, fiber.StatusInternalServerError, "Workspace couldn't be listed for the user", err.Error())
 	}
-	return sendDataResponse(c, fiber.StatusOK, "Listed workspaces successfully", map[string]any{
+
+	listResponse := map[string]any{
 		"workspaces": workspaces,
 		"has_more":   hasMore,
-	})
+	}
+
+	includeUserProfile := strings.ToLower(c.Query("include_profile", "false")) == "true"
+	if includeUserProfile {
+		listResponse["user"] = user
+	}
+
+	return sendDataResponse(c, fiber.StatusOK, "Listed workspaces successfully", listResponse)
 }
