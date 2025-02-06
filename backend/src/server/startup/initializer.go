@@ -2,6 +2,8 @@
 package startup
 
 import (
+	"context"
+
 	"github.com/wizenheimer/byrd/src/internal/api/middleware"
 	"github.com/wizenheimer/byrd/src/internal/api/routes"
 	"github.com/wizenheimer/byrd/src/internal/config"
@@ -15,6 +17,7 @@ import (
 )
 
 func Initialize(
+	ctx context.Context,
 	cfg *config.Config,
 	logger *logger.Logger,
 	errorRecorder *recorder.ErrorRecorder,
@@ -66,7 +69,7 @@ func Initialize(
 	}
 
 	// Set up repositories
-	repos, err := SetupRepositories(tm, redisClient, logger)
+	repos, err := SetupRepositories(ctx, cfg, tm, redisClient, logger)
 	if err != nil {
 		return nil, nil, nil, err
 	}

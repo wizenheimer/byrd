@@ -75,7 +75,7 @@ func main() {
 	)
 
 	// Initialize handlers using the new modular initializer
-	handlers, rm, am, err := startup.Initialize(cfg, logger, errorRecorder)
+	handlers, rm, am, err := startup.Initialize(context.Background(), cfg, logger, errorRecorder)
 	if err != nil {
 		logger.Fatal("Failed to initialize handlers", zap.Error(err))
 		return

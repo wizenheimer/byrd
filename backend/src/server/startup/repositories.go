@@ -2,7 +2,10 @@
 package startup
 
 import (
+	"context"
+
 	"github.com/redis/go-redis/v9"
+	"github.com/wizenheimer/byrd/src/internal/config"
 	"github.com/wizenheimer/byrd/src/internal/repository/competitor"
 	"github.com/wizenheimer/byrd/src/internal/repository/history"
 	"github.com/wizenheimer/byrd/src/internal/repository/page"
@@ -26,8 +29,25 @@ type Repositories struct {
 	Report     report.ReportRepository
 }
 
-func SetupRepositories(tm *transaction.TxManager, redisClient *redis.Client, logger *logger.Logger) (*Repositories, error) {
-	workflowRepo, err := workflow.NewWorkflowRepository(redisClient, tm, logger)
+func SetupRepositories(ctx context.Context, cfg *config.Config, tm *transaction.TxManager, redisClient *redis.Client, logger *logger.Logger) (*Repositories, error) {
+	workflowRepo, err := workflow.NewWorkflowRepository(
+		redisClient,
+		tm,
+		logger,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	reportRepo, err := report.NewReportRepository(
+		ctx,
+		tm,
+		cfg.Storage.AccessKey,
+		cfg.Storage.SecretKey,
+		cfg.Storage.Bucket,
+		cfg.Storage.AccountId,
+		logger,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +59,7 @@ func SetupRepositories(tm *transaction.TxManager, redisClient *redis.Client, log
 		Page:       page.NewPageRepository(tm, logger),
 		History:    history.NewPageHistoryRepository(tm, logger),
 		Schedule:   schedule.NewScheduleRepo(tm, logger),
-		Report:     report.NewReportRepository(tm, logger),
+		Report:     reportRepo,
 		Workflow:   workflowRepo,
 	}, nil
 }
