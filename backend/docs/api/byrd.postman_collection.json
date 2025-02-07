@@ -1,7 +1,7 @@
 {
 	"info": {
 		"_postman_id": "326ecf9a-9375-444f-9164-c4a34d4526ea",
-		"name": "Byrd",
+		"name": "byrd",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "38905328"
 	},
@@ -49,7 +49,7 @@
 										"header": [],
 										"body": {
 											"mode": "raw",
-											"raw": "{\n    \"competitors\": [\n        \"https://www.stripe.com\",\n        \"https://www.airbnb.com\",\n        \"https://www.dropbox.com\",\n        \"https://www.instacart.com\",\n        \"https://www.gumroad.com\",\n        \"https://www.plaid.com\",\n        \"https://www.segment.com\"\n    ],\n    \"team\": [\n        \"xnayankumar@gmail.com\",\n        \"x4rc3us@gmail.com\",\n        \"byrdhq.dev@gmail.com\"\n    ],\n    \"profiles\": [\n        \"product\"\n    ],\n    \"features\": [\n        \"page\"\n    ]\n}",
+											"raw": "{\n    \"competitors\": [\n        \"https://www.stripe.com\",\n        \"https://www.airbnb.com\"\n    ],\n    \"team\": [\n        \"byrdhq.dev@gmail.com\"\n    ],\n    \"profiles\": [\n        \"product\"\n    ],\n    \"features\": [\n        \"page\"\n    ]\n}",
 											"options": {
 												"raw": {
 													"language": "json"
@@ -242,193 +242,6 @@
 											],
 											"cookie": [],
 											"body": "{\n    \"message\": \"Created workspace successfully\",\n    \"data\": {\n        \"id\": \"1ab38fcf-ae8c-47c2-9770-46a7c2a73dc5\",\n        \"name\": \"Nayan's Workspace\",\n        \"slug\": \"nayans-workspace-3886aa3f-23cd-41e2-9324-015eeca886ee\",\n        \"billing_email\": \"xnayankumar@gmail.com\",\n        \"workspace_status\": \"active\",\n        \"workspace_plan\": \"trial\",\n        \"created_at\": \"2025-02-03T12:21:24.198953Z\",\n        \"updated_at\": \"2025-02-03T12:21:24.198953Z\"\n    }\n}"
-										}
-									]
-								},
-								{
-									"name": "List workspaces for a user",
-									"event": [
-										{
-											"listen": "test",
-											"script": {
-												"exec": [
-													""
-												],
-												"type": "text/javascript",
-												"packages": {}
-											}
-										},
-										{
-											"listen": "prerequest",
-											"script": {
-												"exec": [
-													""
-												],
-												"type": "text/javascript",
-												"packages": {}
-											}
-										}
-									],
-									"request": {
-										"method": "GET",
-										"header": [],
-										"url": {
-											"raw": "{{origin}}/api/public/v1/workspace",
-											"host": [
-												"{{origin}}"
-											],
-											"path": [
-												"api",
-												"public",
-												"v1",
-												"workspace"
-											],
-											"query": [
-												{
-													"key": "membership_status",
-													"value": "pending",
-													"disabled": true
-												}
-											]
-										}
-									},
-									"response": [
-										{
-											"name": "List workspaces for a user",
-											"originalRequest": {
-												"method": "GET",
-												"header": [],
-												"url": {
-													"raw": "{{origin}}/api/public/v1/workspace",
-													"host": [
-														"{{origin}}"
-													],
-													"path": [
-														"api",
-														"public",
-														"v1",
-														"workspace"
-													]
-												}
-											},
-											"status": "OK",
-											"code": 200,
-											"_postman_previewlanguage": "json",
-											"header": [
-												{
-													"key": "Date",
-													"value": "Mon, 20 Jan 2025 22:04:04 GMT"
-												},
-												{
-													"key": "Content-Type",
-													"value": "application/json"
-												},
-												{
-													"key": "Content-Length",
-													"value": "342"
-												}
-											],
-											"cookie": [],
-											"body": "{\n    \"message\": \"Listed workspaces successfully\",\n    \"data\": [\n        {\n            \"id\": \"90c355cb-4755-4853-8b75-758016dabc9e\",\n            \"name\": \"Nayan's Workspace\",\n            \"slug\": \"nayans-workspace-a514ecdc-140c-4e83-9381-c78a6bfabc37\",\n            \"billing_email\": \"byrdhq.dev@gmail.com\",\n            \"workspace_status\": \"active\",\n            \"created_at\": \"2025-01-20T22:03:44.712976Z\",\n            \"updated_at\": \"2025-01-20T22:03:44.712976Z\"\n        }\n    ]\n}"
-										},
-										{
-											"name": "List workspaces for a user",
-											"originalRequest": {
-												"method": "GET",
-												"header": [],
-												"url": {
-													"raw": "{{origin}}/api/public/v1/workspace",
-													"host": [
-														"{{origin}}"
-													],
-													"path": [
-														"api",
-														"public",
-														"v1",
-														"workspace"
-													]
-												}
-											},
-											"status": "OK",
-											"code": 200,
-											"_postman_previewlanguage": "json",
-											"header": [
-												{
-													"key": "Date",
-													"value": "Wed, 22 Jan 2025 17:22:36 GMT"
-												},
-												{
-													"key": "Content-Type",
-													"value": "application/json"
-												},
-												{
-													"key": "Content-Length",
-													"value": "342"
-												}
-											],
-											"cookie": [],
-											"body": "{\n    \"message\": \"Listed workspaces successfully\",\n    \"data\": [\n        {\n            \"id\": \"0f6c1bde-6b0d-4095-b813-4df733cdbbd4\",\n            \"name\": \"Nayan's Workspace\",\n            \"slug\": \"nayans-workspace-45f0102a-c3a2-4c46-b95a-544e85f40c1e\",\n            \"billing_email\": \"byrdhq.dev@gmail.com\",\n            \"workspace_status\": \"active\",\n            \"created_at\": \"2025-01-22T17:15:10.976361Z\",\n            \"updated_at\": \"2025-01-22T17:15:10.976361Z\"\n        }\n    ]\n}"
-										},
-										{
-											"name": "List workspaces for a user",
-											"originalRequest": {
-												"method": "GET",
-												"header": [],
-												"url": {
-													"raw": "{{origin}}/api/public/v1/workspace",
-													"host": [
-														"{{origin}}"
-													],
-													"path": [
-														"api",
-														"public",
-														"v1",
-														"workspace"
-													],
-													"query": [
-														{
-															"key": "membership_status",
-															"value": "pending",
-															"disabled": true
-														}
-													]
-												}
-											},
-											"status": "OK",
-											"code": 200,
-											"_postman_previewlanguage": "json",
-											"header": [
-												{
-													"key": "Date",
-													"value": "Mon, 03 Feb 2025 12:10:07 GMT"
-												},
-												{
-													"key": "Content-Type",
-													"value": "application/json"
-												},
-												{
-													"key": "Content-Length",
-													"value": "412"
-												},
-												{
-													"key": "Vary",
-													"value": "Origin"
-												},
-												{
-													"key": "X-Ratelimit-Limit",
-													"value": "100"
-												},
-												{
-													"key": "X-Ratelimit-Remaining",
-													"value": "98"
-												},
-												{
-													"key": "X-Ratelimit-Reset",
-													"value": "23"
-												}
-											],
-											"cookie": [],
-											"body": "{\n    \"message\": \"Listed workspaces successfully\",\n    \"data\": {\n        \"membership_status\": \"active\",\n        \"workspaces\": [\n            {\n                \"id\": \"82e66f8e-0981-4cee-8e79-45cd58425edd\",\n                \"name\": \"Nayan's Workspace\",\n                \"slug\": \"nayans-workspace-5f4a6ff1-716a-430b-9694-2c0972115e10\",\n                \"billing_email\": \"xnayankumar@gmail.com\",\n                \"workspace_status\": \"active\",\n                \"workspace_plan\": \"trial\",\n                \"created_at\": \"2025-02-03T12:09:43.620548Z\",\n                \"updated_at\": \"2025-02-03T12:09:43.620548Z\"\n            }\n        ]\n    }\n}"
 										}
 									]
 								},
@@ -1028,6 +841,33 @@
 							"item": [
 								{
 									"name": "Join a workspace by ID",
+									"event": [
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													"const helper = pm.require('byrd-client');",
+													"",
+													"// Use index 0 to get the second user's token",
+													"helper.setAuthToken(pm.request, 1)",
+													"    .then(success => {",
+													"        if (!success) {",
+													"            console.error('Failed to set auth token');",
+													"        }",
+													"    })",
+													"    .catch(error => {",
+													"        console.error('Error in auth process:', error);",
+													"    });"
+												],
+												"type": "text/javascript",
+												"packages": {
+													"byrd-client": {
+														"id": "0194b886-b523-7d08-8739-1598ea10e093"
+													}
+												}
+											}
+										}
+									],
 									"request": {
 										"method": "POST",
 										"header": [],
@@ -1131,6 +971,33 @@
 								},
 								{
 									"name": "Exit a workspace by ID",
+									"event": [
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													"const helper = pm.require('byrd-client');",
+													"",
+													"// Use index 0 to get the second user's token",
+													"helper.setAuthToken(pm.request, 0)",
+													"    .then(success => {",
+													"        if (!success) {",
+													"            console.error('Failed to set auth token');",
+													"        }",
+													"    })",
+													"    .catch(error => {",
+													"        console.error('Error in auth process:', error);",
+													"    });"
+												],
+												"type": "text/javascript",
+												"packages": {
+													"byrd-client": {
+														"id": "0194b886-b523-7d08-8739-1598ea10e093"
+													}
+												}
+											}
+										}
+									],
 									"request": {
 										"method": "POST",
 										"header": [],
@@ -1252,24 +1119,9 @@
 									"listen": "prerequest",
 									"script": {
 										"type": "text/javascript",
-										"packages": {
-											"byrd-client": {
-												"id": "0194b886-b523-7d08-8739-1598ea10e093"
-											}
-										},
+										"packages": {},
 										"exec": [
-											"const helper = pm.require('byrd-client');",
-											"",
-											"// Use index 0 to get the second user's token",
-											"helper.setAuthToken(pm.request, 1)",
-											"    .then(success => {",
-											"        if (!success) {",
-											"            console.error('Failed to set auth token');",
-											"        }",
-											"    })",
-											"    .catch(error => {",
-											"        console.error('Error in auth process:', error);",
-											"    });"
+											""
 										]
 									}
 								},
@@ -1539,7 +1391,7 @@
 										"header": [],
 										"body": {
 											"mode": "raw",
-											"raw": "{\n    \"emails\": [\n        \"test@test.com\"\n    ]\n}",
+											"raw": "{\n    \"emails\": [\n        \"xnayankumar@gmail.com\"\n    ]\n}",
 											"options": {
 												"raw": {
 													"language": "json"
@@ -2401,7 +2253,7 @@
 										"header": [],
 										"body": {
 											"mode": "raw",
-											"raw": "[\n    {\n        \"url\": \"https://about.scarf.sh/\"\n    }\n]",
+											"raw": "[\n    {\n        \"url\": \"https://www.dropbox.com\"\n    }\n]",
 											"options": {
 												"raw": {
 													"language": "json"
@@ -3100,7 +2952,7 @@
 										"method": "GET",
 										"header": [],
 										"url": {
-											"raw": "{{origin}}/api/public/v1/workspace/{{workspace_id}}/competitors/{{competitor_id}}/reports",
+											"raw": "{{origin}}/api/public/v1/workspace/{{workspace_id}}/competitors/{{competitor_id}}/reports?_limit=10&_page=1",
 											"host": [
 												"{{origin}}"
 											],
@@ -3113,6 +2965,16 @@
 												"competitors",
 												"{{competitor_id}}",
 												"reports"
+											],
+											"query": [
+												{
+													"key": "_limit",
+													"value": "10"
+												},
+												{
+													"key": "_page",
+													"value": "1"
+												}
 											]
 										}
 									},
@@ -3698,7 +3560,7 @@
 										"method": "GET",
 										"header": [],
 										"url": {
-											"raw": "{{origin}}/api/public/v1/workspace/{{workspace_id}}/competitors/{{competitor_id}}/pages?_page=1&_limit=1",
+											"raw": "{{origin}}/api/public/v1/workspace/{{workspace_id}}/competitors/{{competitor_id}}/pages",
 											"host": [
 												"{{origin}}"
 											],
@@ -3715,11 +3577,13 @@
 											"query": [
 												{
 													"key": "_page",
-													"value": "1"
+													"value": "1",
+													"disabled": true
 												},
 												{
 													"key": "_limit",
-													"value": "1"
+													"value": "1",
+													"disabled": true
 												}
 											]
 										}
@@ -3886,7 +3750,7 @@
 										"header": [],
 										"body": {
 											"mode": "raw",
-											"raw": "[\n    {\n        \"url\": \"https://www.commonroom.io/customers/\"\n    }\n]",
+											"raw": "[\n    {\n        \"url\": \"https://www.commonroom.io/product/signals/\"\n    },\n    {\n        \"url\": \"https://www.commonroom.io/product/person-360/\"\n    },\n    {\n        \"url\": \"https://www.commonroom.io/product/automation/\"\n    },\n    {\n        \"url\": \"https://www.commonroom.io/product/ai/\"\n    },\n    {\n        \"url\": \"https://www.commonroom.io/product/customer-intelligence-platform/\"\n    },\n    {\n        \"url\": \"https://www.commonroom.io/integrations/\"\n    },\n    {\n        \"url\": \"https://www.commonroom.io/resources/\"\n    }\n]",
 											"options": {
 												"raw": {
 													"language": "json"
@@ -4787,6 +4651,221 @@
 					"name": "User Routes",
 					"item": [
 						{
+							"name": "List Workspace",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											"const helper = pm.require('byrd-client');",
+											"",
+											"// Use index 1 to get the second user's token",
+											"helper.setAuthToken(pm.request,0)",
+											"    .then(success => {",
+											"        if (!success) {",
+											"            console.error('Failed to set auth token');",
+											"        }",
+											"    })",
+											"    .catch(error => {",
+											"        console.error('Error in auth process:', error);",
+											"    });"
+										],
+										"type": "text/javascript",
+										"packages": {
+											"byrd-client": {
+												"id": "0194b886-b523-7d08-8739-1598ea10e093"
+											}
+										}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{origin}}/api/public/v1/users/workspace?_page=1&_limit=10&include_profile=true",
+									"host": [
+										"{{origin}}"
+									],
+									"path": [
+										"api",
+										"public",
+										"v1",
+										"users",
+										"workspace"
+									],
+									"query": [
+										{
+											"key": "membership_status",
+											"value": "pending",
+											"disabled": true
+										},
+										{
+											"key": "_page",
+											"value": "1"
+										},
+										{
+											"key": "_limit",
+											"value": "10"
+										},
+										{
+											"key": "include_profile",
+											"value": "true"
+										}
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "List workspaces for a user",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{origin}}/api/public/v1/workspace",
+											"host": [
+												"{{origin}}"
+											],
+											"path": [
+												"api",
+												"public",
+												"v1",
+												"workspace"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Mon, 20 Jan 2025 22:04:04 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "342"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"Listed workspaces successfully\",\n    \"data\": [\n        {\n            \"id\": \"90c355cb-4755-4853-8b75-758016dabc9e\",\n            \"name\": \"Nayan's Workspace\",\n            \"slug\": \"nayans-workspace-a514ecdc-140c-4e83-9381-c78a6bfabc37\",\n            \"billing_email\": \"byrdhq.dev@gmail.com\",\n            \"workspace_status\": \"active\",\n            \"created_at\": \"2025-01-20T22:03:44.712976Z\",\n            \"updated_at\": \"2025-01-20T22:03:44.712976Z\"\n        }\n    ]\n}"
+								},
+								{
+									"name": "List workspaces for a user",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{origin}}/api/public/v1/workspace",
+											"host": [
+												"{{origin}}"
+											],
+											"path": [
+												"api",
+												"public",
+												"v1",
+												"workspace"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Wed, 22 Jan 2025 17:22:36 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "342"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"Listed workspaces successfully\",\n    \"data\": [\n        {\n            \"id\": \"0f6c1bde-6b0d-4095-b813-4df733cdbbd4\",\n            \"name\": \"Nayan's Workspace\",\n            \"slug\": \"nayans-workspace-45f0102a-c3a2-4c46-b95a-544e85f40c1e\",\n            \"billing_email\": \"byrdhq.dev@gmail.com\",\n            \"workspace_status\": \"active\",\n            \"created_at\": \"2025-01-22T17:15:10.976361Z\",\n            \"updated_at\": \"2025-01-22T17:15:10.976361Z\"\n        }\n    ]\n}"
+								},
+								{
+									"name": "List workspaces for a user",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{origin}}/api/public/v1/workspace",
+											"host": [
+												"{{origin}}"
+											],
+											"path": [
+												"api",
+												"public",
+												"v1",
+												"workspace"
+											],
+											"query": [
+												{
+													"key": "membership_status",
+													"value": "pending",
+													"disabled": true
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Date",
+											"value": "Mon, 03 Feb 2025 12:10:07 GMT"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Length",
+											"value": "412"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin"
+										},
+										{
+											"key": "X-Ratelimit-Limit",
+											"value": "100"
+										},
+										{
+											"key": "X-Ratelimit-Remaining",
+											"value": "98"
+										},
+										{
+											"key": "X-Ratelimit-Reset",
+											"value": "23"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"Listed workspaces successfully\",\n    \"data\": {\n        \"membership_status\": \"active\",\n        \"workspaces\": [\n            {\n                \"id\": \"82e66f8e-0981-4cee-8e79-45cd58425edd\",\n                \"name\": \"Nayan's Workspace\",\n                \"slug\": \"nayans-workspace-5f4a6ff1-716a-430b-9694-2c0972115e10\",\n                \"billing_email\": \"xnayankumar@gmail.com\",\n                \"workspace_status\": \"active\",\n                \"workspace_plan\": \"trial\",\n                \"created_at\": \"2025-02-03T12:09:43.620548Z\",\n                \"updated_at\": \"2025-02-03T12:09:43.620548Z\"\n            }\n        ]\n    }\n}"
+								}
+							]
+						},
+						{
 							"name": "Get Account",
 							"request": {
 								"method": "GET",
@@ -4959,69 +5038,6 @@
 									],
 									"cookie": [],
 									"body": "{\n    \"message\": \"User deleted successfully\"\n}"
-								}
-							]
-						},
-						{
-							"name": "Create Account",
-							"request": {
-								"method": "POST",
-								"header": [],
-								"url": {
-									"raw": "{{origin}}/api/public/v1/users",
-									"host": [
-										"{{origin}}"
-									],
-									"path": [
-										"api",
-										"public",
-										"v1",
-										"users"
-									]
-								}
-							},
-							"response": [
-								{
-									"name": "Create Account",
-									"originalRequest": {
-										"method": "POST",
-										"header": [],
-										"url": {
-											"raw": "{{origin}}/api/public/v1/users",
-											"host": [
-												"{{origin}}"
-											],
-											"path": [
-												"api",
-												"public",
-												"v1",
-												"users"
-											]
-										}
-									},
-									"status": "OK",
-									"code": 200,
-									"_postman_previewlanguage": "json",
-									"header": [
-										{
-											"key": "Date",
-											"value": "Thu, 30 Jan 2025 18:30:03 GMT"
-										},
-										{
-											"key": "Content-Type",
-											"value": "application/json"
-										},
-										{
-											"key": "Content-Length",
-											"value": "307"
-										},
-										{
-											"key": "Vary",
-											"value": "Origin"
-										}
-									],
-									"cookie": [],
-									"body": "{\n    \"message\": \"User created or updated successfully\",\n    \"data\": {\n        \"id\": \"0844638a-7d20-4fd0-90bd-bf3ee20d8513\",\n        \"clerk_id\": \"user_2rAC4xgrgT1JdlEvKKrcJAUUEdJ\",\n        \"email\": \"xnayankumar@gmail.com\",\n        \"name\": \"Xnayankumar\",\n        \"status\": \"pending\",\n        \"created_at\": \"2025-01-30T15:21:51.242492Z\",\n        \"updated_at\": \"2025-01-30T18:30:04.447635Z\"\n    }\n}"
 								}
 							]
 						}
@@ -5291,7 +5307,7 @@
 									}
 								],
 								"url": {
-									"raw": "{{origin}}/api/private/v1/workflow/history?workflow_type=report",
+									"raw": "{{origin}}/api/private/v1/workflow/history?workflow_type={{workflow_type}}",
 									"host": [
 										"{{origin}}"
 									],
@@ -5305,7 +5321,7 @@
 									"query": [
 										{
 											"key": "workflow_type",
-											"value": "report"
+											"value": "{{workflow_type}}"
 										}
 									]
 								}
@@ -5944,7 +5960,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n    \"workflow_type\": \"screenshot\",\n    \"about\": \"this runs every 1 yo\",\n    \"spec\": \"0 * * * * *\"\n}",
+									"raw": "{\n    \"workflow_type\": \"screenshot\",\n    \"about\": \"screenshot refresh runs every morning at 8:30 AM\",\n    \"spec\": \"0 30 8 * * *\"\n}",
 									"options": {
 										"raw": {
 											"language": "json"
