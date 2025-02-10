@@ -16,6 +16,6 @@ RUN go mod download
 # Create logs directory
 RUN mkdir -p /app/logs
 
-EXPOSE 8080
+EXPOSE 10000
 
 CMD ["air", "-c", ".air.toml"]

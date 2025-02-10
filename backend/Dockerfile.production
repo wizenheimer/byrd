@@ -23,6 +23,6 @@ WORKDIR /app
 # Copy binary from builder
 COPY --from=builder /app/server .
 
-EXPOSE 8080
+EXPOSE 10000
 
 CMD ["/app/server"]

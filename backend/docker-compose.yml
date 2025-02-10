@@ -6,7 +6,7 @@ services:
       context: .
       dockerfile: Dockerfile.development
     ports:
-      - "8080:8080"
+      - "10000:10000"
     volumes:
       - .:/app
       - go-mod-cache:/go/pkg/mod
@@ -27,7 +27,7 @@ services:
       context: .
       dockerfile: Dockerfile.production
     ports:
-      - "8080:8080"
+      - "10000:10000"
     env_file:
       - .env.production
     environment:
