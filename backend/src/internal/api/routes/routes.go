@@ -25,6 +25,7 @@ type HandlerContainer struct {
 	WorkflowHandler     *handlers.WorkflowHandler
 	ScheduleHandler     *handlers.ScheduleHandler
 	NotificationHandler *handlers.NotificationHandler
+	SlackHandler        *handlers.SlackIntegrationHandler
 }
 
 func NewHandlerContainer(
@@ -35,6 +36,7 @@ func NewHandlerContainer(
 	workflowService workflow.WorkflowService,
 	schedulerService scheduler.SchedulerService,
 	library template.TemplateLibrary,
+	redisURL string,
 	emailClient email.EmailClient,
 	tx *transaction.TxManager,
 	logger *logger.Logger,
@@ -51,6 +53,14 @@ func NewHandlerContainer(
 		logger,
 		emailClient,
 		library,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	sh, err := handlers.NewSlackIntegrationHandler(
+		logger,
+		redisURL,
 	)
 	if err != nil {
 		return nil, err
@@ -86,7 +96,10 @@ func NewHandlerContainer(
 			schedulerService,
 			logger,
 		),
+		// Handlers for notification management
 		NotificationHandler: nh,
+		// Handlers for slack integration
+		SlackHandler: sh,
 	}
 	return &hc, nil
 }
@@ -100,6 +113,7 @@ func SetupRoutes(
 	m *middleware.AccessMiddleware,
 	r *middleware.ResourceMiddleware,
 ) {
+	setupIntegrationRoutes(app, handlers.SlackHandler)
 
 	setupPublicRoutes(app, handlers, l, m, r)
 
