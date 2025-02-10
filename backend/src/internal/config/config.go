@@ -182,7 +182,7 @@ func LoadEnvironmentConfig() EnvironmentConfig {
 
 func LoadServerConfig() ServerConfig {
 	return ServerConfig{
-		// Port is set to the value of the SERVER_PORT environment variable, or "8080" if the variable is not set.
+		// Port is set to the value of the SERVER_PORT environment variable, or "10000" if the variable is not set.
 		Port: fmt.Sprintf(":%s", GetEnv("PORT", "10000", utils.StrParser)),
 
 		// RequestsPerMinute is set to the value of the REQUESTS_PER_MINUTE environment variable, or 100 if the variable is not set.
