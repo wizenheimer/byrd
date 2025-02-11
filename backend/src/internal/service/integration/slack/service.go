@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/slack-go/slack"
+	core_models "github.com/wizenheimer/byrd/src/internal/models/core"
 	models "github.com/wizenheimer/byrd/src/internal/models/integration/slack"
 	repository "github.com/wizenheimer/byrd/src/internal/repository/integration/slack"
 	"github.com/wizenheimer/byrd/src/internal/service/workspace"
@@ -219,6 +220,7 @@ func (svc *slackWorkspaceService) CreateCompetitorForWorkspace(ctx context.Conte
 		urls = append(urls, url.String())
 	}
 
+	// --- Dropdown (Single Select) ---
 	competitorSelect := slack.NewOptionsSelectBlockElement(
 		slack.OptTypeStatic,
 		slack.NewTextBlockObject(slack.PlainTextType, "Select a competitor", false, false),
@@ -231,6 +233,31 @@ func (svc *slackWorkspaceService) CreateCompetitorForWorkspace(ctx context.Conte
 		slack.NewTextBlockObject(slack.PlainTextType, "Assign to Competitor", false, false),
 		nil, // No hint
 		competitorSelect,
+	)
+
+	// --- Multi-Select (DiffProfile) ---
+	diffProfileOptions := core_models.GetDefaultDiffProfile()
+	var multiSelectOptions []*slack.OptionBlockObject
+	for _, profile := range diffProfileOptions {
+		multiSelectOptions = append(multiSelectOptions, slack.NewOptionBlockObject(
+			profile,
+			slack.NewTextBlockObject(slack.PlainTextType, profile, false, false),
+			nil,
+		))
+	}
+
+	diffProfileMultiSelect := slack.NewOptionsMultiSelectBlockElement(
+		slack.MultiOptTypeStatic,
+		slack.NewTextBlockObject(slack.PlainTextType, "Select diff profiles", false, false),
+		"select_diff_profiles",
+		multiSelectOptions...,
+	)
+
+	diffProfileBlock := slack.NewInputBlock(
+		"diff_profile_selection",
+		slack.NewTextBlockObject(slack.PlainTextType, "Select Diff Profiles", false, false),
+		nil, // No hint
+		diffProfileMultiSelect,
 	)
 
 	competitorData := CompetitorData{
@@ -249,7 +276,7 @@ func (svc *slackWorkspaceService) CreateCompetitorForWorkspace(ctx context.Conte
 		Title:           slack.NewTextBlockObject(slack.PlainTextType, "Assign Competitor", false, false),
 		Submit:          slack.NewTextBlockObject(slack.PlainTextType, "Save", false, false),
 		Close:           slack.NewTextBlockObject(slack.PlainTextType, "Cancel", false, false),
-		Blocks:          slack.Blocks{BlockSet: append(urlBlocks, competitorBlock)}, // Ensure correct structure
+		Blocks:          slack.Blocks{BlockSet: append(urlBlocks, competitorBlock, diffProfileBlock)}, // Ensure correct structure
 		CallbackID:      "save_competitor",
 		PrivateMetadata: base64String,
 	}

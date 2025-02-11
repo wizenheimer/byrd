@@ -63,10 +63,19 @@ func (svc *slackWorkspaceService) handleSupportSubmission(ctx context.Context, p
 }
 
 func (svc *slackWorkspaceService) handlePageSubmission(ctx context.Context, payload slack.InteractionCallback) error {
+	// Extract selected competitor
 	selectedCompetitor := payload.View.State.Values["competitor_selection"]["select_competitor"].SelectedOption.Value
 
-	base64String := payload.View.PrivateMetadata
+	// Extract selected diff profiles (multi-select)
+	selectedDiffProfiles := []string{}
+	if multiSelectBlock, ok := payload.View.State.Values["diff_profile_selection"]["select_diff_profiles"]; ok {
+		for _, option := range multiSelectBlock.SelectedOptions {
+			selectedDiffProfiles = append(selectedDiffProfiles, option.Value)
+		}
+	}
 
+	// Decode private metadata
+	base64String := payload.View.PrivateMetadata
 	decodedBytes, err := base64.StdEncoding.DecodeString(base64String)
 	if err != nil {
 		return err
@@ -78,6 +87,7 @@ func (svc *slackWorkspaceService) handlePageSubmission(ctx context.Context, payl
 		return err
 	}
 
+	// Fetch workspace details
 	ws, err := svc.repo.GetSlackWorkspaceByTeamID(ctx, payload.User.TeamID)
 	if err != nil {
 		return err
@@ -87,8 +97,14 @@ func (svc *slackWorkspaceService) handlePageSubmission(ctx context.Context, payl
 		return errors.New("no access token found for Slack workspace")
 	}
 
+	// Use user-selected diff profiles instead of default ones
+	diffProfiles := selectedDiffProfiles
+	if len(diffProfiles) == 0 { // Fallback to default if nothing selected
+		diffProfiles = models.GetDefaultDiffProfile()
+	}
+
+	// Process URLs into PageProps
 	var pages []models.PageProps
-	diffProfiles := models.GetDefaultDiffProfile() // TODO: get this from the user
 	for _, u := range competitorData.URLs {
 		pageProp, err := models.NewPageProps(u, diffProfiles)
 		if err != nil {
@@ -98,32 +114,24 @@ func (svc *slackWorkspaceService) handlePageSubmission(ctx context.Context, payl
 		pages = append(pages, pageProp)
 	}
 
+	// Handle competitor logic
 	var competitorUUID uuid.UUID
 	if selectedCompetitor == uuid.Nil.String() {
-		_, err = svc.ws.AddCompetitorToWorkspace(
-			ctx,
-			ws.WorkspaceID,
-			pages,
-		)
+		_, err = svc.ws.AddCompetitorToWorkspace(ctx, ws.WorkspaceID, pages)
 	} else {
 		competitorUUID, err = uuid.Parse(selectedCompetitor)
 		if err != nil {
 			return err
 		}
-		_, err = svc.ws.AddPageToCompetitor(
-			ctx,
-			ws.WorkspaceID,
-			competitorUUID,
-			pages,
-		)
+		_, err = svc.ws.AddPageToCompetitor(ctx, ws.WorkspaceID, competitorUUID, pages)
 	}
 
 	if err != nil {
 		return err
 	}
 
+	// Notify user in Slack
 	client := slack.New(*ws.AccessToken)
-
 	channelID := competitorData.ChannelID
 
 	_, err = client.PostEphemeral(
