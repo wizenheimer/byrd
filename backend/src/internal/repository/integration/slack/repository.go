@@ -1,4 +1,4 @@
-package slack
+package repository
 
 import (
 	"context"
@@ -113,14 +113,14 @@ func (repo *swr) CreateSlackWorkspace(ctx context.Context, workspaceID uuid.UUID
 	return scanSlackWorkspace(row)
 }
 
-// SetSlackWorkspaceChannelAndCanvas sets channel and canvas, activating the workspace
-func (repo *swr) SetSlackWorkspaceChannelAndCanvas(ctx context.Context, teamID, channelID, canvasID string) (*slack.SlackWorkspace, error) {
+// UpdateSlackWorkspace sets channel and canvas, activating the workspace
+func (repo *swr) UpdateSlackWorkspace(ctx context.Context, teamID, channelID, canvasID string) (*slack.SlackWorkspace, error) {
 	query := `
         UPDATE slack_workspaces 
         SET channel_id = $2,
             canvas_id = $3,
             status = $4
-        WHERE team_id = $1 AND status = $5
+        WHERE team_id = $1 AND status != $5
         RETURNING workspace_id, team_id, channel_id, canvas_id, access_token, status, created_at, updated_at`
 
 	row := repo.getQuerier(ctx).QueryRow(ctx, query,
@@ -128,7 +128,7 @@ func (repo *swr) SetSlackWorkspaceChannelAndCanvas(ctx context.Context, teamID, 
 		channelID,
 		canvasID,
 		slack.SlackWorkspaceStatusActive,
-		slack.SlackWorkspaceStatusPending,
+		slack.SlackWorkspaceStatusInactive,
 	)
 
 	return scanSlackWorkspace(row)
@@ -219,24 +219,6 @@ func (repo *swr) DeleteSlackWorkspace(ctx context.Context, teamID string) error 
 	}
 
 	return nil
-}
-
-// UpdateSlackWorkspace updates channelID and canvasID of an active workspace
-func (repo *swr) UpdateSlackWorkspace(ctx context.Context, teamID, channelID, canvasID string) (*slack.SlackWorkspace, error) {
-	query := `
-        UPDATE slack_workspaces 
-        SET channel_id = $2,
-            canvas_id = $3
-        WHERE team_id = $1 AND status = $4
-        RETURNING workspace_id, team_id, channel_id, canvas_id, access_token, status, created_at, updated_at`
-
-	row := repo.getQuerier(ctx).QueryRow(ctx, query,
-		teamID,
-		channelID,
-		canvasID,
-		slack.SlackWorkspaceStatusActive,
-	)
-	return scanSlackWorkspace(row)
 }
 
 // UpdateSlackWorkspaceAccessToken updates the access token of an active workspace

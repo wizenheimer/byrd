@@ -1,4 +1,4 @@
-package slack
+package repository
 
 import (
 	"context"
@@ -13,10 +13,10 @@ type SlackWorkspaceRepository interface {
 	// The status of the workspace is pending
 	CreateSlackWorkspace(ctx context.Context, workspaceID uuid.UUID, teamID, accessToken string) (*slack.SlackWorkspace, error)
 
-	// SetSlackWorkspaceChannelAndCanvas sets channelID and canvasID of a slack workspace
+	// UpdateSlackWorkspace sets channelID and canvasID of a slack workspace
 	// This is the final outcome of linking a workspace with channel and canvas set
 	// The status of the workspace is active
-	SetSlackWorkspaceChannelAndCanvas(ctx context.Context, teamID, channelID, canvasID string) (*slack.SlackWorkspace, error)
+	UpdateSlackWorkspace(ctx context.Context, teamID, channelID, canvasID string) (*slack.SlackWorkspace, error)
 
 	// GetSlackWorkspaceByTeamID gets a slack workspace by team ID
 	GetSlackWorkspaceByTeamID(ctx context.Context, teamID string) (*slack.SlackWorkspace, error)
@@ -32,9 +32,6 @@ type SlackWorkspaceRepository interface {
 
 	// Delete deletes a slack workspace
 	DeleteSlackWorkspace(ctx context.Context, teamID string) error
-
-	// UpdateSlackWorkspace updates channelID and canvasID of a slack workspace
-	UpdateSlackWorkspace(ctx context.Context, teamID, channelID, canvasID string) (*slack.SlackWorkspace, error)
 
 	// UpdateSlackWorkspaceAccessToken updates the access token of a slack workspace
 	UpdateSlackWorkspaceAccessToken(ctx context.Context, teamID, accessToken string) (*slack.SlackWorkspace, error)
