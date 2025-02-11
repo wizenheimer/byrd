@@ -36,7 +36,6 @@ func NewHandlerContainer(
 	workflowService workflow.WorkflowService,
 	schedulerService scheduler.SchedulerService,
 	library template.TemplateLibrary,
-	redisURL string,
 	emailClient email.EmailClient,
 	tx *transaction.TxManager,
 	logger *logger.Logger,
@@ -60,7 +59,6 @@ func NewHandlerContainer(
 
 	sh, err := handlers.NewSlackIntegrationHandler(
 		logger,
-		redisURL,
 	)
 	if err != nil {
 		return nil, err

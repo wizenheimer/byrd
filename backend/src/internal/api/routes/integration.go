@@ -25,17 +25,11 @@ func setupSlackIntegrationRoutes(
 ) {
 	slack := router.Group("/slack")
 
-	// Handle installation of the slack app to a workspace
-	slack.Post("", sh.SlackInstallationHandler)
-
-	// Handle uninstallation of the slack app from a workspace
-	slack.Delete("", sh.SlackUninstallationHandler)
-
-	// Handle slack app status check
-	slack.Get("", sh.StatusSlackHandler)
-
-	// Handle oauth redirect
+	// Handle oauth trigger
 	slack.Get("/oauth", sh.SlackOAuthHandler)
+
+	// Handle installation of the slack app to a workspace
+	slack.Get("/install", sh.SlackInstallationHandler)
 
 	// Slack command trigger group
 	cmdGroup := slack.Group("/cmd")
