@@ -15,6 +15,8 @@ import (
 	repository "github.com/wizenheimer/byrd/src/internal/repository/integration/slack"
 	"github.com/wizenheimer/byrd/src/internal/service/workspace"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 type slackWorkspaceService struct {
@@ -236,26 +238,27 @@ func (svc *slackWorkspaceService) CreateCompetitorForWorkspace(ctx context.Conte
 	)
 
 	// --- Multi-Select (DiffProfile) ---
+	caser := cases.Title(language.English)
 	diffProfileOptions := core_models.GetDefaultDiffProfile()
 	var multiSelectOptions []*slack.OptionBlockObject
 	for _, profile := range diffProfileOptions {
 		multiSelectOptions = append(multiSelectOptions, slack.NewOptionBlockObject(
 			profile,
-			slack.NewTextBlockObject(slack.PlainTextType, profile, false, false),
+			slack.NewTextBlockObject(slack.PlainTextType, caser.String(profile), false, false),
 			nil,
 		))
 	}
 
 	diffProfileMultiSelect := slack.NewOptionsMultiSelectBlockElement(
 		slack.MultiOptTypeStatic,
-		slack.NewTextBlockObject(slack.PlainTextType, "Select diff profiles", false, false),
+		slack.NewTextBlockObject(slack.PlainTextType, "Product, Pricing, Partnerships etc.", false, false),
 		"select_diff_profiles",
 		multiSelectOptions...,
 	)
 
 	diffProfileBlock := slack.NewInputBlock(
 		"diff_profile_selection",
-		slack.NewTextBlockObject(slack.PlainTextType, "Select Diff Profiles", false, false),
+		slack.NewTextBlockObject(slack.PlainTextType, "Select Competitor Profiles", false, false),
 		nil, // No hint
 		diffProfileMultiSelect,
 	)
@@ -337,7 +340,6 @@ func (svc *slackWorkspaceService) HandleSlackInteractionPayload(ctx context.Cont
 
 	if payload.Type == slack.InteractionTypeViewSubmission {
 		payloadCallback := payload.View.CallbackID
-
 		switch payloadCallback {
 		case "save_competitor":
 			return svc.handlePageSubmission(ctx, payload)
@@ -345,5 +347,5 @@ func (svc *slackWorkspaceService) HandleSlackInteractionPayload(ctx context.Cont
 			return svc.handleSupportSubmission(ctx, payload)
 		}
 	}
-	return errors.New("invalid payload, no callback ID")
+	return errors.New("unsupported interaction type")
 }

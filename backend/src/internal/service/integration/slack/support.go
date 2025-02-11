@@ -12,6 +12,8 @@ import (
 	"github.com/slack-go/slack"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"go.uber.org/zap"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 func (svc *slackWorkspaceService) handleSupportSubmission(ctx context.Context, payload slack.InteractionCallback) error {
@@ -20,43 +22,76 @@ func (svc *slackWorkspaceService) handleSupportSubmission(ctx context.Context, p
 		return errors.New("invalid interaction type")
 	}
 
-	svc.logger.Info("Handling support submission", zap.Any(
-		"payload", payload,
-	))
+	svc.logger.Info("Handling support submission", zap.Any("payload", payload))
 
 	// Extract issue description
 	issueDescription := payload.View.State.Values["support_issue_input"]["issue_description"].Value
 
 	// Extract priority selection
-	prioritySelection := payload.View.State.Values["support_priority"]["priority_selection"].SelectedOption.Value
+	prioritySelection := strings.ToUpper(payload.View.State.Values["support_priority"]["priority_selection"].SelectedOption.Value)
 
-	// Format response message
-	confirmationMessage := fmt.Sprintf(
-		"📝 *Request Submitted!*\nThanks for letting us know - we're right here with you. \nWe'll take good care of this!\n\n*Issue:* %s\n*Priority:* %s",
-		issueDescription, strings.ToUpper(prioritySelection),
-	)
-
+	// Get Slack workspace
 	teamID := payload.User.TeamID
-
 	slackWorkspace, err := svc.repo.GetSlackWorkspaceByTeamID(ctx, teamID)
 	if err != nil {
 		return err
 	}
-
 	if slackWorkspace.AccessToken == nil {
 		return errors.New("no access token found for Slack workspace")
 	}
 
-	// Send a confirmation message to the user
-	client := slack.New(*slackWorkspace.AccessToken) // Replace with actual token
+	client := slack.New(*slackWorkspace.AccessToken)
 
 	// Open a DM with the user
+	channel, _, _, err := client.OpenConversation(&slack.OpenConversationParameters{
+		Users: []string{payload.User.ID},
+	})
+	if err != nil {
+		svc.logger.Error("failed to open DM with user", zap.Error(err))
+		return err
+	}
+
+	// Construct the styled Slack message blocks
+	msgBlocks := []slack.Block{
+		slack.NewHeaderBlock(
+			slack.NewTextBlockObject(slack.PlainTextType, "📝 Request Submitted!", false, false),
+		),
+		slack.NewSectionBlock(
+			slack.NewTextBlockObject(slack.MarkdownType, "Thanks for letting us know – we're right here with you. \nWe'll take good care of this! 🚀", false, false),
+			nil, nil,
+		),
+		slack.NewDividerBlock(),
+		slack.NewSectionBlock(
+			slack.NewTextBlockObject(slack.MarkdownType, "*📌 Issue:*", false, false),
+			nil, nil,
+		),
+		slack.NewSectionBlock(
+			slack.NewTextBlockObject(slack.MarkdownType, fmt.Sprintf("> %s", issueDescription), false, false),
+			nil, nil,
+		),
+		slack.NewDividerBlock(),
+		slack.NewSectionBlock(
+			slack.NewTextBlockObject(slack.MarkdownType, "*⚡ Priority:*", false, false),
+			nil, nil,
+		),
+		slack.NewSectionBlock(
+			slack.NewTextBlockObject(slack.MarkdownType, fmt.Sprintf("`%s`", prioritySelection), false, false),
+			nil, nil,
+		),
+		slack.NewDividerBlock(),
+		slack.NewContextBlock(
+			"tracking_info",
+			slack.NewTextBlockObject(slack.MarkdownType, "💡 _We'll update you as soon as we have progress._", false, false),
+		),
+	}
+
+	// Send the message as a DM to the user
 	_, _, err = client.PostMessage(
-		payload.User.ID,
-		slack.MsgOptionText(confirmationMessage, false),
+		channel.ID, // DM Channel ID
+		slack.MsgOptionBlocks(msgBlocks...),
 	)
 	if err != nil {
-		return err
+		svc.logger.Error("failed to send DM support confirmation", zap.Error(err))
 	}
 
 	return nil
@@ -108,7 +143,7 @@ func (svc *slackWorkspaceService) handlePageSubmission(ctx context.Context, payl
 	for _, u := range competitorData.URLs {
 		pageProp, err := models.NewPageProps(u, diffProfiles)
 		if err != nil {
-			svc.logger.Error("Failed to create page props", zap.Error(err))
+			svc.logger.Error("failed to create page props", zap.Error(err))
 			continue
 		}
 		pages = append(pages, pageProp)
@@ -132,16 +167,77 @@ func (svc *slackWorkspaceService) handlePageSubmission(ctx context.Context, payl
 
 	// Notify user in Slack
 	client := slack.New(*ws.AccessToken)
-	channelID := competitorData.ChannelID
 
-	_, err = client.PostEphemeral(
-		channelID,       // Channel where the interaction happened
-		payload.User.ID, // User who triggered the action
-		slack.MsgOptionText("URL is now getting tracked", false),
+	// Open a direct message with the user
+	channel, _, _, err := client.OpenConversation(&slack.OpenConversationParameters{
+		Users: []string{payload.User.ID},
+	})
+	if err != nil {
+		svc.logger.Error("failed to open DM with user", zap.Error(err))
+		return err
+	}
+
+	// Format URLs as individual sections
+	var urlBlocks []slack.Block
+	for _, url := range competitorData.URLs {
+		urlBlocks = append(urlBlocks, slack.NewSectionBlock(
+			slack.NewTextBlockObject(slack.MarkdownType, fmt.Sprintf("🔗 *%s*", url), false, false),
+			nil, nil,
+		))
+	}
+
+	// Format profile selections
+	profileText := "None selected"
+	caser := cases.Title(language.English)
+	if len(diffProfiles) > 0 {
+		var profileList string
+		for _, profile := range diffProfiles {
+			profileList += fmt.Sprintf("• %s\n", caser.String(profile))
+		}
+		profileText = profileList
+	}
+
+	// Construct the Slack message blocks
+	msgBlocks := []slack.Block{
+		slack.NewHeaderBlock(
+			slack.NewTextBlockObject(slack.PlainTextType, "🚀 Tracking Started!", false, false),
+		),
+		slack.NewSectionBlock(
+			slack.NewTextBlockObject(slack.MarkdownType, "We've started tracking the following URLs for you:", false, false),
+			nil, nil,
+		),
+		slack.NewDividerBlock(),
+		slack.NewSectionBlock(
+			slack.NewTextBlockObject(slack.MarkdownType, "*🔍 Tracked URLs:*", false, false),
+			nil, nil,
+		),
+	}
+	msgBlocks = append(msgBlocks, urlBlocks...) // Add each URL as a separate section
+
+	msgBlocks = append(msgBlocks,
+		slack.NewDividerBlock(),
+		slack.NewSectionBlock(
+			slack.NewTextBlockObject(slack.MarkdownType, "*📂 Profiles Selected:*", false, false),
+			nil, nil,
+		),
+		slack.NewSectionBlock(
+			slack.NewTextBlockObject(slack.MarkdownType, profileText, false, false),
+			nil, nil,
+		),
+		slack.NewDividerBlock(),
+		slack.NewContextBlock(
+			"tracking_info",
+			slack.NewTextBlockObject(slack.MarkdownType, "⚡ _We'll notify you when changes happen._", false, false),
+		),
 	)
 
+	// Send the message as a DM to the user
+	_, _, err = client.PostMessage(
+		channel.ID, // DM Channel ID
+		slack.MsgOptionBlocks(msgBlocks...),
+	)
 	if err != nil {
-		svc.logger.Error("Failed to post ephemeral message", zap.Error(err))
+		svc.logger.Error("failed to send DM tracking confirmation", zap.Error(err))
 	}
 
 	return nil

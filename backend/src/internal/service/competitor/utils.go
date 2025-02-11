@@ -3,6 +3,7 @@ package competitor
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -242,7 +243,10 @@ func (f *CompanyNameFinder) FindCompanyName(urls []string) string {
 	}
 
 	if pageErrorCount == len(urls) {
-		return "New Page" // All pages failed to load
+		if len(urls) > 0 {
+			return f.cleanCommonSuffixes(extractDomainName(urls[0]))
+		}
+		return fmt.Sprintf("competitor-%s", uuid.NewString()[0:8])
 	}
 
 	// 1. First try using og:site_name
