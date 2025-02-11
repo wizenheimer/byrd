@@ -37,6 +37,12 @@ func setupSlackIntegrationRoutes(
 	// Handle configure command
 	cmdGroup.Post("/configure", sh.ConfigureCommandHandler)
 
+	// Handle watch command
+	cmdGroup.Post("/watch", sh.WatchCommandHandler)
+
+	// Handle user command
+	cmdGroup.Post("/user", sh.UserCommandHandler)
+
 	// Handle slack app command interactions
 	cmdGroup.Post("/interact", sh.SlackInteractionHandler)
 

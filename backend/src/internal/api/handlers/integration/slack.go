@@ -229,6 +229,24 @@ func (sh *SlackIntegrationHandler) ConfigureCommandHandler(c *fiber.Ctx) error {
 	return c.Status(200).Send(nil)
 }
 
+func (sh *SlackIntegrationHandler) WatchCommandHandler(c *fiber.Ctx) error {
+	_, err := SlashCommandParseFast(c.Request())
+	if err != nil {
+		return c.Status(400).SendString("Failed to parse command")
+	}
+
+	return c.Status(200).Send(nil)
+}
+
+func (sh *SlackIntegrationHandler) UserCommandHandler(c *fiber.Ctx) error {
+	_, err := SlashCommandParseFast(c.Request())
+	if err != nil {
+		return c.Status(400).SendString("Failed to parse command")
+	}
+
+	return c.Status(200).Send(nil)
+}
+
 func (sh *SlackIntegrationHandler) SlackInteractionHandler(c *fiber.Ctx) error {
 
 	// Get payload from form
