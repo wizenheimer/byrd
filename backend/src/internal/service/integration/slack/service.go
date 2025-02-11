@@ -41,7 +41,6 @@ func (svc *slackWorkspaceService) CreateSlackWorkspace(ctx context.Context, work
 func (svc *slackWorkspaceService) UpdateSlackWorkspace(ctx context.Context, cmd slack.SlashCommand) (*models.SlackWorkspace, error) {
 	slackWorkspace, err := svc.repo.GetSlackWorkspaceByTeamID(ctx, cmd.TeamID)
 	if err != nil {
-		svc.showSupportModal(nil, cmd.TriggerID, cmd.ChannelID)
 		return nil, err
 	}
 
@@ -58,7 +57,6 @@ func (svc *slackWorkspaceService) UpdateSlackWorkspace(ctx context.Context, cmd 
 	input := &slack.GetConversationInfoInput{ChannelID: cmd.ChannelID}
 	channel, err := client.GetConversationInfo(input)
 	if err != nil {
-		svc.showSupportModal(client, cmd.TriggerID, cmd.ChannelID)
 		return nil, err
 	}
 
@@ -71,19 +69,22 @@ func (svc *slackWorkspaceService) UpdateSlackWorkspace(ctx context.Context, cmd 
 			Markdown: "Welcome to Byrd! This is your team's shared canvas. Use `/byrd` to interact with Byrd.",
 		})
 		if err != nil {
-			svc.showSupportModal(client, cmd.TriggerID, cmd.ChannelID)
+			svc.showSupportModal(client, cmd.TriggerID, cmd.ChannelID, "This is embarassing", []string{"Seems like we're having trouble associating the canvas with this channel."})
 			return nil, err
 		}
 	}
 
 	ws, err := svc.repo.UpdateSlackWorkspace(ctx, cmd.TeamID, cmd.ChannelID, canvasID)
 	if err != nil {
-		svc.showSupportModal(client, cmd.TriggerID, cmd.ChannelID)
+		svc.showSupportModal(client, cmd.TriggerID, cmd.ChannelID, "Something went wrong", []string{"Seems like we're having trouble updating the workspace."})
 		return nil, err
 	}
 
 	// Show Success Modal
-	svc.showSuccessModal(client, cmd.TriggerID)
+	// TODO: Implement showSuccessModal
+	// svc.showSuccessModal(client, cmd.TriggerID)
+
+	// svc.showSupportModal(client, cmd.TriggerID, cmd.ChannelID, "Something went wrong", []string{"Seems like we're having trouble updating the workspace."})
 
 	return ws, nil
 }
