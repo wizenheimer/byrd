@@ -11,7 +11,7 @@ import (
 )
 
 // showSupportModal displays a friendly troubleshooting modal
-func (svc *slackWorkspaceService) showSupportModal(client *slack.Client, triggerID string, channelID string, issueList []string) {
+func (svc *slackWorkspaceService) showSupportModal(client *slack.Client, triggerID string, issueMeta string, issueList []string) {
 	// Ensure issueTitle is within Slack’s 24-character limit
 
 	issuesTitles := []string{
@@ -102,7 +102,7 @@ func (svc *slackWorkspaceService) showSupportModal(client *slack.Client, trigger
 				),
 			},
 		},
-		PrivateMetadata: channelID, // Store the channel ID for later use
+		PrivateMetadata: issueMeta, // Store issue metadata for context
 	}
 
 	// Debug log: Print full modal payload
@@ -143,9 +143,9 @@ func (svc *slackWorkspaceService) showSuccessModal(client *slack.Client, trigger
 			"Good to go",
 			"That did the trick",
 			"Nailed it",
-			"Success!",
-			"Changes saved",
-			"We're on track",
+			"That's a wrap",
+			"All good here",
+			"Ready to roll",
 			"Perfect, all done",
 		}
 

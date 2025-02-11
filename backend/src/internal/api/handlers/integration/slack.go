@@ -239,7 +239,9 @@ func (sh *SlackIntegrationHandler) SlackInteractionHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid payload"})
 	}
 
-	sh.svc.HandleSlackInteractionPayload(c.Context(), payload)
+	if err := sh.svc.HandleSlackInteractionPayload(c.Context(), payload); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to handle interaction"})
+	}
 
 	return c.Status(200).Send(nil)
 }

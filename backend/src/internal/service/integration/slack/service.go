@@ -69,14 +69,26 @@ func (svc *slackWorkspaceService) UpdateSlackWorkspace(ctx context.Context, cmd 
 			Markdown: "Welcome to Byrd! This is your team's shared canvas. Use `/byrd` to interact with Byrd.",
 		})
 		if err != nil {
-			svc.showSupportModal(client, cmd.TriggerID, cmd.ChannelID, []string{"Seems like we're having trouble associating the canvas with this channel."})
+			svc.showSupportModal(
+				client,
+				cmd.TriggerID,
+				"Failed to create canvas for channel",
+				[]string{
+					"Seems like we're having trouble associating the canvas with this channel.",
+				})
 			return nil, err
 		}
 	}
 
 	ws, err := svc.repo.UpdateSlackWorkspace(ctx, cmd.TeamID, cmd.ChannelID, canvasID)
 	if err != nil {
-		svc.showSupportModal(client, cmd.TriggerID, cmd.ChannelID, []string{"Seems like we're having trouble updating the workspace."})
+		svc.showSupportModal(
+			client,
+			cmd.TriggerID,
+			"Failed to associate to workspace repo",
+			[]string{
+				"Seems like we're having trouble updating the workspace.",
+			})
 		return nil, err
 	}
 
@@ -86,13 +98,11 @@ func (svc *slackWorkspaceService) UpdateSlackWorkspace(ctx context.Context, cmd 
 		cmd.TriggerID,
 		cmd.ChannelID,
 		"",
-		"Your slack channel is now in sync with Byrd. Turn Competitor Moves Into Customer Wins.",
+		"Your slack channel is now in sync with Byrd.",
 		[]string{
 			"`/watch` adds a new page to your watchlist.",
 			"`/invite` lets you bring your team along.",
-			"`/help` shows you all available commands.",
-			"`/support` just in case you need it.",
-			"And that's it! you're all set to go. Beat them at their own game, every single time.",
+			"And that's it! you're all set to go.",
 		},
 	)
 

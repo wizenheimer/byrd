@@ -16,6 +16,10 @@ func (svc *slackWorkspaceService) handleSupportSubmission(ctx context.Context, p
 		return errors.New("invalid interaction type")
 	}
 
+	svc.logger.Info("Handling support submission", zap.Any(
+		"payload", payload,
+	))
+
 	// Extract issue description
 	issueDescription := payload.View.State.Values["support_issue_input"]["issue_description"].Value
 
@@ -24,7 +28,7 @@ func (svc *slackWorkspaceService) handleSupportSubmission(ctx context.Context, p
 
 	// Format response message
 	confirmationMessage := fmt.Sprintf(
-		"📝 *Support Request Submitted!*\n\n*Issue:* %s\n*Priority:* %s\n\nOur team will review it soon",
+		"📝 *Request Submitted!*\nThanks for letting us know - we're right here with you. \nWe'll take good care of this!\n\n*Issue:* %s\n*Priority:* %s",
 		issueDescription, strings.ToUpper(prioritySelection),
 	)
 
@@ -42,14 +46,13 @@ func (svc *slackWorkspaceService) handleSupportSubmission(ctx context.Context, p
 	// Send a confirmation message to the user
 	client := slack.New(*slackWorkspace.AccessToken) // Replace with actual token
 
-	channelID := payload.View.PrivateMetadata
-	_, err = client.PostEphemeral(
-		channelID,
+	// Open a DM with the user
+	_, _, err = client.PostMessage(
 		payload.User.ID,
 		slack.MsgOptionText(confirmationMessage, false),
 	)
 	if err != nil {
-		svc.logger.Error("Failed to send confirmation message", zap.Error(err))
+		return err
 	}
 
 	return nil
