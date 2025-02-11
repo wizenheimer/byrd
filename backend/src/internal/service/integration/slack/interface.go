@@ -17,8 +17,20 @@ type SlackWorkspaceService interface {
 	// UpdateSlackWorkspace updates the access token for a Slack workspace
 	UpdateSlackWorkspace(ctx context.Context, cmd slack.SlashCommand) (*models.SlackWorkspace, error)
 
-	// Handles the bookkeeping for a Slack integration that has been removed
-	DeleteSlackWorkspace(ctx context.Context, teamID string) error
+	// Handles SlackWorkspace deletions
+	DeleteSlackWorkspace(ctx context.Context, workspaceID uuid.UUID) error
+
+	// ------ COMPETITOR MANAGEMENT ------ //
+
+	// CreateCompetitor creates a competitor in a Slack workspace
+	CreateCompetitorForWorkspace(ctx context.Context, cmd slack.SlashCommand) error
+
+	// ------ USER MANAGEMENT ------ //
+
+	// AddUserToSlackWorkspace adds a user to a Slack workspace
+	AddUserToSlackWorkspace(ctx context.Context, cmd slack.SlashCommand) error
+
+	// ----- RESOURCE MANAGEMENT ----- //
 
 	// GetSlackWorkspaceByTeamID retrieves a Slack workspace by its team ID
 	GetSlackWorkspaceByTeamID(ctx context.Context, teamID string) (*models.SlackWorkspace, error)
@@ -29,24 +41,11 @@ type SlackWorkspaceService interface {
 	// BatchGetWorkspaceByWorkspaceIDs retrieves a list of Slack workspaces by their Byrd workspace IDs
 	BatchGetWorkspaceByWorkspaceIDs(ctx context.Context, workspaceIDs []uuid.UUID) ([]*models.SlackWorkspace, error)
 
-	// ------ USER MANAGEMENT ------ //
-
-	// AddUserToSlackWorkspace adds a user to a Slack workspace
-	AddUserToSlackWorkspace(ctx context.Context, teamID string, userEmail string) error
-
-	// RemoveUserFromSlackWorkspace removes a user from a Slack workspace
-	RemoveUserFromSlackWorkspace(ctx context.Context, teamID string, userEmail string) error
+	// IntegrationExists checks if a Slack integration exists for a Byrd workspace
+	IntegrationExistsForWorkspace(ctx context.Context, workspaceID uuid.UUID) (bool, error)
 
 	// UserExistsInSlackWorkspace checks if a user exists in a Slack workspace
 	UserExistsInSlackWorkspace(ctx context.Context, teamID string, userEmail string) (bool, error)
-
-	// ------ COMPETITOR MANAGEMENT ------ //
-
-	// CreateCompetitor creates a competitor in a Slack workspace
-	CreateCompetitor(ctx context.Context, teamID string, pageURLs []string) error
-
-	// AddPageToCompetitor adds a page to a competitor in a Slack workspace
-	AddPageToCompetitor(ctx context.Context, teamID string, competitorID uuid.UUID, pageURLs []string) error
 
 	// ----- Slack Interaction Payload Router ---- //
 

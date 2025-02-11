@@ -2,6 +2,11 @@ package slackworkspace
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
+	"errors"
+	"net/url"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/slack-go/slack"
@@ -110,8 +115,12 @@ func (svc *slackWorkspaceService) UpdateSlackWorkspace(ctx context.Context, cmd 
 }
 
 // Handles the bookkeeping for a Slack integration that has been removed
-func (svc *slackWorkspaceService) DeleteSlackWorkspace(ctx context.Context, teamID string) error {
-	return svc.repo.DeleteSlackWorkspace(ctx, teamID)
+func (svc *slackWorkspaceService) DeleteSlackWorkspace(ctx context.Context, workspaceID uuid.UUID) error {
+	ws, err := svc.repo.GetSlackWorkspaceByWorkspaceID(ctx, workspaceID)
+	if err != nil {
+		return err
+	}
+	return svc.repo.DeleteSlackWorkspace(ctx, ws.TeamID)
 }
 
 // GetSlackWorkspaceByTeamID retrieves a Slack workspace by its team ID
@@ -129,15 +138,49 @@ func (svc *slackWorkspaceService) BatchGetWorkspaceByWorkspaceIDs(ctx context.Co
 	return svc.repo.BatchGetSlackWorkspacesByWorkspaceIDs(ctx, workspaceIDs)
 }
 
+// IntegrationExistsForWorkspace checks if a Slack integration exists for a Byrd workspace
+func (svc *slackWorkspaceService) IntegrationExistsForWorkspace(ctx context.Context, workspaceID uuid.UUID) (bool, error) {
+	ws, err := svc.repo.GetSlackWorkspaceByWorkspaceID(ctx, workspaceID)
+	if err != nil {
+		return false, err
+	}
+
+	return ws != nil, nil
+}
+
 // ------ USER MANAGEMENT ------ //
 
 // AddUserToSlackWorkspace adds a user to a Slack workspace
-func (svc *slackWorkspaceService) AddUserToSlackWorkspace(ctx context.Context, teamID string, userEmail string) error {
-	return nil
-}
+func (svc *slackWorkspaceService) AddUserToSlackWorkspace(ctx context.Context, cmd slack.SlashCommand) error {
+	modalRequest := slack.ModalViewRequest{
+		Type:       "modal",
+		Title:      slack.NewTextBlockObject(slack.PlainTextType, "Invite Users", false, false),
+		Submit:     slack.NewTextBlockObject(slack.PlainTextType, "Send Invites", false, false),
+		Close:      slack.NewTextBlockObject(slack.PlainTextType, "Cancel", false, false),
+		CallbackID: "invite_users",
+		Blocks: slack.Blocks{
+			BlockSet: []slack.Block{
+				slack.NewInputBlock(
+					"user_selection",
+					slack.NewTextBlockObject(slack.PlainTextType, "Users", false, false),
+					nil,
+					slack.NewOptionsSelectBlockElement(
+						slack.OptTypeUser,
+						slack.NewTextBlockObject(slack.PlainTextType, "Select users", false, false),
+						"user_select",
+					),
+				),
+			},
+		},
+	}
 
-// RemoveUserFromSlackWorkspace removes a user from a Slack workspace
-func (svc *slackWorkspaceService) RemoveUserFromSlackWorkspace(ctx context.Context, teamID string, userEmail string) error {
+	client := slack.New(cmd.Token)
+
+	_, err := client.OpenView(cmd.TriggerID, modalRequest)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -149,8 +192,112 @@ func (svc *slackWorkspaceService) UserExistsInSlackWorkspace(ctx context.Context
 // ------ COMPETITOR MANAGEMENT ------ //
 
 // CreateCompetitor creates a competitor in a Slack workspace
-func (svc *slackWorkspaceService) CreateCompetitor(ctx context.Context, teamID string, pageURLs []string) error {
+func (svc *slackWorkspaceService) CreateCompetitorForWorkspace(ctx context.Context, cmd slack.SlashCommand) error {
+	args := strings.Fields(cmd.Text) // Extract URLs from command
+	if len(args) == 0 {
+		return errors.New("no URLs provided")
+	}
+
+	ws, err := svc.repo.GetSlackWorkspaceByTeamID(ctx, cmd.TeamID)
+	if err != nil {
+		return err
+	}
+
+	if ws.AccessToken == nil {
+		return errors.New("no access token found for Slack workspace")
+	}
+
+	client := slack.New(*ws.AccessToken)
+
+	var urlBlocks []slack.Block
+	var urls []string
+	for _, u := range args {
+		url, err := url.Parse(u) // Ensure URL is valid
+		if err != nil {
+			continue
+		}
+		urls = append(urls, url.String())
+	}
+
+	competitorSelect := slack.NewOptionsSelectBlockElement(
+		slack.OptTypeStatic,
+		slack.NewTextBlockObject(slack.PlainTextType, "Select a competitor", false, false),
+		"select_competitor",
+		svc.getCompetitorOptions(ctx, ws.WorkspaceID)...,
+	)
+
+	competitorBlock := slack.NewInputBlock(
+		"competitor_selection",
+		slack.NewTextBlockObject(slack.PlainTextType, "Assign to Competitor", false, false),
+		nil, // No hint
+		competitorSelect,
+	)
+
+	competitorData := CompetitorData{
+		ChannelID: cmd.ChannelID,
+		URLs:      urls,
+	}
+
+	jsonBytes, err := json.Marshal(competitorData)
+	if err != nil {
+		return err
+	}
+	base64String := base64.StdEncoding.EncodeToString(jsonBytes)
+
+	modal := slack.ModalViewRequest{
+		Type:            slack.VTModal,
+		Title:           slack.NewTextBlockObject(slack.PlainTextType, "Assign Competitor", false, false),
+		Submit:          slack.NewTextBlockObject(slack.PlainTextType, "Save", false, false),
+		Close:           slack.NewTextBlockObject(slack.PlainTextType, "Cancel", false, false),
+		Blocks:          slack.Blocks{BlockSet: append(urlBlocks, competitorBlock)}, // Ensure correct structure
+		CallbackID:      "save_competitor",
+		PrivateMetadata: base64String,
+	}
+
+	_, err = client.OpenView(cmd.TriggerID, modal)
+	if err != nil {
+		return err
+	}
+
 	return nil
+}
+
+type CompetitorData struct {
+	ChannelID string   `json:"channel_id"`
+	URLs      []string `json:"urls"`
+}
+
+func (svc *slackWorkspaceService) getCompetitorOptions(ctx context.Context, workspaceID uuid.UUID) []*slack.OptionBlockObject {
+	competitors, _, err := svc.ws.ListCompetitorsForWorkspace(ctx, workspaceID, nil, nil)
+	if err != nil {
+		return nil
+	}
+
+	options := make([]*slack.OptionBlockObject, 0)
+
+	newCompetitorOption := slack.NewOptionBlockObject(
+		uuid.Nil.String(),
+		slack.NewTextBlockObject(
+			slack.PlainTextType,
+			"Create New Competitor",
+			false,
+			false,
+		), nil)
+	options = append(options, newCompetitorOption)
+
+	for _, competitor := range competitors {
+		competitorOption := slack.NewOptionBlockObject(
+			competitor.ID.String(),
+			slack.NewTextBlockObject(
+				slack.PlainTextType,
+				competitor.Name,
+				false,
+				false,
+			), nil)
+		options = append(options, competitorOption)
+	}
+
+	return options
 }
 
 // AddPageToCompetitor adds a page to a competitor in a Slack workspace
@@ -160,5 +307,16 @@ func (svc *slackWorkspaceService) AddPageToCompetitor(ctx context.Context, teamI
 
 func (svc *slackWorkspaceService) HandleSlackInteractionPayload(ctx context.Context, payload slack.InteractionCallback) error {
 	// TODO: figure out how to handle routing of different payloads
-	return svc.handleSupportSubmission(ctx, payload)
+
+	if payload.Type == slack.InteractionTypeViewSubmission {
+		payloadCallback := payload.View.CallbackID
+
+		switch payloadCallback {
+		case "save_competitor":
+			return svc.handlePageSubmission(ctx, payload)
+		case "support_submission":
+			return svc.handleSupportSubmission(ctx, payload)
+		}
+	}
+	return errors.New("invalid payload, no callback ID")
 }

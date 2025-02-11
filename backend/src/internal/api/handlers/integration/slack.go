@@ -230,18 +230,28 @@ func (sh *SlackIntegrationHandler) ConfigureCommandHandler(c *fiber.Ctx) error {
 }
 
 func (sh *SlackIntegrationHandler) WatchCommandHandler(c *fiber.Ctx) error {
-	_, err := SlashCommandParseFast(c.Request())
+	cmd, err := SlashCommandParseFast(c.Request())
 	if err != nil {
 		return c.Status(400).SendString("Failed to parse command")
+	}
+
+	if err := sh.svc.CreateCompetitorForWorkspace(c.Context(), cmd); err != nil {
+		sh.logger.Error("Failed to create competitor for workspace", zap.Error(err))
+		return c.Status(500).SendString("Failed to create competitor for workspace")
 	}
 
 	return c.Status(200).Send(nil)
 }
 
 func (sh *SlackIntegrationHandler) UserCommandHandler(c *fiber.Ctx) error {
-	_, err := SlashCommandParseFast(c.Request())
+	cmd, err := SlashCommandParseFast(c.Request())
 	if err != nil {
 		return c.Status(400).SendString("Failed to parse command")
+	}
+
+	if err := sh.svc.AddUserToSlackWorkspace(c.Context(), cmd); err != nil {
+		sh.logger.Error("Failed to add user to Slack workspace", zap.Error(err))
+		return c.Status(500).SendString("Failed to add user to Slack workspace")
 	}
 
 	return c.Status(200).Send(nil)
@@ -258,6 +268,7 @@ func (sh *SlackIntegrationHandler) SlackInteractionHandler(c *fiber.Ctx) error {
 	}
 
 	if err := sh.svc.HandleSlackInteractionPayload(c.Context(), payload); err != nil {
+		sh.logger.Error("Failed to handle interaction", zap.Error(err))
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to handle interaction"})
 	}
 

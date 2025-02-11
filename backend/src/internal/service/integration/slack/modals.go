@@ -103,6 +103,7 @@ func (svc *slackWorkspaceService) showSupportModal(client *slack.Client, trigger
 			},
 		},
 		PrivateMetadata: issueMeta, // Store issue metadata for context
+		CallbackID:      "support_submission",
 	}
 
 	// Debug log: Print full modal payload

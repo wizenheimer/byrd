@@ -16,6 +16,11 @@ import (
 type TitleStrategy func(*html.Node, string) string
 
 func GetPageTitle(url string) (string, error) {
+	// Add protocol if missing
+	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
+		url = "https://" + url
+	}
+
 	client := &http.Client{
 		Timeout: 10 * time.Second,
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {

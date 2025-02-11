@@ -143,9 +143,12 @@ type CaptureProfile struct {
 }
 
 func NewPageProps(pageURL string, diffProfile DiffProfile) (PageProps, error) {
-	if _, err := url.Parse(pageURL); err != nil {
+	u, err := url.Parse(pageURL)
+	if err != nil {
 		return PageProps{}, fmt.Errorf("invalid URL: %w", err)
 	}
+
+	pageURL = u.String()
 	cp := GetDefaultCaptureProfile()
 	if len(diffProfile) == 0 {
 		diffProfile = GetDefaultDiffProfile()

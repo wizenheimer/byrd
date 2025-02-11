@@ -2,11 +2,15 @@ package slackworkspace
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/slack-go/slack"
+	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"go.uber.org/zap"
 )
 
@@ -53,6 +57,83 @@ func (svc *slackWorkspaceService) handleSupportSubmission(ctx context.Context, p
 	)
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (svc *slackWorkspaceService) handlePageSubmission(ctx context.Context, payload slack.InteractionCallback) error {
+	selectedCompetitor := payload.View.State.Values["competitor_selection"]["select_competitor"].SelectedOption.Value
+
+	base64String := payload.View.PrivateMetadata
+
+	decodedBytes, err := base64.StdEncoding.DecodeString(base64String)
+	if err != nil {
+		return err
+	}
+
+	var competitorData CompetitorData
+	err = json.Unmarshal(decodedBytes, &competitorData)
+	if err != nil {
+		return err
+	}
+
+	ws, err := svc.repo.GetSlackWorkspaceByTeamID(ctx, payload.User.TeamID)
+	if err != nil {
+		return err
+	}
+
+	if ws.AccessToken == nil {
+		return errors.New("no access token found for Slack workspace")
+	}
+
+	var pages []models.PageProps
+	diffProfiles := models.GetDefaultDiffProfile() // TODO: get this from the user
+	for _, u := range competitorData.URLs {
+		pageProp, err := models.NewPageProps(u, diffProfiles)
+		if err != nil {
+			svc.logger.Error("Failed to create page props", zap.Error(err))
+			continue
+		}
+		pages = append(pages, pageProp)
+	}
+
+	var competitorUUID uuid.UUID
+	if selectedCompetitor == uuid.Nil.String() {
+		_, err = svc.ws.AddCompetitorToWorkspace(
+			ctx,
+			ws.WorkspaceID,
+			pages,
+		)
+	} else {
+		competitorUUID, err = uuid.Parse(selectedCompetitor)
+		if err != nil {
+			return err
+		}
+		_, err = svc.ws.AddPageToCompetitor(
+			ctx,
+			ws.WorkspaceID,
+			competitorUUID,
+			pages,
+		)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	client := slack.New(*ws.AccessToken)
+
+	channelID := competitorData.ChannelID
+
+	_, err = client.PostEphemeral(
+		channelID,       // Channel where the interaction happened
+		payload.User.ID, // User who triggered the action
+		slack.MsgOptionText("URL is now getting tracked", false),
+	)
+
+	if err != nil {
+		svc.logger.Error("Failed to post ephemeral message", zap.Error(err))
 	}
 
 	return nil
