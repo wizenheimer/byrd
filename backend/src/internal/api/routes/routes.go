@@ -3,11 +3,13 @@ package routes
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/wizenheimer/byrd/src/internal/api/handlers"
+	handlers "github.com/wizenheimer/byrd/src/internal/api/handlers/client"
+	intg_handler "github.com/wizenheimer/byrd/src/internal/api/handlers/integration"
 	"github.com/wizenheimer/byrd/src/internal/api/middleware"
 	"github.com/wizenheimer/byrd/src/internal/email"
 	"github.com/wizenheimer/byrd/src/internal/email/template"
 	"github.com/wizenheimer/byrd/src/internal/service/ai"
+	slackworkspace "github.com/wizenheimer/byrd/src/internal/service/integration/slack"
 	"github.com/wizenheimer/byrd/src/internal/service/scheduler"
 	"github.com/wizenheimer/byrd/src/internal/service/screenshot"
 	"github.com/wizenheimer/byrd/src/internal/service/user"
@@ -25,7 +27,7 @@ type HandlerContainer struct {
 	WorkflowHandler     *handlers.WorkflowHandler
 	ScheduleHandler     *handlers.ScheduleHandler
 	NotificationHandler *handlers.NotificationHandler
-	SlackHandler        *handlers.SlackIntegrationHandler
+	SlackHandler        *intg_handler.SlackIntegrationHandler
 }
 
 func NewHandlerContainer(
@@ -35,6 +37,7 @@ func NewHandlerContainer(
 	workspaceService workspace.WorkspaceService,
 	workflowService workflow.WorkflowService,
 	schedulerService scheduler.SchedulerService,
+	slackWorkspaceService slackworkspace.SlackWorkspaceService,
 	library template.TemplateLibrary,
 	emailClient email.EmailClient,
 	tx *transaction.TxManager,
@@ -57,8 +60,9 @@ func NewHandlerContainer(
 		return nil, err
 	}
 
-	sh, err := handlers.NewSlackIntegrationHandler(
+	sh, err := intg_handler.NewSlackIntegrationHandler(
 		logger,
+		slackWorkspaceService,
 	)
 	if err != nil {
 		return nil, err

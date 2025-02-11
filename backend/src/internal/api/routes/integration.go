@@ -2,14 +2,14 @@ package routes
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/wizenheimer/byrd/src/internal/api/handlers"
+	intg_handler "github.com/wizenheimer/byrd/src/internal/api/handlers/integration"
 )
 
 var placeholderHandler = func(c *fiber.Ctx) error { return nil }
 
 func setupIntegrationRoutes(
 	app *fiber.App,
-	sh *handlers.SlackIntegrationHandler,
+	sh *intg_handler.SlackIntegrationHandler,
 ) {
 	integration := app.Group("/api/public/v1/integration")
 
@@ -21,7 +21,7 @@ func setupIntegrationRoutes(
 
 func setupSlackIntegrationRoutes(
 	router fiber.Router,
-	sh *handlers.SlackIntegrationHandler,
+	sh *intg_handler.SlackIntegrationHandler,
 ) {
 	slack := router.Group("/slack")
 
@@ -34,11 +34,11 @@ func setupSlackIntegrationRoutes(
 	// Slack command trigger group
 	cmdGroup := slack.Group("/cmd")
 
-	// Handle slack app command triggers
-	cmdGroup.Post("", placeholderHandler)
+	// Handle configure command
+	cmdGroup.Post("/configure", sh.ConfigureCommandHandler)
 
 	// Handle slack app command interactions
-	cmdGroup.Post("/interact", placeholderHandler)
+	cmdGroup.Post("/interact", sh.SlackInteractionHandler)
 
 	// Slack event group
 	eventGroup := slack.Group("/event")

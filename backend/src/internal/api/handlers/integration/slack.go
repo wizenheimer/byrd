@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -11,17 +10,22 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 	"github.com/slack-go/slack"
+	"github.com/valyala/fasthttp"
+	slackworkspace "github.com/wizenheimer/byrd/src/internal/service/integration/slack"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"go.uber.org/zap"
 )
 
 type SlackIntegrationHandler struct {
 	logger *logger.Logger
+	svc    slackworkspace.SlackWorkspaceService
 }
 
 func NewSlackIntegrationHandler(
 	logger *logger.Logger,
+	svc slackworkspace.SlackWorkspaceService,
 ) (*SlackIntegrationHandler, error) {
 	if logger == nil {
 		return nil, errors.New("logger is required")
@@ -33,18 +37,10 @@ func NewSlackIntegrationHandler(
 				"module": "slack_integration_handler",
 			},
 		),
+		svc: svc,
 	}
 
 	return &h, nil
-}
-
-// generateToken generates a secure random token
-func generateToken() (string, error) {
-	b := make([]byte, 32)
-	if _, err := rand.Read(b); err != nil {
-		return "", err
-	}
-	return base64.URLEncoding.EncodeToString(b), nil
 }
 
 // SlackOAuthHandler initiates the Slack OAuth flow
@@ -68,7 +64,7 @@ func (sh *SlackIntegrationHandler) SlackOAuthHandler(c *fiber.Ctx) error {
 	}
 
 	// Create state object
-	oauthState := OAuthState{
+	oauthState := SlackOAuthState{
 		WorkspaceID: workspaceID,
 		UserID:      userID,
 		Token:       token,
@@ -146,7 +142,7 @@ func (sh *SlackIntegrationHandler) SlackInstallationHandler(c *fiber.Ctx) error 
 		return c.Status(400).SendString("Invalid state format")
 	}
 
-	var oauthState OAuthState
+	var oauthState SlackOAuthState
 	if err := json.Unmarshal(stateBytes, &oauthState); err != nil {
 		sh.logger.Error("Failed to unmarshal state", zap.Error(err))
 		return c.Status(400).SendString("Invalid state format")
@@ -175,24 +171,26 @@ func (sh *SlackIntegrationHandler) SlackInstallationHandler(c *fiber.Ctx) error 
 	}
 
 	// Store integration details
-	integration := SlackIntegration{
-		WorkspaceID:      oauthState.WorkspaceID,
-		UserID:           oauthState.UserID,
-		SlackAccessToken: resp.AccessToken,
-		SlackTeamID:      resp.Team.ID,
-		SlackAppID:       resp.AppID,
-		CreatedAt:        time.Now().UTC(),
-	}
+	// integration := SlackIntegration{
+	// 	WorkspaceID:      oauthState.WorkspaceID,
+	// 	UserID:           oauthState.UserID,
+	// 	SlackAccessToken: resp.AccessToken,
+	// 	SlackTeamID:      resp.Team.ID,
+	// 	SlackAppID:       resp.AppID,
+	// 	CreatedAt:        time.Now().UTC(),
+	// }
 
 	// TODO: Store integration in your database
-	sh.logger.Info("Slack integration successful",
-		zap.String("workspaceID", integration.WorkspaceID),
-		zap.String("userID", integration.UserID),
-		zap.String("teamID", integration.SlackTeamID),
-		zap.String("appID", integration.SlackAppID),
-		zap.Time("createdAt", integration.CreatedAt),
-		zap.String("accessToken", integration.SlackAccessToken),
-	)
+	workspaceUUID, err := uuid.Parse(oauthState.WorkspaceID)
+	if err != nil {
+		return c.Status(500).SendString("Failed to parse workspace ID")
+	}
+
+	_, err = sh.svc.CreateSlackWorkspace(c.Context(), workspaceUUID, resp.Team.ID, resp.AccessToken)
+	if err != nil {
+		sh.logger.Error("Failed to create Slack workspace", zap.Error(err))
+		return c.Status(500).SendString("Failed to create Slack workspace")
+	}
 
 	// Clear the state cookie
 	c.Cookie(&fiber.Cookie{
@@ -215,20 +213,56 @@ func (sh *SlackIntegrationHandler) SlackInstallationHandler(c *fiber.Ctx) error 
 	)
 }
 
-// SlackIntegration represents the stored integration details
-type SlackIntegration struct {
-	WorkspaceID      string    `json:"workspace_id"`
-	UserID           string    `json:"user_id"`
-	SlackAccessToken string    `json:"slack_access_token"`
-	SlackTeamID      string    `json:"slack_team_id"`
-	SlackAppID       string    `json:"slack_app_id"`
-	CreatedAt        time.Time `json:"created_at"`
+// SlackConfigurationHandler handles the configuration of the Slack app
+func (sh *SlackIntegrationHandler) ConfigureCommandHandler(c *fiber.Ctx) error {
+	cmd, err := SlashCommandParseFast(c.Request())
+	if err != nil {
+		return c.Status(400).SendString("Failed to parse command")
+	}
+
+	_, err = sh.svc.UpdateSlackWorkspace(c.Context(), cmd)
+	if err != nil {
+		sh.logger.Error("Failed to update Slack workspace", zap.Error(err))
+		return c.Status(500).SendString("Failed to update Slack workspace")
+	}
+
+	return c.Status(200).Send(nil)
 }
 
-// OAuthState represents the state object used in OAuth flow
-type OAuthState struct {
-	WorkspaceID string    `json:"workspace_id"`
-	UserID      string    `json:"user_id"`
-	Token       string    `json:"token"`
-	CreatedAt   time.Time `json:"created_at"`
+func (sh *SlackIntegrationHandler) SlackInteractionHandler(c *fiber.Ctx) error {
+
+	// Get payload from form
+	payloadStr := c.FormValue("payload")
+
+	var payload slack.InteractionCallback
+	if err := json.Unmarshal([]byte(payloadStr), &payload); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid payload"})
+	}
+
+	sh.svc.HandleSlackInteractionPayload(c.Context(), payload)
+
+	return c.Status(200).Send(nil)
+}
+
+func SlashCommandParseFast(req *fasthttp.Request) (s slack.SlashCommand, err error) {
+	// Get POST form arguments
+	args := req.PostArgs()
+
+	s.Token = string(args.Peek("token"))
+	s.TeamID = string(args.Peek("team_id"))
+	s.TeamDomain = string(args.Peek("team_domain"))
+	s.EnterpriseID = string(args.Peek("enterprise_id"))
+	s.EnterpriseName = string(args.Peek("enterprise_name"))
+	s.IsEnterpriseInstall = string(args.Peek("is_enterprise_install")) == "true"
+	s.ChannelID = string(args.Peek("channel_id"))
+	s.ChannelName = string(args.Peek("channel_name"))
+	s.UserID = string(args.Peek("user_id"))
+	s.UserName = string(args.Peek("user_name"))
+	s.Command = string(args.Peek("command"))
+	s.Text = string(args.Peek("text"))
+	s.ResponseURL = string(args.Peek("response_url"))
+	s.TriggerID = string(args.Peek("trigger_id"))
+	s.APIAppID = string(args.Peek("api_app_id"))
+
+	return s, nil
 }
