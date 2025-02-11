@@ -6,6 +6,7 @@ import (
 	"github.com/wizenheimer/byrd/src/internal/email"
 	"github.com/wizenheimer/byrd/src/internal/email/template"
 	"github.com/wizenheimer/byrd/src/internal/service/ai"
+	slackworkspace "github.com/wizenheimer/byrd/src/internal/service/integration/slack"
 	"github.com/wizenheimer/byrd/src/internal/service/scheduler"
 	"github.com/wizenheimer/byrd/src/internal/service/screenshot"
 	"github.com/wizenheimer/byrd/src/internal/service/user"
@@ -22,6 +23,7 @@ func SetupHandlerContainer(
 	workspaceService workspace.WorkspaceService,
 	workflowService workflow.WorkflowService,
 	schedulerService scheduler.SchedulerService,
+	slackWorkspaceService slackworkspace.SlackWorkspaceService,
 	library template.TemplateLibrary,
 	emailClient email.EmailClient,
 	tm *transaction.TxManager,
@@ -34,6 +36,7 @@ func SetupHandlerContainer(
 		workspaceService,
 		workflowService,
 		schedulerService,
+		slackWorkspaceService,
 		library,
 		emailClient,
 		tm,

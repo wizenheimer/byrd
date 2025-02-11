@@ -18,6 +18,7 @@ import (
 	"github.com/wizenheimer/byrd/src/internal/service/diff"
 	"github.com/wizenheimer/byrd/src/internal/service/executor"
 	"github.com/wizenheimer/byrd/src/internal/service/history"
+	slackworkspace "github.com/wizenheimer/byrd/src/internal/service/integration/slack"
 	"github.com/wizenheimer/byrd/src/internal/service/page"
 	"github.com/wizenheimer/byrd/src/internal/service/report"
 	scheduler_svc "github.com/wizenheimer/byrd/src/internal/service/scheduler"
@@ -31,14 +32,15 @@ import (
 )
 
 type Services struct {
-	History      history.PageHistoryService
-	Page         page.PageService
-	Competitor   competitor.CompetitorService
-	User         user.UserService
-	Workspace    workspace.WorkspaceService
-	Workflow     workflow.WorkflowService
-	Scheduler    scheduler_svc.SchedulerService
-	TokenManager *utils.TokenManager
+	History        history.PageHistoryService
+	Page           page.PageService
+	Competitor     competitor.CompetitorService
+	User           user.UserService
+	Workspace      workspace.WorkspaceService
+	Workflow       workflow.WorkflowService
+	Scheduler      scheduler_svc.SchedulerService
+	SlackWorkspace slackworkspace.SlackWorkspaceService
+	TokenManager   *utils.TokenManager
 }
 
 func SetupServices(
@@ -101,15 +103,21 @@ func SetupServices(
 		return nil, err
 	}
 
+	slackWorkspaceSvc, err := slackworkspace.NewSlackWorkspaceService(repos.SlackWorkspace, workspaceService, logger)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Services{
-		History:      historyService,
-		Page:         pageService,
-		Competitor:   competitorService,
-		User:         userService,
-		Workspace:    workspaceService,
-		Workflow:     workflowService,
-		Scheduler:    schedulerSvc,
-		TokenManager: tokenManager,
+		History:        historyService,
+		Page:           pageService,
+		Competitor:     competitorService,
+		User:           userService,
+		Workspace:      workspaceService,
+		Workflow:       workflowService,
+		Scheduler:      schedulerSvc,
+		TokenManager:   tokenManager,
+		SlackWorkspace: slackWorkspaceSvc,
 	}, nil
 }
 

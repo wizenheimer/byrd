@@ -97,6 +97,7 @@ func Initialize(
 		services.Workspace,
 		services.Workflow,
 		services.Scheduler,
+		services.SlackWorkspace,
 		templateLibrary,
 		emailClient,
 		tm,

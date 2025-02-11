@@ -8,6 +8,7 @@ import (
 	"github.com/wizenheimer/byrd/src/internal/config"
 	"github.com/wizenheimer/byrd/src/internal/repository/competitor"
 	"github.com/wizenheimer/byrd/src/internal/repository/history"
+	slack "github.com/wizenheimer/byrd/src/internal/repository/integration/slack"
 	"github.com/wizenheimer/byrd/src/internal/repository/page"
 	"github.com/wizenheimer/byrd/src/internal/repository/report"
 	"github.com/wizenheimer/byrd/src/internal/repository/schedule"
@@ -19,14 +20,15 @@ import (
 )
 
 type Repositories struct {
-	Competitor competitor.CompetitorRepository
-	Workspace  workspace.WorkspaceRepository
-	User       user.UserRepository
-	Page       page.PageRepository
-	History    history.PageHistoryRepository
-	Schedule   schedule.ScheduleRepository
-	Workflow   workflow.WorkflowRepository
-	Report     report.ReportRepository
+	Competitor     competitor.CompetitorRepository
+	Workspace      workspace.WorkspaceRepository
+	User           user.UserRepository
+	Page           page.PageRepository
+	History        history.PageHistoryRepository
+	Schedule       schedule.ScheduleRepository
+	Workflow       workflow.WorkflowRepository
+	Report         report.ReportRepository
+	SlackWorkspace slack.SlackWorkspaceRepository
 }
 
 func SetupRepositories(ctx context.Context, cfg *config.Config, tm *transaction.TxManager, redisClient *redis.Client, logger *logger.Logger) (*Repositories, error) {
@@ -52,14 +54,23 @@ func SetupRepositories(ctx context.Context, cfg *config.Config, tm *transaction.
 		return nil, err
 	}
 
+	slackWorkspaceRepo, err := slack.NewSlackWorkspaceRepository(
+		tm,
+		logger,
+	)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Repositories{
-		Competitor: competitor.NewCompetitorRepository(tm, logger),
-		Workspace:  workspace.NewWorkspaceRepository(tm, logger),
-		User:       user.NewUserRepository(tm, logger),
-		Page:       page.NewPageRepository(tm, logger),
-		History:    history.NewPageHistoryRepository(tm, logger),
-		Schedule:   schedule.NewScheduleRepo(tm, logger),
-		Report:     reportRepo,
-		Workflow:   workflowRepo,
+		Competitor:     competitor.NewCompetitorRepository(tm, logger),
+		Workspace:      workspace.NewWorkspaceRepository(tm, logger),
+		User:           user.NewUserRepository(tm, logger),
+		Page:           page.NewPageRepository(tm, logger),
+		History:        history.NewPageHistoryRepository(tm, logger),
+		Schedule:       schedule.NewScheduleRepo(tm, logger),
+		Report:         reportRepo,
+		Workflow:       workflowRepo,
+		SlackWorkspace: slackWorkspaceRepo,
 	}, nil
 }
