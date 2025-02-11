@@ -10,7 +10,6 @@ require (
 	github.com/creasty/defaults v1.8.0
 	github.com/go-playground/validator/v10 v10.23.0
 	github.com/gofiber/fiber/v2 v2.52.6
-	github.com/gofiber/storage/redis/v3 v3.1.3
 	github.com/highlight/highlight/sdk/highlight-go v0.11.0
 	github.com/invopop/jsonschema v0.12.0
 	github.com/jackc/pgx/v5 v5.7.2

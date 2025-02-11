@@ -98,7 +98,6 @@ func Initialize(
 		services.Workflow,
 		services.Scheduler,
 		templateLibrary,
-		cfg.Workflow.RedisURL, // TODO: Refactor to use cfg.RedisURL
 		emailClient,
 		tm,
 		logger,
