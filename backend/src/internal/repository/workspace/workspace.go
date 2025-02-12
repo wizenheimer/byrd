@@ -307,9 +307,11 @@ func (r *workspaceRepo) PromoteRandomUserToAdmin(ctx context.Context, workspaceI
 	return nil
 }
 
-func (r *workspaceRepo) ListWorkspacesForUser(ctx context.Context, userID uuid.UUID, membershipStatus *models.MembershipStatus, limit, offset *int) ([]models.Workspace, bool, error) {
+func (r *workspaceRepo) ListWorkspacesForUser(ctx context.Context, userID uuid.UUID, membershipStatus *models.MembershipStatus, limit, offset *int) ([]models.WorkspaceWithMembership, bool, error) {
 	query := `
-        SELECT w.id, w.name, w.slug, w.billing_email, w.workspace_status, w.workspace_plan, w.created_at, w.updated_at
+        SELECT
+            w.id, w.name, w.slug, w.billing_email, w.workspace_status, w.workspace_plan, w.created_at, w.updated_at,
+            wu.membership_status, wu.workspace_role, wu.created_at as joined_at
         FROM workspaces w
         INNER JOIN workspace_users wu ON w.id = wu.workspace_id
         WHERE wu.user_id = $1
@@ -348,9 +350,9 @@ func (r *workspaceRepo) ListWorkspacesForUser(ctx context.Context, userID uuid.U
 	}
 	defer rows.Close()
 
-	workspaces := make([]models.Workspace, 0)
+	workspaces := make([]models.WorkspaceWithMembership, 0)
 	for rows.Next() {
-		var workspace models.Workspace
+		var workspace models.WorkspaceWithMembership
 		err := rows.Scan(
 			&workspace.ID,
 			&workspace.Name,
@@ -360,6 +362,9 @@ func (r *workspaceRepo) ListWorkspacesForUser(ctx context.Context, userID uuid.U
 			&workspace.WorkspacePlan,
 			&workspace.CreatedAt,
 			&workspace.UpdatedAt,
+			&workspace.MembershipStatus,
+			&workspace.WorkspaceRole,
+			&workspace.JoinedAt,
 		)
 		if err != nil {
 			return nil, false, fmt.Errorf("failed to scan workspace: %w", err)

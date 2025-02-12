@@ -137,7 +137,7 @@ func (ws *workspaceService) CreateWorkspace(ctx context.Context, workspaceOwner 
 	return workspace, nil
 }
 
-func (ws *workspaceService) ListWorkspacesForUser(ctx context.Context, workspaceMember *clerk.User, membershipStatus *models.MembershipStatus, limit, offset *int) ([]models.Workspace, bool, error) {
+func (ws *workspaceService) ListWorkspacesForUser(ctx context.Context, workspaceMember *clerk.User, membershipStatus *models.MembershipStatus, limit, offset *int) ([]models.WorkspaceWithMembership, bool, error) {
 	user, err := ws.userService.GetUserByClerkCredentials(ctx, workspaceMember)
 	if err != nil {
 		return nil, false, err

@@ -325,6 +325,7 @@ redis-flush-dev:
 clean-dev:
 	@echo "$(BLUE)== Removing Development Containers ==$(RESET)"
 	$(DOCKER_COMPOSE_DEV) down
+	rm -rf data logs
 
 .PHONY: clean-prod
 clean-prod:

@@ -222,3 +222,10 @@ type ActiveWorkspaceBatch struct {
 	// LastSeen is the last seen page
 	LastSeen *uuid.UUID `json:"last_seen,omitempty"`
 }
+
+type WorkspaceWithMembership struct {
+	Workspace
+	MembershipStatus MembershipStatus `json:"membership_status"`
+	WorkspaceRole    WorkspaceRole    `json:"workspace_role"`
+	JoinedAt         time.Time        `json:"joined_at"`
+}

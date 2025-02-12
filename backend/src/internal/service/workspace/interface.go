@@ -23,7 +23,7 @@ import (
 type WorkspaceService interface {
 	CreateWorkspace(ctx context.Context, workspaceOwner *clerk.User, pages []models.PageProps, userEmails []string) (*models.Workspace, error)
 
-	ListWorkspacesForUser(ctx context.Context, workspaceMember *clerk.User, membershipStatus *models.MembershipStatus, limit, offset *int) ([]models.Workspace, bool, error)
+	ListWorkspacesForUser(ctx context.Context, workspaceMember *clerk.User, membershipStatus *models.MembershipStatus, limit, offset *int) ([]models.WorkspaceWithMembership, bool, error)
 
 	CountUserWorkspaces(context.Context, uuid.UUID) (int, error)
 
