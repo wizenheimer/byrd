@@ -39,7 +39,7 @@ func (repo *swr) getQuerier(ctx context.Context) interface {
 
 // scanSlackWorkspace scans a row into a SlackWorkspace
 func scanSlackWorkspace(row pgx.Row) (*slack.SlackWorkspace, error) {
-	var workspace slack.SlackWorkspace
+	workspace := slack.SlackWorkspace{}
 	var channelID, canvasID sql.NullString
 
 	err := row.Scan(
@@ -54,7 +54,7 @@ func scanSlackWorkspace(row pgx.Row) (*slack.SlackWorkspace, error) {
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, nil
+			return nil, fmt.Errorf("workspace not found") // Return proper error
 		}
 		return nil, fmt.Errorf("error scanning slack workspace: %w", err)
 	}
@@ -116,7 +116,7 @@ func (repo *swr) CreateSlackWorkspace(ctx context.Context, workspaceID uuid.UUID
 // UpdateSlackWorkspace sets channel and canvas, activating the workspace
 func (repo *swr) UpdateSlackWorkspace(ctx context.Context, teamID, channelID, canvasID string) (*slack.SlackWorkspace, error) {
 	query := `
-        UPDATE slack_workspaces 
+        UPDATE slack_workspaces
         SET channel_id = $2,
             canvas_id = $3,
             status = $4
@@ -185,8 +185,8 @@ func (repo *swr) BatchGetSlackWorkspacesByWorkspaceIDs(ctx context.Context, work
 func (repo *swr) WorkspaceExists(ctx context.Context, teamID string) (bool, error) {
 	query := `
         SELECT EXISTS(
-            SELECT 1 
-            FROM slack_workspaces 
+            SELECT 1
+            FROM slack_workspaces
             WHERE team_id = $1 AND status != $2
         )`
 
@@ -202,7 +202,7 @@ func (repo *swr) WorkspaceExists(ctx context.Context, teamID string) (bool, erro
 // DeleteSlackWorkspace marks a workspace as inactive
 func (repo *swr) DeleteSlackWorkspace(ctx context.Context, teamID string) error {
 	query := `
-        UPDATE slack_workspaces 
+        UPDATE slack_workspaces
         SET status = $2
         WHERE team_id = $1 AND status != $2`
 
@@ -235,7 +235,7 @@ func (repo *swr) UpdateSlackWorkspaceAccessToken(ctx context.Context, teamID, ac
 	}
 
 	query := `
-        UPDATE slack_workspaces 
+        UPDATE slack_workspaces
         SET access_token = $2
         WHERE team_id = $1 AND status = $3
         RETURNING workspace_id, team_id, channel_id, canvas_id, access_token, status, created_at, updated_at`

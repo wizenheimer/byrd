@@ -115,7 +115,7 @@ func SetupRoutes(
 	m *middleware.AccessMiddleware,
 	r *middleware.ResourceMiddleware,
 ) {
-	setupIntegrationRoutes(app, handlers.SlackHandler)
+	setupIntegrationRoutes(app, m, handlers.SlackHandler)
 
 	setupPublicRoutes(app, handlers, l, m, r)
 

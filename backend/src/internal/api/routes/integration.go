@@ -3,12 +3,14 @@ package routes
 import (
 	"github.com/gofiber/fiber/v2"
 	intg_handler "github.com/wizenheimer/byrd/src/internal/api/handlers/integration"
+	"github.com/wizenheimer/byrd/src/internal/api/middleware"
 )
 
 var placeholderHandler = func(c *fiber.Ctx) error { return nil }
 
 func setupIntegrationRoutes(
 	app *fiber.App,
+	m *middleware.AccessMiddleware,
 	sh *intg_handler.SlackIntegrationHandler,
 ) {
 	integration := app.Group("/api/public/v1/integration")
@@ -16,11 +18,12 @@ func setupIntegrationRoutes(
 	// List all current integrations
 	integration.Get("", placeholderHandler)
 
-	setupSlackIntegrationRoutes(integration, sh)
+	setupSlackIntegrationRoutes(integration, m, sh)
 }
 
 func setupSlackIntegrationRoutes(
 	router fiber.Router,
+	m *middleware.AccessMiddleware,
 	sh *intg_handler.SlackIntegrationHandler,
 ) {
 	slack := router.Group("/slack")
@@ -32,7 +35,7 @@ func setupSlackIntegrationRoutes(
 	slack.Get("/install", sh.SlackInstallationHandler)
 
 	// Slack command trigger group
-	cmdGroup := slack.Group("/cmd")
+	cmdGroup := slack.Group("/cmd", m.RequiresSlackSignature)
 
 	// Handle configure command
 	cmdGroup.Post("/configure", sh.ConfigureCommandHandler)
@@ -45,10 +48,4 @@ func setupSlackIntegrationRoutes(
 
 	// Handle slack app command interactions
 	cmdGroup.Post("/interact", sh.SlackInteractionHandler)
-
-	// Slack event group
-	eventGroup := slack.Group("/event")
-
-	// Handle slack app events
-	eventGroup.Post("", placeholderHandler)
 }
