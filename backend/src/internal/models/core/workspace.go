@@ -47,6 +47,92 @@ func (w WorkspacePlan) ToString() string {
 	return string(w)
 }
 
+type WorkspaceResource string
+
+const (
+	// WorkspaceResourceCompetitors is the resource for competitors
+	WorkspaceResourceCompetitors WorkspaceResource = "competitors"
+
+	// WorkspaceResourceUsers is the resource for users
+	WorkspaceResourceUsers WorkspaceResource = "users"
+
+	// WorkspaceResourcePages is the resource for pages
+	WorkspaceResourcePages WorkspaceResource = "pages"
+)
+
+func (w WorkspacePlan) GetMaxLimit(resource WorkspaceResource) (int, error) {
+	switch resource {
+	case WorkspaceResourceCompetitors:
+		return w.GetMaxCompetitors()
+	case WorkspaceResourceUsers:
+		return w.GetMaxUsers()
+	case WorkspaceResourcePages:
+		return w.GetMaxPages()
+	default:
+		return 0, fmt.Errorf("invalid workspace resource: %s", resource)
+	}
+}
+
+func (w WorkspacePlan) NextPlan() (WorkspacePlan, error) {
+	switch w {
+	case WorkspaceTrial:
+		return WorkspaceStarter, nil
+	case WorkspaceStarter:
+		return WorkspaceScaler, nil
+	case WorkspaceScaler:
+		return WorkspaceEnterprise, nil
+	case WorkspaceEnterprise:
+		return WorkspaceEnterprise, nil
+	default:
+		return "", fmt.Errorf("invalid workspace plan: %s", w)
+	}
+}
+
+func (w WorkspacePlan) GetMaxCompetitors() (int, error) {
+	switch w {
+	case WorkspaceTrial:
+		return 5, nil
+	case WorkspaceStarter:
+		return 5, nil
+	case WorkspaceScaler:
+		return 10, nil
+	case WorkspaceEnterprise:
+		return 20, nil
+	default:
+		return 0, fmt.Errorf("invalid workspace plan: %s", w)
+	}
+}
+
+func (w WorkspacePlan) GetMaxUsers() (int, error) {
+	switch w {
+	case WorkspaceTrial:
+		return 10, nil
+	case WorkspaceStarter:
+		return 10, nil
+	case WorkspaceScaler:
+		return 25, nil
+	case WorkspaceEnterprise:
+		return 50, nil
+	default:
+		return 0, fmt.Errorf("invalid workspace plan: %s", w)
+	}
+}
+
+func (w WorkspacePlan) GetMaxPages() (int, error) {
+	switch w {
+	case WorkspaceTrial:
+		return 15, nil
+	case WorkspaceStarter:
+		return 15, nil
+	case WorkspaceScaler:
+		return 50, nil
+	case WorkspaceEnterprise:
+		return 100, nil
+	default:
+		return 0, fmt.Errorf("invalid workspace plan: %s", w)
+	}
+}
+
 // NewWorkspacePlan returns a new workspace plan
 func NewWorkspacePlan(plan string) (WorkspacePlan, error) {
 	plan = strings.TrimSpace(strings.ToLower(plan))
@@ -70,19 +156,7 @@ func (w Workspace) GetMaxCompetitors() (int, error) {
 		return 0, fmt.Errorf("workspace is not active")
 	}
 
-	plan := w.WorkspacePlan
-	switch plan {
-	case WorkspaceTrial: // same as starter but capped
-		return 5, nil
-	case WorkspaceStarter: // smaller teams (seed stage startups) - upto 5 competitors
-		return 5, nil
-	case WorkspaceScaler: // medium teams (early stage startups) - upto 10 competitors
-		return 10, nil
-	case WorkspaceEnterprise: // larger teams (growth stage startups) - upto 20 competitors
-		return 20, nil
-	default:
-		return 0, fmt.Errorf("invalid workspace plan: %s", plan)
-	}
+	return w.WorkspacePlan.GetMaxCompetitors()
 }
 
 // GetMaxUsers returns the maximum number of users allowed for a workspace plan
@@ -91,18 +165,7 @@ func (w Workspace) GetMaxUsers() (int, error) {
 		return 0, fmt.Errorf("workspace is not active")
 	}
 
-	switch w.WorkspacePlan {
-	case WorkspaceTrial: // same as starter but capped
-		return 10, nil
-	case WorkspaceStarter: // smaller teams (seed stage startups) - upto 10 users
-		return 10, nil
-	case WorkspaceScaler: // medium teams (early stage startups) - upto 25 users
-		return 25, nil
-	case WorkspaceEnterprise: // larger teams (growth stage startups) - upto 50 users
-		return 50, nil
-	default:
-		return 0, fmt.Errorf("invalid workspace plan: %s", w.WorkspacePlan)
-	}
+	return w.WorkspacePlan.GetMaxUsers()
 }
 
 // GetMaxPages returns the maximum number of pages allowed for a workspace plan
@@ -111,18 +174,7 @@ func (w Workspace) GetMaxPages() (int, error) {
 		return 0, fmt.Errorf("workspace is not active")
 	}
 
-	switch w.WorkspacePlan {
-	case WorkspaceTrial: // same as starter but capped
-		return 15, nil
-	case WorkspaceStarter: // smaller teams (seed stage startups) - upto 15 pages
-		return 15, nil
-	case WorkspaceScaler: // medium teams (early stage startups) - upto 50 pages
-		return 50, nil
-	case WorkspaceEnterprise: // larger teams (growth stage startups) - upto 100 pages
-		return 100, nil
-	default:
-		return 0, fmt.Errorf("invalid workspace plan: %s", w.WorkspacePlan)
-	}
+	return w.WorkspacePlan.GetMaxPages()
 }
 
 type Workspace struct {

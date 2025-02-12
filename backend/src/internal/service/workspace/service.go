@@ -248,7 +248,7 @@ func (ws *workspaceService) ListWorkspaceMembers(ctx context.Context, workspaceI
 }
 
 func (ws *workspaceService) AddUsersToWorkspace(ctx context.Context, workspaceMember *clerk.User, workspaceID uuid.UUID, emails []string) ([]models.WorkspaceUser, error) {
-	canCreate, err := ws.CanAddUsers(ctx, workspaceID, len(emails))
+	canCreate, _, err := ws.CanAddUsers(ctx, workspaceID, len(emails))
 	if err != nil {
 		return nil, err
 	}
@@ -496,7 +496,7 @@ func (ws *workspaceService) WorkspaceCompetitorPageExists(ctx context.Context, w
 }
 
 func (ws *workspaceService) AddCompetitorToWorkspace(ctx context.Context, workspaceID uuid.UUID, pages []models.PageProps) (*models.Competitor, error) {
-	canCreateCompetitor, err := ws.CanCreateCompetitor(ctx, workspaceID, 1, len(pages))
+	canCreateCompetitor, _, err := ws.CanCreateCompetitor(ctx, workspaceID, 1, len(pages))
 	if err != nil {
 		return nil, err
 	}
@@ -513,7 +513,7 @@ func (ws *workspaceService) AddCompetitorToWorkspace(ctx context.Context, worksp
 }
 
 func (ws *workspaceService) BatchAddCompetitorToWorkspace(ctx context.Context, workspaceID uuid.UUID, pages []models.PageProps) ([]models.Competitor, error) {
-	canCreateCompetitor, err := ws.CanCreateCompetitor(ctx, workspaceID, len(pages), len(pages))
+	canCreateCompetitor, _, err := ws.CanCreateCompetitor(ctx, workspaceID, len(pages), len(pages))
 	if err != nil {
 		return nil, err
 	}
@@ -535,7 +535,7 @@ func (ws *workspaceService) BatchAddCompetitorToWorkspace(ctx context.Context, w
 }
 
 func (ws *workspaceService) AddPageToCompetitor(ctx context.Context, workspaceID, competitorID uuid.UUID, pageProps []models.PageProps) ([]models.Page, error) {
-	canCreatePage, err := ws.CanCreatePage(ctx, workspaceID, len(pageProps))
+	canCreatePage, _, err := ws.CanCreatePage(ctx, workspaceID, len(pageProps))
 	if err != nil {
 		return nil, err
 	}
@@ -714,85 +714,85 @@ func (ws *workspaceService) CanCreateWorkspace(ctx context.Context, userID uuid.
 // CanCreateCompetitor checks if the user can create a competitor
 // based on the user's current competitor count and the maximum competitor limit
 // it also checks if the user can create a page based on the user's current page count and the maximum page limit
-func (ws *workspaceService) CanCreateCompetitor(ctx context.Context, workspaceID uuid.UUID, totalIncomingCompetitors int, totalIncomingPages int) (bool, error) {
-	canCreatePage, err := ws.CanCreatePage(ctx, workspaceID, totalIncomingPages)
+func (ws *workspaceService) CanCreateCompetitor(ctx context.Context, workspaceID uuid.UUID, totalIncomingCompetitors int, totalIncomingPages int) (bool, models.WorkspacePlan, error) {
+	canCreatePage, workspacePlan, err := ws.CanCreatePage(ctx, workspaceID, totalIncomingPages)
 	if err != nil {
-		return false, err
+		return false, workspacePlan, err
 	}
 	if !canCreatePage {
-		return false, errors.New("user cannot create page")
+		return false, workspacePlan, errors.New("user cannot create page")
 	}
 
 	// Get the workspace
 	workspace, err := ws.GetWorkspace(ctx, workspaceID)
 	if err != nil {
-		return false, err
+		return false, models.WorkspaceStarter, err
 	}
 
 	// Get the max competitors for the workspace
 	competitorLimit, err := workspace.GetMaxCompetitors()
 	if err != nil {
-		return false, err
+		return false, workspace.WorkspacePlan, err
 	}
 
 	// Get the current competitor count
 	currentCount, err := ws.CountWorkspaceCompetitors(ctx, workspaceID)
 	if err != nil {
-		return false, err
+		return false, workspace.WorkspacePlan, err
 	}
 
 	// Check if the user can create a competitor
-	return currentCount+totalIncomingCompetitors <= competitorLimit, nil
+	return currentCount+totalIncomingCompetitors <= competitorLimit, workspace.WorkspacePlan, nil
 }
 
 // CanCreatePage checks if the user can create a page
 // based on the user's current page count and the maximum page limit
-func (ws *workspaceService) CanCreatePage(ctx context.Context, workspaceID uuid.UUID, totalIncomingPages int) (bool, error) {
+func (ws *workspaceService) CanCreatePage(ctx context.Context, workspaceID uuid.UUID, totalIncomingPages int) (bool, models.WorkspacePlan, error) {
 	// Get the workspace
 	workspace, err := ws.GetWorkspace(ctx, workspaceID)
 	if err != nil {
-		return false, err
+		return false, models.WorkspaceStarter, err
 	}
 
 	// Get the max pages for the competitor
 	limit, err := workspace.GetMaxPages()
 	if err != nil {
-		return false, err
+		return false, workspace.WorkspacePlan, err
 	}
 
 	// Get the current page count
 	pageCount, err := ws.CountWorkspacePages(ctx, workspaceID)
 	if err != nil {
-		return false, err
+		return false, workspace.WorkspacePlan, err
 	}
 
 	// Check if the user can create a page
-	return pageCount+totalIncomingPages <= limit, nil
+	return pageCount+totalIncomingPages <= limit, workspace.WorkspacePlan, nil
 }
 
 // CanAddUsers checks if the user can add users to the workspace
 // based on the user's current user count and the maximum user limit
-func (ws *workspaceService) CanAddUsers(ctx context.Context, workspaceID uuid.UUID, totalIncomingUsers int) (bool, error) {
+func (ws *workspaceService) CanAddUsers(ctx context.Context, workspaceID uuid.UUID, totalIncomingUsers int) (bool, models.WorkspacePlan, error) {
 	// Get the workspace
 	workspace, err := ws.GetWorkspace(ctx, workspaceID)
 	if err != nil {
-		return false, err
+		return false, models.WorkspaceStarter, err
 	}
 
 	// Get the max users for the workspace
 	maxCount, err := workspace.GetMaxUsers()
 	if err != nil {
-		return false, err
+		return false, workspace.WorkspacePlan, err
 	}
 
 	// Get the current user count
 	activeCount, pendingCount, err := ws.CountWorkspaceMembers(ctx, workspaceID)
 	if err != nil {
-		return false, err
+		return false, workspace.WorkspacePlan, err
 	}
 
 	// Check if the user can add users
-	return activeCount+pendingCount+totalIncomingUsers <= maxCount, nil
+	return activeCount+pendingCount+totalIncomingUsers <= maxCount, workspace.WorkspacePlan, nil
 }
 
 // CountUserWorkspaces counts the number of workspaces for a user

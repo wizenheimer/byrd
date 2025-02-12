@@ -222,6 +222,70 @@ func (svc *slackWorkspaceService) CreateCompetitorForWorkspace(ctx context.Conte
 		urls = append(urls, url.String())
 	}
 
+	// Check if the user can create a page
+	canCreatePage, workspacePlan, err := svc.ws.CanCreatePage(ctx, ws.WorkspaceID, len(urls))
+	if err != nil {
+		svc.showSupportModal(
+			client,
+			cmd.TriggerID,
+			"Failed to create page",
+			[]string{
+				"Seems like we're having trouble creating a page.",
+			},
+		)
+		return nil
+	}
+	if !canCreatePage {
+		if err := svc.showUsageLimitModal(
+			client,
+			cmd.TriggerID,
+			workspacePlan,
+			core_models.WorkspaceResourcePages,
+		); err != nil {
+			svc.showSupportModal(
+				client,
+				cmd.TriggerID,
+				"Failed to show usage limit modal",
+				[]string{
+					"Seems like we're having trouble creating a page.",
+				},
+			)
+		}
+		return nil
+	}
+
+	// Check if the user can create a competitor
+	canCreateCompetitor, workspacePlan, err := svc.ws.CanCreateCompetitor(ctx, ws.WorkspaceID, 1, len(urls))
+	if err != nil {
+		svc.showSupportModal(
+			client,
+			cmd.TriggerID,
+			"Failed to create competitor",
+			[]string{
+				"Seems like we're having trouble creating a competitor.",
+			},
+		)
+		return nil
+	}
+	if !canCreateCompetitor {
+		if err := svc.showUsageLimitModal(
+			client,
+			cmd.TriggerID,
+			workspacePlan,
+			core_models.WorkspaceResourceCompetitors,
+		); err != nil {
+			svc.showSupportModal(
+				client,
+				cmd.TriggerID,
+				"Failed to show usage limit modal",
+				[]string{
+					"Seems like we're having trouble creating a page.",
+				},
+			)
+		}
+		return nil
+	}
+
 	// --- Dropdown (Single Select) ---
 	competitorSelect := slack.NewOptionsSelectBlockElement(
 		slack.OptTypeStatic,

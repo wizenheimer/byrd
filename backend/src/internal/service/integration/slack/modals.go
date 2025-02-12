@@ -2,12 +2,16 @@ package slackworkspace
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"math/rand"
 
 	"github.com/slack-go/slack"
+	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"go.uber.org/zap"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 // showSupportModal displays a friendly troubleshooting modal
@@ -198,4 +202,82 @@ func (svc *slackWorkspaceService) showSuccessModal(client *slack.Client, trigger
 	if err != nil {
 		svc.logger.Error("Failed to open success modal", zap.Error(err))
 	}
+}
+
+func (svc *slackWorkspaceService) showUsageLimitModal(client *slack.Client, triggerID string, workspacePlan models.WorkspacePlan, workspaceResource models.WorkspaceResource) error {
+	// Get the max limit for the current plan and resource
+	limitCount, err := workspacePlan.GetMaxLimit(workspaceResource)
+	if err != nil {
+		return fmt.Errorf("failed to get max limit: %w", err)
+	}
+
+	// Get the next plan
+	nextPlan, err := workspacePlan.NextPlan()
+	if err != nil {
+		return fmt.Errorf("failed to get next plan: %w", err)
+	}
+
+	// Get the resource limit for the next plan
+	nextPlanLimit, err := nextPlan.GetMaxLimit(workspaceResource)
+	if err != nil {
+		return fmt.Errorf("failed to get next plan limit: %w", err)
+	}
+
+	// Format the resource name for display
+	resourceName := strings.TrimPrefix(string(workspaceResource), "WorkspaceResource")
+	resourceName = strings.ToLower(resourceName)
+
+	// Caserize the resource name
+	caser := cases.Title(language.English)
+
+	limitCategoryString := fmt.Sprintf("*You've reached the limit for %s*", resourceName)
+	limitCountString := fmt.Sprintf("Your current plan allows tracking up to %v %s. Upgrade to track up to %v %s.",
+		limitCount, resourceName, nextPlanLimit, resourceName)
+	currentPlanString := fmt.Sprintf("*Current Plan*\n%s", caser.String(workspacePlan.ToString()))
+	currentUsageString := fmt.Sprintf("*%s Used*\n%v of %v", caser.String(resourceName), limitCount, limitCount)
+	nextPlanString := fmt.Sprintf("Upgrade to %s", nextPlan.ToString())
+
+	limitModal := slack.ModalViewRequest{
+		Type:  "modal",
+		Title: slack.NewTextBlockObject(slack.PlainTextType, "Usage Limit Reached", false, false),
+		Close: slack.NewTextBlockObject(slack.PlainTextType, "Close", false, false),
+		Blocks: slack.Blocks{
+			BlockSet: []slack.Block{
+				slack.NewSectionBlock(
+					slack.NewTextBlockObject(slack.MarkdownType, limitCategoryString, false, false),
+					nil,
+					nil,
+				),
+				slack.NewSectionBlock(
+					slack.NewTextBlockObject(slack.MarkdownType, limitCountString, false, false),
+					nil,
+					nil,
+				),
+				slack.NewSectionBlock(
+					nil,
+					[]*slack.TextBlockObject{
+						slack.NewTextBlockObject(slack.MarkdownType, currentPlanString, false, false),
+						slack.NewTextBlockObject(slack.MarkdownType, currentUsageString, false, false),
+					},
+					nil,
+				),
+				slack.NewDividerBlock(),
+				slack.NewActionBlock(
+					"upgrade_actions",
+					slack.NewButtonBlockElement(
+						"upgrade_plan",
+						"upgrade",
+						slack.NewTextBlockObject(slack.PlainTextType, nextPlanString, false, false),
+					).WithStyle(slack.StylePrimary).WithURL("https://byrdhq.com/plans"),
+				),
+			},
+		},
+	}
+
+	_, err = client.OpenView(triggerID, limitModal)
+	if err != nil {
+		return fmt.Errorf("failed to open limit modal: %w", err)
+	}
+
+	return nil
 }

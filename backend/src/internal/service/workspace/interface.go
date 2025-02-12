@@ -102,4 +102,10 @@ type WorkspaceService interface {
 	DispatchReport(ctx context.Context, workspaceID uuid.UUID, competitorID uuid.UUID, subscriberEmails []string) error
 
 	ListActiveWorkspaces(ctx context.Context, batchSize int, lastWorkspaceID *uuid.UUID) (<-chan []uuid.UUID, <-chan error)
+
+	CanAddUsers(ctx context.Context, workspaceID uuid.UUID, totalIncomingUsers int) (bool, models.WorkspacePlan, error)
+
+	CanCreateCompetitor(ctx context.Context, workspaceID uuid.UUID, totalIncomingCompetitors int, totalIncomingPages int) (bool, models.WorkspacePlan, error)
+
+	CanCreatePage(ctx context.Context, workspaceID uuid.UUID, totalIncomingPages int) (bool, models.WorkspacePlan, error)
 }
