@@ -1,12 +1,15 @@
 package slackworkspace
 
 import (
+	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"strings"
 
 	"math/rand"
 
+	"github.com/google/uuid"
 	"github.com/slack-go/slack"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"go.uber.org/zap"
@@ -280,4 +283,107 @@ func (svc *slackWorkspaceService) showUsageLimitModal(client *slack.Client, trig
 	}
 
 	return nil
+}
+
+// showUserInviteModal displays a modal to invite a user to the workspace
+func (svc *slackWorkspaceService) showUserInviteModal(client *slack.Client, cmd slack.SlashCommand) error {
+	creatorID := cmd.UserID
+	modalRequest := slack.ModalViewRequest{
+		Type:       "modal",
+		Title:      slack.NewTextBlockObject(slack.PlainTextType, "Invite Users", false, false),
+		Submit:     slack.NewTextBlockObject(slack.PlainTextType, "Send Invites", false, false),
+		Close:      slack.NewTextBlockObject(slack.PlainTextType, "Cancel", false, false),
+		CallbackID: "invite_users",
+		Blocks: slack.Blocks{
+			BlockSet: []slack.Block{
+				slack.NewInputBlock(
+					"user_selection",
+					slack.NewTextBlockObject(slack.PlainTextType, "Users", false, false),
+					nil,
+					slack.NewOptionsSelectBlockElement(
+						slack.OptTypeUser,
+						slack.NewTextBlockObject(slack.PlainTextType, "Select users", false, false),
+						"user_select",
+					),
+				),
+			},
+		},
+		PrivateMetadata: creatorID,
+	}
+
+	_, err := client.OpenView(cmd.TriggerID, modalRequest)
+	return err
+}
+
+func (svc *slackWorkspaceService) showPageAddModal(client *slack.Client, cmd slack.SlashCommand, workspaceID uuid.UUID, urls []string) error {
+	// --- Dropdown (Single Select) ---
+	competitorSelect := slack.NewOptionsSelectBlockElement(
+		slack.OptTypeStatic,
+		slack.NewTextBlockObject(slack.PlainTextType, "Select a competitor", false, false),
+		"select_competitor",
+		svc.getCompetitorOptions(context.Background(), workspaceID)...,
+	)
+
+	competitorBlock := slack.NewInputBlock(
+		"competitor_selection",
+		slack.NewTextBlockObject(slack.PlainTextType, "Assign to Competitor", false, false),
+		nil, // No hint
+		competitorSelect,
+	)
+
+	// --- Multi-Select (DiffProfile) ---
+	caser := cases.Title(language.English)
+	diffProfileOptions := models.GetDefaultDiffProfile()
+	var multiSelectOptions []*slack.OptionBlockObject
+	for _, profile := range diffProfileOptions {
+		multiSelectOptions = append(multiSelectOptions, slack.NewOptionBlockObject(
+			profile,
+			slack.NewTextBlockObject(slack.PlainTextType, caser.String(profile), false, false),
+			nil,
+		))
+	}
+
+	diffProfileMultiSelect := slack.NewOptionsMultiSelectBlockElement(
+		slack.MultiOptTypeStatic,
+		slack.NewTextBlockObject(slack.PlainTextType, "Product, Pricing, Partnerships etc.", false, false),
+		"select_diff_profiles",
+		multiSelectOptions...,
+	)
+
+	diffProfileBlock := slack.NewInputBlock(
+		"diff_profile_selection",
+		slack.NewTextBlockObject(slack.PlainTextType, "Select Competitor Profiles", false, false),
+		nil, // No hint
+		diffProfileMultiSelect,
+	)
+
+	competitorData := competitorDTO{
+		ChannelID: cmd.ChannelID,
+		URLs:      urls,
+	}
+
+	jsonBytes, err := json.Marshal(competitorData)
+	if err != nil {
+		return err
+	}
+	base64String := base64.StdEncoding.EncodeToString(jsonBytes)
+
+	modal := slack.ModalViewRequest{
+		Type:   slack.VTModal,
+		Title:  slack.NewTextBlockObject(slack.PlainTextType, "Assign Competitor", false, false),
+		Submit: slack.NewTextBlockObject(slack.PlainTextType, "Save", false, false),
+		Close:  slack.NewTextBlockObject(slack.PlainTextType, "Cancel", false, false),
+		Blocks: slack.Blocks{
+			BlockSet: []slack.Block{
+				competitorBlock,
+				diffProfileBlock,
+			}, // Ensure correct structure
+		},
+		CallbackID:      "save_competitor",
+		PrivateMetadata: base64String,
+	}
+
+	_, err = client.OpenView(cmd.TriggerID, modal)
+
+	return err
 }

@@ -2,10 +2,7 @@ package slackworkspace
 
 import (
 	"context"
-	"encoding/base64"
-	"encoding/json"
 	"errors"
-	"fmt"
 	"net/url"
 	"strings"
 
@@ -18,8 +15,6 @@ import (
 	"github.com/wizenheimer/byrd/src/internal/service/workspace"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"go.uber.org/zap"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 )
 
 type slackWorkspaceService struct {
@@ -167,31 +162,6 @@ func (svc *slackWorkspaceService) IntegrationExistsForWorkspace(ctx context.Cont
 
 // AddUserToSlackWorkspace adds a user to a Slack workspace
 func (svc *slackWorkspaceService) AddUserToSlackWorkspace(ctx context.Context, cmd slack.SlashCommand) error {
-	creatorID := cmd.UserID
-
-	modalRequest := slack.ModalViewRequest{
-		Type:       "modal",
-		Title:      slack.NewTextBlockObject(slack.PlainTextType, "Invite Users", false, false),
-		Submit:     slack.NewTextBlockObject(slack.PlainTextType, "Send Invites", false, false),
-		Close:      slack.NewTextBlockObject(slack.PlainTextType, "Cancel", false, false),
-		CallbackID: "invite_users",
-		Blocks: slack.Blocks{
-			BlockSet: []slack.Block{
-				slack.NewInputBlock(
-					"user_selection",
-					slack.NewTextBlockObject(slack.PlainTextType, "Users", false, false),
-					nil,
-					slack.NewOptionsSelectBlockElement(
-						slack.OptTypeUser,
-						slack.NewTextBlockObject(slack.PlainTextType, "Select users", false, false),
-						"user_select",
-					),
-				),
-			},
-		},
-		PrivateMetadata: creatorID,
-	}
-
 	ws, err := svc.repo.GetSlackWorkspaceByTeamID(ctx, cmd.TeamID)
 	if err != nil {
 		return err
@@ -235,9 +205,15 @@ func (svc *slackWorkspaceService) AddUserToSlackWorkspace(ctx context.Context, c
 		return nil
 	}
 
-	_, err = client.OpenView(cmd.TriggerID, modalRequest)
-	if err != nil {
-		return err
+	if err := svc.showUserInviteModal(client, cmd); err != nil {
+		svc.showSupportModal(
+			client,
+			cmd.TriggerID,
+			"Couldn't add user",
+			[]string{
+				"Seems like we're having trouble adding a user.",
+			},
+		)
 	}
 
 	return nil
@@ -252,11 +228,6 @@ func (svc *slackWorkspaceService) UserExistsInSlackWorkspace(ctx context.Context
 
 // CreateCompetitor creates a competitor in a Slack workspace
 func (svc *slackWorkspaceService) CreateCompetitorForWorkspace(ctx context.Context, cmd slack.SlashCommand) error {
-	args := strings.Fields(cmd.Text) // Extract URLs from command
-	if len(args) == 0 {
-		return errors.New("no URLs provided")
-	}
-
 	ws, err := svc.repo.GetSlackWorkspaceByTeamID(ctx, cmd.TeamID)
 	if err != nil {
 		return err
@@ -268,7 +239,11 @@ func (svc *slackWorkspaceService) CreateCompetitorForWorkspace(ctx context.Conte
 
 	client := slack.New(*ws.AccessToken)
 
-	var urlBlocks []slack.Block
+	args := strings.Fields(cmd.Text) // Extract URLs from command
+	if len(args) == 0 {
+		return errors.New("no URLs provided")
+	}
+
 	var urls []string
 	for _, u := range args {
 		url, err := url.Parse(u) // Ensure URL is valid
@@ -342,79 +317,19 @@ func (svc *slackWorkspaceService) CreateCompetitorForWorkspace(ctx context.Conte
 		return nil
 	}
 
-	// --- Dropdown (Single Select) ---
-	competitorSelect := slack.NewOptionsSelectBlockElement(
-		slack.OptTypeStatic,
-		slack.NewTextBlockObject(slack.PlainTextType, "Select a competitor", false, false),
-		"select_competitor",
-		svc.getCompetitorOptions(ctx, ws.WorkspaceID)...,
-	)
-
-	competitorBlock := slack.NewInputBlock(
-		"competitor_selection",
-		slack.NewTextBlockObject(slack.PlainTextType, "Assign to Competitor", false, false),
-		nil, // No hint
-		competitorSelect,
-	)
-
-	// --- Multi-Select (DiffProfile) ---
-	caser := cases.Title(language.English)
-	diffProfileOptions := core_models.GetDefaultDiffProfile()
-	var multiSelectOptions []*slack.OptionBlockObject
-	for _, profile := range diffProfileOptions {
-		multiSelectOptions = append(multiSelectOptions, slack.NewOptionBlockObject(
-			profile,
-			slack.NewTextBlockObject(slack.PlainTextType, caser.String(profile), false, false),
-			nil,
-		))
-	}
-
-	diffProfileMultiSelect := slack.NewOptionsMultiSelectBlockElement(
-		slack.MultiOptTypeStatic,
-		slack.NewTextBlockObject(slack.PlainTextType, "Product, Pricing, Partnerships etc.", false, false),
-		"select_diff_profiles",
-		multiSelectOptions...,
-	)
-
-	diffProfileBlock := slack.NewInputBlock(
-		"diff_profile_selection",
-		slack.NewTextBlockObject(slack.PlainTextType, "Select Competitor Profiles", false, false),
-		nil, // No hint
-		diffProfileMultiSelect,
-	)
-
-	competitorData := CompetitorData{
-		ChannelID: cmd.ChannelID,
-		URLs:      urls,
-	}
-
-	jsonBytes, err := json.Marshal(competitorData)
-	if err != nil {
-		return err
-	}
-	base64String := base64.StdEncoding.EncodeToString(jsonBytes)
-
-	modal := slack.ModalViewRequest{
-		Type:            slack.VTModal,
-		Title:           slack.NewTextBlockObject(slack.PlainTextType, "Assign Competitor", false, false),
-		Submit:          slack.NewTextBlockObject(slack.PlainTextType, "Save", false, false),
-		Close:           slack.NewTextBlockObject(slack.PlainTextType, "Cancel", false, false),
-		Blocks:          slack.Blocks{BlockSet: append(urlBlocks, competitorBlock, diffProfileBlock)}, // Ensure correct structure
-		CallbackID:      "save_competitor",
-		PrivateMetadata: base64String,
-	}
-
-	_, err = client.OpenView(cmd.TriggerID, modal)
-	if err != nil {
-		return err
+	if err := svc.showPageAddModal(client, cmd, ws.WorkspaceID, urls); err != nil {
+		svc.logger.Error("Failed to show page add modal", zap.Error(err))
+		svc.showSupportModal(
+			client,
+			cmd.TriggerID,
+			"Failed to show page add modal",
+			[]string{
+				"Seems like we're having trouble creating a competitor.",
+			},
+		)
 	}
 
 	return nil
-}
-
-type CompetitorData struct {
-	ChannelID string   `json:"channel_id"`
-	URLs      []string `json:"urls"`
 }
 
 func (svc *slackWorkspaceService) getCompetitorOptions(ctx context.Context, workspaceID uuid.UUID) []*slack.OptionBlockObject {
@@ -475,136 +390,14 @@ func (svc *slackWorkspaceService) HandleSlackInteractionPayload(ctx context.Cont
 	return errors.New("unsupported interaction type")
 }
 
-// TODO: remove this function
-func (svc *slackWorkspaceService) getUserEmail(client *slack.Client, userID string) (string, error) {
-	user, err := client.GetUserInfo(userID)
-	if err != nil {
-		return "", fmt.Errorf("failed to get user info: %w", err)
-	}
-
-	return user.Profile.Email, nil
-}
-
-func (svc *slackWorkspaceService) handleInviteSubmission(ctx context.Context, payload slack.InteractionCallback) error {
-	selectedUser := payload.View.State.Values["user_selection"]["user_select"].SelectedUser
-	if selectedUser == "" {
-		return errors.New("no user selected")
-	}
-
-	inviteCreator := payload.View.PrivateMetadata // Retrieve stored creator ID
-
-	svc.logger.Info("User selected for invite", zap.String("user_id", selectedUser), zap.String("creator_id", inviteCreator))
-
-	// Retrieve Slack workspace token
-	teamID := payload.User.TeamID
-	ws, err := svc.repo.GetSlackWorkspaceByTeamID(ctx, teamID)
+func (svc *slackWorkspaceService) DispatchReportToWorkspaceMembers(ctx context.Context, workspaceID, competitorID uuid.UUID) error {
+	report, err := svc.rs.GetLatest(ctx, workspaceID, competitorID)
 	if err != nil {
 		return err
 	}
-	if ws.AccessToken == nil {
-		return errors.New("no access token found for Slack workspace")
+	if report == nil {
+		return errors.New("no report found for the competitor")
 	}
 
-	client := slack.New(*ws.AccessToken)
-
-	// Open a DM with the selected user
-	channel, _, _, err := client.OpenConversation(&slack.OpenConversationParameters{
-		Users: []string{selectedUser},
-	})
-	if err != nil {
-		svc.logger.Error("failed to open DM with user", zap.Error(err))
-		return err
-	}
-
-	// Construct the invite message with action buttons
-	msgBlocks := []slack.Block{
-		slack.NewSectionBlock(
-			slack.NewTextBlockObject(slack.MarkdownType, fmt.Sprintf(
-				"*%s* invited you to join the workspace! 🎉\nWould you like to accept or decline?",
-				fmt.Sprintf("<@%s>", inviteCreator), // Mention creator
-			), false, false),
-			nil, nil,
-		),
-		slack.NewActionBlock("invite_response",
-			slack.NewButtonBlockElement("accept_invite", inviteCreator, slack.NewTextBlockObject(slack.PlainTextType, "✅ Accept", false, false)),
-			slack.NewButtonBlockElement("decline_invite", inviteCreator, slack.NewTextBlockObject(slack.PlainTextType, "❌ Decline", false, false)),
-		),
-	}
-
-	// Send the message as a DM
-	_, _, err = client.PostMessage(channel.ID, slack.MsgOptionBlocks(msgBlocks...))
-	if err != nil {
-		svc.logger.Error("failed to send invite message", zap.Error(err))
-		return err
-	}
-
-	return nil
-}
-
-func (svc *slackWorkspaceService) handleInviteResponse(ctx context.Context, payload slack.InteractionCallback) error {
-	actionID := payload.ActionCallback.BlockActions[0].ActionID
-	userID := payload.User.ID
-	// Retrieve workspace token
-	teamID := payload.Team.ID
-	ws, err := svc.repo.GetSlackWorkspaceByTeamID(ctx, teamID)
-	if err != nil {
-		return err
-	}
-	if ws.AccessToken == nil {
-		return errors.New("no access token found for Slack workspace")
-	}
-
-	client := slack.New(*ws.AccessToken)
-
-	var responseMessage string
-
-	if actionID == "accept_invite" {
-		responseMessage = "And just like that, you're in! 🎉"
-
-		userEmail, err := svc.getUserEmail(client, payload.User.ID)
-		if err != nil {
-			responseMessage = "Seems like we're having trouble getting your email address."
-			svc.logger.Error("failed to get user email", zap.Error(err))
-		}
-
-		inviteCreator := payload.ActionCallback.BlockActions[0].Value // Get creator ID from button value
-
-		inviteCreatorEmail, err := svc.getUserEmail(client, inviteCreator)
-		if err != nil {
-			responseMessage = "Seems like we're having trouble getting the creator's email address."
-			svc.logger.Error("failed to get invite creator email", zap.Error(err))
-		}
-
-		if inviteCreatorEmail != "" && userEmail != "" {
-			workspaceUsers, err := svc.ws.AddSlackUserToWorkspace(
-				ctx,
-				inviteCreatorEmail,
-				ws.WorkspaceID,
-				[]string{
-					userEmail,
-				},
-			)
-			if err != nil {
-				responseMessage = "Seems like we're having trouble adding you to the workspace."
-				svc.logger.Error("failed to add user to workspace", zap.Error(err))
-			}
-			if len(workspaceUsers) == 0 {
-				responseMessage = "Seems you tried to join a workspace you're already a part of. That's cool too!"
-			}
-		}
-
-	} else if actionID == "decline_invite" {
-		responseMessage = "No worries! We are ready when you are. 🙌"
-	} else {
-		return errors.New("wait, how did you get here?")
-	}
-
-	// Send a confirmation message to the user
-	_, _, err = client.PostMessage(userID, slack.MsgOptionText(responseMessage, false))
-	if err != nil {
-		svc.logger.Error("failed to send response message", zap.Error(err))
-		return err
-	}
-
-	return nil
+	return svc.refreshReport(ctx, report)
 }

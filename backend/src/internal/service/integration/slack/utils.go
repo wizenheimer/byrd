@@ -2,10 +2,8 @@ package slackworkspace
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
-	"github.com/google/uuid"
 	"github.com/slack-go/slack"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"go.uber.org/zap"
@@ -38,7 +36,7 @@ func formatSlackReportMarkdown(report models.Report) string {
 	return reportMarkdown
 }
 
-func (svc *slackWorkspaceService) RefreshReport(ctx context.Context, report *models.Report) error {
+func (svc *slackWorkspaceService) refreshReport(ctx context.Context, report *models.Report) error {
 	// Get the Slack workspace
 	slackWorkspace, err := svc.repo.GetSlackWorkspaceByWorkspaceID(ctx, report.WorkspaceID)
 	if err != nil {
@@ -83,14 +81,7 @@ func (svc *slackWorkspaceService) RefreshReport(ctx context.Context, report *mod
 	return nil
 }
 
-func (svc *slackWorkspaceService) DispatchReportToWorkspaceMembers(ctx context.Context, workspaceID, competitorID uuid.UUID) error {
-	report, err := svc.rs.GetLatest(ctx, workspaceID, competitorID)
-	if err != nil {
-		return err
-	}
-	if report == nil {
-		return errors.New("no report found for the competitor")
-	}
-
-	return svc.RefreshReport(ctx, report)
+type competitorDTO struct {
+	ChannelID string   `json:"channel_id"`
+	URLs      []string `json:"urls"`
 }
