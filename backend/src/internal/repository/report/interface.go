@@ -11,7 +11,7 @@ import (
 // ReportRepository is the interface that provides report operations
 type ReportRepository interface {
 	// Set creates a new report
-	Set(ctx context.Context, workspaceID, competitorID uuid.UUID, changes []models.CategoryChange, reportContent string) (*models.Report, error)
+	Set(ctx context.Context, workspaceID, competitorID uuid.UUID, competitorName string, changes []models.CategoryChange, reportContent string) (*models.Report, error)
 
 	// Get returns the report with the given ID.
 	Get(ctx context.Context, reportID uuid.UUID) (*models.Report, error)

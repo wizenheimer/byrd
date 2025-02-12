@@ -67,19 +67,19 @@ func NewReportRepository(ctx context.Context, tm *transaction.TxManager, accessK
 
 // Set creates a new report
 // Set creates a new report
-func (r *reportRespository) Set(ctx context.Context, workspaceID, competitorID uuid.UUID, changes []models.CategoryChange, reportContent string) (*models.Report, error) {
+func (r *reportRespository) Set(ctx context.Context, workspaceID, competitorID uuid.UUID, competitorName string, changes []models.CategoryChange, reportContent string) (*models.Report, error) {
 	reportURI, err := r.store(ctx, reportContent)
 	if err != nil {
 		return nil, fmt.Errorf("failed to store report: %w", err)
 	}
 
-	report := models.NewReport(workspaceID, competitorID, changes, reportURI)
+	report := models.NewReport(workspaceID, competitorID, competitorName, changes, reportURI)
 
 	querier := r.getQuerier(ctx)
 
 	const insertSQL = `
-        INSERT INTO reports (id, workspace_id, competitor_id, changes, uri, time)
-        VALUES ($1, $2, $3, $4, $5, $6)
+        INSERT INTO reports (id, workspace_id, competitor_id, competitor_name, changes, uri, time)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
     `
 
 	changesJSON, err := json.Marshal(report.Changes)
@@ -91,6 +91,7 @@ func (r *reportRespository) Set(ctx context.Context, workspaceID, competitorID u
 		report.ID,
 		report.WorkspaceID,
 		report.CompetitorID,
+		report.CompetitorName,
 		changesJSON,
 		report.URI,
 		report.Time,
@@ -107,7 +108,7 @@ func (r *reportRespository) Get(ctx context.Context, reportID uuid.UUID) (*model
 	querier := r.getQuerier(ctx)
 
 	const getSQL = `
-        SELECT id, workspace_id, competitor_id, changes, uri, time
+        SELECT id, workspace_id, competitor_id, competitor_name, changes, uri, time
         FROM reports
         WHERE id = $1
     `
@@ -119,6 +120,7 @@ func (r *reportRespository) Get(ctx context.Context, reportID uuid.UUID) (*model
 		&report.ID,
 		&report.WorkspaceID,
 		&report.CompetitorID,
+		&report.CompetitorName,
 		&changesJSON,
 		&report.URI,
 		&report.Time,
@@ -152,7 +154,7 @@ func (r *reportRespository) List(ctx context.Context, workspaceID, competitorID 
 	}
 
 	query := `
-        SELECT id, workspace_id, competitor_id, changes, uri, time
+        SELECT id, workspace_id, competitor_id, competitor_name, changes, uri, time
         FROM reports
         WHERE workspace_id = $1 AND competitor_id = $2
         ORDER BY time DESC
@@ -182,6 +184,7 @@ func (r *reportRespository) List(ctx context.Context, workspaceID, competitorID 
 			&report.ID,
 			&report.WorkspaceID,
 			&report.CompetitorID,
+			&report.CompetitorName,
 			&changesJSON,
 			&report.URI,
 			&report.Time,
@@ -212,7 +215,7 @@ func (r *reportRespository) GetLatest(ctx context.Context, workspaceID, competit
 	querier := r.getQuerier(ctx)
 
 	const getLatestSQL = `
-        SELECT id, workspace_id, competitor_id, changes, uri, time
+        SELECT id, workspace_id, competitor_id, competitor_name, changes, uri, time
         FROM reports
         WHERE workspace_id = $1 AND competitor_id = $2
         ORDER BY time DESC
@@ -225,6 +228,7 @@ func (r *reportRespository) GetLatest(ctx context.Context, workspaceID, competit
 		&report.ID,
 		&report.WorkspaceID,
 		&report.CompetitorID,
+		&report.CompetitorName,
 		&changesJSON,
 		&report.URI,
 		&report.Time,
@@ -248,7 +252,7 @@ func (r *reportRespository) GetForPeriod(ctx context.Context, workspaceID, compe
 	querier := r.getQuerier(ctx)
 
 	const getSQL = `
-        SELECT id, workspace_id, competitor_id, changes, uri, time
+        SELECT id, workspace_id, competitor_id, competitor_name, changes, uri, time
         FROM reports
         WHERE workspace_id = $1
         AND competitor_id = $2
@@ -264,6 +268,7 @@ func (r *reportRespository) GetForPeriod(ctx context.Context, workspaceID, compe
 		&report.ID,
 		&report.WorkspaceID,
 		&report.CompetitorID,
+		&report.CompetitorName,
 		&changesJSON,
 		&report.URI,
 		&report.Time,

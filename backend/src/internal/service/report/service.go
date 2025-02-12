@@ -150,7 +150,7 @@ func (s *reportService) Create(ctx context.Context, workspaceID, competitorID uu
 		return nil, err
 	}
 
-	report, err := s.repo.Set(ctx, workspaceID, competitorID, changes, reportContent)
+	report, err := s.repo.Set(ctx, workspaceID, competitorID, competitorName, changes, reportContent)
 	if err != nil {
 		return nil, err
 	}
