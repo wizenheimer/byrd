@@ -45,6 +45,8 @@ type WorkspaceService interface {
 
 	AddUsersToWorkspace(ctx context.Context, workspaceMember *clerk.User, workspaceID uuid.UUID, emails []string) ([]models.WorkspaceUser, error)
 
+	AddSlackUserToWorkspace(ctx context.Context, workspaceMember string, workspaceID uuid.UUID, emails []string) ([]models.WorkspaceUser, error)
+
 	LeaveWorkspace(ctx context.Context, workspaceMember *clerk.User, workspaceID uuid.UUID) error
 
 	UpdateWorkspaceMemberRole(ctx context.Context, workspaceID uuid.UUID, workspaceMemberID uuid.UUID, role models.WorkspaceRole) error

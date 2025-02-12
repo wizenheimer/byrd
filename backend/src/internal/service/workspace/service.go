@@ -329,6 +329,54 @@ func (ws *workspaceService) AddUsersToWorkspace(ctx context.Context, workspaceMe
 	return workspaceUsers, nil
 }
 
+func (ws *workspaceService) AddSlackUserToWorkspace(ctx context.Context, workspaceMemberEmail string, workspaceID uuid.UUID, emails []string) ([]models.WorkspaceUser, error) {
+	canCreate, _, err := ws.CanAddUsers(ctx, workspaceID, len(emails))
+	if err != nil {
+		return nil, err
+	}
+	if !canCreate {
+		return nil, errors.New("member cannot add users to workspace")
+	}
+
+	normalizedEmails := utils.CleanEmailList(emails, []string{workspaceMemberEmail})
+
+	users, err := ws.userService.BatchGetOrCreateUsers(ctx, normalizedEmails)
+	if err != nil {
+		return nil, err
+	}
+
+	userIDs := make([]uuid.UUID, 0)
+	userIDsToUserMap := make(map[uuid.UUID]models.User)
+	for _, user := range users {
+		userIDs = append(userIDs, user.ID)
+		userIDsToUserMap[user.ID] = user
+	}
+
+	partialWorkspaceUsers, err := ws.workspaceRepo.BatchAddUsersToWorkspace(ctx, workspaceID, userIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	workspaceUsers := make([]models.WorkspaceUser, 0)
+	for _, member := range partialWorkspaceUsers {
+		user, ok := userIDsToUserMap[member.ID]
+		if !ok {
+			continue
+		}
+		workspaceUser := models.WorkspaceUser{
+			ID:               member.ID,
+			WorkspaceID:      workspaceID,
+			Role:             member.Role,
+			Name:             utils.FromPtr(user.Name, ""),
+			Email:            utils.FromPtr(user.Email, ""),
+			MembershipStatus: member.MembershipStatus,
+		}
+		workspaceUsers = append(workspaceUsers, workspaceUser)
+	}
+
+	return workspaceUsers, nil
+}
+
 func (ws *workspaceService) LeaveWorkspace(ctx context.Context, workspaceMember *clerk.User, workspaceID uuid.UUID) error {
 	// Get the workspace member
 	workspaceUser, err := ws.userService.GetUserByClerkCredentials(ctx, workspaceMember)
