@@ -77,11 +77,22 @@ func SetupServices(
 		return nil, err
 	}
 
+	slackWorkspaceService, err := slackworkspace.NewSlackWorkspaceService(
+		repos.SlackWorkspace,
+		workspaceService,
+		reportService,
+		logger,
+	)
+	if err != nil {
+		return nil, err
+	}
+
 	workflowService, err := setupWorkflowService(
 		cfg,
 		repos.Workflow,
 		pageService,
 		workspaceService,
+		slackWorkspaceService,
 		logger,
 		errorRecorder,
 	)
@@ -103,11 +114,6 @@ func SetupServices(
 		return nil, err
 	}
 
-	slackWorkspaceSvc, err := slackworkspace.NewSlackWorkspaceService(repos.SlackWorkspace, workspaceService, logger)
-	if err != nil {
-		return nil, err
-	}
-
 	return &Services{
 		History:        historyService,
 		Page:           pageService,
@@ -117,7 +123,7 @@ func SetupServices(
 		Workflow:       workflowService,
 		Scheduler:      schedulerSvc,
 		TokenManager:   tokenManager,
-		SlackWorkspace: slackWorkspaceSvc,
+		SlackWorkspace: slackWorkspaceService,
 	}, nil
 }
 
@@ -134,6 +140,7 @@ func setupWorkflowService(
 	workflowRepo workflow_repo.WorkflowRepository,
 	pageService page.PageService,
 	workspaceService workspace.WorkspaceService,
+	slackworkspaceService slackworkspace.SlackWorkspaceService,
 	logger *logger.Logger,
 	errorRecorder *recorder.ErrorRecorder,
 ) (workflow.WorkflowService, error) {
@@ -181,7 +188,12 @@ func setupWorkflowService(
 		return nil, err
 	}
 
-	dispatchTaskExecutor, err := executor.NewDispatchExecutor(workspaceService, logger, reportTaskRuntimeConfig)
+	dispatchTaskExecutor, err := executor.NewDispatchExecutor(
+		workspaceService,
+		slackworkspaceService,
+		logger,
+		reportTaskRuntimeConfig,
+	)
 	if err != nil {
 		return nil, err
 	}

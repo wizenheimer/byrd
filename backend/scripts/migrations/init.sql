@@ -116,6 +116,7 @@ CREATE TABLE reports (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   workspace_id UUID NOT NULL,
   competitor_id UUID NOT NULL,
+  competitor_name TEXT NOT NULL,
   changes JSONB NOT NULL,
   uri TEXT NOT NULL,
   time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,

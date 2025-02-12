@@ -14,6 +14,7 @@ import (
 	core_models "github.com/wizenheimer/byrd/src/internal/models/core"
 	models "github.com/wizenheimer/byrd/src/internal/models/integration/slack"
 	repository "github.com/wizenheimer/byrd/src/internal/repository/integration/slack"
+	"github.com/wizenheimer/byrd/src/internal/service/report"
 	"github.com/wizenheimer/byrd/src/internal/service/workspace"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"go.uber.org/zap"
@@ -28,15 +29,24 @@ type slackWorkspaceService struct {
 	// ws is the workspace service for managing Byrd workspaces
 	ws workspace.WorkspaceService
 
+	// report is the report service for managing Byrd reports
+	rs report.ReportService
+
 	// logger is the logger for the Slack workspace service
 	logger *logger.Logger
 }
 
 // NewSlackWorkspaceService creates a new Slack workspace service
-func NewSlackWorkspaceService(repo repository.SlackWorkspaceRepository, ws workspace.WorkspaceService, logger *logger.Logger) (SlackWorkspaceService, error) {
+func NewSlackWorkspaceService(
+	repo repository.SlackWorkspaceRepository,
+	ws workspace.WorkspaceService,
+	rs report.ReportService,
+	logger *logger.Logger,
+) (SlackWorkspaceService, error) {
 	svc := slackWorkspaceService{
 		repo:   repo,
 		ws:     ws,
+		rs:     rs,
 		logger: logger,
 	}
 	return &svc, nil
@@ -76,7 +86,7 @@ func (svc *slackWorkspaceService) UpdateSlackWorkspace(ctx context.Context, cmd 
 	} else {
 		canvasID, err = client.CreateChannelCanvas(cmd.ChannelID, slack.DocumentContent{
 			Type:     "markdown",
-			Markdown: "Welcome to Byrd! This is your team's shared canvas. Use `/byrd` to interact with Byrd.",
+			Markdown: "\n\n---\n\n",
 		})
 		if err != nil {
 			svc.showSupportModal(

@@ -51,4 +51,7 @@ type SlackWorkspaceService interface {
 
 	// HandleSlackInteractionPayload handles slack interaction payloads
 	HandleSlackInteractionPayload(ctx context.Context, payload slack.InteractionCallback) error
+
+	// ----- Slack Report Management ----- //
+	DispatchReportToWorkspaceMembers(ctx context.Context, workspaceID, competitorID uuid.UUID) error
 }

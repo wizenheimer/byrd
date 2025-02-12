@@ -9,18 +9,25 @@ import (
 
 	"github.com/google/uuid"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
+	slackworkspace "github.com/wizenheimer/byrd/src/internal/service/integration/slack"
 	"github.com/wizenheimer/byrd/src/internal/service/workspace"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"go.uber.org/zap"
 )
 
 type dispatchExecutor struct {
-	ws            workspace.WorkspaceService
-	logger        *logger.Logger
-	runtimeConfig models.JobExecutorConfig
+	ws             workspace.WorkspaceService
+	slackWorkspace slackworkspace.SlackWorkspaceService
+	logger         *logger.Logger
+	runtimeConfig  models.JobExecutorConfig
 }
 
-func NewDispatchExecutor(ws workspace.WorkspaceService, logger *logger.Logger, runtimeConfig models.JobExecutorConfig) (JobExecutor, error) {
+func NewDispatchExecutor(
+	ws workspace.WorkspaceService,
+	slackWorkspace slackworkspace.SlackWorkspaceService,
+	logger *logger.Logger,
+	runtimeConfig models.JobExecutorConfig,
+) (JobExecutor, error) {
 	if ws == nil {
 		return nil, errors.New("workspace service is required")
 	}
@@ -28,9 +35,10 @@ func NewDispatchExecutor(ws workspace.WorkspaceService, logger *logger.Logger, r
 		return nil, errors.New("logger is required")
 	}
 	d := dispatchExecutor{
-		ws:            ws,
-		logger:        logger,
-		runtimeConfig: runtimeConfig,
+		ws:             ws,
+		slackWorkspace: slackWorkspace,
+		logger:         logger,
+		runtimeConfig:  runtimeConfig,
 	}
 	return &d, nil
 }
@@ -197,14 +205,32 @@ func (e *dispatchExecutor) processWorkspace(ctx context.Context, workspaceID uui
 }
 
 func (e *dispatchExecutor) processCompetitor(ctx context.Context, workspaceID uuid.UUID, competitorID uuid.UUID) error {
+	slackWorkspaceExists, err := e.slackWorkspace.IntegrationExistsForWorkspace(ctx, workspaceID)
+	if err != nil {
+		e.logger.Error("failed to check if slack workspace exists", zap.Any("workspaceID", workspaceID), zap.Error(err))
+		slackWorkspaceExists = false
+	}
+
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
 	default:
+		// Send report to slack workspace
+		var slackError error
+		if slackWorkspaceExists {
+			slackError = e.slackWorkspace.DispatchReportToWorkspaceMembers(ctx, workspaceID, competitorID)
+		}
+
 		// Process the competitor
-		err := e.ws.DispatchReportToWorkspaceMembers(ctx, workspaceID, competitorID)
-		if err != nil {
-			return err
+		var emailError error
+		emailError = e.ws.DispatchReportToWorkspaceMembers(ctx, workspaceID, competitorID)
+
+		if slackError != nil && emailError != nil {
+			return fmt.Errorf("failed to send report to slack workspace and email: %v, %v", slackError, emailError)
+		} else if slackError != nil {
+			return fmt.Errorf("failed to send report to slack workspace: %v", slackError)
+		} else if emailError != nil {
+			return fmt.Errorf("failed to send report to email: %v", emailError)
 		}
 		return nil
 	}

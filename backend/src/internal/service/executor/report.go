@@ -22,7 +22,11 @@ type reportExecutor struct {
 	runtimeConfig models.JobExecutorConfig
 }
 
-func NewReportExecutor(workspaceService workspace.WorkspaceService, logger *logger.Logger, runtimConfig models.JobExecutorConfig) (JobExecutor, error) {
+func NewReportExecutor(
+	workspaceService workspace.WorkspaceService,
+	logger *logger.Logger,
+	runtimConfig models.JobExecutorConfig,
+) (JobExecutor, error) {
 	if workspaceService == nil {
 		return nil, errors.New("workspaceService is required")
 	}
