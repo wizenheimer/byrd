@@ -11,6 +11,4 @@
   </p>
 </div>
 
-<a href="#">
-  <img src="https://github.com/wizenheimer/byrd/tree/main/frontend/public/onboarding/six.png" alt="contrib.rocks image" />
-</a>
+![image](https://github.com/user-attachments/assets/2623d9c2-8dd6-4a6b-bc1c-23cb92afc96f)
