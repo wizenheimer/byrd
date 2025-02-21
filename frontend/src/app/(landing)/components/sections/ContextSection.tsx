@@ -21,7 +21,7 @@ const ContextSection = () => {
 				description:
 					"Every change, no matter how small, gets flagged. Whether it's roadmap changes, pricing shifts, or positioning plays. Consider yourself briefed.",
 				linkText: "Competition Never Sleeps. But You Can",
-				linkHref: "/",
+				linkHref: "/onboarding?source=S2C1",
 			},
 			{
 				title: {
@@ -31,7 +31,7 @@ const ContextSection = () => {
 				description:
 					"Your time is better spent crushing competitors, not cataloging them. Track what matters, skip what doesn't. Build upon real market context.",
 				linkText: "Don't Play Catchup. Call the Shots",
-				linkHref: "/",
+				linkHref: "/onboarding?source=S2C2",
 			},
 		] as const,
 	};

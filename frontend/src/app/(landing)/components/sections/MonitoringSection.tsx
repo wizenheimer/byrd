@@ -23,7 +23,7 @@ const MonitoringSection = () => {
 				description:
 					"Mine competitor mistakes for your advantage. Skip the guesswork. Start with what already works.",
 				linkText: "Keep Your Customers Close, and Competitors Closer",
-				linkHref: "/",
+				linkHref: "/onboarding?source=S3C1",
 			},
 			{
 				title: {
@@ -33,7 +33,7 @@ const MonitoringSection = () => {
 				description:
 					"Make alerts your allies. Stay ahead of every product move. Stop discovering competitor announcements through lost deals.",
 				linkText: "Stop Losing Deals to Competitors' Price Changes",
-				linkHref: "/",
+				linkHref: "/onboarding?source=S3C2",
 			},
 			{
 				title: {
@@ -43,7 +43,7 @@ const MonitoringSection = () => {
 				description:
 					"Skip watching from the sidelines. Head straight to what works. Start turning their moves into your strategic wins.",
 				linkText: "Beat them at their own game, every single time",
-				linkHref: "/",
+				linkHref: "/onboarding?source=S3C3",
 			},
 		],
 	};

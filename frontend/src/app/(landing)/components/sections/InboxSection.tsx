@@ -23,7 +23,7 @@ const InboxSection = () => {
 				description:
 					"Every competitor email archived and searchable, from day one. Search across all competitor emails by topic, product, or campaign.",
 				linkText: "Learn Which Bets Your Competitors Are Making Next",
-				linkHref: "/",
+				linkHref: "/onboarding?source=S4C1",
 			},
 			{
 				title: {
@@ -33,7 +33,7 @@ const InboxSection = () => {
 				description:
 					"Track exactly when they hit send. Learn which days and times their emails land hardest. Beat them to the inbox next time.",
 				linkText: "Focus on What Works. Skip the Rest",
-				linkHref: "/",
+				linkHref: "/onboarding?source=S4C2",
 			},
 			{
 				title: {
@@ -43,7 +43,7 @@ const InboxSection = () => {
 				description:
 					"Build Your Swipe Files. Turn their best work into your advantage. Give your marketing team the ammo they need.",
 				linkText: "Your Competition's Greatest Hits. Save Now. Strike Later",
-				linkHref: "/",
+				linkHref: "/onboarding?source=S4C3",
 			},
 		],
 	};

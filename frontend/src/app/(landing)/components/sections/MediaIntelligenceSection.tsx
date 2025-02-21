@@ -23,7 +23,7 @@ const MediaIntelligenceSection = () => {
 				description:
 					"Measure what matters. See where they publish. Track what resonates. Learn why it works.",
 				linkText: "Track Their Narrative Before It Hits Mainstream",
-				linkHref: "/",
+				linkHref: "/onboarding?source=S5C1",
 			},
 			{
 				title: {
@@ -33,7 +33,7 @@ const MediaIntelligenceSection = () => {
 				description:
 					"Track every dime or dollar your competitors raise. Keep a pulse on leadership changes, partnerships, and more.",
 				linkText: "Start Pitching with Precision, not Prayers",
-				linkHref: "/",
+				linkHref: "/onboarding?source=S5C2",
 			},
 			{
 				title: {
@@ -43,7 +43,7 @@ const MediaIntelligenceSection = () => {
 				description:
 					"From major announcements to minor mentions. Never miss on coverage that shapes market perceptions or influences buyers.",
 				linkText: "Market Visibility Without the Busy Work",
-				linkHref: "/",
+				linkHref: "/onboarding?source=S5C3",
 			},
 		],
 	};

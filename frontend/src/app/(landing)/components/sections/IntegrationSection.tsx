@@ -17,7 +17,7 @@ const IntegrationSection = () => {
 				"Deliver real-time updates across all your teams, with customized views for each role. No more of 'marketing said this, sales heard that'.",
 			],
 			linkText: "Stop losing intel in endless email threads",
-			linkHref: "/",
+			linkHref: "/onboarding?source=S8C1",
 		},
 		rightColumn: {
 			imageSrc: "/integrations.png",
@@ -27,7 +27,7 @@ const IntegrationSection = () => {
 				"With first class integrations, competitive intelligence you gather no longer sits in yet another dashboard you'll forget to check.",
 			],
 			linkText: "No new tabs, turn Slack into a war room",
-			linkHref: "/",
+			linkHref: "/onboarding?source=S8C2",
 		},
 	};
 	return (

@@ -16,7 +16,7 @@ const ScaleupSection = () => {
 				description:
 					"Don't just think outside the box. Study every box out there and build a product that resonates best with your customers.",
 				linkText: "Competitive Intelligence for Scaleups",
-				linkHref: "/",
+				linkHref: "/onboarding?source=S7C1",
 			},
 			{
 				title: {
@@ -26,7 +26,7 @@ const ScaleupSection = () => {
 				description:
 					"Being big doesn't make you invincible; it makes you visible. And in business, visibility without vigilance is a death sentence.",
 				linkText: "Disruption Doesn't Send Invites",
-				linkHref: "/",
+				linkHref: "/onboarding?source=S7C2",
 			},
 		] as const,
 	};
