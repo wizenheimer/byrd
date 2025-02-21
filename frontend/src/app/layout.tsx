@@ -1,9 +1,7 @@
-import { HighlightInit } from "@highlight-run/next/client";
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
-import { ClerkProvider } from "@clerk/nextjs";
 
 const geistSans = localFont({
 	src: "./fonts/GeistVF.woff",
@@ -28,26 +26,14 @@ export default function RootLayout({
 }>) {
 	return (
 		<>
-			<HighlightInit
-				projectId={process.env.HIGHLIGHT_PROJECT_ID}
-				serviceName="byrd-ui"
-				tracingOrigins
-				networkRecording={{
-					enabled: true,
-					recordHeadersAndBody: true,
-					urlBlocklist: [],
-				}}
-			/>
-			<ClerkProvider afterSignOutUrl={"/"} dynamic>
-				<html lang="en">
-					<body
-						className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-					>
-						<main>{children}</main>
-						<Toaster />
-					</body>
-				</html>
-			</ClerkProvider>
+			<html lang="en">
+				<body
+					className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+				>
+					<main>{children}</main>
+					<Toaster />
+				</body>
+			</html>
 		</>
 	);
 }

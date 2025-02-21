@@ -1,11 +1,11 @@
 "use client";
 
-import { INITIAL_PROFILES } from "@/app/constants/onboarding";
+import { INITIAL_PROFILES } from "@/app/(onboarding)/_constants/onboarding";
 import { useOnboardingStore } from "@/app/store/onboarding";
-import type { ProfileType } from "@/app/types/competitor_page";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
+import type { ProfileType } from "../../_types/onboarding";
 
 interface ProfilesStepProps {
 	onNext: () => void;

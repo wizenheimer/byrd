@@ -1,6 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import { z } from "zod";
-import { DEFAULT_PROFILE } from "./competitor_page";
+import { DEFAULT_PROFILE } from "../_types/onboarding";
 
 // URL validation schema
 export const urlSchema = z
@@ -59,28 +59,12 @@ export const profileSchema = z.object({
 
 export const featureSchema = z.string();
 
-const teamMemberSchema = z.object({
-	email: z.string().email("Invalid email address").min(1, "Email is required"),
-});
-
-export const teamFormSchema = z.object({
-	members: z
-		.array(teamMemberSchema)
-		.max(5, "Maximum 5 team members allowed")
-		.refine((members) => {
-			const emails = members.map((m) => m.email.toLowerCase());
-			return new Set(emails).size === emails.length;
-		}, "Duplicate email addresses are not allowed"),
-});
-
 export const onboardingFormSchema = z.object({
 	competitors: competitorFormSchema.shape.competitors,
 	profile: z.array(profileSchema),
 	feature: z.array(featureSchema),
-	team: z.array(teamFormSchema),
 });
 
 export type ProfileFormData = z.infer<typeof profileSchema>;
 export type FeatureFormData = z.infer<typeof featureSchema>;
-export type TeamFormData = z.infer<typeof teamFormSchema>;
 export type OnboardingFormData = z.infer<typeof onboardingFormSchema>;

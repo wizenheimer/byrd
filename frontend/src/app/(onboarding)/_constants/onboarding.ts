@@ -1,12 +1,11 @@
-import type { FeatureCard } from "@/app/types/onboarding";
+import type { FeatureCard } from "@/app/(onboarding)/_schema/onboarding";
 import { AppWindow, HandHeart, Inbox, Share2 } from "lucide-react";
 
 export const STEPS = {
 	COMPETITOR: 1,
 	PROFILE: 2,
 	FEATURES: 3,
-	TEAM: 4,
-	AUTH: 5,
+	AUTH: 4,
 } as const;
 
 export const INITIAL_PROFILES = [
@@ -90,14 +89,9 @@ export const STEP_INFO = {
 		description: "Your competitors are everywhere. So are we.",
 		image: "/onboarding/third.png",
 	},
-	[STEPS.TEAM]: {
-		title: "Build Your War Room",
-		description: "Winning is a team sport. Let's bring in your heavy hitters.",
-		image: "/onboarding/four.png",
-	},
 	[STEPS.AUTH]: {
-		title: "You're almost there",
-		description: "Quick auth, then let's get started.",
-		image: "/onboarding/five.png",
+		title: "Almost there",
+		description: "Quick auth, and we'll be good to go.",
+		image: "/onboarding/four.png",
 	},
 } as const;

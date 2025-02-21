@@ -1,5 +1,9 @@
 "use client";
 
+import {
+	type CompetitorFormData,
+	competitorFormSchema,
+} from "@/app/(onboarding)/_schema/onboarding";
 import { useOnboardingStore } from "@/app/store/onboarding";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,10 +20,6 @@ import { Globe, Plus, X } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { type SubmitHandler, useFieldArray, useForm } from "react-hook-form";
-import {
-	type CompetitorFormData,
-	competitorFormSchema,
-} from "../../_schema/onboarding";
 
 const normalizeUrl = (url: string): string => {
 	if (!url) return "";

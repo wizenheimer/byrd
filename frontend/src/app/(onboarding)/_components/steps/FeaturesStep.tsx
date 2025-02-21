@@ -1,8 +1,9 @@
 "use client";
+
+import type { FeatureCard } from "@/app/(onboarding)/_schema/onboarding";
 import { useOnboardingStore } from "@/app/store/onboarding";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { FeatureCard } from "../../_schema/onboarding";
 
 interface FeaturesStepProps {
 	cards: FeatureCard[];

@@ -3,15 +3,14 @@ import { createSelectors } from "@/lib/utils";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { devtools } from "zustand/middleware";
-import { INITIAL_PROFILES } from "../constants/onboarding";
-import type { ProfileType } from "../types/competitor_page";
+import { INITIAL_PROFILES } from "../(onboarding)/_constants/onboarding";
+import { ProfileType } from "../(onboarding)/_types/onboarding";
 
 export interface OnboardingState {
 	currentStep: number;
 	competitors: string[]; // competitor urls
 	profiles: ProfileType[]; // profile names
 	features: string[]; // feature names
-	team: string[]; // team emails
 }
 
 export interface OnboardingActions {
@@ -19,7 +18,6 @@ export interface OnboardingActions {
 	setCompetitors: (competitors: string[]) => void;
 	setProfiles: (profiles: ProfileType[]) => void;
 	setFeatures: (features: string[]) => void;
-	setTeam: (team: string[]) => void;
 	reset: () => void;
 }
 
@@ -30,7 +28,6 @@ const initialState: OnboardingState = {
 		(profile) => profile.profile_key,
 	),
 	features: ["Product"],
-	team: [],
 };
 
 export type OnboardingStore = OnboardingState & OnboardingActions;
@@ -53,8 +50,6 @@ const useOnboardingStoreBase = create<OnboardingStore>()(
 				setFeatures: (features) =>
 					set((state) => ({ ...state, features: features })),
 
-				setTeam: (team) => set((state) => ({ ...state, team: team })),
-
 				reset: () => set(initialState),
 			}),
 			{
@@ -66,7 +61,6 @@ const useOnboardingStoreBase = create<OnboardingStore>()(
 					competitors: state.competitors,
 					profiles: state.profiles,
 					features: state.features,
-					team: state.team,
 				}),
 			},
 		),
@@ -77,26 +71,3 @@ const useOnboardingStoreBase = create<OnboardingStore>()(
 );
 
 export const useOnboardingStore = createSelectors(useOnboardingStoreBase);
-
-// Note: deprecated hooks with utility functions
-// Selector hooks for better performance
-// export const useCurrentStep = () =>
-// useOnboardingStore((state) => state.currentStep);
-// export const useCompetitors = () =>
-// useOnboardingStore((state) => state.competitors);
-// export const useProfiles = () => useOnboardingStore((state) => state.profiles);
-// export const useFeatures = () => useOnboardingStore((state) => state.features);
-// export const useTeam = () => useOnboardingStore((state) => state.team);
-
-// Action selector hooks
-// export const useOnboardingActions = () => {
-//   const store = useOnboardingStore();
-//   return {
-//     setCurrentStep: store.setCurrentStep,
-//     setCompetitors: store.setCompetitors,
-//     setProfiles: store.setProfiles,
-//     setFeatures: store.setFeatures,
-//     setTeam: store.setTeam,
-//     reset: store.reset,
-//   };
-// };

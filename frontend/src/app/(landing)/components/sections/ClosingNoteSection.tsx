@@ -11,7 +11,7 @@ const ClosingNoteSection = () => {
 				description="Your competitors are everywhere. So are we."
 				primaryButton={{
 					label: "Get started",
-					href: "/create",
+					href: "/onboarding",
 				}}
 				secondaryButton={{
 					label: "Talk to a human",

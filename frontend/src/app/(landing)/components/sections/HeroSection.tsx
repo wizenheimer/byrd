@@ -15,7 +15,7 @@ const Hero = () => {
 				}}
 				primaryButton={{
 					label: "Get started",
-					href: "/create",
+					href: "/onboarding",
 				}}
 				secondaryButton={{
 					label: "Talk to a human",
