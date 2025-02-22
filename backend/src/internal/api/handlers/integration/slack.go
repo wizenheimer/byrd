@@ -146,7 +146,7 @@ func (sh *SlackIntegrationHandler) SlackInstallationHandler(c *fiber.Ctx) error 
 		resp.AppID,
 	)
 
-	return c.SendString(slackDeeplink)
+	return c.Status(200).JSON(fiber.Map{"deep_link": slackDeeplink})
 }
 
 // SlackConfigurationHandler handles the configuration of the Slack app

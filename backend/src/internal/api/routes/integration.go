@@ -28,11 +28,14 @@ func setupSlackIntegrationRoutes(
 ) {
 	slack := router.Group("/slack")
 
-	// Handle oauth trigger
-	slack.Get("/oauth", sh.SlackOAuthHandler)
+	// Slack OAuth
+	slackOAuth := slack.Group("/oauth")
 
-	// Handle installation of the slack app to a workspace
-	slack.Get("/install", sh.SlackInstallationHandler)
+	// Handle oauth trigger
+	slackOAuth.Post("/init", sh.SlackOAuthHandler)
+
+	// Handle callback for the slack app to a workspace
+	slackOAuth.Get("/callback", sh.SlackInstallationHandler)
 
 	// Slack command trigger group
 	cmdGroup := slack.Group("/cmd", m.RequiresSlackSignature)
