@@ -22,7 +22,7 @@ type WorkspaceCreationRequest struct {
 
 	// Team is the team to create the workspace for
 	// This is a list of user emails
-	Team []string `json:"team" validate:"required,dive,email"`
+	Team []string `json:"team" validate:"required,dive,email"` // TODO: remove this
 }
 
 // WorkspaceUpdateRequest is the request to update a workspace

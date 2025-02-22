@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
 	"github.com/slack-go/slack"
 	"github.com/valyala/fasthttp"
+	api "github.com/wizenheimer/byrd/src/internal/models/api"
 	slackworkspace "github.com/wizenheimer/byrd/src/internal/service/integration/slack"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"go.uber.org/zap"
@@ -45,28 +45,24 @@ func NewSlackIntegrationHandler(
 
 // SlackOAuthHandler initiates the Slack OAuth flow
 func (sh *SlackIntegrationHandler) SlackOAuthHandler(c *fiber.Ctx) error {
-	// Validate required parameters
-	workspaceID := c.Query("workspace_id", "")
-	if workspaceID == "" {
-		return c.Status(400).JSON(fiber.Map{"error": "Missing workspace_id"})
-	}
-
-	userID := c.Query("user_id", "")
-	if userID == "" {
-		return c.Status(400).JSON(fiber.Map{"error": "Missing user_id"})
+	var req api.WorkspaceCreationRequest
+	if err := c.BodyParser(&req); err != nil {
+		sh.logger.Error("invalid workspace creation request", zap.Error(err))
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid workspace creation request"})
 	}
 
 	// Generate token
 	token, err := generateToken()
 	if err != nil {
-		sh.logger.Error("Failed to generate token", zap.Error(err))
+		sh.logger.Error("failed to generate token", zap.Error(err))
 		return c.Status(500).JSON(fiber.Map{"error": "Failed to generate token"})
 	}
 
 	// Create state object
 	oauthState := SlackOAuthState{
-		WorkspaceID: workspaceID,
-		UserID:      userID,
+		Competitors: req.Competitors,
+		Features:    req.Features,
+		Profiles:    req.Profiles,
 		Token:       token,
 		CreatedAt:   time.Now().UTC(),
 	}
@@ -78,18 +74,6 @@ func (sh *SlackIntegrationHandler) SlackOAuthHandler(c *fiber.Ctx) error {
 		return c.Status(500).JSON(fiber.Map{"error": "Failed to encode state"})
 	}
 	encodedState := base64.URLEncoding.EncodeToString(stateBytes)
-
-	// Set cookie with state
-	cookie := fiber.Cookie{
-		Name:     "slack_oauth_state",
-		Value:    encodedState,
-		Path:     "/",
-		MaxAge:   900, // 15 minutes
-		Secure:   true,
-		HTTPOnly: true,
-		SameSite: "Lax",
-	}
-	c.Cookie(&cookie)
 
 	// Generate Slack OAuth URL
 	scopes := os.Getenv("SLACK_CLIENT_SCOPES")
@@ -105,7 +89,7 @@ func (sh *SlackIntegrationHandler) SlackOAuthHandler(c *fiber.Ctx) error {
 		os.Getenv("SLACK_REDIRECT_URI"),
 	)
 
-	return c.Redirect(slackOAuthURL, http.StatusFound)
+	return c.Status(200).JSON(fiber.Map{"oauth_url": slackOAuthURL})
 }
 
 // SlackInstallationHandler handles the OAuth callback from Slack
@@ -119,24 +103,8 @@ func (sh *SlackIntegrationHandler) SlackInstallationHandler(c *fiber.Ctx) error 
 		return c.Status(400).SendString("Missing parameters")
 	}
 
-	// Get state from cookie
-	stateCookie := c.Cookies("slack_oauth_state")
-	if stateCookie == "" {
-		sh.logger.Error("State cookie not found",
-			zap.String("receivedState", stateToken))
-		return c.Status(400).SendString("Invalid or expired state")
-	}
-
-	// Compare received state with cookie state
-	if stateCookie != stateToken {
-		sh.logger.Error("State mismatch",
-			zap.String("receivedState", stateToken),
-			zap.String("cookieState", stateCookie))
-		return c.Status(400).SendString("Invalid state")
-	}
-
 	// Decode state
-	stateBytes, err := base64.URLEncoding.DecodeString(stateCookie)
+	stateBytes, err := base64.URLEncoding.DecodeString(stateToken)
 	if err != nil {
 		sh.logger.Error("Failed to decode state", zap.Error(err))
 		return c.Status(400).SendString("Invalid state format")
@@ -170,47 +138,15 @@ func (sh *SlackIntegrationHandler) SlackInstallationHandler(c *fiber.Ctx) error 
 		return c.Status(500).SendString(fmt.Sprintf("Error getting Slack token: %s", err.Error()))
 	}
 
-	// Store integration details
-	// integration := SlackIntegration{
-	// 	WorkspaceID:      oauthState.WorkspaceID,
-	// 	UserID:           oauthState.UserID,
-	// 	SlackAccessToken: resp.AccessToken,
-	// 	SlackTeamID:      resp.Team.ID,
-	// 	SlackAppID:       resp.AppID,
-	// 	CreatedAt:        time.Now().UTC(),
-	// }
+	// TODO: create workspace using oauth state
+	sh.logger.Debug("create workspace using oauth state", zap.Any("state", oauthState))
 
-	// TODO: Store integration in your database
-	workspaceUUID, err := uuid.Parse(oauthState.WorkspaceID)
-	if err != nil {
-		return c.Status(500).SendString("Failed to parse workspace ID")
-	}
-
-	_, err = sh.svc.CreateSlackWorkspace(c.Context(), workspaceUUID, resp.Team.ID, resp.AccessToken)
-	if err != nil {
-		sh.logger.Error("Failed to create Slack workspace", zap.Error(err))
-		return c.Status(500).SendString("Failed to create Slack workspace")
-	}
-
-	// Clear the state cookie
-	c.Cookie(&fiber.Cookie{
-		Name:     "slack_oauth_state",
-		Value:    "",
-		Path:     "/",
-		MaxAge:   -1,
-		Secure:   true,
-		HTTPOnly: true,
-		SameSite: "Lax",
-	})
-
-	// Redirect back to Slack
-	return c.Redirect(
-		fmt.Sprintf("slack://app?team=%s&id=%s&tab=about",
-			resp.Team.ID,
-			resp.AppID,
-		),
-		http.StatusFound,
+	slackDeeplink := fmt.Sprintf("slack://app?team=%s&id=%s&tab=about",
+		resp.Team.ID,
+		resp.AppID,
 	)
+
+	return c.SendString(slackDeeplink)
 }
 
 // SlackConfigurationHandler handles the configuration of the Slack app

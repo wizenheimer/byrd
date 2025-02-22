@@ -2,7 +2,7 @@ package routes
 
 import (
 	"github.com/gofiber/fiber/v2"
-	intg_handler "github.com/wizenheimer/byrd/src/internal/api/handlers/integration"
+	handler "github.com/wizenheimer/byrd/src/internal/api/handlers/integration"
 	"github.com/wizenheimer/byrd/src/internal/api/middleware"
 )
 
@@ -11,7 +11,7 @@ var placeholderHandler = func(c *fiber.Ctx) error { return nil }
 func setupIntegrationRoutes(
 	app *fiber.App,
 	m *middleware.AccessMiddleware,
-	sh *intg_handler.SlackIntegrationHandler,
+	sh *handler.SlackIntegrationHandler,
 ) {
 	integration := app.Group("/api/public/v1/integration")
 
@@ -24,7 +24,7 @@ func setupIntegrationRoutes(
 func setupSlackIntegrationRoutes(
 	router fiber.Router,
 	m *middleware.AccessMiddleware,
-	sh *intg_handler.SlackIntegrationHandler,
+	sh *handler.SlackIntegrationHandler,
 ) {
 	slack := router.Group("/slack")
 

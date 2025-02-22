@@ -17,8 +17,9 @@ func generateToken() (string, error) {
 
 // SlackOAuthState represents the state object used in OAuth flow
 type SlackOAuthState struct {
-	WorkspaceID string    `json:"workspace_id"`
-	UserID      string    `json:"user_id"`
+	Competitors []string  `json:"competitors"`
+	Features    []string  `json:"features"`
+	Profiles    []string  `json:"profiles"`
 	Token       string    `json:"token"`
 	CreatedAt   time.Time `json:"created_at"`
 }
