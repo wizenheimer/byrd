@@ -1,6 +1,7 @@
 // app/(onboarding)/_components/steps/AuthStep.tsx
 "use client";
 
+import { useOnboardingStore } from "@/app/store/onboarding";
 import { Button } from "@/components/ui/button";
 import { ToastAction } from "@/components/ui/toast";
 import { useToast } from "@/hooks/use-toast";
@@ -9,14 +10,19 @@ import { handleSlackInit } from "../../_actions/onboarding";
 
 export default function AuthStep() {
 	const { toast } = useToast();
+	const reset = useOnboardingStore((state) => state.reset);
+	const competitors = useOnboardingStore.use.competitors();
+	const profiles = useOnboardingStore.use.profiles();
+	const features = useOnboardingStore.use.features();
 
 	const handleSlackInstall = async () => {
 		try {
 			const result = await handleSlackInit({
-				competitors: [],
-				features: [],
-				profiles: [],
+				competitors: competitors,
+				features: features,
+				profiles: profiles,
 			});
+			reset();
 
 			if (!result.success) {
 				throw new Error(result.error);
