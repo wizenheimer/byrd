@@ -13,10 +13,7 @@ type SlackWorkspaceService interface {
 	// ------ WORKSPACE MANAGEMENT ------ //
 
 	// Creates and associates an existing Byrd workspace with a Slack workspace
-	CreateWorkspace(ctx context.Context, pages []core_models.PageProps, userID, teamID, accessToken string) (*models.SlackWorkspace, error)
-
-	// UpdateSlackWorkspace updates the access token for a Slack workspace
-	UpdateSlackWorkspace(ctx context.Context, cmd slack.SlashCommand) (*models.SlackWorkspace, error)
+	CreateWorkspace(ctx context.Context, pages []core_models.PageProps, channelID, channelWebhookURL, userID, teamID, accessToken string) (*models.SlackWorkspace, error)
 
 	// Handles SlackWorkspace deletions
 	DeleteSlackWorkspace(ctx context.Context, workspaceID uuid.UUID) error

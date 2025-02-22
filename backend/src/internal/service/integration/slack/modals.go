@@ -137,7 +137,7 @@ func getPriorityOptions() []*slack.OptionBlockObject {
 }
 
 // showSuccessModal displays a confirmation modal in Slack
-func (svc *slackWorkspaceService) showSuccessModal(client *slack.Client, triggerID string, channelID string, successTitle string, successMessage string, successBody []string) {
+func (svc *slackWorkspaceService) _(client *slack.Client, triggerID string, channelID string, successTitle string, successMessage string, successBody []string) {
 	// Ensure title is within Slack’s 24-character limit
 	if successTitle == "" {
 		successMessages := []string{

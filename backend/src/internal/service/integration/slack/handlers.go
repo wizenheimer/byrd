@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/slack-go/slack"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
+	"github.com/wizenheimer/byrd/src/pkg/utils"
 	"go.uber.org/zap"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -39,11 +40,11 @@ func (svc *slackWorkspaceService) handleSupportSubmission(ctx context.Context, p
 	if err != nil {
 		return err
 	}
-	if slackWorkspace.AccessToken == nil {
+	if slackWorkspace.AccessToken == "" {
 		return errors.New("no access token found for Slack workspace")
 	}
 
-	client := slack.New(*slackWorkspace.AccessToken)
+	client := slack.New(slackWorkspace.AccessToken)
 
 	// Open a DM with the user
 	channel, _, _, err := client.OpenConversation(&slack.OpenConversationParameters{
@@ -133,7 +134,7 @@ func (svc *slackWorkspaceService) handlePageSubmission(ctx context.Context, payl
 		return err
 	}
 
-	if ws.AccessToken == nil {
+	if ws.AccessToken == "" {
 		return errors.New("no access token found for Slack workspace")
 	}
 
@@ -171,7 +172,7 @@ func (svc *slackWorkspaceService) handlePageSubmission(ctx context.Context, payl
 	}
 
 	// Notify user in Slack
-	client := slack.New(*ws.AccessToken)
+	client := slack.New(ws.AccessToken)
 
 	// Open a direct message with the user
 	channel, _, _, err := client.OpenConversation(&slack.OpenConversationParameters{
@@ -266,11 +267,11 @@ func (svc *slackWorkspaceService) handleInviteSubmission(ctx context.Context, pa
 	if err != nil {
 		return err
 	}
-	if ws.AccessToken == nil {
+	if ws.AccessToken == "" {
 		return errors.New("no access token found for Slack workspace")
 	}
 
-	client := slack.New(*ws.AccessToken)
+	client := slack.New(ws.AccessToken)
 
 	// Open a DM with the selected user
 	channel, _, _, err := client.OpenConversation(&slack.OpenConversationParameters{
@@ -317,11 +318,11 @@ func (svc *slackWorkspaceService) handleInviteResponse(ctx context.Context, payl
 	if err != nil {
 		return err
 	}
-	if ws.AccessToken == nil {
+	if ws.AccessToken == "" {
 		return errors.New("no access token found for Slack workspace")
 	}
 
-	client := slack.New(*ws.AccessToken)
+	client := slack.New(ws.AccessToken)
 
 	var responseMessage string
 
@@ -382,6 +383,5 @@ func (svc *slackWorkspaceService) getUserEmail(client *slack.Client, userID stri
 	if err != nil {
 		return "", fmt.Errorf("failed to get user info: %w", err)
 	}
-
-	return user.Profile.Email, nil
+	return utils.NormalizeEmail(user.Profile.Email), nil
 }

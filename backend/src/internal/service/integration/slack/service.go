@@ -48,8 +48,41 @@ func NewSlackWorkspaceService(
 }
 
 // Creates and associates an existing Byrd workspace with a Slack workspace
-func (svc *slackWorkspaceService) CreateWorkspace(ctx context.Context, pages []core_models.PageProps, userID, teamID, accessToken string) (*models.SlackWorkspace, error) {
+func (svc *slackWorkspaceService) CreateWorkspace(ctx context.Context, pages []core_models.PageProps, channelID, channelWebhookURL, userID, teamID, accessToken string) (*models.SlackWorkspace, error) {
 	client := slack.New(accessToken)
+
+	// Join the channel
+	_, _, _, err := client.JoinConversation(channelID)
+	if err != nil {
+		svc.logger.Error("couldn't join channel", zap.Error(err))
+	}
+
+	// Get all members in the channel
+	members, _, err := client.GetUsersInConversation(&slack.GetUsersInConversationParameters{
+		ChannelID: channelID,
+		Limit:     50,
+	})
+	if err != nil {
+		svc.logger.Error("Failed to get channel members",
+			zap.String("channelID", channelID),
+			zap.Error(err),
+		)
+	}
+
+	memberEmails := make([]string, 0)
+	for _, memberID := range members {
+		memberEmail, err := svc.getUserEmail(client, memberID)
+		if err != nil || memberEmail == "" {
+			svc.logger.Error("failed to get user email",
+				zap.Any("memberID", memberID))
+			continue
+		}
+		memberEmails = append(memberEmails, memberEmail)
+	}
+
+	svc.logger.Debug("got member emails",
+		zap.Any("memberEmails", memberEmails))
+
 	workspaceCreatorEmail, err := svc.getUserEmail(client, userID)
 	if err != nil {
 		return nil, err
@@ -58,85 +91,18 @@ func (svc *slackWorkspaceService) CreateWorkspace(ctx context.Context, pages []c
 		ctx,
 		workspaceCreatorEmail,
 		pages,
-		[]string{},
+		memberEmails,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	return svc.repo.CreateSlackWorkspace(ctx, workspace.ID, teamID, accessToken)
-}
-
-// UpdateSlackWorkspace updates the access token for a Slack workspace
-func (svc *slackWorkspaceService) UpdateSlackWorkspace(ctx context.Context, cmd slack.SlashCommand) (*models.SlackWorkspace, error) {
-	slackWorkspace, err := svc.repo.GetSlackWorkspaceByTeamID(ctx, cmd.TeamID)
+	slackWorkspace, err := svc.repo.CreateSlackWorkspace(ctx, workspace.ID, channelID, channelWebhookURL, teamID, accessToken)
 	if err != nil {
 		return nil, err
 	}
 
-	if slackWorkspace.AccessToken == nil {
-		return nil, err
-	}
-
-	client := slack.New(*slackWorkspace.AccessToken)
-	if client == nil {
-		return nil, err
-	}
-
-	// Get Channel Info
-	input := &slack.GetConversationInfoInput{ChannelID: cmd.ChannelID}
-	channel, err := client.GetConversationInfo(input)
-	if err != nil {
-		return nil, err
-	}
-
-	var canvasID string
-	if channel.Properties != nil && channel.Properties.Canvas.FileId != "" {
-		canvasID = channel.Properties.Canvas.FileId
-	} else {
-		canvasID, err = client.CreateChannelCanvas(cmd.ChannelID, slack.DocumentContent{
-			Type:     "markdown",
-			Markdown: "\n\n---\n\n",
-		})
-		if err != nil {
-			svc.showSupportModal(
-				client,
-				cmd.TriggerID,
-				"Failed to create canvas for channel",
-				[]string{
-					"Seems like we're having trouble associating the canvas with this channel.",
-				})
-			return nil, err
-		}
-	}
-
-	ws, err := svc.repo.UpdateSlackWorkspace(ctx, cmd.TeamID, cmd.ChannelID, canvasID)
-	if err != nil {
-		svc.showSupportModal(
-			client,
-			cmd.TriggerID,
-			"Failed to associate to workspace repo",
-			[]string{
-				"Seems like we're having trouble updating the workspace.",
-			})
-		return nil, err
-	}
-
-	// Show Success Modal
-	svc.showSuccessModal(
-		client,
-		cmd.TriggerID,
-		cmd.ChannelID,
-		"",
-		"Your slack channel is now in sync with Byrd.",
-		[]string{
-			"`/watch` adds a new page to your watchlist.",
-			"`/invite` lets you bring your team along.",
-			"And that's it! you're all set to go.",
-		},
-	)
-
-	return ws, nil
+	return slackWorkspace, nil
 }
 
 // Handles the bookkeeping for a Slack integration that has been removed
@@ -182,11 +148,11 @@ func (svc *slackWorkspaceService) AddUserToSlackWorkspace(ctx context.Context, c
 		return err
 	}
 
-	if ws.AccessToken == nil {
+	if ws.AccessToken == "" {
 		return errors.New("no access token found for Slack workspace")
 	}
 
-	client := slack.New(*ws.AccessToken)
+	client := slack.New(ws.AccessToken)
 
 	if err := svc.showUserInviteModal(client, cmd); err != nil {
 		svc.showSupportModal(
@@ -216,11 +182,11 @@ func (svc *slackWorkspaceService) CreateCompetitorForWorkspace(ctx context.Conte
 		return err
 	}
 
-	if ws.AccessToken == nil {
+	if ws.AccessToken == "" {
 		return errors.New("no access token found for Slack workspace")
 	}
 
-	client := slack.New(*ws.AccessToken)
+	client := slack.New(ws.AccessToken)
 
 	args := strings.Fields(cmd.Text) // Extract URLs from command
 	if len(args) == 0 {

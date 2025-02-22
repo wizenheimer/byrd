@@ -1,19 +1,21 @@
 package slackworkspace
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"net/http"
 
-	"github.com/slack-go/slack"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"go.uber.org/zap"
 )
 
 func formatSlackReportMarkdown(report models.Report) string {
-	// Format the week number (assuming report.Time is in UTC)
+	// Your existing formatting code remains the same
 	year, week := report.Time.ISOWeek()
 
-	// Format the report into Markdown
 	reportMarkdown := fmt.Sprintf(
 		"## %s\n   Week: %d, %d\n",
 		report.CompetitorName, week, year,
@@ -43,41 +45,51 @@ func (svc *slackWorkspaceService) refreshReport(ctx context.Context, report *mod
 		svc.logger.Error("Failed to get Slack workspace", zap.Error(err))
 		return err
 	}
-	if slackWorkspace.AccessToken == nil {
-		return fmt.Errorf("no access token found for Slack workspace")
-	}
-
-	// Create a Slack client
-	client := slack.New(*slackWorkspace.AccessToken)
-
-	// If the slack workspace does not have a canvas, return an error
-	if slackWorkspace.CanvasID == nil {
-		return fmt.Errorf("no canvas found for Slack workspace")
-	}
 
 	// Format the report into Markdown
 	reportMarkdown := formatSlackReportMarkdown(*report)
 
-	// Insert at the start of the Canvas
-	err = client.EditCanvas(slack.EditCanvasParams{
-		CanvasID: *slackWorkspace.CanvasID,
-		Changes: []slack.CanvasChange{
-			{
-				Operation: "insert_at_start",
-				DocumentContent: slack.DocumentContent{
-					Type:     "markdown",
-					Markdown: reportMarkdown,
-				},
-			},
-		},
-	})
+	// Create the webhook message payload
+	payload := map[string]interface{}{
+		"text":   reportMarkdown,
+		"mrkdwn": true,
+	}
 
+	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
-		svc.logger.Error("Failed to update Slack canvas with report", zap.Error(err))
+		svc.logger.Error("Failed to marshal webhook payload", zap.Error(err))
 		return err
 	}
 
-	svc.logger.Info("Successfully updated Slack canvas with report")
+	// Send the webhook request
+	resp, err := http.Post(
+		slackWorkspace.ChannelWebhookURL,
+		"application/json",
+		bytes.NewBuffer(payloadBytes),
+	)
+	if err != nil {
+		svc.logger.Error("failed to send webhook request", zap.Error(err))
+		return err
+	}
+	if resp == nil {
+		return errors.New("received nil response from slack")
+	}
+	defer resp.Body.Close()
+
+	// Check response status
+	if resp.StatusCode != http.StatusOK {
+		err = fmt.Errorf("webhook request failed with status: %d", resp.StatusCode)
+		svc.logger.Error("Webhook request failed",
+			zap.Error(err),
+			zap.Int("statusCode", resp.StatusCode),
+		)
+		return err
+	}
+
+	svc.logger.Info("Successfully sent report via webhook",
+		zap.Any("reportMarkdown", reportMarkdown),
+		zap.String("webhookURL", slackWorkspace.ChannelWebhookURL),
+	)
 	return nil
 }
 
