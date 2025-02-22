@@ -48,8 +48,23 @@ func NewSlackWorkspaceService(
 }
 
 // Creates and associates an existing Byrd workspace with a Slack workspace
-func (svc *slackWorkspaceService) CreateSlackWorkspace(ctx context.Context, workspaceID uuid.UUID, teamID, accessToken string) (*models.SlackWorkspace, error) {
-	return svc.repo.CreateSlackWorkspace(ctx, workspaceID, teamID, accessToken)
+func (svc *slackWorkspaceService) CreateWorkspace(ctx context.Context, pages []core_models.PageProps, userID, teamID, accessToken string) (*models.SlackWorkspace, error) {
+	client := slack.New(accessToken)
+	workspaceCreatorEmail, err := svc.getUserEmail(client, userID)
+	if err != nil {
+		return nil, err
+	}
+	workspace, err := svc.ws.CreateWorkspace(
+		ctx,
+		workspaceCreatorEmail,
+		pages,
+		[]string{},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return svc.repo.CreateSlackWorkspace(ctx, workspace.ID, teamID, accessToken)
 }
 
 // UpdateSlackWorkspace updates the access token for a Slack workspace

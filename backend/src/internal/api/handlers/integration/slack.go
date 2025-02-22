@@ -13,19 +13,21 @@ import (
 	"github.com/slack-go/slack"
 	"github.com/valyala/fasthttp"
 	api "github.com/wizenheimer/byrd/src/internal/models/api"
+	models "github.com/wizenheimer/byrd/src/internal/models/core"
+	"github.com/wizenheimer/byrd/src/internal/service/ai"
 	slackworkspace "github.com/wizenheimer/byrd/src/internal/service/integration/slack"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
 	"go.uber.org/zap"
 )
 
 type SlackIntegrationHandler struct {
-	logger *logger.Logger
-	svc    slackworkspace.SlackWorkspaceService
+	logger       *logger.Logger
+	slackService slackworkspace.SlackWorkspaceService
 }
 
 func NewSlackIntegrationHandler(
 	logger *logger.Logger,
-	svc slackworkspace.SlackWorkspaceService,
+	slackService slackworkspace.SlackWorkspaceService,
 ) (*SlackIntegrationHandler, error) {
 	if logger == nil {
 		return nil, errors.New("logger is required")
@@ -37,7 +39,7 @@ func NewSlackIntegrationHandler(
 				"module": "slack_integration_handler",
 			},
 		),
-		svc: svc,
+		slackService: slackService,
 	}
 
 	return &h, nil
@@ -78,7 +80,7 @@ func (sh *SlackIntegrationHandler) SlackOAuthHandler(c *fiber.Ctx) error {
 	// Generate Slack OAuth URL
 	scopes := os.Getenv("SLACK_CLIENT_SCOPES")
 	if scopes == "" {
-		scopes = "channels:read,channels:join,chat:write,commands" // default scopes
+		scopes = "canvases:read,canvases:write,channels:join,channels:read,channels:write.topic,chat:write,chat:write.public,commands,groups:read,groups:write.invites,groups:write.topic,im:write,users:read,users:read.email,users.profile:read" // default scopes
 	}
 
 	slackOAuthURL := fmt.Sprintf(
@@ -138,8 +140,37 @@ func (sh *SlackIntegrationHandler) SlackInstallationHandler(c *fiber.Ctx) error 
 		return c.Status(500).SendString(fmt.Sprintf("Error getting Slack token: %s", err.Error()))
 	}
 
-	// TODO: create workspace using oauth state
 	sh.logger.Debug("create workspace using oauth state", zap.Any("state", oauthState))
+
+	oauthState.Profiles, err = ai.Sanitize(oauthState.Profiles)
+	if err != nil {
+		return err
+	}
+
+	var pages []models.PageProps
+	for _, competitorURL := range oauthState.Competitors {
+		page, err := models.NewPageProps(competitorURL, oauthState.Profiles)
+		if err != nil {
+			continue
+		}
+		pages = append(pages, page)
+	}
+	if len(pages) == 0 {
+		pages = make([]models.PageProps, 0)
+	}
+
+	ws, err := sh.slackService.CreateWorkspace(
+		c.Context(),
+		pages,
+		resp.AuthedUser.ID,
+		resp.Team.ID,
+		resp.AccessToken,
+	)
+	if err != nil {
+		return c.Status(400).SendString(fmt.Sprintf("Error creating workspace: %s", err.Error()))
+	}
+
+	sh.logger.Debug("created slack workspace for user", zap.Any("workspace", ws))
 
 	slackDeeplink := fmt.Sprintf("slack://app?team=%s&id=%s&tab=about",
 		resp.Team.ID,
@@ -156,7 +187,7 @@ func (sh *SlackIntegrationHandler) ConfigureCommandHandler(c *fiber.Ctx) error {
 		return c.Status(400).SendString("Failed to parse command")
 	}
 
-	_, err = sh.svc.UpdateSlackWorkspace(c.Context(), cmd)
+	_, err = sh.slackService.UpdateSlackWorkspace(c.Context(), cmd)
 	if err != nil {
 		sh.logger.Error("Failed to update Slack workspace", zap.Error(err))
 		return c.Status(500).SendString("Failed to update Slack workspace")
@@ -171,7 +202,7 @@ func (sh *SlackIntegrationHandler) WatchCommandHandler(c *fiber.Ctx) error {
 		return c.Status(400).SendString("Failed to parse command")
 	}
 
-	if err := sh.svc.CreateCompetitorForWorkspace(c.Context(), cmd); err != nil {
+	if err := sh.slackService.CreateCompetitorForWorkspace(c.Context(), cmd); err != nil {
 		sh.logger.Error("Failed to create competitor for workspace", zap.Error(err))
 		return c.Status(500).SendString("Failed to create competitor for workspace")
 	}
@@ -185,7 +216,7 @@ func (sh *SlackIntegrationHandler) UserCommandHandler(c *fiber.Ctx) error {
 		return c.Status(400).SendString("Failed to parse command")
 	}
 
-	if err := sh.svc.AddUserToSlackWorkspace(c.Context(), cmd); err != nil {
+	if err := sh.slackService.AddUserToSlackWorkspace(c.Context(), cmd); err != nil {
 		sh.logger.Error("Failed to add user to Slack workspace", zap.Error(err))
 		return c.Status(500).SendString("Failed to add user to Slack workspace")
 	}
@@ -203,7 +234,7 @@ func (sh *SlackIntegrationHandler) SlackInteractionHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid payload"})
 	}
 
-	if err := sh.svc.HandleSlackInteractionPayload(c.Context(), payload); err != nil {
+	if err := sh.slackService.HandleSlackInteractionPayload(c.Context(), payload); err != nil {
 		sh.logger.Error("Failed to handle interaction", zap.Error(err))
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to handle interaction"})
 	}

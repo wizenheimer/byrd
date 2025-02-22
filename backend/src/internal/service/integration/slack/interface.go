@@ -5,6 +5,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/slack-go/slack"
+	core_models "github.com/wizenheimer/byrd/src/internal/models/core"
 	models "github.com/wizenheimer/byrd/src/internal/models/integration/slack"
 )
 
@@ -12,7 +13,7 @@ type SlackWorkspaceService interface {
 	// ------ WORKSPACE MANAGEMENT ------ //
 
 	// Creates and associates an existing Byrd workspace with a Slack workspace
-	CreateSlackWorkspace(ctx context.Context, workspaceID uuid.UUID, teamID, accessToken string) (*models.SlackWorkspace, error)
+	CreateWorkspace(ctx context.Context, pages []core_models.PageProps, userID, teamID, accessToken string) (*models.SlackWorkspace, error)
 
 	// UpdateSlackWorkspace updates the access token for a Slack workspace
 	UpdateSlackWorkspace(ctx context.Context, cmd slack.SlashCommand) (*models.SlackWorkspace, error)
