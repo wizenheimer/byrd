@@ -4,7 +4,7 @@ package workspace
 import (
 	"context"
 
-	"github.com/clerk/clerk-sdk-go/v2"
+	// "github.com/clerk/clerk-sdk-go/v2"
 	"github.com/google/uuid"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 )
@@ -21,9 +21,9 @@ import (
 // - BillingService
 
 type WorkspaceService interface {
-	CreateWorkspace(ctx context.Context, workspaceOwner *clerk.User, pages []models.PageProps, userEmails []string) (*models.Workspace, error)
+	CreateWorkspace(ctx context.Context, workspaceCreatorEmail string, pages []models.PageProps, userEmails []string) (*models.Workspace, error)
 
-	ListWorkspacesForUser(ctx context.Context, workspaceMember *clerk.User, membershipStatus *models.MembershipStatus, limit, offset *int) ([]models.WorkspaceWithMembership, bool, error)
+	ListWorkspacesForUser(ctx context.Context, workspaceUserEmail string, membershipStatus *models.MembershipStatus, limit, offset *int) ([]models.WorkspaceWithMembership, bool, error)
 
 	CountUserWorkspaces(context.Context, uuid.UUID) (int, error)
 
@@ -43,11 +43,9 @@ type WorkspaceService interface {
 
 	ListWorkspaceMembers(ctx context.Context, workspaceID uuid.UUID, limit, offset *int, roleFilter *models.WorkspaceRole) ([]models.WorkspaceUser, bool, error)
 
-	AddUsersToWorkspace(ctx context.Context, workspaceMember *clerk.User, workspaceID uuid.UUID, emails []string) ([]models.WorkspaceUser, error)
+	AddUsersToWorkspace(ctx context.Context, workspaceInviterEmail string, workspaceID uuid.UUID, emails []string) ([]models.WorkspaceUser, error)
 
-	AddSlackUserToWorkspace(ctx context.Context, workspaceMember string, workspaceID uuid.UUID, emails []string) ([]models.WorkspaceUser, error)
-
-	LeaveWorkspace(ctx context.Context, workspaceMember *clerk.User, workspaceID uuid.UUID) error
+	LeaveWorkspace(ctx context.Context, workspaceMemberEmail string, workspaceID uuid.UUID) error
 
 	UpdateWorkspaceMemberRole(ctx context.Context, workspaceID uuid.UUID, workspaceMemberID uuid.UUID, role models.WorkspaceRole) error
 
@@ -57,11 +55,11 @@ type WorkspaceService interface {
 
 	RemoveUserFromWorkspace(ctx context.Context, workspaceID uuid.UUID, workspaceMemberID uuid.UUID) error
 
-	JoinWorkspace(ctx context.Context, invitedMember *clerk.User, workspaceID uuid.UUID) error
+	JoinWorkspace(ctx context.Context, invitedUserEmail string, workspaceID uuid.UUID) error
 
 	WorkspaceExists(ctx context.Context, workspaceID uuid.UUID) (bool, error)
 
-	GetClerkWorkspaceUser(ctx context.Context, workspaceID uuid.UUID, clerkUser *clerk.User) (*models.PartialWorkspaceUser, error)
+	GetWorkspaceUser(ctx context.Context, workspaceID uuid.UUID, workspaceMemberEmail string) (*models.PartialWorkspaceUser, error)
 
 	WorkspaceCompetitorExists(ctx context.Context, workspaceID, competitorID uuid.UUID) (bool, error)
 
@@ -105,7 +103,7 @@ type WorkspaceService interface {
 
 	ListActiveWorkspaces(ctx context.Context, batchSize int, lastWorkspaceID *uuid.UUID) (<-chan []uuid.UUID, <-chan error)
 
-	CanAddUsers(ctx context.Context, workspaceID uuid.UUID, totalIncomingUsers int) (bool, models.WorkspacePlan, error)
+	CanCreateWorkspace(ctx context.Context, userID uuid.UUID) (bool, error)
 
 	CanCreateCompetitor(ctx context.Context, workspaceID uuid.UUID, totalIncomingCompetitors int, totalIncomingPages int) (bool, models.WorkspacePlan, error)
 
