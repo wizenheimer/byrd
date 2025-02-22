@@ -39,3 +39,38 @@ export async function handleSlackCallback(code: string, state: string) {
 		};
 	}
 }
+
+interface InstallationData {
+  competitors: string[];
+  features: string[];
+  profiles: string[];
+}
+
+export async function handleSlackInit(data: InstallationData) {
+  try {
+    const response = await fetch(
+      `${process.env.BACKEND_ORIGIN}/api/public/v1/integration/slack/oauth/init`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Host': headers().get('host') || '',
+        },
+        body: JSON.stringify(data),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error('Failed to initialize OAuth');
+    }
+
+    const { oauth_url } = await response.json();
+    return { success: true, oauth_url };
+  } catch (error) {
+    console.error('Failed to initiate Slack OAuth:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to initialize OAuth'
+    };
+  }
+}
