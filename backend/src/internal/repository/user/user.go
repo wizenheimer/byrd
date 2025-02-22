@@ -4,7 +4,7 @@ package user
 import (
 	"context"
 	"errors"
-	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -12,6 +12,11 @@ import (
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
 	"github.com/wizenheimer/byrd/src/internal/transaction"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
+)
+
+var (
+	ErrUserNotFound = errors.New("user not found")
+	ErrUserInactive = errors.New("user is inactive")
 )
 
 type userRepo struct {
@@ -34,95 +39,87 @@ func (r *userRepo) getQuerier(ctx context.Context) interface {
 	return r.tm.GetQuerier(ctx)
 }
 
-func (r *userRepo) GetOrCreateClerkUser(ctx context.Context, clerkID, normalizedClerkEmail, userName string) (*models.User, error) {
-	user := &models.User{}
+func (r *userRepo) GetOrCreateUser(ctx context.Context, userEmail string) (*models.User, error) {
+	q := r.getQuerier(ctx)
 
-	err := r.getQuerier(ctx).QueryRow(ctx, `
-		INSERT INTO users (clerk_id, email, name, status)
-		VALUES ($1, $2, $3, $4)
-		ON CONFLICT (email) DO UPDATE
-		SET clerk_id = EXCLUDED.clerk_id,
-			name = EXCLUDED.name,
-			status = CASE
-				WHEN users.status = $5 THEN $4
-				ELSE users.status
-			END
-		RETURNING id, clerk_id, email, name, status, created_at, updated_at`,
-		clerkID, normalizedClerkEmail, userName, models.AccountStatusActive, models.AccountStatusInactive,
+	const query = `
+		WITH existing_user AS (
+			SELECT id, email, status, created_at, updated_at
+			FROM users
+			WHERE email = $1 AND status IN ($2, $3)
+		), new_user AS (
+			INSERT INTO users (id, email, status, created_at, updated_at)
+			SELECT $4, $1, $2, $5, $5
+			WHERE NOT EXISTS (SELECT 1 FROM existing_user)
+			RETURNING id, email, status, created_at, updated_at
+		)
+		SELECT id, email, status, created_at, updated_at
+		FROM existing_user
+		UNION ALL
+		SELECT id, email, status, created_at, updated_at
+		FROM new_user`
+
+	user := &models.User{}
+	err := q.QueryRow(
+		ctx,
+		query,
+		userEmail,
+		models.AccountStatusPending,
+		models.AccountStatusActive,
+		uuid.New(),
+		time.Now(),
 	).Scan(
 		&user.ID,
-		&user.ClerkID,
 		&user.Email,
-		&user.Name,
 		&user.Status,
 		&user.CreatedAt,
 		&user.UpdatedAt,
 	)
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to get or create clerk user: %w", err)
+		return nil, err
 	}
-
 	return user, nil
 }
 
-func (r *userRepo) GetOrCreatePartialUsers(ctx context.Context, normalizedUserEmail string) (*models.User, error) {
-	user := &models.User{}
+func (r *userRepo) BatchGetOrCreateUsers(ctx context.Context, userEmails []string) ([]models.User, error) {
+	q := r.getQuerier(ctx)
 
-	err := r.getQuerier(ctx).QueryRow(ctx, `
-		INSERT INTO users (email, status)
-		VALUES ($1, $2)
-		ON CONFLICT (email) DO UPDATE
-		SET status = CASE
-			WHEN users.status = $3 THEN $2
-			ELSE users.status
-		END
-		RETURNING id, clerk_id, email, name, status, created_at, updated_at`,
-		normalizedUserEmail, models.AccountStatusPending, models.AccountStatusInactive,
-	).Scan(
-		&user.ID,
-		&user.ClerkID,
-		&user.Email,
-		&user.Name,
-		&user.Status,
-		&user.CreatedAt,
-		&user.UpdatedAt,
-	)
+	const query = `
+		WITH existing_users AS (
+			SELECT id, email, status, created_at, updated_at
+			FROM users
+			WHERE email = ANY($1) AND status IN ($2, $3)
+		), new_users AS (
+			INSERT INTO users (id, email, status, created_at, updated_at)
+			SELECT
+				gen_random_uuid(),
+				e.email,
+				$2,
+				$4,
+				$4
+			FROM unnest($1::text[]) AS e(email)
+			WHERE NOT EXISTS (
+				SELECT 1 FROM existing_users WHERE existing_users.email = e.email
+			)
+			RETURNING id, email, status, created_at, updated_at
+		)
+		SELECT id, email, status, created_at, updated_at
+		FROM existing_users
+		UNION ALL
+		SELECT id, email, status, created_at, updated_at
+		FROM new_users`
 
-	if err != nil {
-		return nil, fmt.Errorf("failed to get or create partial user: %w", err)
-	}
-
-	return user, nil
-}
-
-func (r *userRepo) BatchGetOrCreatePartialUsers(ctx context.Context, normalizedUserEmails []string) ([]models.User, error) {
-	if len(normalizedUserEmails) == 0 {
-		return []models.User{}, nil
-	}
-
-	// Convert emails array to a table using unnest
-	rows, err := r.getQuerier(ctx).Query(ctx, `
-        WITH input_emails AS (
-            SELECT UNNEST($1::text[]) AS email
-        ),
-        upserted AS (
-            INSERT INTO users (email, status)
-            SELECT email, $2
-            FROM input_emails
-            ON CONFLICT (email) DO UPDATE
-            SET status = CASE
-                WHEN users.status = $3 THEN $2
-                ELSE users.status
-            END
-            RETURNING id, clerk_id, email, name, status, created_at, updated_at
-        )
-        SELECT id, clerk_id, email, name, status, created_at, updated_at
-        FROM upserted`,
-		normalizedUserEmails, models.AccountStatusPending, models.AccountStatusInactive,
+	rows, err := q.Query(
+		ctx,
+		query,
+		userEmails,
+		models.AccountStatusPending,
+		models.AccountStatusActive,
+		time.Now(),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to batch get or create users: %w", err)
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -131,63 +128,57 @@ func (r *userRepo) BatchGetOrCreatePartialUsers(ctx context.Context, normalizedU
 		var user models.User
 		err := rows.Scan(
 			&user.ID,
-			&user.ClerkID,
 			&user.Email,
-			&user.Name,
 			&user.Status,
 			&user.CreatedAt,
 			&user.UpdatedAt,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("failed to scan user: %w", err)
+			return nil, err
 		}
 		users = append(users, user)
 	}
 
-	return users, rows.Err()
+	return users, nil
 }
 
 func (r *userRepo) GetUserByUserID(ctx context.Context, userID uuid.UUID) (*models.User, error) {
-	user := &models.User{}
+	q := r.getQuerier(ctx)
 
-	err := r.getQuerier(ctx).QueryRow(ctx, `
-		SELECT id, clerk_id, email, name, status, created_at, updated_at
+	const query = `
+		SELECT id, email, status, created_at, updated_at
 		FROM users
-		WHERE id = $1 AND status != $2`,
-		userID, models.AccountStatusInactive,
-	).Scan(
+		WHERE id = $1 AND status != $2`
+
+	user := &models.User{}
+	err := q.QueryRow(ctx, query, userID, models.AccountStatusInactive).Scan(
 		&user.ID,
-		&user.ClerkID,
 		&user.Email,
-		&user.Name,
 		&user.Status,
 		&user.CreatedAt,
 		&user.UpdatedAt,
 	)
 
-	if err != nil {
-		if err == pgx.ErrNoRows {
-			return nil, errors.New("user not found")
-		}
-		return nil, fmt.Errorf("failed to get user: %w", err)
+	if err == pgx.ErrNoRows {
+		return nil, ErrUserNotFound
 	}
-
+	if err != nil {
+		return nil, err
+	}
 	return user, nil
 }
 
 func (r *userRepo) BatchGetUsersByUserIDs(ctx context.Context, userIDs []uuid.UUID) ([]models.User, error) {
-	if len(userIDs) == 0 {
-		return []models.User{}, nil
-	}
+	q := r.getQuerier(ctx)
 
-	rows, err := r.getQuerier(ctx).Query(ctx, `
-		SELECT id, clerk_id, email, name, status, created_at, updated_at
+	const query = `
+		SELECT id, email, status, created_at, updated_at
 		FROM users
-		WHERE id = ANY($1) AND status != $2`,
-		userIDs, models.AccountStatusInactive,
-	)
+		WHERE id = ANY($1) AND status != $2`
+
+	rows, err := q.Query(ctx, query, userIDs, models.AccountStatusInactive)
 	if err != nil {
-		return nil, fmt.Errorf("failed to batch get users: %w", err)
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -196,138 +187,160 @@ func (r *userRepo) BatchGetUsersByUserIDs(ctx context.Context, userIDs []uuid.UU
 		var user models.User
 		err := rows.Scan(
 			&user.ID,
-			&user.ClerkID,
 			&user.Email,
-			&user.Name,
 			&user.Status,
 			&user.CreatedAt,
 			&user.UpdatedAt,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("failed to scan user: %w", err)
+			return nil, err
 		}
 		users = append(users, user)
 	}
 
-	return users, rows.Err()
+	return users, nil
 }
 
-func (r *userRepo) GetUserByClerkCredentials(ctx context.Context, clerkID, normalizedClerkEmail string) (*models.User, error) {
-	user := &models.User{}
+func (r *userRepo) GetUserByEmail(ctx context.Context, userEmail string) (*models.User, error) {
+	q := r.getQuerier(ctx)
 
-	err := r.getQuerier(ctx).QueryRow(ctx, `
-		SELECT id, clerk_id, email, name, status, created_at, updated_at
+	const query = `
+		SELECT id, email, status, created_at, updated_at
 		FROM users
-		WHERE (clerk_id = $1 OR email = $2) AND status != $3`,
-		clerkID, normalizedClerkEmail, models.AccountStatusInactive,
-	).Scan(
+		WHERE email = $1 AND status != $2`
+
+	user := &models.User{}
+	err := q.QueryRow(ctx, query, userEmail, models.AccountStatusInactive).Scan(
 		&user.ID,
-		&user.ClerkID,
 		&user.Email,
-		&user.Name,
 		&user.Status,
 		&user.CreatedAt,
 		&user.UpdatedAt,
 	)
 
-	if err != nil {
-		if err == pgx.ErrNoRows {
-			return nil, errors.New("user not found")
-		}
-		return nil, fmt.Errorf("failed to get user by clerk credentials: %w", err)
+	if err == pgx.ErrNoRows {
+		return nil, ErrUserNotFound
 	}
-
+	if err != nil {
+		return nil, err
+	}
 	return user, nil
 }
 
-func (r *userRepo) SyncUser(ctx context.Context, clerkID, normalizedUserEmail string) error {
-	result, err := r.getQuerier(ctx).Exec(ctx, `
+func (r *userRepo) ActivateUser(ctx context.Context, userEmail string) (*models.User, error) {
+	q := r.getQuerier(ctx)
+
+	const query = `
 		UPDATE users
-		SET email = $1,
-			status = $2
-		WHERE clerk_id = $3`,
-		normalizedUserEmail, models.AccountStatusActive, clerkID,
+		SET status = $1, updated_at = $3
+		WHERE email = $2 AND status != $4
+		RETURNING id, email, status, created_at, updated_at`
+
+	user := &models.User{}
+	err := q.QueryRow(
+		ctx,
+		query,
+		models.AccountStatusActive,
+		userEmail,
+		time.Now(),
+		models.AccountStatusInactive,
+	).Scan(
+		&user.ID,
+		&user.Email,
+		&user.Status,
+		&user.CreatedAt,
+		&user.UpdatedAt,
 	)
 
+	if err == pgx.ErrNoRows {
+		return nil, ErrUserNotFound
+	}
 	if err != nil {
-		return fmt.Errorf("failed to sync user: %w", err)
+		return nil, err
 	}
-
-	if result.RowsAffected() == 0 {
-		return errors.New("failed to sync user, user not found")
-	}
-
-	return nil
+	return user, nil
 }
 
-func (r *userRepo) ActivateUser(ctx context.Context, userID uuid.UUID, clerkID, normalizedUserEmail string) error {
-	result, err := r.getQuerier(ctx).Exec(ctx, `
-    UPDATE users
-    SET status = $1, email = $3, clerk_id = $4
-    WHERE id = $2 AND status != $1`,
-		models.AccountStatusActive, userID, normalizedUserEmail, clerkID,
-	)
+func (r *userRepo) DeleteUserByID(ctx context.Context, userID uuid.UUID) error {
+	q := r.getQuerier(ctx)
 
-	if err != nil {
-		return fmt.Errorf("failed to activate user: %w", err)
-	}
-
-	if result.RowsAffected() == 0 {
-		return errors.New("user not found")
-	}
-
-	return nil
-}
-
-func (r *userRepo) DeleteUser(ctx context.Context, userID uuid.UUID) error {
-	result, err := r.getQuerier(ctx).Exec(ctx, `
+	const query = `
 		UPDATE users
-		SET status = $1
-		WHERE id = $2 AND status != $1`,
-		models.AccountStatusInactive, userID,
-	)
+		SET status = $1, updated_at = $3
+		WHERE id = $2 AND status != $1`
 
+	result, err := q.Exec(
+		ctx,
+		query,
+		models.AccountStatusInactive,
+		userID,
+		time.Now(),
+	)
 	if err != nil {
-		return fmt.Errorf("failed to delete user: %w", err)
+		return err
 	}
 
 	if result.RowsAffected() == 0 {
-		return errors.New("user not found")
+		return ErrUserNotFound
 	}
-
 	return nil
 }
 
-func (r *userRepo) UserExists(ctx context.Context, userID uuid.UUID) (bool, error) {
-	var exists bool
-	err := r.getQuerier(ctx).QueryRow(ctx, `
-		SELECT EXISTS(
+func (r *userRepo) DeleteUserByEmail(ctx context.Context, userEmail string) error {
+	q := r.getQuerier(ctx)
+
+	const query = `
+		UPDATE users
+		SET status = $1, updated_at = $3
+		WHERE email = $2 AND status != $1`
+
+	result, err := q.Exec(
+		ctx,
+		query,
+		models.AccountStatusInactive,
+		userEmail,
+		time.Now(),
+	)
+	if err != nil {
+		return err
+	}
+
+	if result.RowsAffected() == 0 {
+		return ErrUserNotFound
+	}
+	return nil
+}
+
+func (r *userRepo) UserIDExists(ctx context.Context, userID uuid.UUID) (bool, error) {
+	q := r.getQuerier(ctx)
+
+	const query = `
+		SELECT EXISTS (
 			SELECT 1 FROM users
 			WHERE id = $1 AND status != $2
-		)`,
-		userID, models.AccountStatusInactive,
-	).Scan(&exists)
+		)`
 
+	var exists bool
+	err := q.QueryRow(ctx, query, userID, models.AccountStatusInactive).Scan(&exists)
 	if err != nil {
-		return false, fmt.Errorf("failed to check user existence: %w", err)
+		return false, err
 	}
-
 	return exists, nil
 }
 
-func (r *userRepo) ClerkUserExists(ctx context.Context, clerkID, normalizedClerkEmail string) (bool, error) {
-	var exists bool
-	err := r.getQuerier(ctx).QueryRow(ctx, `
-		SELECT EXISTS(
+func (r *userRepo) UserEmailExists(ctx context.Context, userEmail string) (bool, error) {
+	q := r.getQuerier(ctx)
+
+	const query = `
+		SELECT EXISTS (
 			SELECT 1 FROM users
-			WHERE (clerk_id = $1 OR email = $2) AND status != $3
-		)`,
-		clerkID, normalizedClerkEmail, models.AccountStatusInactive,
-	).Scan(&exists)
+			WHERE email = $1 AND status != $2
+		)`
 
+	var exists bool
+	err := q.QueryRow(ctx, query, userEmail, models.AccountStatusInactive).Scan(&exists)
 	if err != nil {
-		return false, fmt.Errorf("failed to check clerk user existence: %w", err)
+		return false, err
 	}
-
 	return exists, nil
 }

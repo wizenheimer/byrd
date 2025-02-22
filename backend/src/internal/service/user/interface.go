@@ -4,7 +4,7 @@ package user
 import (
 	"context"
 
-	"github.com/clerk/clerk-sdk-go/v2"
+	// "github.com/clerk/clerk-sdk-go/v2"
 	"github.com/google/uuid"
 
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
@@ -18,21 +18,23 @@ var (
 // It holds the business logic for user management
 // It embeds UserRespository to interact with the database
 type UserService interface {
-	GetOrCreateUser(ctx context.Context, clerk *clerk.User) (*models.User, error)
+	GetOrCreateUser(ctx context.Context, userEmail string) (*models.User, error)
 
-	BatchGetOrCreateUsers(ctx context.Context, emails []string) ([]models.User, error)
+	BatchGetOrCreateUsers(ctx context.Context, userEmails []string) ([]models.User, error)
 
 	ListUsersByUserIDs(ctx context.Context, userIDs []uuid.UUID) ([]models.User, error)
 
-	GetUserByClerkCredentials(ctx context.Context, clerk *clerk.User) (*models.User, error)
+	GetUserByEmail(ctx context.Context, userEmail string) (*models.User, error)
 
-	SyncUser(ctx context.Context, clerk *clerk.User) error
+	GetUserByUserID(ctx context.Context, userID uuid.UUID) (*models.User, error)
 
-	ActivateUser(ctx context.Context, userID uuid.UUID, clerk *clerk.User) error
+	ActivateUser(ctx context.Context, userEmail string) (*models.User, error)
 
-	DeleteUser(ctx context.Context, clerk *clerk.User) error
+	DeleteUserByEmail(ctx context.Context, userEmail string) error
+
+	DeleteUserByID(ctx context.Context, userID uuid.UUID) error
 
 	UserExistsByUserID(ctx context.Context, userID uuid.UUID) (bool, error)
 
-	ClerkUserExists(ctx context.Context, clerk *clerk.User) (bool, error)
+	UserExistsByUserEmail(ctx context.Context, userEmail string) (bool, error)
 }

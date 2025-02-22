@@ -343,7 +343,7 @@ func (svc *slackWorkspaceService) handleInviteResponse(ctx context.Context, payl
 		}
 
 		if inviteCreatorEmail != "" && userEmail != "" {
-			workspaceUsers, err := svc.ws.AddSlackUserToWorkspace(
+			workspaceUsers, err := svc.ws.AddUsersToWorkspace(
 				ctx,
 				inviteCreatorEmail,
 				ws.WorkspaceID,

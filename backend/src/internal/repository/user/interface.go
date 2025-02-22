@@ -12,25 +12,23 @@ import (
 // This is used to interact with the user repository
 
 type UserRepository interface {
-	GetOrCreateClerkUser(ctx context.Context, clerkID, normalizedClerkEmail, userName string) (*models.User, error)
+	GetOrCreateUser(ctx context.Context, userEmail string) (*models.User, error)
 
-	GetOrCreatePartialUsers(ctx context.Context, normalizedUserEmail string) (*models.User, error)
-
-	BatchGetOrCreatePartialUsers(ctx context.Context, normalizedUserEmail []string) ([]models.User, error)
+	BatchGetOrCreateUsers(ctx context.Context, userEmail []string) ([]models.User, error)
 
 	GetUserByUserID(ctx context.Context, userID uuid.UUID) (*models.User, error)
 
 	BatchGetUsersByUserIDs(ctx context.Context, userIDs []uuid.UUID) ([]models.User, error)
 
-	GetUserByClerkCredentials(ctx context.Context, clerkID, normalizedClerkEmail string) (*models.User, error)
+	GetUserByEmail(ctx context.Context, userEmail string) (*models.User, error)
 
-	SyncUser(ctx context.Context, clerkID, normalizedUserEmail string) error
+	ActivateUser(ctx context.Context, userEmail string) (*models.User, error)
 
-	ActivateUser(ctx context.Context, userID uuid.UUID, clerkID, normalizedUserEmail string) error
+	DeleteUserByID(ctx context.Context, userID uuid.UUID) error
 
-	DeleteUser(ctx context.Context, userID uuid.UUID) error
+	DeleteUserByEmail(ctx context.Context, userEmail string) error
 
-	UserExists(ctx context.Context, userID uuid.UUID) (bool, error)
+	UserIDExists(ctx context.Context, userID uuid.UUID) (bool, error)
 
-	ClerkUserExists(ctx context.Context, clerkID, normalizedClerkEmail string) (bool, error)
+	UserEmailExists(ctx context.Context, userEmail string) (bool, error)
 }

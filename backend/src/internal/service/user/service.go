@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 
-	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/google/uuid"
 	"github.com/wizenheimer/byrd/src/internal/email/template"
 	models "github.com/wizenheimer/byrd/src/internal/models/core"
@@ -40,23 +39,11 @@ func NewUserService(
 }
 
 // GetOrCreateWorkspaceOwner gets or creates a single user.
-func (us *userService) GetOrCreateUser(ctx context.Context, clerk *clerk.User) (*models.User, error) {
-	if clerk == nil {
-		return nil, errors.New("clerk user is nil")
-	}
-
-	clerkEmail, err := utils.GetClerkUserEmail(clerk)
+func (us *userService) GetOrCreateUser(ctx context.Context, userEmail string) (*models.User, error) {
+	user, err := us.userRepository.GetOrCreateUser(ctx, userEmail)
 	if err != nil {
 		return nil, err
 	}
-
-	clerkUserName := utils.GetClerkUserFullName(clerk)
-
-	user, err := us.userRepository.GetOrCreateClerkUser(ctx, clerk.ID, clerkEmail, clerkUserName)
-	if err != nil {
-		return nil, err
-	}
-
 	return user, nil
 }
 
@@ -74,7 +61,7 @@ func (us *userService) BatchGetOrCreateUsers(ctx context.Context, emails []strin
 	var err error
 	if len(emails) == 1 {
 		// If there is only one email, get or create a single user
-		user, err := us.userRepository.GetOrCreatePartialUsers(ctx, emails[0])
+		user, err := us.userRepository.GetOrCreateUser(ctx, emails[0])
 		if err != nil {
 			return nil, err
 		}
@@ -84,7 +71,7 @@ func (us *userService) BatchGetOrCreateUsers(ctx context.Context, emails []strin
 		users = append(users, *user)
 	} else {
 		// If there are multiple emails, get or create a batch of users
-		users, err = us.userRepository.BatchGetOrCreatePartialUsers(ctx, emails)
+		users, err = us.userRepository.BatchGetOrCreateUsers(ctx, emails)
 		if err != nil {
 			return nil, err
 		}
@@ -125,17 +112,8 @@ func (us *userService) ListUsersByUserIDs(ctx context.Context, userIDs []uuid.UU
 
 // GetUserByClerk gets a clerk user by clerk credentials.
 // This is used to get the clerk user details.
-func (us *userService) GetUserByClerkCredentials(ctx context.Context, clerk *clerk.User) (*models.User, error) {
-	if clerk == nil {
-		return nil, errors.New("clerk user is nil")
-	}
-
-	userEmail, err := utils.GetClerkUserEmail(clerk)
-	if err != nil {
-		return nil, err
-	}
-
-	user, err := us.userRepository.GetUserByClerkCredentials(ctx, clerk.ID, userEmail)
+func (us *userService) GetUserByEmail(ctx context.Context, userEmail string) (*models.User, error) {
+	user, err := us.userRepository.GetUserByEmail(ctx, userEmail)
 	if err != nil {
 		return nil, err
 	}
@@ -143,87 +121,44 @@ func (us *userService) GetUserByClerkCredentials(ctx context.Context, clerk *cle
 	return user, nil
 }
 
-// SyncUser syncs a user with Clerk.
-// It returns an error if the user could not be synced.
-// When sync is triggered, it marks the account status as active.
-// And updates the user's email and name if they have changed.
-func (us *userService) SyncUser(ctx context.Context, clerk *clerk.User) error {
-	if clerk == nil {
-		return errors.New("clerk user is nil")
-	}
-
-	clerkEmail, err := utils.GetClerkUserEmail(clerk)
+func (us *userService) GetUserByUserID(ctx context.Context, userID uuid.UUID) (*models.User, error) {
+	user, err := us.userRepository.GetUserByUserID(ctx, userID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	err = us.userRepository.SyncUser(ctx, clerk.ID, clerkEmail)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return user, nil
 }
 
 // ActivateUser activates a user in Clerk.
 // It returns an error if the user could not be activated.
-func (us *userService) ActivateUser(ctx context.Context, userID uuid.UUID, clerkUser *clerk.User) error {
-	if clerkUser == nil {
-		return errors.New("clerk user is nil")
-	}
-
-	userEmail, err := utils.GetClerkUserEmail(clerkUser)
+func (us *userService) ActivateUser(ctx context.Context, userEmail string) (*models.User, error) {
+	user, err := us.userRepository.ActivateUser(ctx, userEmail)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	clerkID := clerkUser.ID
-	if err := us.userRepository.ActivateUser(ctx, userID, clerkID, userEmail); err != nil {
-		return err
-	}
-
-	return nil
+	return user, nil
 }
 
 // DeleteUser deletes a user from Clerk.
 // It returns an error if the user could not be deleted.
 // It returns nil if the user was deleted successfully.
 // This is the only user-facing and handler-owned method.
-func (us *userService) DeleteUser(ctx context.Context, clerk *clerk.User) error {
-	if clerk == nil {
-		return errors.New("clerk user is nil")
-	}
+func (us *userService) DeleteUserByID(ctx context.Context, userID uuid.UUID) error {
+	return us.userRepository.DeleteUserByID(ctx, userID)
+}
 
-	clerkEmail, err := utils.GetClerkUserEmail(clerk)
-	if err != nil {
-		return err
-	}
-
-	user, err := us.userRepository.GetUserByClerkCredentials(ctx, clerk.ID, clerkEmail)
-	if err != nil {
-		return err
-	}
-
-	return us.userRepository.DeleteUser(ctx, user.ID)
+func (us *userService) DeleteUserByEmail(ctx context.Context, userEmail string) error {
+	return us.userRepository.DeleteUserByEmail(ctx, userEmail)
 }
 
 // UserExistsByUserID checks if a user exists by UserID.
 // It returns true if the user exists, otherwise it returns false.
 func (us *userService) UserExistsByUserID(ctx context.Context, userID uuid.UUID) (bool, error) {
-	return us.userRepository.UserExists(ctx, userID)
+	return us.userRepository.UserIDExists(ctx, userID)
 }
 
-// UserExistsByClerkID checks if a user exists by ClerkID.
-// It returns true if the user exists, otherwise it returns false.
-func (us *userService) ClerkUserExists(ctx context.Context, clerk *clerk.User) (bool, error) {
-	if clerk == nil {
-		return false, errors.New("clerk user is nil")
-	}
-
-	email, err := utils.GetClerkUserEmail(clerk)
-	if err != nil {
-		return false, err
-	}
-
-	return us.userRepository.ClerkUserExists(ctx, clerk.ID, email)
+func (us *userService) UserExistsByUserEmail(ctx context.Context, userEmail string) (bool, error) {
+	return us.userRepository.UserEmailExists(ctx, userEmail)
 }

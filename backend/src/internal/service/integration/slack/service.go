@@ -173,45 +173,13 @@ func (svc *slackWorkspaceService) AddUserToSlackWorkspace(ctx context.Context, c
 
 	client := slack.New(*ws.AccessToken)
 
-	canAddUsers, workspacePlan, err := svc.ws.CanAddUsers(ctx, ws.WorkspaceID, 1)
-	if err != nil {
-		svc.showSupportModal(
-			client,
-			cmd.TriggerID,
-			"Couldn't add user",
-			[]string{
-				"Seems like we're having trouble adding a user.",
-			},
-		)
-		return nil
-	}
-
-	if !canAddUsers {
-		if err := svc.showUsageLimitModal(
-			client,
-			cmd.TriggerID,
-			workspacePlan,
-			core_models.WorkspaceResourceUsers,
-		); err != nil {
-			svc.showSupportModal(
-				client,
-				cmd.TriggerID,
-				"Couldn't add user",
-				[]string{
-					"Seems like we're having trouble adding a user.",
-				},
-			)
-		}
-		return nil
-	}
-
 	if err := svc.showUserInviteModal(client, cmd); err != nil {
 		svc.showSupportModal(
 			client,
 			cmd.TriggerID,
 			"Couldn't add user",
 			[]string{
-				"Seems like we're having trouble adding a user.",
+				"Seems like we're having trouble adding the user.",
 			},
 		)
 	}

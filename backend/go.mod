@@ -8,6 +8,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.71.0
 	github.com/clerk/clerk-sdk-go/v2 v2.2.0
 	github.com/creasty/defaults v1.8.0
+	github.com/go-petname/petname v0.0.0-20151203160724-b40d9b076603
 	github.com/go-playground/validator/v10 v10.23.0
 	github.com/gofiber/fiber/v2 v2.52.6
 	github.com/highlight/highlight/sdk/highlight-go v0.11.0

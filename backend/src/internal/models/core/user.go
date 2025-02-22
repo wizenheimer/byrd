@@ -26,15 +26,8 @@ type User struct {
 	// ID is the user's unique identifier
 	ID uuid.UUID `json:"id"`
 
-	// ClerkID references Clerk's user ID
-	// Could be null if the user has not logged in yet
-	ClerkID *string `json:"clerk_id"`
-
 	// Email is the user's email address
 	Email *string `json:"email"`
-
-	// Name is the user's name = first name + last name
-	Name *string `json:"name"`
 
 	// Status is the user's account status
 	Status AccountStatus `json:"status"`
@@ -55,9 +48,6 @@ func GetWorkspaceCreationLimit() (int, error) {
 type UserProps struct {
 	// Email is the email address of the user to create
 	Email string `json:"email" validate:"required,email"`
-
-	// Name is the name of the user to create
-	Name string `json:"name" validate:"required"`
 
 	// Status is the status of the user to create
 	Status AccountStatus `json:"status" validate:"required,oneof=pending active inactive"`

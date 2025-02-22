@@ -36,9 +36,7 @@ CREATE TABLE slack_workspaces (
 -- Create users table
 CREATE TABLE users (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  clerk_id VARCHAR(255) UNIQUE,
   email VARCHAR(255),
-  name VARCHAR(255),
   status account_status NOT NULL DEFAULT 'pending',
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -130,7 +128,6 @@ CREATE INDEX idx_workspaces_slug ON workspaces(slug);
 CREATE INDEX idx_workspaces_plan ON workspaces(workspace_plan);
 -- Indexes for users
 CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_users_clerk_id ON users(clerk_id);
 CREATE INDEX idx_users_status ON users(status);
 -- Indexes for workspace_users
 CREATE INDEX idx_workspace_users_workspace_id ON workspace_users(workspace_id);

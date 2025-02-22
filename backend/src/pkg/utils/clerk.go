@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/clerk/clerk-sdk-go/v2"
+	"github.com/go-petname/petname"
 )
 
 func NormalizeEmail(email string) string {
@@ -56,22 +57,7 @@ func GetClerkUserFullName(clerkUser *clerk.User) string {
 	return fullName
 }
 
-func GenerateWorkspaceName(clerkUser *clerk.User) string {
-	firstName := ""
-	if clerkUser.FirstName != nil {
-		firstName += *clerkUser.FirstName
-	}
-
-	if firstName == "" {
-		email, _ := GetClerkUserEmail(clerkUser) // nolint: errcheck // error is non fatal and handled in the fallback
-		if email != "" {
-			firstName = generateNameFromEmail(email)
-		}
-	}
-
-	if firstName == "" {
-		firstName = "User"
-	}
-
-	return firstName + "'s Workspace"
+func GenerateWorkspaceName() string {
+	workspaceName := petname.Generate(2, "-")
+	return workspaceName
 }

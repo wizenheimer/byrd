@@ -33,9 +33,6 @@ type WorkspaceUser struct {
 	// WorkspaceID is the workspace's unique identifier
 	WorkspaceID uuid.UUID `json:"workspace_id" validate:"required"`
 
-	// Name is the user's name
-	Name string `json:"name"`
-
 	// Email is the user's email
 	Email string `json:"email" validate:"required,email"`
 
