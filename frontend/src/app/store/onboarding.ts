@@ -4,7 +4,7 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { devtools } from "zustand/middleware";
 import { INITIAL_PROFILES } from "../(onboarding)/_constants/onboarding";
-import { ProfileType } from "../(onboarding)/_types/onboarding";
+import type { ProfileType } from "../(onboarding)/_types/onboarding";
 
 export interface OnboardingState {
 	currentStep: number;

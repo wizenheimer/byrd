@@ -30,3 +30,6 @@ Temporary Items
 *.tmp
 tmp/
 logs/
+
+# ngrok
+ngrok.yaml

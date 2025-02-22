@@ -109,6 +109,11 @@ help:
 	@echo "  make mock-private       - Start private endpoints mock server"
 	@echo "  make mock-public        - Start public endpoints mock server"
 	@echo "  make stop-mock-servers  - Stop all mock servers"
+	@echo "$(GREEN)Ngrok Tunnel Commands:$(RESET)"
+	@echo "  make ngrok-backend      - Start backend Ngrok tunnels"
+	@echo "  make ngrok-frontend     - Start frontend Ngrok tunnels"
+	@echo "  make ngrok-all          - Start all Ngrok tunnels"
+	@echo "  make stop-ngrok         - Stop all Ngrok tunnels"
 	@echo "$(GREEN)Environment:$(RESET)"
 	@echo "  make pre-prod           - Start pre-production environment"
 
@@ -404,6 +409,26 @@ stop-mock-servers:
 	@echo "$(BLUE)== Stopping All Mock Servers ==$(RESET)"
 	pkill -f "tokenctl.go" || true
 	pkill -f "bun run dev" || true
+
+.PHONY: ngrok-backend
+ngrok-backend:
+	@echo "$(BLUE)== Starting Backend Ngrok Tunnels ==$(RESET)"
+	@ngrok start --all --config backend_ngrok.yaml
+
+.PHONY: ngrok-frontend
+ngrok-frontend:
+	@echo "$(BLUE)== Starting Frontend Ngrok Tunnels ==$(RESET)"
+	@ngrok start --all --config frontend_ngrok.yaml
+
+.PHONY: ngrok-all
+ngrok-all:
+	@echo "$(BLUE)== Starting All Ngrok Tunnels ==$(RESET)"
+	@ngrok start --all --config ngrok.yaml
+
+.PHONY: stop-ngrok
+stop-ngrok:
+	@echo "$(BLUE)== Stopping All Ngrok Tunnels ==$(RESET)"
+	@pkill -f "ngrok" || true
 
 # Default Target
 .DEFAULT_GOAL := help
