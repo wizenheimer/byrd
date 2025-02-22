@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 
@@ -40,13 +39,12 @@ func (repo *swr) getQuerier(ctx context.Context) interface {
 // scanSlackWorkspace scans a row into a SlackWorkspace
 func scanSlackWorkspace(row pgx.Row) (*slack.SlackWorkspace, error) {
 	workspace := slack.SlackWorkspace{}
-	var channelID, canvasID sql.NullString
 
 	err := row.Scan(
 		&workspace.WorkspaceID,
 		&workspace.TeamID,
-		&channelID,
-		&canvasID,
+		&workspace.ChannelID,
+		&workspace.ChannelWebhookURL,
 		&workspace.AccessToken,
 		&workspace.Status,
 		&workspace.CreatedAt,
@@ -54,17 +52,9 @@ func scanSlackWorkspace(row pgx.Row) (*slack.SlackWorkspace, error) {
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, fmt.Errorf("workspace not found") // Return proper error
+			return nil, fmt.Errorf("workspace not found")
 		}
 		return nil, fmt.Errorf("error scanning slack workspace: %w", err)
-	}
-
-	// Handle nullable fields
-	if channelID.Valid {
-		workspace.ChannelID = &channelID.String
-	}
-	if canvasID.Valid {
-		workspace.CanvasID = &canvasID.String
 	}
 
 	// Values from DB are always encoded
@@ -78,57 +68,40 @@ func scanSlackWorkspace(row pgx.Row) (*slack.SlackWorkspace, error) {
 	return &workspace, nil
 }
 
-// CreateSlackWorkspace creates a new slack workspace in pending status
-func (repo *swr) CreateSlackWorkspace(ctx context.Context, workspaceID uuid.UUID, teamID, accessToken string) (*slack.SlackWorkspace, error) {
-	// Create workspace with decoded values
+// CreateSlackWorkspace creates a new slack workspace
+func (repo *swr) CreateSlackWorkspace(ctx context.Context, workspaceID uuid.UUID, channelID, channelWebhookURL, teamID, accessToken string) (*slack.SlackWorkspace, error) {
 	workspace := &slack.SlackWorkspace{
-		WorkspaceID: workspaceID,
-		TeamID:      teamID,
-		AccessToken: &accessToken,
-		Status:      slack.SlackWorkspaceStatusPending,
-		IsDecoded:   true,
+		WorkspaceID:       workspaceID,
+		TeamID:            teamID,
+		ChannelID:         channelID,
+		ChannelWebhookURL: channelWebhookURL,
+		AccessToken:       accessToken,
+		Status:            slack.SlackWorkspaceStatusActive,
+		IsDecoded:         true,
 	}
 
-	// Encode before saving to DB
 	if err := workspace.Encode(); err != nil {
 		return nil, fmt.Errorf("failed to encode workspace: %w", err)
 	}
 
 	query := `
-        INSERT INTO slack_workspaces (workspace_id, team_id, access_token, status)
-        VALUES ($1, $2, $3, $4)
+        INSERT INTO slack_workspaces (workspace_id, team_id, channel_id, channel_webhook_url, access_token, status)
+        VALUES ($1, $2, $3, $4, $5, $6)
         ON CONFLICT (workspace_id) DO UPDATE
         SET team_id = EXCLUDED.team_id,
+            channel_id = EXCLUDED.channel_id,
+            channel_webhook_url = EXCLUDED.channel_webhook_url,
             access_token = EXCLUDED.access_token,
             status = EXCLUDED.status
-        RETURNING workspace_id, team_id, channel_id, canvas_id, access_token, status, created_at, updated_at`
+        RETURNING workspace_id, team_id, channel_id, channel_webhook_url, access_token, status, created_at, updated_at`
 
 	row := repo.getQuerier(ctx).QueryRow(ctx, query,
 		workspace.WorkspaceID,
 		workspace.TeamID,
-		*workspace.AccessToken,
+		workspace.ChannelID,
+		workspace.ChannelWebhookURL,
+		workspace.AccessToken,
 		workspace.Status,
-	)
-
-	return scanSlackWorkspace(row)
-}
-
-// UpdateSlackWorkspace sets channel and canvas, activating the workspace
-func (repo *swr) UpdateSlackWorkspace(ctx context.Context, teamID, channelID, canvasID string) (*slack.SlackWorkspace, error) {
-	query := `
-        UPDATE slack_workspaces
-        SET channel_id = $2,
-            canvas_id = $3,
-            status = $4
-        WHERE team_id = $1 AND status != $5
-        RETURNING workspace_id, team_id, channel_id, canvas_id, access_token, status, created_at, updated_at`
-
-	row := repo.getQuerier(ctx).QueryRow(ctx, query,
-		teamID,
-		channelID,
-		canvasID,
-		slack.SlackWorkspaceStatusActive,
-		slack.SlackWorkspaceStatusInactive,
 	)
 
 	return scanSlackWorkspace(row)
@@ -137,7 +110,7 @@ func (repo *swr) UpdateSlackWorkspace(ctx context.Context, teamID, channelID, ca
 // GetSlackWorkspaceByTeamID gets a slack workspace by team ID
 func (repo *swr) GetSlackWorkspaceByTeamID(ctx context.Context, teamID string) (*slack.SlackWorkspace, error) {
 	query := `
-        SELECT workspace_id, team_id, channel_id, canvas_id, access_token, status, created_at, updated_at
+        SELECT workspace_id, team_id, channel_id, channel_webhook_url, access_token, status, created_at, updated_at
         FROM slack_workspaces
         WHERE team_id = $1 AND status != $2`
 
@@ -148,7 +121,7 @@ func (repo *swr) GetSlackWorkspaceByTeamID(ctx context.Context, teamID string) (
 // GetSlackWorkspaceByWorkspaceID gets a slack workspace by workspace ID
 func (repo *swr) GetSlackWorkspaceByWorkspaceID(ctx context.Context, workspaceID uuid.UUID) (*slack.SlackWorkspace, error) {
 	query := `
-        SELECT workspace_id, team_id, channel_id, canvas_id, access_token, status, created_at, updated_at
+        SELECT workspace_id, team_id, channel_id, channel_webhook_url, access_token, status, created_at, updated_at
         FROM slack_workspaces
         WHERE workspace_id = $1 AND status != $2`
 
@@ -159,7 +132,7 @@ func (repo *swr) GetSlackWorkspaceByWorkspaceID(ctx context.Context, workspaceID
 // BatchGetSlackWorkspacesByWorkspaceIDs gets slack workspaces by workspace IDs
 func (repo *swr) BatchGetSlackWorkspacesByWorkspaceIDs(ctx context.Context, workspaceIDs []uuid.UUID) ([]*slack.SlackWorkspace, error) {
 	query := `
-        SELECT workspace_id, team_id, channel_id, canvas_id, access_token, status, created_at, updated_at
+        SELECT workspace_id, team_id, channel_id, channel_webhook_url, access_token, status, created_at, updated_at
         FROM slack_workspaces
         WHERE workspace_id = ANY($1) AND status != $2`
 
@@ -223,13 +196,11 @@ func (repo *swr) DeleteSlackWorkspace(ctx context.Context, teamID string) error 
 
 // UpdateSlackWorkspaceAccessToken updates the access token of an active workspace
 func (repo *swr) UpdateSlackWorkspaceAccessToken(ctx context.Context, teamID, accessToken string) (*slack.SlackWorkspace, error) {
-	// Create temporary workspace to encode the new token
 	tempWorkspace := &slack.SlackWorkspace{
-		AccessToken: &accessToken,
+		AccessToken: accessToken,
 		IsDecoded:   true,
 	}
 
-	// Encode for storage
 	if err := tempWorkspace.Encode(); err != nil {
 		return nil, fmt.Errorf("failed to encode access token: %w", err)
 	}
@@ -238,11 +209,11 @@ func (repo *swr) UpdateSlackWorkspaceAccessToken(ctx context.Context, teamID, ac
         UPDATE slack_workspaces
         SET access_token = $2
         WHERE team_id = $1 AND status = $3
-        RETURNING workspace_id, team_id, channel_id, canvas_id, access_token, status, created_at, updated_at`
+        RETURNING workspace_id, team_id, channel_id, channel_webhook_url, access_token, status, created_at, updated_at`
 
 	row := repo.getQuerier(ctx).QueryRow(ctx, query,
 		teamID,
-		*tempWorkspace.AccessToken,
+		tempWorkspace.AccessToken,
 		slack.SlackWorkspaceStatusActive,
 	)
 

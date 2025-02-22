@@ -80,7 +80,7 @@ func (sh *SlackIntegrationHandler) SlackOAuthHandler(c *fiber.Ctx) error {
 	// Generate Slack OAuth URL
 	scopes := os.Getenv("SLACK_CLIENT_SCOPES")
 	if scopes == "" {
-		scopes = "canvases:read,canvases:write,channels:join,channels:read,channels:write.topic,chat:write,chat:write.public,commands,groups:read,groups:write.invites,groups:write.topic,im:write,users:read,users:read.email,users.profile:read" // default scopes
+		scopes = "canvases:read,canvases:write,channels:join,channels:read,channels:write.topic,chat:write,chat:write.public,commands,groups:read,groups:write.invites,groups:write.topic,im:write,users:read,users:read.email,users.profile:read,incoming-webhook" // default scopes
 	}
 
 	slackOAuthURL := fmt.Sprintf(
@@ -162,6 +162,8 @@ func (sh *SlackIntegrationHandler) SlackInstallationHandler(c *fiber.Ctx) error 
 	ws, err := sh.slackService.CreateWorkspace(
 		c.Context(),
 		pages,
+		resp.IncomingWebhook.ChannelID,
+		resp.IncomingWebhook.URL,
 		resp.AuthedUser.ID,
 		resp.Team.ID,
 		resp.AccessToken,
@@ -182,17 +184,7 @@ func (sh *SlackIntegrationHandler) SlackInstallationHandler(c *fiber.Ctx) error 
 
 // SlackConfigurationHandler handles the configuration of the Slack app
 func (sh *SlackIntegrationHandler) ConfigureCommandHandler(c *fiber.Ctx) error {
-	cmd, err := SlashCommandParseFast(c.Request())
-	if err != nil {
-		return c.Status(400).SendString("Failed to parse command")
-	}
-
-	_, err = sh.slackService.UpdateSlackWorkspace(c.Context(), cmd)
-	if err != nil {
-		sh.logger.Error("Failed to update Slack workspace", zap.Error(err))
-		return c.Status(500).SendString("Failed to update Slack workspace")
-	}
-
+	// TODO: remove this
 	return c.Status(200).Send(nil)
 }
 

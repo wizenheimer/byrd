@@ -21,17 +21,17 @@ CREATE TABLE workspaces (
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
--- Create slack workspaces table
+-- Create slack workspaces table with updated structure
 CREATE TABLE slack_workspaces (
-  workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
-  team_id VARCHAR(255) NOT NULL UNIQUE,
-  channel_id VARCHAR(255),
-  canvas_id VARCHAR(255),
-  access_token TEXT NOT NULL,
-  status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'active', 'inactive')),
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (workspace_id)
+    workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+    team_id VARCHAR(255) NOT NULL UNIQUE,
+    channel_id VARCHAR(255) NOT NULL,  -- Made non-nullable
+    channel_webhook_url TEXT NOT NULL,  -- Added new field
+    access_token TEXT NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive')), -- Updated status constraints
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (workspace_id)
 );
 -- Create users table
 CREATE TABLE users (
@@ -173,10 +173,12 @@ CREATE TRIGGER update_competitors_updated_at BEFORE
 UPDATE ON competitors FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_pages_updated_at BEFORE
 UPDATE ON pages FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
--- Create indexes for better query performance
+-- Recreate indexes
 CREATE INDEX idx_slack_workspaces_team_id ON slack_workspaces(team_id);
 CREATE INDEX idx_slack_workspaces_workspace_id ON slack_workspaces(workspace_id);
 CREATE INDEX idx_slack_workspaces_status ON slack_workspaces(status);
--- Create trigger for updating timestamps
-CREATE TRIGGER update_slack_workspaces_updated_at BEFORE
-UPDATE ON slack_workspaces FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+-- Recreate trigger for updating timestamps
+CREATE TRIGGER update_slack_workspaces_updated_at
+    BEFORE UPDATE ON slack_workspaces
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();

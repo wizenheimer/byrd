@@ -11,12 +11,7 @@ type SlackWorkspaceRepository interface {
 	// CreateSlackWorkspace creates a new slack workspace
 	// This is the immediate outcome of linking a workspace
 	// The status of the workspace is pending
-	CreateSlackWorkspace(ctx context.Context, workspaceID uuid.UUID, teamID, accessToken string) (*slack.SlackWorkspace, error)
-
-	// UpdateSlackWorkspace sets channelID and canvasID of a slack workspace
-	// This is the final outcome of linking a workspace with channel and canvas set
-	// The status of the workspace is active
-	UpdateSlackWorkspace(ctx context.Context, teamID, channelID, canvasID string) (*slack.SlackWorkspace, error)
+	CreateSlackWorkspace(ctx context.Context, workspaceID uuid.UUID, channelID, channelWebhookURL, teamID, accessToken string) (*slack.SlackWorkspace, error)
 
 	// GetSlackWorkspaceByTeamID gets a slack workspace by team ID
 	GetSlackWorkspaceByTeamID(ctx context.Context, teamID string) (*slack.SlackWorkspace, error)
