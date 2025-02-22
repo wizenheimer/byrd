@@ -11,6 +11,7 @@ import (
 	"github.com/wizenheimer/byrd/src/internal/service/user"
 	"github.com/wizenheimer/byrd/src/internal/service/workspace"
 	"github.com/wizenheimer/byrd/src/pkg/logger"
+	"github.com/wizenheimer/byrd/src/pkg/utils"
 )
 
 type UserHandler struct {
@@ -34,16 +35,22 @@ func (uh *UserHandler) GetCurrentUser(c *fiber.Ctx) error {
 		return sendErrorResponse(c, uh.logger, fiber.StatusUnauthorized, "Couldn't get user from context", err.Error())
 	}
 
+	userEmail, err := utils.GetClerkUserEmail(clerkUser)
+	if err != nil {
+		return sendErrorResponse(c, uh.logger, fiber.StatusBadRequest, "Couldn't get user email for user", err.Error())
+	}
+
 	ctx := c.Context()
-	user, err := uh.userService.GetUserByClerkCredentials(ctx, clerkUser)
+	user, err := uh.userService.GetUserByEmail(ctx, userEmail)
 	if err != nil {
 		return sendErrorResponse(c, uh.logger, fiber.StatusInternalServerError, "Could not get user", err.Error())
 	}
 
 	// Synchronize the user with the database if the user is first time user
-	firstTimeUser := user.ClerkID == nil || user.Status != models.AccountStatusActive
+	firstTimeUser := user.Status != models.AccountStatusActive
 	if firstTimeUser {
-		if err := uh.userService.ActivateUser(ctx, user.ID, clerkUser); err != nil {
+		user, err = uh.userService.ActivateUser(ctx, userEmail)
+		if err != nil {
 			return err
 		}
 	}
@@ -58,9 +65,14 @@ func (uh *UserHandler) DeleteCurrentUser(c *fiber.Ctx) error {
 		return sendErrorResponse(c, uh.logger, fiber.StatusUnauthorized, "Couldn't get user from context", err.Error())
 	}
 
+	userEmail, err := utils.GetClerkUserEmail(clerkUser)
+	if err != nil {
+		return sendErrorResponse(c, uh.logger, fiber.StatusBadRequest, "Couldn't get user email for user", err.Error())
+	}
+
 	// Find if the user has any workspaces
 	membershipStatus := models.ActiveMember
-	workspaces, _, err := uh.workspaceService.ListWorkspacesForUser(c.Context(), clerkUser, &membershipStatus, nil, nil)
+	workspaces, _, err := uh.workspaceService.ListWorkspacesForUser(c.Context(), userEmail, &membershipStatus, nil, nil)
 	if err != nil {
 		return sendErrorResponse(c, uh.logger, fiber.StatusInternalServerError, "Could not list user workspaces", err.Error())
 	}
@@ -69,7 +81,7 @@ func (uh *UserHandler) DeleteCurrentUser(c *fiber.Ctx) error {
 		return sendErrorResponse(c, uh.logger, fiber.StatusForbidden, "Exit the existing workspaces prior to deleting account", "User has active membership to workspaces")
 	}
 
-	if err := uh.userService.DeleteUser(c.Context(), clerkUser); err != nil {
+	if err := uh.userService.DeleteUserByEmail(c.Context(), userEmail); err != nil {
 		return sendErrorResponse(c, uh.logger, fiber.StatusInternalServerError, "Could not delete user", err.Error())
 	}
 
@@ -83,16 +95,22 @@ func (uh *UserHandler) ListWorkspacesForUser(c *fiber.Ctx) error {
 		return sendErrorResponse(c, uh.logger, fiber.StatusUnauthorized, "User is not authorized to list the workspace", err.Error())
 	}
 
-	user, err := uh.userService.GetUserByClerkCredentials(c.Context(), clerkUser)
+	userEmail, err := utils.GetClerkUserEmail(clerkUser)
+	if err != nil {
+		return sendErrorResponse(c, uh.logger, fiber.StatusBadRequest, "Couldn't get user email for user", err.Error())
+	}
+
+	user, err := uh.userService.GetUserByEmail(c.Context(), userEmail)
 	if err != nil {
 		return sendErrorResponse(c, uh.logger, fiber.StatusInternalServerError, "Could not get user", err.Error())
 	}
 
 	ctx := c.Context()
 	// Synchronize the user with the database if the user is first time user
-	firstTimeUser := user.ClerkID == nil || user.Status != models.AccountStatusActive
+	firstTimeUser := user.Status != models.AccountStatusActive
 	if firstTimeUser {
-		if err := uh.userService.ActivateUser(ctx, user.ID, clerkUser); err != nil {
+		user, err = uh.userService.ActivateUser(ctx, userEmail)
+		if err != nil {
 			return err
 		}
 	}
@@ -121,7 +139,7 @@ func (uh *UserHandler) ListWorkspacesForUser(c *fiber.Ctx) error {
 	limits := pagination.GetLimit()
 	offsets := pagination.GetOffset()
 
-	workspaces, hasMore, err := uh.workspaceService.ListWorkspacesForUser(ctx, clerkUser, membershipStatus, &limits, &offsets)
+	workspaces, hasMore, err := uh.workspaceService.ListWorkspacesForUser(ctx, userEmail, membershipStatus, &limits, &offsets)
 	if err != nil {
 		return sendErrorResponse(c, uh.logger, fiber.StatusInternalServerError, "Workspace couldn't be listed for the user", err.Error())
 	}

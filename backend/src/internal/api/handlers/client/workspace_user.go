@@ -78,10 +78,14 @@ func (wh *WorkspaceHandler) InviteUsersToWorkspace(c *fiber.Ctx) error {
 	if err != nil {
 		return sendErrorResponse(c, wh.logger, fiber.StatusUnauthorized, "Unauthorized", err.Error())
 	}
+	userEmail, err := utils.GetClerkUserEmail(clerkUser)
+	if err != nil {
+		return sendErrorResponse(c, wh.logger, fiber.StatusBadRequest, "Couldn't locate user email", err.Error())
+	}
 
 	ctx := c.Context()
 
-	workspaceUsers, err := wh.workspaceService.AddUsersToWorkspace(ctx, clerkUser, workspaceID, users.Emails)
+	workspaceUsers, err := wh.workspaceService.AddUsersToWorkspace(ctx, userEmail, workspaceID, users.Emails)
 	if err != nil {
 		return sendErrorResponse(c, wh.logger, fiber.StatusInternalServerError, "Could not invite users to workspace", err.Error())
 	}

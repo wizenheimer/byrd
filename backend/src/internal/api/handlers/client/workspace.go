@@ -39,6 +39,10 @@ func (wh *WorkspaceHandler) CreateWorkspaceForUser(c *fiber.Ctx) error {
 	if err != nil {
 		return sendErrorResponse(c, wh.logger, fiber.StatusUnauthorized, "User not found in request context", err.Error())
 	}
+	userEmail, err := utils.GetClerkUserEmail(clerkUser)
+	if err != nil {
+		return sendErrorResponse(c, wh.logger, fiber.StatusBadRequest, "Couldn't locate user email", err.Error())
+	}
 
 	var req api.WorkspaceCreationRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -67,7 +71,7 @@ func (wh *WorkspaceHandler) CreateWorkspaceForUser(c *fiber.Ctx) error {
 	}
 
 	ctx := c.Context()
-	workspace, err := wh.workspaceService.CreateWorkspace(ctx, clerkUser, pages, req.Team)
+	workspace, err := wh.workspaceService.CreateWorkspace(ctx, userEmail, pages, req.Team)
 	if err != nil {
 		return sendErrorResponse(c, wh.logger, fiber.StatusInternalServerError, "Could not create workspace", err.Error())
 	}
@@ -149,9 +153,13 @@ func (wh *WorkspaceHandler) JoinWorkspaceByID(c *fiber.Ctx) error {
 	if err != nil {
 		return sendErrorResponse(c, wh.logger, fiber.StatusUnauthorized, "Unauthorized", err.Error())
 	}
+	userEmail, err := utils.GetClerkUserEmail(clerkUser)
+	if err != nil {
+		return sendErrorResponse(c, wh.logger, fiber.StatusBadRequest, "Couldn't locate user email", err.Error())
+	}
 
 	ctx := c.Context()
-	if err := wh.workspaceService.JoinWorkspace(ctx, clerkUser, workspaceID); err != nil {
+	if err := wh.workspaceService.JoinWorkspace(ctx, userEmail, workspaceID); err != nil {
 		return sendErrorResponse(c, wh.logger, fiber.StatusInternalServerError, "Could not join workspace", err.Error())
 	}
 
@@ -171,9 +179,13 @@ func (wh *WorkspaceHandler) ExitWorkspaceByID(c *fiber.Ctx) error {
 	if err != nil {
 		return sendErrorResponse(c, wh.logger, fiber.StatusUnauthorized, "Unauthorized", err.Error())
 	}
+	userEmail, err := utils.GetClerkUserEmail(clerkUser)
+	if err != nil {
+		return sendErrorResponse(c, wh.logger, fiber.StatusBadRequest, "Couldn't locate user email", err.Error())
+	}
 
 	ctx := c.Context()
-	if err := wh.workspaceService.LeaveWorkspace(ctx, clerkUser, workspaceID); err != nil {
+	if err := wh.workspaceService.LeaveWorkspace(ctx, userEmail, workspaceID); err != nil {
 		return sendErrorResponse(c, wh.logger, fiber.StatusInternalServerError, "Could not exit workspace", err.Error())
 	}
 

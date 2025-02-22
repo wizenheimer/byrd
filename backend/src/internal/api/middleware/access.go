@@ -151,8 +151,13 @@ func (m *AccessMiddleware) validateWorkspaceMembership(c *fiber.Ctx, allowedRole
 		return err
 	}
 
+	userEmail, err := utils.GetClerkUserEmail(clerkUser)
+	if err != nil {
+		return err
+	}
+
 	// Check if user is an admin
-	workspaceUser, err := m.workspaceService.GetClerkWorkspaceUser(c.Context(), workspaceID, clerkUser)
+	workspaceUser, err := m.workspaceService.GetWorkspaceUser(c.Context(), workspaceID, userEmail)
 	if err != nil {
 		return err
 	}
